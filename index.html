@@ -1791,7 +1791,142 @@ if(btnDownloadDocEl){
 const V_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQIv0AkbqmXBaLqJp7HEkxpILG8qzxX624I5Z_18duRN4zRBQeWzb9d95RDWdBWazmnQ7XYa9713gtm/pub?gid=1309490355&single=true&output=csv";
 
 /* Armazena todos os registros de todos os períodos */
-let V_DATA = []; // [{periodo, material, descricao, unitario, qtde, vlrNota, pctPart}]
+let V_DATA = []; // populado da planilha ou do fallback
+/* Dados de segurança (21/06/2026 — 131 produtos do relatório real)
+   usados quando a planilha não pode ser acessada. */
+const V_FALLBACK_DATA = [
+  {periodo:"21/06/2026",material:"2209137-1",descricao:"MASSA P/ PAO FRANCES PREMIUM 6H BREAD KING 75G - C/6KG",unitario:6.57,qtde:201647.99,vlrNota:1324164.19,pctPart:47.55},
+  {periodo:"21/06/2026",material:"2209138-1",descricao:"MASSA P/ PAO FRANCES PREMIUM 12H BREAD KING 75G - C/6KG",unitario:6.71,qtde:24288.0,vlrNota:162949.86,pctPart:5.85},
+  {periodo:"21/06/2026",material:"2209307-1",descricao:"MASSA P/PAO FRANCES OU DE SAL 6H NUTRI BREAD KING 65G -C/6KG",unitario:5.11,qtde:15156.0,vlrNota:77386.72,pctPart:2.78},
+  {periodo:"21/06/2026",material:"2209370",descricao:"MASSA P/ PAO DE QUEIJO TRAD BREAD KING 50G - C/5KG",unitario:19.84,qtde:3070.0,vlrNota:60905.04,pctPart:2.19},
+  {periodo:"21/06/2026",material:"2209369",descricao:"MASSA P/ PAO DE QUEIJO TRAD BREAD KING 75G - C/5KG",unitario:20.77,qtde:2715.0,vlrNota:56385.04,pctPart:2.02},
+  {periodo:"21/06/2026",material:"2209092",descricao:"DOGUINHO SALSICHA E REQUEIJAO BREAD KING 170G - C/15UN",unitario:5.38,qtde:9570.0,vlrNota:51493.9,pctPart:1.85},
+  {periodo:"21/06/2026",material:"2209409",descricao:"MASSA P/ PAO FRANCES 6H COTRISAL 75G - C/5KG",unitario:33.32,qtde:1458.0,vlrNota:48582.02,pctPart:1.74},
+  {periodo:"21/06/2026",material:"807",descricao:"MINI COXINHA FRANGO FRITA CONG BREAD KING - FD C/5KG",unitario:18.8,qtde:2375.0,vlrNota:44659.76,pctPart:1.6},
+  {periodo:"21/06/2026",material:"1436011-1",descricao:"MASSA P/ PAO MASSINHA DOCE S/FAROFA BREAD KING 70G - C/3,8KG",unitario:10.62,qtde:3484.6,vlrNota:37001.43,pctPart:1.33},
+  {periodo:"21/06/2026",material:"2209405",descricao:"MASSA P/ PAO SOVADO SS BREAD KING 50G - C/6KG",unitario:4.88,qtde:6828.02,vlrNota:33297.98,pctPart:1.2},
+  {periodo:"21/06/2026",material:"1194690-1",descricao:"MASSA P/ PAO CASEIRINHO/SOVADINHO 65G - C/6KG",unitario:10.16,qtde:3018.0,vlrNota:30662.92,pctPart:1.1},
+  {periodo:"21/06/2026",material:"2209091",descricao:"HAMBURGAO CARNE C/ CHEDDAR BREAD KING 170G - C/12UN",unitario:5.52,qtde:5352.0,vlrNota:29567.02,pctPart:1.06},
+  {periodo:"21/06/2026",material:"809",descricao:"MINI BOLINHA QUEIJO FRITO BREAD KING - FD C/5KG",unitario:19.97,qtde:1440.0,vlrNota:28753.3,pctPart:1.03},
+  {periodo:"21/06/2026",material:"1194623-1",descricao:"MASSA P/ PAO BILHA/CERVEJINHA BREAD KING 75G - C/6KG",unitario:7.57,qtde:3744.0,vlrNota:28347.77,pctPart:1.02},
+  {periodo:"21/06/2026",material:"309-1",descricao:"MASSA P/ PAOZINHO DOCE BREAD KING 70G - C/3,8KG",unitario:7.07,qtde:3062.8,vlrNota:21657.41,pctPart:0.78},
+  {periodo:"21/06/2026",material:"1194771-1",descricao:"MASSA P/ PAO HOT DOG  BREAD KING 80G- C/5KG",unitario:9.07,qtde:2325.0,vlrNota:21093.79,pctPart:0.76},
+  {periodo:"21/06/2026",material:"006807",descricao:"MASSA P/ PAO FRANCES SESI 50G - 6KG",unitario:4.54,qtde:4439.99,vlrNota:20157.56,pctPart:0.72},
+  {periodo:"21/06/2026",material:"324",descricao:"ENROLADO SALSICHA FRITO CONG 130G - C/30UN",unitario:4.25,qtde:4710.0,vlrNota:20008.95,pctPart:0.72},
+  {periodo:"21/06/2026",material:"2209371",descricao:"MASSA P/ PAO DE QUEIJO TRAD BREAD KING 30G - C/5KG",unitario:21.32,qtde:865.0,vlrNota:18442.91,pctPart:0.66},
+  {periodo:"21/06/2026",material:"1194934-1",descricao:"MASSA P/ CHIPA BREAD KING 40G - C/3KG",unitario:43.81,qtde:420.0,vlrNota:18399.71,pctPart:0.66},
+  {periodo:"21/06/2026",material:"2209353",descricao:"EMPADA FRANGO C/ REQ BREAD KING 130G - C/25UN",unitario:5.3,qtde:3375.0,vlrNota:17902.19,pctPart:0.64},
+  {periodo:"21/06/2026",material:"1435957",descricao:"MINI CHURROS DOCE DE LEITE FRITO CONG BREAD KING - FD C/5KG",unitario:19.78,qtde:900.0,vlrNota:17802.73,pctPart:0.64},
+  {periodo:"21/06/2026",material:"900-1",descricao:"MASSA P/ GROSTOLI BREAD KING 60G - C/3KG",unitario:20.95,qtde:846.0,vlrNota:17720.46,pctPart:0.64},
+  {periodo:"21/06/2026",material:"7",descricao:"PASTEL NATA FRANGO C/REQ CONG BKING 130G - C/18UN",unitario:5.17,qtde:3402.0,vlrNota:17586.83,pctPart:0.63},
+  {periodo:"21/06/2026",material:"1194704-1",descricao:"MASSA P/ PAO CASEIRO BREAD KING 500G - C/6KG",unitario:9.99,qtde:1722.0,vlrNota:17201.85,pctPart:0.62},
+  {periodo:"21/06/2026",material:"006670",descricao:"BAURU SABOR PIZZA BREAD KING 165G - C/15UN",unitario:5.39,qtde:3120.0,vlrNota:16801.21,pctPart:0.6},
+  {periodo:"21/06/2026",material:"006672",descricao:"BAURU FRANGO C/ REQ BREAD KING 165G - CX C/15 UN",unitario:5.41,qtde:2955.0,vlrNota:15974.57,pctPart:0.57},
+  {periodo:"21/06/2026",material:"2209362-1",descricao:"MASSA P/ PAO SUPERFOFO BREAD KING 50G - C/5KG",unitario:10.57,qtde:1500.0,vlrNota:15849.28,pctPart:0.57},
+  {periodo:"21/06/2026",material:"006671",descricao:"BAURU CALABRESA C/ REQ BREAD KING 165G - CX C/15 UN",unitario:5.38,qtde:2805.0,vlrNota:15089.58,pctPart:0.54},
+  {periodo:"21/06/2026",material:"224",descricao:"COXINHA FRANGO E REQ FRITA CONG BREAD KING 130G - C/30UN",unitario:4.07,qtde:3450.0,vlrNota:14026.68,pctPart:0.5},
+  {periodo:"21/06/2026",material:"9556",descricao:"MINI CROISSANT SABOR CHOCOLATE AO LEITE BK 50G - FD C/5KG",unitario:44.78,qtde:310.0,vlrNota:13881.81,pctPart:0.5},
+  {periodo:"21/06/2026",material:"6",descricao:"PASTEL NATA CARNE C/REQ CONG BREAD KING 130G - C/18UN",unitario:5.47,qtde:2286.0,vlrNota:12514.94,pctPart:0.45},
+  {periodo:"21/06/2026",material:"1194810-1",descricao:"MASSA P/ PAO DE CEREAIS INTEGRAL BREAD KING 70G - C/5KG",unitario:8.3,qtde:1460.0,vlrNota:12113.13,pctPart:0.43},
+  {periodo:"21/06/2026",material:"002899",descricao:"PUDIM LEITE CONDENSADO BREAD KING 550G - CX C/6 UNID",unitario:106.3,qtde:106.0,vlrNota:11267.38,pctPart:0.4},
+  {periodo:"21/06/2026",material:"804",descricao:"MINI RISOLIS CARNE FRITO CONG BREAD KING - FD C/5KG",unitario:19.57,qtde:540.0,vlrNota:10567.02,pctPart:0.38},
+  {periodo:"21/06/2026",material:"2209115",descricao:"MINI PASTEL BOLHA CARNE C/ OVO BREAD KING 30G - C/2KG",unitario:38.96,qtde:270.0,vlrNota:10518.6,pctPart:0.38},
+  {periodo:"21/06/2026",material:"2209009",descricao:"PAO BATATA FRANGO C/ REQ BREAD KING 150G - C/18UN",unitario:4.93,qtde:2106.0,vlrNota:10379.44,pctPart:0.37},
+  {periodo:"21/06/2026",material:"67",descricao:"TORTA MARTA ROCHA BREAD KING 1,2KG - C/2UN",unitario:86.01,qtde:119.0,vlrNota:10235.17,pctPart:0.37},
+  {periodo:"21/06/2026",material:"22093141",descricao:"TORTA MARTA ROCHA BK 800G - CX C/4 UNID",unitario:126.01,qtde:81.0,vlrNota:10206.63,pctPart:0.37},
+  {periodo:"21/06/2026",material:"2209008",descricao:"PAO BATATA CALABRESA C/ REQ BREAD KING 150G - C/18UN",unitario:5.12,qtde:1944.0,vlrNota:9955.71,pctPart:0.36},
+  {periodo:"21/06/2026",material:"2209083",descricao:"PASTEL DE NATA (BELEM) BREAD KING 60G - C/36 UNID",unitario:5.3,qtde:1872.0,vlrNota:9930.83,pctPart:0.36},
+  {periodo:"21/06/2026",material:"107",descricao:"CROISSANT SABOR CHOCOLATE BREAD KING 90G - FD C/5KG",unitario:44.8,qtde:210.0,vlrNota:9407.01,pctPart:0.34},
+  {periodo:"21/06/2026",material:"006007",descricao:"MINI BOLINHA PRES/QUEIJO FRITO BREAD KING 22G - FD C/5KG",unitario:17.65,qtde:520.0,vlrNota:9178.75,pctPart:0.33},
+  {periodo:"21/06/2026",material:"22093123",descricao:"TORTA BRIGADEIRO BREAD KING 800G - C/4UN",unitario:129.64,qtde:69.0,vlrNota:8945.04,pctPart:0.32},
+  {periodo:"21/06/2026",material:"812",descricao:"MINI SALSICHINHA FRITA CONG BREAD KING - FD C/5KG",unitario:20.16,qtde:425.0,vlrNota:8566.21,pctPart:0.31},
+  {periodo:"21/06/2026",material:"811",descricao:"MINI CROQUETE CARNE C/ REQ FRITO CONG BREAD KING - FD C/5KG",unitario:18.98,qtde:440.0,vlrNota:8349.01,pctPart:0.3},
+  {periodo:"21/06/2026",material:"8019",descricao:"MINI PASTEL FORNO CARNE BREAD KING 35G - C/2,5KG",unitario:41.42,qtde:192.5,vlrNota:7972.95,pctPart:0.29},
+  {periodo:"21/06/2026",material:"1194763-1",descricao:"MASSA P/ PAO HAMBURGUER BREAD KING 80G  - C/5KG",unitario:8.7,qtde:910.0,vlrNota:7913.5,pctPart:0.28},
+  {periodo:"21/06/2026",material:"22093111",descricao:"TORTA 4 LEITES BREAD KING 800G - C/4UN",unitario:142.8,qtde:54.0,vlrNota:7711.08,pctPart:0.28},
+  {periodo:"21/06/2026",material:"810",descricao:"MINI KIBETES C/ REQUEIJAO FRITO CONG BREAD KING - FD C/5KG",unitario:18.03,qtde:425.0,vlrNota:7663.23,pctPart:0.28},
+  {periodo:"21/06/2026",material:"8018",descricao:"MINI PASTEL FORNO FRANGO BREAD KING 35G - C/2,5KG",unitario:37.38,qtde:200.0,vlrNota:7475.83,pctPart:0.27},
+  {periodo:"21/06/2026",material:"179",descricao:"TORTA DOIS AMORES BREAD KING  1,2KG - C/2UN",unitario:81.58,qtde:86.0,vlrNota:7016.06,pctPart:0.25},
+  {periodo:"21/06/2026",material:"006324",descricao:"TORTA ANIVERSARIO 2 AMORES BK 1,2KG - CX C/2 UNID",unitario:83.07,qtde:84.0,vlrNota:6977.67,pctPart:0.25},
+  {periodo:"21/06/2026",material:"006106",descricao:"MINI CROQUETE LINGUICA BLUMENAU BK 500G - FD C/5KG",unitario:18.87,qtde:360.0,vlrNota:6792.91,pctPart:0.24},
+  {periodo:"21/06/2026",material:"102",descricao:"CROISSANT FRANGO BREAD KING 90G - FD C/5KG",unitario:43.51,qtde:155.0,vlrNota:6744.51,pctPart:0.24},
+  {periodo:"21/06/2026",material:"175",descricao:"TORTA BRIGADEIRO BREAD KING 1,2KG - C/2UN",unitario:81.28,qtde:81.0,vlrNota:6583.83,pctPart:0.24},
+  {periodo:"21/06/2026",material:"2209012",descricao:"PASTEL NATA FILE C/CHEDDAR CONG BKING 130G - C/18UN",unitario:6.03,qtde:1080.0,vlrNota:6510.98,pctPart:0.23},
+  {periodo:"21/06/2026",material:"12",descricao:"ESFIHA FRANGO ASSADO CONG BREAD KING 130G - C/15UN",unitario:5.51,qtde:1170.0,vlrNota:6451.27,pctPart:0.23},
+  {periodo:"21/06/2026",material:"100825",descricao:"EMPADA PALMITO BREAD KING 130G - C/25UN",unitario:5.34,qtde:1175.0,vlrNota:6276.16,pctPart:0.23},
+  {periodo:"21/06/2026",material:"1194593-1",descricao:"MASSA P/ PAO FRANCES MINI BREAD KING 40G - C/5KG",unitario:7.35,qtde:830.0,vlrNota:6103.85,pctPart:0.22},
+  {periodo:"21/06/2026",material:"22093120",descricao:"TORTA DOIS AMORES BK 800G - CX C/4 UNID",unitario:124.77,qtde:48.0,vlrNota:5988.83,pctPart:0.22},
+  {periodo:"21/06/2026",material:"2209297",descricao:"PASTEL P/ FRITAR CARNE BREAD KING 130G - C/15UN",unitario:4.58,qtde:1305.0,vlrNota:5970.74,pctPart:0.21},
+  {periodo:"21/06/2026",material:"1195514-1",descricao:"MASSA P/ SONHO AMERICANO BREAD KING 55G - C/5KG",unitario:10.08,qtde:580.0,vlrNota:5845.52,pctPart:0.21},
+  {periodo:"21/06/2026",material:"22093147",descricao:"TORTA ALEMA BREAD KING 800G - C/4UN",unitario:126.76,qtde:46.0,vlrNota:5831.18,pctPart:0.21},
+  {periodo:"21/06/2026",material:"1194712-1",descricao:"MASSA P/ PAO SOVADO MELAO BREAD KING 340G - C/5KG",unitario:11.42,qtde:510.0,vlrNota:5822.39,pctPart:0.21},
+  {periodo:"21/06/2026",material:"22093175",descricao:"BOLO POTE PRESTIGIO BREAD KING 180G - C/12",unitario:86.71,qtde:65.0,vlrNota:5635.89,pctPart:0.2},
+  {periodo:"21/06/2026",material:"22093132",descricao:"TORTA PRESTIGIO BREAD KING 800G - C/4UN",unitario:130.61,qtde:43.0,vlrNota:5616.11,pctPart:0.2},
+  {periodo:"21/06/2026",material:"9557",descricao:"MINI CROISSANT GOIABADA BREAD KING 50G - FD C/5KG",unitario:46.24,qtde:115.0,vlrNota:5317.04,pctPart:0.19},
+  {periodo:"21/06/2026",material:"196",descricao:"PASTEL NATA CALABRESA C/REQ CONG BKING 130G-C/18UN",unitario:5.07,qtde:1044.0,vlrNota:5294.45,pctPart:0.19},
+  {periodo:"21/06/2026",material:"2209010",descricao:"PAO BATATA REQUEIJAO BREAD KING 150G - C/18UN",unitario:5.37,qtde:954.0,vlrNota:5123.23,pctPart:0.18},
+  {periodo:"21/06/2026",material:"11",descricao:"ESFIHA CARNE ASSADO CONG BREAD KING 130 G - C/15UN",unitario:5.53,qtde:900.0,vlrNota:4978.75,pctPart:0.18},
+  {periodo:"21/06/2026",material:"185",descricao:"TORTA 4 LEITES BREAD KING 1,2KG - C/2UN",unitario:101.12,qtde:49.0,vlrNota:4955.08,pctPart:0.18},
+  {periodo:"21/06/2026",material:"1194828-1",descricao:"MASSA P/ PAO DE CEREAIS MILHO BREAD KING 70G - C/5KG",unitario:7.68,qtde:640.0,vlrNota:4915.79,pctPart:0.18},
+  {periodo:"21/06/2026",material:"18-1",descricao:"MASSA P/ PAO BAGUETE TRAD BREAD KING 240G - C/4,8KG",unitario:8.62,qtde:542.4,vlrNota:4675.8,pctPart:0.17},
+  {periodo:"21/06/2026",material:"007322",descricao:"TORTA 4 LEITES C/ DOCE DE LEITE BREAD KING 800G - CX C/4 UN",unitario:113.64,qtde:41.0,vlrNota:4659.07,pctPart:0.17},
+  {periodo:"21/06/2026",material:"006806",descricao:"MASSA P/ PAO FRANCES MINI SESI 30G - 5KG",unitario:4.54,qtde:1020.0,vlrNota:4630.8,pctPart:0.17},
+  {periodo:"21/06/2026",material:"176",descricao:"TORTA PRESTIGIO BREAD KING 1,2KG - C/2UN",unitario:92.59,qtde:50.0,vlrNota:4629.68,pctPart:0.17},
+  {periodo:"21/06/2026",material:"22093162",descricao:"TORTA 2 AMORES/PRESTIGIO BREAD KING 1,2KG - C/2UN",unitario:85.13,qtde:53.0,vlrNota:4511.81,pctPart:0.16},
+  {periodo:"21/06/2026",material:"8020",descricao:"MINI PASTEL FORNO CALABRESA BREAD KING 35G - C/2,5KG",unitario:36.79,qtde:120.0,vlrNota:4414.92,pctPart:0.16},
+  {periodo:"21/06/2026",material:"22093138",descricao:"TORTA BOMBOM BREAD KING 800G - C/4UN",unitario:133.67,qtde:33.0,vlrNota:4411.17,pctPart:0.16},
+  {periodo:"21/06/2026",material:"9555",descricao:"MINI CROISSANT FRANGO BREAD KING 50G - FD C/5KG",unitario:43.32,qtde:100.0,vlrNota:4332.28,pctPart:0.16},
+  {periodo:"21/06/2026",material:"22093170",descricao:"BOLO POTE BRIGADEIRO BK 180G - CX C/12 UNID",unitario:75.09,qtde:56.0,vlrNota:4205.09,pctPart:0.15},
+  {periodo:"21/06/2026",material:"22093163",descricao:"TORTA BRIGADEIRO/4 LEITES BREAD KING1,2KG - C/2UN",unitario:92.67,qtde:45.0,vlrNota:4169.98,pctPart:0.15},
+  {periodo:"21/06/2026",material:"007318",descricao:"EMPADA CARNE C/ REQ E AZEITONA BREAD KING 120G - CX C/25 UN",unitario:5.53,qtde:750.0,vlrNota:4149.25,pctPart:0.15},
+  {periodo:"21/06/2026",material:"8021",descricao:"MINI PASTEL FORNO REQUEIJAO BREAD KING 35G - C/2,5KG",unitario:39.03,qtde:102.5,vlrNota:4000.39,pctPart:0.14},
+  {periodo:"21/06/2026",material:"007321",descricao:"TORTA 4 LEITES C/ DOCE DE LEITE BREAD KING 1,2KG - CX C/2 UN",unitario:83.32,qtde:47.0,vlrNota:3916.15,pctPart:0.14},
+  {periodo:"21/06/2026",material:"22093173",descricao:"BOLO POTE BOMBOM 180G - C/12",unitario:75.27,qtde:52.0,vlrNota:3913.89,pctPart:0.14},
+  {periodo:"21/06/2026",material:"225",descricao:"COXINHA CARNE FRITA CONG BREAD KING 130G - C/30UN",unitario:4.25,qtde:900.0,vlrNota:3828.51,pctPart:0.14},
+  {periodo:"21/06/2026",material:"006808",descricao:"MASSA P/ PAO DE CEREAIS INTEGRAL SESI 50G - 5KG",unitario:4.54,qtde:815.0,vlrNota:3700.1,pctPart:0.13},
+  {periodo:"21/06/2026",material:"2209306",descricao:"PASTEL P/ FRITAR FRANGO E REQ BREAD KING 130G - C/15UN",unitario:4.48,qtde:810.0,vlrNota:3627.33,pctPart:0.13},
+  {periodo:"21/06/2026",material:"22093172",descricao:"BOLO POTE 2 AMORES BREAD KING 180G - C/12",unitario:77.17,qtde:46.0,vlrNota:3549.87,pctPart:0.13},
+  {periodo:"21/06/2026",material:"22093169",descricao:"BOLO POTE MARTA ROCHA BK 180G - CX C/12 UNID",unitario:72.7,qtde:47.0,vlrNota:3417.02,pctPart:0.12},
+  {periodo:"21/06/2026",material:"174",descricao:"TORTA BOMBOM BREAD KING 1,2KG - C/2UN",unitario:97.55,qtde:34.0,vlrNota:3316.79,pctPart:0.12},
+  {periodo:"21/06/2026",material:"003240",descricao:"COXINHA FRANGO E REQ BREAD KING 80G - C/60 UN",unitario:2.7,qtde:1200.0,vlrNota:3244.51,pctPart:0.12},
+  {periodo:"21/06/2026",material:"002846",descricao:"TORTA KIDS SABOR BRIGADEIRO BREAD KING 800G - C/4 UN",unitario:153.7,qtde:20.0,vlrNota:3074.07,pctPart:0.11},
+  {periodo:"21/06/2026",material:"8",descricao:"PASTEL NATA PRESUNTO E QUEIJO CONG BREAD KING 130G - C/18UN",unitario:5.28,qtde:576.0,vlrNota:3042.63,pctPart:0.11},
+  {periodo:"21/06/2026",material:"007062",descricao:"TORTA CHOCOLATE DOCE DE LEITE E AMENDOIM BK 800G- CX C/4 UNI",unitario:111.8,qtde:27.0,vlrNota:3018.61,pctPart:0.11},
+  {periodo:"21/06/2026",material:"89-1",descricao:"MASSA P/ PAO BAGUETE TRAD BREAD KING 150G - C/4,5KG",unitario:8.56,qtde:325.0,vlrNota:2782.87,pctPart:0.1},
+  {periodo:"21/06/2026",material:"007221",descricao:"CROISSANT SEM RECHEIO BREAD KING 80G - FD C/5KG",unitario:28.99,qtde:95.0,vlrNota:2754.05,pctPart:0.1},
+  {periodo:"21/06/2026",material:"1194836-1",descricao:"MASSA P/ PAO DE CEREAIS PRETO BREAD KING 70G - C/5KG",unitario:9.15,qtde:300.0,vlrNota:2744.87,pctPart:0.1},
+  {periodo:"21/06/2026",material:"007063",descricao:"TORTA CHOCOLATE DOCE DE LEITE E AMENDOIM BK 1,2KG - CX C/2UN",unitario:81.76,qtde:33.0,vlrNota:2698.0,pctPart:0.1},
+  {periodo:"21/06/2026",material:"74-1",descricao:"MASSA P/ PAO DE CEREAIS MILHO BREAD KING 500G - C/6KG",unitario:9.24,qtde:288.0,vlrNota:2660.69,pctPart:0.1},
+  {periodo:"21/06/2026",material:"22093171",descricao:"BOLO POTE 4 LEITES BREAD KING 180G - C/12",unitario:79.59,qtde:33.0,vlrNota:2626.47,pctPart:0.09},
+  {periodo:"21/06/2026",material:"003781",descricao:"MOUSSE LIMAO BREAD KING 180G - C/12 UNID",unitario:45.83,qtde:56.0,vlrNota:2566.52,pctPart:0.09},
+  {periodo:"21/06/2026",material:"003782",descricao:"MOUSSE MARACUJA BREAD KING 180G - C/12 UNID",unitario:44.32,qtde:54.0,vlrNota:2393.47,pctPart:0.09},
+  {periodo:"21/06/2026",material:"006323",descricao:"TORTA ANIVERSARIO 4 LEITES BK 1,2KG - CX C/2 UNID",unitario:72.04,qtde:31.0,vlrNota:2233.34,pctPart:0.08},
+  {periodo:"21/06/2026",material:"1195484-1",descricao:"MASSA P/ PAO DOCE CUCA SEM RECHEIO BREAD KING 500G - C/3,5KG",unitario:19.5,qtde:112.0,vlrNota:2183.48,pctPart:0.08},
+  {periodo:"21/06/2026",material:"1375565-1",descricao:"MASSA P/ PAO DE CEREAIS INTEGRAL BREAD KING 500G - C/6KG",unitario:9.14,qtde:234.0,vlrNota:2139.32,pctPart:0.08},
+  {periodo:"21/06/2026",material:"2209030",descricao:"PASTEL P/ FRITAR QUEIJO BREAD KING 130G - C/15UN",unitario:4.64,qtde:450.0,vlrNota:2088.73,pctPart:0.08},
+  {periodo:"21/06/2026",material:"22093114",descricao:"TORTA DELICIA BREAD KING 800G - C/4 UN",unitario:156.34,qtde:13.0,vlrNota:2032.44,pctPart:0.07},
+  {periodo:"21/06/2026",material:"8022",descricao:"MINI CROISSANT TRAD S/ RECHEIO BREAD KING 50G - FD C/5KG",unitario:30.46,qtde:65.0,vlrNota:1979.6,pctPart:0.07},
+  {periodo:"21/06/2026",material:"2209080-1",descricao:"MASSA P/PAO DOCE CUCA C/DOCE LEITE BREAD KING 600G-C/3,5KG",unitario:20.43,qtde:94.5,vlrNota:1930.98,pctPart:0.07},
+  {periodo:"21/06/2026",material:"2209406",descricao:"MASSA P/ PAO SOVADO SS BREAD KING 30G - C/5KG",unitario:4.54,qtde:425.0,vlrNota:1929.5,pctPart:0.07},
+  {periodo:"21/06/2026",material:"003780",descricao:"MOUSSE CHOCOLATE BREAD KING 150G - C/12 UNID",unitario:49.44,qtde:37.0,vlrNota:1829.41,pctPart:0.07},
+  {periodo:"21/06/2026",material:"2209207",descricao:"MINI PASTEL FORNO CHOCOLATE BREAD KING 35G  - C/2,5KG",unitario:36.46,qtde:50.0,vlrNota:1823.01,pctPart:0.07},
+  {periodo:"21/06/2026",material:"2209082-1",descricao:"MASSA P/ PAO DOCE CUCA C/CHOCOLATE BREAD KING 600G - C/3,5KG",unitario:19.11,qtde:87.5,vlrNota:1671.82,pctPart:0.06},
+  {periodo:"21/06/2026",material:"284",descricao:"FAROFA BREAD KING 500G - UNID",unitario:23.71,qtde:65.5,vlrNota:1552.93,pctPart:0.06},
+  {periodo:"21/06/2026",material:"8000",descricao:"PAO MINI FRANCES PRE ASSADO BREAD KING 30G - C/4KG",unitario:19.99,qtde:76.0,vlrNota:1519.24,pctPart:0.05},
+  {periodo:"21/06/2026",material:"177",descricao:"TORTA DELICIA  BREAD KING 1,2KG - C/2UN",unitario:111.83,qtde:12.0,vlrNota:1341.92,pctPart:0.05},
+  {periodo:"21/06/2026",material:"007225",descricao:"PAO BATATA CATUPIRY BREAD KING 150G - CX C/18 UNID",unitario:6.73,qtde:198.0,vlrNota:1331.58,pctPart:0.05},
+  {periodo:"21/06/2026",material:"806",descricao:"MINI COXINHA CARNE FRITA CONG BREAD KING - FD C/5KG",unitario:28.79,qtde:45.0,vlrNota:1295.67,pctPart:0.05},
+  {periodo:"21/06/2026",material:"5069-1",descricao:"MASSA P/ PAO BAGUETE INTEGRAL BREAD KING 150G - C/4,5KG",unitario:9.19,qtde:126.0,vlrNota:1158.23,pctPart:0.04},
+  {periodo:"21/06/2026",material:"002845",descricao:"TORTA KIDS SABOR BRIGADEIRO BREAD KING 1,2KG - C/2 UN",unitario:112.17,qtde:9.0,vlrNota:1009.53,pctPart:0.04},
+  {periodo:"21/06/2026",material:"216",descricao:"RISOLIS CARNE FRITO CONG BREAD KING 130G - C/24UN",unitario:4.37,qtde:216.0,vlrNota:944.96,pctPart:0.03},
+  {periodo:"21/06/2026",material:"006110",descricao:"MINI CROISSANT SABOR CHOCOLATE BRANCO BK 50G - FD C/5KG",unitario:47.37,qtde:10.0,vlrNota:473.7,pctPart:0.02},
+  {periodo:"21/06/2026",material:"72850",descricao:"DONUTS RING DOCE LEITE CROCANTE BK - 4 BLISTER C/6 UNID",unitario:113.18,qtde:3.0,vlrNota:339.53,pctPart:0.01},
+  {periodo:"21/06/2026",material:"2209410",descricao:"MASSA P/ PAO FRANCES 12H COTRISAL 75G - C/5KG",unitario:33.32,qtde:10.0,vlrNota:333.21,pctPart:0.01},
+  {periodo:"21/06/2026",material:"006206",descricao:"CROISSANT ASSADO S/ RECHEIO BK 70G - CX C/12 UNID (CAFE)",unitario:2.51,qtde:84.0,vlrNota:210.48,pctPart:0.01},
+  {periodo:"21/06/2026",material:"74069",descricao:"DONUTS RECHEIO DOCE DE LEITE BK 70G - 4 BLISTER C/6 UNID",unitario:105.0,qtde:2.0,vlrNota:210.0,pctPart:0.01},
+  {periodo:"21/06/2026",material:"72911",descricao:"DONUTS RING FRUTAS VERMELHAS BK - 4 BLISTER C/6 UNID",unitario:143.76,qtde:1.0,vlrNota:143.76,pctPart:0.01},
+  {periodo:"21/06/2026",material:"73901",descricao:"DONUTS RING BRIGADEIRO BK - 4 BLISTER C/6 UNID",unitario:143.76,qtde:1.0,vlrNota:143.76,pctPart:0.01}
+];
 let V_FILTERED = [];
 let V_lastSignature = null;
 let V_loadedOnce = false;
@@ -1837,22 +1972,31 @@ function V_parseCSV(csvText){
 
 /* ---------- Carrega dados da planilha ---------- */
 async function V_loadFromSheet(){
-  try{
-    const bust = V_CSV_URL + '&cb=' + Date.now();
-    const res = await fetch(bust, { cache:'no-store' });
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-    const sig = text.length + ':' + text.slice(0,200);
-    if(sig === V_lastSignature) return false; // sem mudanças
-    V_lastSignature = sig;
-    const newRecords = V_parseCSV(text);
-    if(newRecords.length === 0) throw new Error('Nenhum dado válido na planilha.');
-    V_DATA = newRecords;
-    return true;
-  }catch(err){
-    console.error('Vendas sheet error:', err);
-    return false;
+  const urls = [
+    V_CSV_URL + '&cb=' + Date.now(),
+    'https://corsproxy.io/?' + encodeURIComponent(V_CSV_URL),
+  ];
+  for(const url of urls){
+    try{
+      const res = await fetch(url, { cache:'no-store' });
+      if(!res.ok) continue;
+      const text = await res.text();
+      if(text.length < 100) continue;
+      const sig = text.length + ':' + text.slice(0,200);
+      if(sig === V_lastSignature) return false;
+      V_lastSignature = sig;
+      const newRecords = V_parseCSV(text);
+      if(newRecords.length === 0) continue;
+      V_DATA = newRecords;
+      return true;
+    }catch(err){ console.error('Vendas sheet error:', err); }
   }
+  // Nenhuma URL funcionou — usa fallback
+  if(V_DATA.length === 0){
+    V_DATA = [...V_FALLBACK_DATA];
+    return 'fallback';
+  }
+  return false;
 }
 
 /* ---------- Lê arquivo xlsx local (SheetJS) ---------- */
@@ -2219,14 +2363,15 @@ async function V_doRefresh(isManual){
   const info = document.getElementById('vPeriodInfo');
   if(btn){ btn.disabled=true; btn.textContent='⟳ Verificando...'; }
   info.textContent = '⟳ Buscando dados da planilha...';
-  const updated = await V_loadFromSheet();
-  if(V_DATA.length > 0){
-    V_populatePeriodos();
-    V_refreshAll();
-    if(btn){ btn.textContent = isManual ? (updated?'✓ Atualizado':'✓ Sem dados novos') : '⟳ Atualizar'; }
-  } else {
-    info.textContent = '⚠ Não foi possível carregar os dados. Verifique se a planilha está publicada.';
-    if(btn){ btn.textContent = '⟳ Atualizar'; }
+  const result = await V_loadFromSheet();
+  V_populatePeriodos();
+  V_refreshAll();
+  if(result === 'fallback'){
+    info.textContent = '⚠ Não foi possível conectar à planilha. Mostrando dados do último relatório importado (21/06/2026).';
+  } else if(result === true){
+    // V_refreshAll já atualizou o periodInfo
+  } else if(result === false){
+    // sem mudanças, V_refreshAll já atualizou
   }
   if(btn){ setTimeout(()=>{ btn.textContent='⟳ Atualizar'; btn.disabled=false; }, 1600); }
 }
