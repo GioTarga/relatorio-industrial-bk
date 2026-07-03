@@ -2047,38 +2047,79 @@ let V_loadedOnce = false;
 function V_parseCSV(csvText){
   const rows = parseCSV(csvText).filter(r => r.some(c => c && c.trim() !== ''));
   const records = [];
-  let currentPeriodo = null;
+
+  const parseNum = s => {
+    // Remove símbolo de moeda, espaços e %
+    let t = String(s||'').trim().replace(/[$R\s%]/g,'');
+    // Formato BR: 1.324.164,19 → remove pontos de milhar → troca vírgula por ponto
+    if(t.includes(',') && t.includes('.')){
+      // Tem os dois: ponto é milhar, vírgula é decimal
+      t = t.replace(/\./g,'').replace(',','.');
+    } else if(t.includes(',')){
+      // Só vírgula: é decimal
+      t = t.replace(',','.');
+    }
+    // Remove qualquer caractere restante que não seja dígito ou ponto
+    t = t.replace(/[^\d.]/g,'');
+    return parseFloat(t) || 0;
+  };
 
   rows.forEach(r=>{
-    // Detecta período na linha de Filtros: "Período: '21/06/2026' até ..."
+    const col0 = (r[0]||'').trim();
+
+    // Ignora linha de cabeçalho
+    if(!col0 || col0 === 'Periodo' || col0 === 'Período' || col0 === 'Material') return;
+
+    // Formato novo (tabela limpa): col0 começa com data "DD/MM/YYYY"
+    const mDate = col0.match(/^(\d{2}\/\d{2}\/\d{4})/);
+    if(mDate){
+      const periodo = mDate[1];
+      const material  = (r[1]||'').trim();
+      const descricao = (r[2]||'').trim();
+      if(!material || !descricao) return;
+      if(!material.match(/^[\w\-]+$/)) return;
+
+      // Encontra as colunas numéricas pulando células mescladas (vazias)
+      // Estrutura real: col3=vazia, col4=Unitario, col5-6=vazias, col7=Qtde, col8=vazia, col9=VlrNota, col10=vazia, col11=%Part
+      let idx = 3;
+      while(idx < r.length && !(r[idx]||'').trim()) idx++; // acha Unitario
+      const unitario = parseNum(r[idx]);
+
+      let idx2 = idx + 1;
+      while(idx2 < r.length && !(r[idx2]||'').trim()) idx2++; // acha Qtde
+      const qtde = parseNum(r[idx2]);
+
+      let idx3 = idx2 + 1;
+      while(idx3 < r.length && !(r[idx3]||'').trim()) idx3++; // acha VlrNota
+      const vlrNota = parseNum(r[idx3]);
+
+      let idx4 = idx3 + 1;
+      while(idx4 < r.length && !(r[idx4]||'').trim()) idx4++; // acha %Part
+      const pctPart = parseFloat(String(r[idx4]||'0').replace('%','').replace(',','.')) || 0;
+
+      if(vlrNota === 0 && qtde === 0) return;
+      records.push({periodo, material, descricao, unitario, qtde, vlrNota, pctPart});
+      return;
+    }
+
+    // Formato antigo (relatório exportado com linha de Filtros)
     const rowText = r.join('');
     const mPeriodo = rowText.match(/Per[ií]odo:?\s*'?(\d{2}\/\d{2}\/\d{4})/i);
-    if(mPeriodo){ currentPeriodo = mPeriodo[1]; return; }
+    if(mPeriodo){ records._currentPeriodo = mPeriodo[1]; return; }
 
-    // Ignora cabeçalhos e linhas sem material
-    const col0 = (r[0]||'').trim();
-    if(!col0 || col0 === 'Material' || col0.startsWith('Vendas') || col0.startsWith('Filtros')) return;
-    if(!col0.match(/^[\w-]+$/)) return; // Material é sempre alfanumérico
-
+    const currentPeriodo = records._currentPeriodo;
+    if(!col0.match(/^[\w-]+$/)) return;
     const descricao = (r[1]||'').trim();
     if(!descricao || !currentPeriodo) return;
-
-    // Colunas reais (com células mescladas/vazias intercaladas):
-    // col0=Material, col1=Descrição, col2=vazia, col3=Unitário,
-    // col4=vazia, col5=Qtde, col6=vazia, col7=VlrNota, col8=vazia, col9=%Part
-    const parseNum = s => {
-      // Números do relatório usam ponto como separador decimal (ex: "6.57", "1324164.19")
-      // e vírgula em percentuais (ex: "47,55 %"). Não há ponto de milhar.
-      return parseFloat(String(s||'0').replace(',','.').replace(/[^\d.]/g,'')) || 0;
-    };
     const unitario = parseNum(r[3]);
     const qtde     = parseNum(r[5]);
     const vlrNota  = parseNum(r[7]);
     const pctPart  = parseFloat(String(r[9]||'0').replace('%','').replace(',','.')) || 0;
-
     if(vlrNota === 0 && qtde === 0) return;
-    records.push({ periodo:currentPeriodo, material:col0, descricao, unitario, qtde, vlrNota, pctPart });
+    records.push({periodo:currentPeriodo, material:col0, descricao, unitario, qtde, vlrNota, pctPart});
   });
+
+  delete records._currentPeriodo;
   return records;
 }
 
