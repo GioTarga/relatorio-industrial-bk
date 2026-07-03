@@ -557,7 +557,12 @@
     </div>
 
     <div class="period-bar" style="flex-wrap:wrap;gap:12px;">
-      <label for="vPeriodo">Período</label>
+      <label for="vAgrupamento">Agrupar por</label>
+      <select id="vAgrupamento">
+        <option value="periodo">Período</option>
+        <option value="mes">Mês</option>
+      </select>
+      <label for="vPeriodo" id="vPeriodoLabel">Período</label>
       <select id="vPeriodo"><option value="">Todos os períodos</option></select>
       <label for="vBusca">Buscar produto</label>
       <input type="text" id="vBusca" placeholder="Digite o nome..." style="border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;background:var(--cream);width:200px;">
@@ -2229,11 +2234,44 @@ function V_loadSheetJS(){
 /* ---------- Filtros ---------- */
 const vPeriodoEl = document.getElementById('vPeriodo');
 const vBuscaEl = document.getElementById('vBusca');
+const vAgrupamentoEl = document.getElementById('vAgrupamento');
+
+/* Converte "DD/MM/YYYY" em chave de mês "MM/YYYY" */
+function V_periodoToMes(periodo){
+  const m = periodo.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  return m ? `${m[2]}/${m[3]}` : periodo;
+}
+
+/* Retorna nome legível do mês */
+const MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+function V_mesLabel(mesKey){
+  const [m,y] = mesKey.split('/');
+  return `${MESES_PT[parseInt(m,10)-1]}/${y}`;
+}
+
+/* Quando agrupamento = "mes", retorna registros com o campo "periodo"
+   substituído pela chave de mês, somando quantidades do mesmo mês */
+function V_getEffectiveData(){
+  if(vAgrupamentoEl.value === 'mes'){
+    const byKey = {};
+    V_DATA.forEach(r=>{
+      const mesKey = V_periodoToMes(r.periodo);
+      const k = mesKey + '|' + r.material;
+      if(!byKey[k]) byKey[k] = {...r, periodo: mesKey, qtde:0, vlrNota:0, pctPart:0};
+      byKey[k].qtde    += r.qtde;
+      byKey[k].vlrNota += r.vlrNota;
+      byKey[k].pctPart += r.pctPart;
+    });
+    return Object.values(byKey);
+  }
+  return V_DATA;
+}
 
 function V_applyFilters(){
+  const efectivo = V_getEffectiveData();
   const periodo = vPeriodoEl.value;
   const busca = vBuscaEl.value.toLowerCase().trim();
-  V_FILTERED = V_DATA.filter(r=>{
+  V_FILTERED = efectivo.filter(r=>{
     if(periodo && r.periodo !== periodo) return false;
     if(busca && !r.descricao.toLowerCase().includes(busca) && !r.material.toLowerCase().includes(busca)) return false;
     return true;
@@ -2241,15 +2279,30 @@ function V_applyFilters(){
 }
 
 function V_populatePeriodos(){
-  const periodos = [...new Set(V_DATA.map(r=>r.periodo))].sort((a,b)=>{
-    const toDate = s => { const [d,m,y]=s.split('/'); return new Date(y,m-1,d); };
+  const isMes = vAgrupamentoEl.value === 'mes';
+  const efectivo = V_getEffectiveData();
+  const periodos = [...new Set(efectivo.map(r=>r.periodo))].sort((a,b)=>{
+    const toDate = s => {
+      // suporta "MM/YYYY" (mês) e "DD/MM/YYYY" (período)
+      const parts = s.split('/');
+      if(parts.length === 2) return new Date(parts[1], parseInt(parts[0],10)-1, 1);
+      return new Date(parts[2], parseInt(parts[1],10)-1, parseInt(parts[0],10));
+    };
     return toDate(a)-toDate(b);
   });
   const cur = vPeriodoEl.value;
-  vPeriodoEl.innerHTML = '<option value="">Todos os períodos</option>';
-  periodos.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; vPeriodoEl.appendChild(o); });
+  const label = isMes ? 'Todos os meses' : 'Todos os períodos';
+  const labelSel = isMes ? 'Mês' : 'Período';
+  document.getElementById('vPeriodoLabel').textContent = labelSel;
+  vPeriodoEl.innerHTML = `<option value="">${label}</option>`;
+  periodos.forEach(p=>{
+    const o=document.createElement('option');
+    o.value=p;
+    o.textContent = isMes ? V_mesLabel(p) : p;
+    vPeriodoEl.appendChild(o);
+  });
   if(periodos.includes(cur)) vPeriodoEl.value = cur;
-  else if(periodos.length) vPeriodoEl.value = periodos[periodos.length-1]; // default = mais recente
+  else if(periodos.length) vPeriodoEl.value = periodos[periodos.length-1];
 }
 
 function V_avg(arr){ const a=arr.filter(v=>v!==null&&!isNaN(v)); return a.length?a.reduce((s,v)=>s+v,0)/a.length:null; }
@@ -2262,8 +2315,13 @@ function V_renderKPIs(){
   const topProd = [...rows].sort((a,b)=>b.vlrNota-a.vlrNota)[0];
 
   // Variação vs período anterior
-  const periodos = [...new Set(V_DATA.map(r=>r.periodo))].sort((a,b)=>{
-    const toDate = s => { const [d,m,y]=s.split('/'); return new Date(y,m-1,d); };
+  const _efectivo = V_getEffectiveData();
+  const periodos = [...new Set(_efectivo.map(r=>r.periodo))].sort((a,b)=>{
+    const toDate = s => {
+      const parts = s.split('/');
+      if(parts.length === 2) return new Date(parts[1], parseInt(parts[0],10)-1, 1);
+      return new Date(parts[2], parseInt(parts[1],10)-1, parseInt(parts[0],10));
+    };
     return toDate(a)-toDate(b);
   });
   const curPeriodo = vPeriodoEl.value;
@@ -2353,23 +2411,43 @@ function V_renderTop10Qtd(){
 
 /* ---------- Gráfico: evolução de faturamento por período (linha) ---------- */
 function V_renderEvolucao(){
-  const periodos = [...new Set(V_DATA.map(r=>r.periodo))].sort((a,b)=>{
-    const toDate = s => { const [d,m,y]=s.split('/'); return new Date(y,m-1,d); };
-    return toDate(a)-toDate(b);
-  });
+  const isMes = vAgrupamentoEl.value === 'mes';
+  const mesSelecionado = vPeriodoEl.value; // "MM/YYYY" quando modo mês
   const busca = vBuscaEl.value.toLowerCase().trim();
-  // Se há um produto filtrado, mostra evolução desse produto; senão, faturamento total
-  const pontos = periodos.map(p=>{
-    const rows = V_DATA.filter(r=>r.periodo===p && (!busca || r.descricao.toLowerCase().includes(busca) || r.material.toLowerCase().includes(busca)));
-    return { periodo:p, fat: rows.reduce((s,r)=>s+r.vlrNota,0) };
-  }).filter(p=>p.fat>0);
+  const fmtBRL = v => 'R$'+v.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
 
-  if(pontos.length < 2){ document.getElementById('vChartEvolucao').innerHTML=`<div class="empty-state"><span class="empty-icon">📈</span>Carregue pelo menos 2 períodos para ver a evolução.</div>`; return; }
+  let pontos;
+  if(isMes && mesSelecionado){
+    // Modo Mês com mês selecionado: mostra as semanas desse mês
+    const semanas = [...new Set(V_DATA
+      .filter(r=>V_periodoToMes(r.periodo) === mesSelecionado)
+      .map(r=>r.periodo)
+    )].sort((a,b)=>{
+      const toDate=s=>{const[d,m,y]=s.split('/');return new Date(y,m-1,d);};
+      return toDate(a)-toDate(b);
+    });
+    pontos = semanas.map(p=>{
+      const rows = V_DATA.filter(r=>r.periodo===p && (!busca||r.descricao.toLowerCase().includes(busca)||r.material.toLowerCase().includes(busca)));
+      return { periodo:p, fat: rows.reduce((s,r)=>s+r.vlrNota,0) };
+    }).filter(p=>p.fat>0);
+  } else {
+    // Modo Período ou Mês sem seleção: usa dados efetivos
+    const _ef = V_getEffectiveData();
+    const periodos = [...new Set(_ef.map(r=>r.periodo))].sort((a,b)=>{
+      const toDate=s=>{const parts=s.split('/');if(parts.length===2)return new Date(parts[1],parseInt(parts[0],10)-1,1);return new Date(parts[2],parseInt(parts[1],10)-1,parseInt(parts[0],10));};
+      return toDate(a)-toDate(b);
+    });
+    pontos = periodos.map(p=>{
+      const rows = _ef.filter(r=>r.periodo===p && (!busca||r.descricao.toLowerCase().includes(busca)||r.material.toLowerCase().includes(busca)));
+      return { periodo: isMes ? V_mesLabel(p) : p, fat: rows.reduce((s,r)=>s+r.vlrNota,0) };
+    }).filter(p=>p.fat>0);
+  }
+
+  if(pontos.length < 2){ document.getElementById('vChartEvolucao').innerHTML=`<div class="empty-state"><span class="empty-icon">📈</span>${isMes&&mesSelecionado?'Selecione um mês com pelo menos 2 semanas de dados.':'Carregue pelo menos 2 períodos para ver a evolução.'}</div>`; return; }
 
   const w=Math.max(500, pontos.length*120), h=220, padTop=28, padBottom=44, padLeft=80, padRight=20;
-  const vals=pontos.map(p=>p.fat), maxVal=Math.max(...vals), minVal=0;
+  const vals=pontos.map(p=>p.fat), maxVal=Math.max(...vals);
   const xStep=(w-padLeft-padRight)/Math.max(pontos.length-1,1);
-  const fmtBRL = v => 'R$'+v.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
 
   let grid='';
   const step = maxVal > 1000000 ? 500000 : maxVal > 100000 ? 100000 : 50000;
@@ -2396,23 +2474,46 @@ function V_renderEvolucao(){
 
 /* ---------- Gráfico: variação % vs. período anterior (top 15) ---------- */
 function V_renderVariacao(){
-  const periodos = [...new Set(V_DATA.map(r=>r.periodo))].sort((a,b)=>{
-    const toDate = s => { const [d,m,y]=s.split('/'); return new Date(y,m-1,d); };
-    return toDate(a)-toDate(b);
-  });
-  if(periodos.length < 2){ document.getElementById('vChartVariacao').innerHTML=`<div class="empty-state"><span class="empty-icon">📊</span>Carregue pelo menos 2 períodos para ver a variação.</div>`; return; }
+  const isMes = vAgrupamentoEl.value === 'mes';
+  const mesSelecionado = vPeriodoEl.value;
+  const busca = vBuscaEl.value.toLowerCase().trim();
 
-  const curP = vPeriodoEl.value || periodos[periodos.length-1];
+  let periodos, dataSource;
+
+  if(isMes && mesSelecionado){
+    // Modo Mês com mês selecionado: compara semanas dentro do mês
+    dataSource = V_DATA;
+    periodos = [...new Set(V_DATA
+      .filter(r=>V_periodoToMes(r.periodo) === mesSelecionado)
+      .map(r=>r.periodo)
+    )].sort((a,b)=>{
+      const toDate=s=>{const[d,m,y]=s.split('/');return new Date(y,m-1,d);};
+      return toDate(a)-toDate(b);
+    });
+  } else {
+    // Modo Período ou Mês sem seleção: usa dados efetivos
+    dataSource = V_getEffectiveData();
+    periodos = [...new Set(dataSource.map(r=>r.periodo))].sort((a,b)=>{
+      const toDate=s=>{const parts=s.split('/');if(parts.length===2)return new Date(parts[1],parseInt(parts[0],10)-1,1);return new Date(parts[2],parseInt(parts[1],10)-1,parseInt(parts[0],10));};
+      return toDate(a)-toDate(b);
+    });
+  }
+
+  if(periodos.length < 2){ document.getElementById('vChartVariacao').innerHTML=`<div class="empty-state"><span class="empty-icon">📊</span>${isMes&&mesSelecionado?'Selecione um mês com pelo menos 2 semanas de dados.':'Carregue pelo menos 2 períodos para ver a variação.'}</div>`; return; }
+
+  const curP = isMes && mesSelecionado ? periodos[periodos.length-1] : (vPeriodoEl.value || periodos[periodos.length-1]);
   const idx = periodos.indexOf(curP);
   if(idx <= 0){ document.getElementById('vChartVariacao').innerHTML=`<div class="empty-state"><span class="empty-icon">📊</span>Selecione um período com dados anteriores para comparar.</div>`; return; }
   const prevP = periodos[idx-1];
 
   const curMap={}, prevMap={};
-  V_DATA.filter(r=>r.periodo===curP).forEach(r=>{ curMap[r.material]=(curMap[r.material]||0)+r.vlrNota; });
-  V_DATA.filter(r=>r.periodo===prevP).forEach(r=>{ prevMap[r.material]=(prevMap[r.material]||0)+r.vlrNota; });
+  dataSource.filter(r=>r.periodo===curP && (!busca||r.descricao.toLowerCase().includes(busca)||r.material.toLowerCase().includes(busca)))
+    .forEach(r=>{ curMap[r.material]=(curMap[r.material]||0)+r.vlrNota; });
+  dataSource.filter(r=>r.periodo===prevP && (!busca||r.descricao.toLowerCase().includes(busca)||r.material.toLowerCase().includes(busca)))
+    .forEach(r=>{ prevMap[r.material]=(prevMap[r.material]||0)+r.vlrNota; });
 
   const prodMap = {};
-  V_DATA.filter(r=>r.periodo===curP||r.periodo===prevP).forEach(r=>{ prodMap[r.material]=r.descricao; });
+  dataSource.filter(r=>r.periodo===curP||r.periodo===prevP).forEach(r=>{ prodMap[r.material]=r.descricao; });
 
   const items = Object.keys(curMap).filter(m=>prevMap[m]).map(m=>({
     material:m, descricao:prodMap[m]||m,
@@ -2425,6 +2526,9 @@ function V_renderVariacao(){
   const rowH=26, gap=7, leftW=240, chartW=200, rightW=80;
   const h=items.length*(rowH+gap);
   const maxAbs=Math.max(...items.map(i=>Math.abs(i.var)),10);
+
+  const curLabel = isMes && mesSelecionado ? curP : curP;
+  const prevLabel = isMes && mesSelecionado ? prevP : prevP;
 
   let bars='';
   items.forEach((item,i)=>{
@@ -2439,7 +2543,7 @@ function V_renderVariacao(){
   });
 
   document.getElementById('vChartVariacao').innerHTML=`
-    <div style="font-size:11px;color:var(--ink-soft);margin-bottom:8px;">Comparando <b>${curP}</b> vs. <b>${prevP}</b> — top 15 produtos por faturamento</div>
+    <div style="font-size:11px;color:var(--ink-soft);margin-bottom:8px;">Comparando semana <b>${curLabel}</b> vs. <b>${prevLabel}</b> — top 15 produtos por faturamento</div>
     <svg viewBox="0 0 ${leftW+chartW+rightW} ${h+8}" width="${leftW+chartW+rightW}" height="${h+8}" style="overflow:visible;font-family:Arial;display:inline-block;">${bars}</svg>`;
 }
 
@@ -2449,7 +2553,7 @@ function V_renderTable(){
   const fmtBRL = v => 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 
   // Calcula variação por produto vs período anterior
-  const periodos=[...new Set(V_DATA.map(r=>r.periodo))].sort((a,b)=>{const toDate=s=>{const[d,m,y]=s.split('/');return new Date(y,m-1,d);};return toDate(a)-toDate(b);});
+  const _ef=V_getEffectiveData(); const periodos=[...new Set(_ef.map(r=>r.periodo))].sort((a,b)=>{const toDate=s=>{const parts=s.split('/');if(parts.length===2)return new Date(parts[1],parseInt(parts[0],10)-1,1);return new Date(parts[2],parseInt(parts[1],10)-1,parseInt(parts[0],10));};return toDate(a)-toDate(b);});
   const curP=vPeriodoEl.value||periodos[periodos.length-1];
   const idx=periodos.indexOf(curP);
   const prevMap={};
@@ -2512,7 +2616,7 @@ function V_renderTable(){
 /* ---------- Atualiza tudo ---------- */
 function V_refreshAll(){
   V_applyFilters();
-  const periodos=[...new Set(V_DATA.map(r=>r.periodo))];
+  const periodos=[...new Set(V_getEffectiveData().map(r=>r.periodo))];
   document.getElementById('vPeriodInfo').textContent =
     V_DATA.length ? `${periodos.length} período(s) carregado(s) · ${V_FILTERED.length} produtos no filtro atual` : 'Nenhum dado carregado.';
   V_renderKPIs();
@@ -2525,6 +2629,11 @@ function V_refreshAll(){
 
 vPeriodoEl.addEventListener('change', V_refreshAll);
 vBuscaEl.addEventListener('input', V_refreshAll);
+vAgrupamentoEl.addEventListener('change', ()=>{
+  vPeriodoEl.value = ''; // reseta seleção ao mudar agrupamento
+  V_populatePeriodos();
+  V_refreshAll();
+});
 
 /* ---------- Botão Atualizar: busca dados da planilha ---------- */
 async function V_doRefresh(isManual){
