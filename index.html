@@ -3320,11 +3320,14 @@ function TP_renderLeadTimeChart(){
 function TP_renderProdutoChart(){
   const rows = TP_FILTERED;
   const cfg = TP_LINE_CONFIGS[TP_currentLine];
-  document.getElementById('tpProdutoTitle').textContent = cfg.type === 'machine' ? 'Unidades por Hora, por Registro' : 'Comparativo por Produto (Lead Time Médio)';
+  document.getElementById('tpProdutoTitle').textContent = cfg.type === 'machine' ? 'Unidades por Hora, por Produto' : 'Comparativo por Produto (Lead Time Médio)';
 
   if(cfg.type === 'machine'){
-    const items = rows.slice().sort((a,b)=>a.dateISO.localeCompare(b.dateISO))
-      .map(r=>({ label: r.dateRaw+' — '+r.maquina, value: r.unidadesHora || 0 }));
+    const byProduto = {};
+    rows.forEach(r=>{ (byProduto[r.produto]=byProduto[r.produto]||[]).push(r); });
+    const items = Object.keys(byProduto)
+      .map(p=>({ label: p, value: TP_avg(byProduto[p].map(r=>r.unidadesHora)) || 0 }))
+      .sort((a,b)=>b.value-a.value);
     if(items.length === 0){
       document.getElementById('tpChartProduto').innerHTML = `<div class="empty-state"><span class="empty-icon">⏱</span>Nenhum registro no período selecionado.</div>`;
       return;
@@ -3395,7 +3398,7 @@ function TP_renderTable(){
     const rows = TP_FILTERED.slice().sort((a,b)=> b.dateISO.localeCompare(a.dateISO));
     tbody.innerHTML = rows.map(r=>{
       const paradasTxt = r.paradas.length
-        ? r.paradas.map(p=>`${p.causa} (${TP_fmtDuration(p.duracaoSec)})`).join(' · ')
+        ? `${r.paradas.length} parada${r.paradas.length>1?'s':''}`
         : '<span class="obs-text">—</span>';
       return `<tr>
         <td>${r.dateRaw}</td>
@@ -3408,7 +3411,7 @@ function TP_renderTable(){
         <td class="center">${r.unidadesHora!==null ? Math.round(r.unidadesHora).toLocaleString('pt-BR') : '—'}</td>
         <td class="center">${r.caixaHora!==null ? Math.round(r.caixaHora).toLocaleString('pt-BR') : '—'}</td>
         <td class="center">${TP_fmtDuration(r.tempoMedioCaixa)}</td>
-        <td class="obs-text has-obs">${paradasTxt}</td>
+        <td class="center">${paradasTxt}</td>
         <td class="center"><b style="color:var(--red);">${TP_fmtDuration(r.tempoParadoTotal)}</b></td>
       </tr>`;
     }).join('') || `<tr><td colspan="12" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro encontrado.</td></tr>`;
