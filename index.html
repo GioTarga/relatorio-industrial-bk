@@ -499,6 +499,7 @@
         <option value="frances">GIRO — Pão Francês</option>
         <option value="queijo">GIRO — Pão de Queijo</option>
         <option value="padaria">PADARIA</option>
+        <option value="salgado_panitec4">SALGADO — Panitec 4 (Pastel de Nata Frango)</option>
       </select>
       <label for="tpProduto">Produto</label>
       <select id="tpProduto"><option value="">Todos os produtos</option></select>
@@ -511,18 +512,18 @@
       <div class="kpi-grid" id="tpKpiGrid"></div>
 
       <div class="panel">
-        <div class="panel-title">Composição do Tempo de Processo</div>
+        <div class="panel-title" id="tpStagesTitle">Composição do Tempo de Processo</div>
         <div class="legend" id="tpStageLegend"></div>
         <div class="chart-wrap" id="tpChartStages"></div>
       </div>
 
       <div class="panel">
-        <div class="panel-title">Lead Time por Batelada</div>
+        <div class="panel-title" id="tpLeadTimeTitle">Lead Time por Batelada</div>
         <div class="chart-wrap" id="tpChartLeadTime"></div>
       </div>
 
       <div class="panel">
-        <div class="panel-title">Comparativo por Produto (Lead Time Médio)</div>
+        <div class="panel-title" id="tpProdutoTitle">Comparativo por Produto (Lead Time Médio)</div>
         <div class="chart-wrap" id="tpChartProduto"></div>
       </div>
 
@@ -2743,6 +2744,18 @@ const TP_LINE_CONFIGS = {
       { key:'s7', label:'Bolear Pão',        color:'#c47d2a' },
     ],
   },
+  salgado_panitec4: {
+    label: 'SALGADO — Panitec 4 (Pastel de Nata Frango)',
+    csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBFGt1vkh6HsLtIO2FB34RcTIkb9XCxEYW6lrq3zGK1Jyn6vw-YCCuB6mBD29hMQatFgpOtsh1go2p/pub?gid=2049824067&single=true&output=csv",
+    // Esta linha vem de uma máquina contínua (não bateladas com etapas):
+    // Data(0), Produto(1), Máquina(2), Início(3), Fim(4), Velocidade(5), Qtd Colab.(6),
+    // Unidades por Hora(7), Produção Caixa/hora(8), Tempo Médio por Caixa(9),
+    // Paradas Registradas(10), Tempo Parado(11) — linhas seguintes sem Data
+    // repetem apenas as colunas 10 e 11 para cada causa de parada adicional.
+    type: 'machine',
+    cols: { data:0, produto:1, maquina:2, inicio:3, fim:4, velocidade:5, colab:6,
+            unidadesHora:7, caixaHora:8, tempoMedioCaixa:9, causa:10, tempoParado:11 },
+  },
 };
 // Retenção é sempre tratada como a última "etapa" de cada linha, com cor fixa
 const TP_RETENCAO_COLOR = '#7a5ca1';
@@ -2776,6 +2789,16 @@ const TP_FALLBACK_DATA = {
   ],
   padaria: [
     {dateISO:"2026-07-01", dateRaw:"01/07/2026", batelada:"1", masseira:"", produto:"Pão Melão", stages:{s1:158,s2:1009,s3:857,s4:392,s5:176,s6:757,s7:1267}, retencao:null, leadTime:4616},
+  ],
+  salgado_panitec4: [
+    {dateISO:"2027-07-03", dateRaw:"03/07/2027", produto:"Pastel de Nata Frango", maquina:"PANITEC 4",
+     inicio:"13:26:00", fim:"14:26:00", velocidade:100, colab:4, unidadesHora:3378, caixaHora:80, tempoMedioCaixa:62,
+     paradas:[
+       {causa:"Falta de Recheio", duracaoSec:437},
+       {causa:"Abastecimento de Recheio", duracaoSec:168},
+       {causa:"Falta de caixa", duracaoSec:62},
+       {causa:"Falta de Massa", duracaoSec:45},
+     ], tempoParadoTotal:712},
   ],
 };
 
@@ -2833,8 +2856,61 @@ function TP_getProcessStages(){
   return TP_LINE_CONFIGS[TP_currentLine].stages;
 }
 
+/* Linhas do tipo 'machine' (ex: Panitec 4) não têm etapas de batelada —
+   são um registro contínuo de produção por máquina, com uma lista de
+   causas de parada e suas durações (linhas seguintes sem Data repetem
+   apenas as colunas de causa/tempo, como células mescladas). */
+function TP_transformCsvMachine(csvText, cfg){
+  const rows = parseCSV(csvText).filter(r => r.some(c => c && c.trim() !== ''));
+  const dataRows = rows.slice(1);
+  const records = [];
+  let current = null;
+
+  const parseVelocidade = s => {
+    const n = parseFloat(String(s||'').replace('%','').replace(',','.'));
+    return isNaN(n) ? null : n;
+  };
+  const parsePlainNum = s => {
+    const n = parseFloat(String(s||'').replace(/\./g,'').replace(',','.'));
+    return isNaN(n) ? null : n;
+  };
+
+  dataRows.forEach(r=>{
+    const dataRaw = (r[cfg.cols.data]||'').trim();
+    if(dataRaw){
+      const iso = parseDataBR(dataRaw);
+      if(iso){
+        current = {
+          dateISO: iso,
+          dateRaw,
+          produto: (r[cfg.cols.produto]||'').trim(),
+          maquina: (r[cfg.cols.maquina]||'').trim(),
+          inicio: (r[cfg.cols.inicio]||'').trim(),
+          fim: (r[cfg.cols.fim]||'').trim(),
+          velocidade: parseVelocidade(r[cfg.cols.velocidade]),
+          colab: parsePlainNum(r[cfg.cols.colab]),
+          unidadesHora: parsePlainNum(r[cfg.cols.unidadesHora]),
+          caixaHora: parsePlainNum(r[cfg.cols.caixaHora]),
+          tempoMedioCaixa: TP_timeToSeconds(r[cfg.cols.tempoMedioCaixa]),
+          paradas: [],
+          tempoParadoTotal: 0,
+        };
+        records.push(current);
+      }
+    }
+    const causa = (r[cfg.cols.causa]||'').trim();
+    if(causa && current){
+      const dur = TP_timeToSeconds(r[cfg.cols.tempoParado]) || 0;
+      current.paradas.push({ causa, duracaoSec: dur });
+      current.tempoParadoTotal += dur;
+    }
+  });
+  return records;
+}
+
 function TP_transformCsv(csvText, lineKey){
   const cfg = TP_LINE_CONFIGS[lineKey];
+  if(cfg.type === 'machine') return TP_transformCsvMachine(csvText, cfg);
   const rows = parseCSV(csvText).filter(r => r.some(c => c && c.trim() !== ''));
   const dataRows = rows.slice(1); // descarta o cabeçalho
   const records = [];
@@ -2993,6 +3069,29 @@ function TP_avg(arr){ const a = arr.filter(v=>v!==null && !isNaN(v)); return a.l
 /* ---------- KPIs ---------- */
 function TP_renderKPIs(){
   const rows = TP_FILTERED;
+  const cfg = TP_LINE_CONFIGS[TP_currentLine];
+
+  if(cfg.type === 'machine'){
+    const avgUnidHora = TP_avg(rows.map(r=>r.unidadesHora));
+    const avgCaixaHora = TP_avg(rows.map(r=>r.caixaHora));
+    const avgTempoParado = TP_avg(rows.map(r=>r.tempoParadoTotal));
+    document.getElementById('tpKpiGrid').innerHTML = `
+      <div class="kpi-card">
+        <div class="label">Unidades por Hora</div>
+        <div class="value">${avgUnidHora!==null ? Math.round(avgUnidHora).toLocaleString('pt-BR') : '—'}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">Caixas por Hora</div>
+        <div class="value">${avgCaixaHora!==null ? Math.round(avgCaixaHora).toLocaleString('pt-BR') : '—'}</div>
+      </div>
+      <div class="kpi-card warn">
+        <div class="label">Tempo Parado Médio</div>
+        <div class="value" style="font-size:22px;">${TP_fmtDuration(avgTempoParado)}</div>
+      </div>
+    `;
+    return;
+  }
+
   const processStages = TP_getProcessStages(); // sem Retenção — ela não é processo, não tem margem de redução
 
   // Tempo médio de processo (Lead Time menos a Retenção) — base para o throughput por hora
@@ -3026,6 +3125,40 @@ function TP_renderKPIs(){
 /* ---------- Gráfico: composição do tempo de processo (barras empilhadas por etapa) ---------- */
 function TP_renderStagesChart(){
   const rows = TP_FILTERED;
+  const cfg = TP_LINE_CONFIGS[TP_currentLine];
+
+  document.getElementById('tpStagesTitle').textContent = cfg.type === 'machine' ? 'Causas de Parada' : 'Composição do Tempo de Processo';
+
+  if(cfg.type === 'machine'){
+    document.getElementById('tpStageLegend').innerHTML = '';
+    const counts = {};
+    rows.forEach(r => r.paradas.forEach(p => {
+      if(!counts[p.causa]) counts[p.causa] = { count:0, dur:0 };
+      counts[p.causa].count++;
+      counts[p.causa].dur += p.duracaoSec;
+    }));
+    const entries = Object.entries(counts).sort((a,b)=>b[1].dur-a[1].dur);
+    if(entries.length === 0){
+      document.getElementById('tpChartStages').innerHTML = `<div class="empty-state"><span class="empty-icon">✓</span>Nenhuma parada registrada no período selecionado.</div>`;
+      return;
+    }
+    const barH=30, gap=14, leftPad=220, rightPad=90, topPad=10;
+    const chartW=760;
+    const chartH = entries.length*(barH+gap) + topPad;
+    const maxDur = Math.max(...entries.map(([,v])=>v.dur));
+    let bars='';
+    entries.forEach(([causa,v],i)=>{
+      const y = topPad + i*(barH+gap);
+      const w = (v.dur/maxDur) * (chartW-leftPad-rightPad);
+      bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="12" fill="#2a1a1a" text-anchor="end" font-weight="600">${causa}</text>`;
+      bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="#A10101" rx="5"/>`;
+      bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="12" fill="#A10101" font-weight="700">${TP_fmtDuration(v.dur)} (${v.count}x)</text>`;
+    });
+    document.getElementById('tpChartStages').innerHTML = `
+      <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:Arial;display:inline-block;">${bars}</svg>`;
+    return;
+  }
+
   const stages = TP_getProcessStages(); // sem Retenção — é tempo programado, não processo
   document.getElementById('tpStageLegend').innerHTML = stages.map(s=>
     `<span><i class="dot" style="background:${s.color}"></i>${s.label}</span>`
@@ -3081,6 +3214,42 @@ function TP_renderStagesChart(){
 
 /* ---------- Gráfico: Lead Time por batelada (linha) ---------- */
 function TP_renderLeadTimeChart(){
+  const cfg = TP_LINE_CONFIGS[TP_currentLine];
+  document.getElementById('tpLeadTimeTitle').textContent = cfg.type === 'machine' ? 'Tempo Parado por Registro' : 'Lead Time por Batelada';
+
+  if(cfg.type === 'machine'){
+    const rows = TP_FILTERED.slice().sort((a,b)=> a.dateISO.localeCompare(b.dateISO));
+    if(rows.length === 0){
+      document.getElementById('tpChartLeadTime').innerHTML = `<div class="empty-state"><span class="empty-icon">⏱</span>Nenhum registro no período selecionado.</div>`;
+      return;
+    }
+    const w = Math.max(500, rows.length*70), h=240, padTop=24, padBottom=46, padLeft=55, padRight=20;
+    const vals = rows.map(r=>r.tempoParadoTotal||0);
+    const maxVal = Math.max(...vals, 1);
+    const xStep = (w-padLeft-padRight)/Math.max(rows.length-1,1);
+    let grid='';
+    const step = maxVal > 3600 ? 600 : 300;
+    for(let v=0; v<=maxVal; v+=step){
+      const y = h-padBottom-(v/maxVal)*(h-padTop-padBottom);
+      grid += `<line x1="${padLeft}" y1="${y}" x2="${w-padRight}" y2="${y}" stroke="#f0ddc0" stroke-width="1"/>`;
+      grid += `<text x="${padLeft-8}" y="${y+4}" font-size="10" fill="#6b5c5c" text-anchor="end">${TP_fmtDuration(v)}</text>`;
+    }
+    let path='', dots='', labels='';
+    rows.forEach((r,i)=>{
+      const x = padLeft + i*xStep;
+      const y = h-padBottom-((r.tempoParadoTotal||0)/maxVal)*(h-padTop-padBottom);
+      path += (i===0?'M':'L')+x+' '+y+' ';
+      dots += `<circle cx="${x}" cy="${y}" r="3.5" fill="#A10101"/>`;
+      dots += `<text x="${x}" y="${y-9}" font-size="9" fill="#A10101" font-weight="700" text-anchor="middle">${TP_fmtDuration(r.tempoParadoTotal)}</text>`;
+      labels += `<text x="${x}" y="${h-padBottom+18}" font-size="9.5" fill="#4a3a3a" text-anchor="middle">${r.dateRaw}</text>`;
+    });
+    document.getElementById('tpChartLeadTime').innerHTML = `
+      <svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" style="overflow:visible;font-family:Arial;display:inline-block;">
+        ${grid}<path d="${path}" fill="none" stroke="#A10101" stroke-width="2.4"/>${dots}${labels}
+      </svg>`;
+    return;
+  }
+
   const rows = TP_FILTERED.slice().sort((a,b)=> (a.dateISO+a.batelada.padStart(4,'0')).localeCompare(b.dateISO+b.batelada.padStart(4,'0')));
   if(rows.length === 0){
     document.getElementById('tpChartLeadTime').innerHTML = `<div class="empty-state"><span class="empty-icon">⏱</span>Nenhum registro no período selecionado.</div>`;
@@ -3117,6 +3286,32 @@ function TP_renderLeadTimeChart(){
 /* ---------- Gráfico: ranking por produto (Lead Time médio, barras horizontais) ---------- */
 function TP_renderProdutoChart(){
   const rows = TP_FILTERED;
+  const cfg = TP_LINE_CONFIGS[TP_currentLine];
+  document.getElementById('tpProdutoTitle').textContent = cfg.type === 'machine' ? 'Unidades por Hora, por Registro' : 'Comparativo por Produto (Lead Time Médio)';
+
+  if(cfg.type === 'machine'){
+    const items = rows.slice().sort((a,b)=>a.dateISO.localeCompare(b.dateISO))
+      .map(r=>({ label: r.dateRaw+' — '+r.maquina, value: r.unidadesHora || 0 }));
+    if(items.length === 0){
+      document.getElementById('tpChartProduto').innerHTML = `<div class="empty-state"><span class="empty-icon">⏱</span>Nenhum registro no período selecionado.</div>`;
+      return;
+    }
+    const maxVal = Math.max(...items.map(i=>i.value), 1);
+    const rowH=28, gap=10, leftLabelW=200, chartW=380;
+    const h = items.length*(rowH+gap);
+    let bars='';
+    items.forEach((item,i)=>{
+      const y = i*(rowH+gap);
+      const w = (item.value/maxVal)*chartW;
+      bars += `<text x="${leftLabelW-10}" y="${y+rowH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${item.label}</text>`;
+      bars += `<rect x="${leftLabelW}" y="${y}" width="${w}" height="${rowH}" rx="6" fill="#B5640B"/>`;
+      bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="11.5" fill="#8a4c08" font-weight="700">${Math.round(item.value).toLocaleString('pt-BR')}</text>`;
+    });
+    document.getElementById('tpChartProduto').innerHTML = `
+      <svg viewBox="0 0 ${leftLabelW+chartW+90} ${h+10}" width="${leftLabelW+chartW+90}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">${bars}</svg>`;
+    return;
+  }
+
   const byProduto = {};
   rows.forEach(r=>{ (byProduto[r.produto]=byProduto[r.produto]||[]).push(r); });
   const items = Object.keys(byProduto).map(p=>({ label:p, value: TP_avg(byProduto[p].map(r=>r.leadTime)) || 0 })).sort((a,b)=>b.value-a.value);
@@ -3143,6 +3338,14 @@ function TP_renderProdutoChart(){
 
 /* ---------- Cabeçalho dinâmico da tabela (muda conforme a linha de produto) ---------- */
 function TP_renderTableHead(){
+  const cfg = TP_LINE_CONFIGS[TP_currentLine];
+  if(cfg.type === 'machine'){
+    document.getElementById('tpTheadRow').innerHTML =
+      '<th>Data</th><th>Produto</th><th>Máquina</th><th class="center">Início</th><th class="center">Fim</th>' +
+      '<th class="center">Veloc.</th><th class="center">Colab.</th><th class="center">Unid/h</th>' +
+      '<th class="center">Cx/h</th><th class="center">T.Médio/Cx</th><th>Paradas Registradas</th><th class="center">Tempo Parado</th>';
+    return;
+  }
   const stages = TP_getStages();
   let html = '<th>Data</th><th class="center">Batelada</th><th>Produto</th>';
   stages.forEach(s=>{ html += `<th class="center">${s.label}</th>`; });
@@ -3152,8 +3355,34 @@ function TP_renderTableHead(){
 
 /* ---------- Tabela detalhada ---------- */
 function TP_renderTable(){
-  const stages = TP_getStages();
+  const cfg = TP_LINE_CONFIGS[TP_currentLine];
   const tbody = document.getElementById('tpTbody');
+
+  if(cfg.type === 'machine'){
+    const rows = TP_FILTERED.slice().sort((a,b)=> b.dateISO.localeCompare(a.dateISO));
+    tbody.innerHTML = rows.map(r=>{
+      const paradasTxt = r.paradas.length
+        ? r.paradas.map(p=>`${p.causa} (${TP_fmtDuration(p.duracaoSec)})`).join(' · ')
+        : '<span class="obs-text">—</span>';
+      return `<tr>
+        <td>${r.dateRaw}</td>
+        <td class="prod-name">${r.produto}</td>
+        <td>${r.maquina}</td>
+        <td class="center">${r.inicio||'—'}</td>
+        <td class="center">${r.fim||'—'}</td>
+        <td class="center">${r.velocidade!==null ? r.velocidade+'%' : '—'}</td>
+        <td class="center">${r.colab!==null ? r.colab : '—'}</td>
+        <td class="center">${r.unidadesHora!==null ? Math.round(r.unidadesHora).toLocaleString('pt-BR') : '—'}</td>
+        <td class="center">${r.caixaHora!==null ? Math.round(r.caixaHora).toLocaleString('pt-BR') : '—'}</td>
+        <td class="center">${TP_fmtDuration(r.tempoMedioCaixa)}</td>
+        <td class="obs-text has-obs">${paradasTxt}</td>
+        <td class="center"><b style="color:var(--red);">${TP_fmtDuration(r.tempoParadoTotal)}</b></td>
+      </tr>`;
+    }).join('') || `<tr><td colspan="12" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro encontrado.</td></tr>`;
+    return;
+  }
+
+  const stages = TP_getStages();
   const rows = TP_FILTERED.slice().sort((a,b)=> (b.dateISO+b.batelada.padStart(4,'0')).localeCompare(a.dateISO+a.batelada.padStart(4,'0')));
   const colCount = 3 + stages.length + 1;
   tbody.innerHTML = rows.map(r=>{
@@ -3170,9 +3399,11 @@ function TP_renderTable(){
 function TP_refreshAll(){
   TP_applyFilters();
   const ds = tpDateStartEl.value, de = tpDateEndEl.value;
+  const cfg = TP_LINE_CONFIGS[TP_currentLine];
+  const unidade = cfg.type === 'machine' ? 'registro(s)' : 'batelada(s)';
   if(TP_allDates.length){
     document.getElementById('tpPeriodInfo').textContent =
-      TP_FILTERED.length + ' batelada(s) no período' + (ds && de ? ` (${ds.split('-').reverse().join('/')} a ${de.split('-').reverse().join('/')})` : '');
+      TP_FILTERED.length + ' ' + unidade + ' no período' + (ds && de ? ` (${ds.split('-').reverse().join('/')} a ${de.split('-').reverse().join('/')})` : '');
   }
   TP_renderKPIs();
   TP_renderStagesChart();
