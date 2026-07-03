@@ -2791,6 +2791,39 @@ const TP_FALLBACK_DATA = {
     {dateISO:"2026-07-01", dateRaw:"01/07/2026", batelada:"1", masseira:"", produto:"Pão Melão", stages:{s1:158,s2:1009,s3:857,s4:392,s5:176,s6:757,s7:1267}, retencao:null, leadTime:4616},
   ],
   salgado_panitec4: [
+    {dateISO:"2026-06-29", dateRaw:"29/06/2026", produto:"Pastel de Nata Frango", maquina:"PANITEC 4",
+     inicio:"07:10:00", fim:"08:10:00", velocidade:100, colab:4, unidadesHora:3200, caixaHora:76, tempoMedioCaixa:65,
+     paradas:[
+       {causa:"Falta de Recheio", duracaoSec:300},
+       {causa:"Falta de Massa", duracaoSec:120},
+     ], tempoParadoTotal:420},
+    {dateISO:"2026-06-29", dateRaw:"29/06/2026", produto:"Pastel de Nata Carne", maquina:"PANITEC 4",
+     inicio:"09:00:00", fim:"10:00:00", velocidade:95, colab:3, unidadesHora:2850, caixaHora:68, tempoMedioCaixa:70,
+     paradas:[
+       {causa:"Falta de Colaborador", duracaoSec:540},
+       {causa:"Falta de caixa", duracaoSec:90},
+     ], tempoParadoTotal:630},
+    {dateISO:"2026-06-30", dateRaw:"30/06/2026", produto:"Pastel de Nata Frango", maquina:"PANITEC 4",
+     inicio:"07:15:00", fim:"08:15:00", velocidade:100, colab:4, unidadesHora:3450, caixaHora:82, tempoMedioCaixa:58,
+     paradas:[
+       {causa:"Abastecimento de Recheio", duracaoSec:150},
+     ], tempoParadoTotal:150},
+    {dateISO:"2026-06-30", dateRaw:"30/06/2026", produto:"Pastel de Nata Frango", maquina:"PANITEC 4",
+     inicio:"10:30:00", fim:"11:30:00", velocidade:90, colab:4, unidadesHora:2700, caixaHora:64, tempoMedioCaixa:75,
+     paradas:[
+       {causa:"Falha Mecânica", duracaoSec:900},
+       {causa:"Falta de Recheio", duracaoSec:240},
+       {causa:"Falta de Massa", duracaoSec:60},
+     ], tempoParadoTotal:1200},
+    {dateISO:"2026-07-01", dateRaw:"01/07/2026", produto:"Pastel de Nata Carne", maquina:"PANITEC 4",
+     inicio:"07:00:00", fim:"08:00:00", velocidade:100, colab:4, unidadesHora:3550, caixaHora:85, tempoMedioCaixa:56,
+     paradas:[], tempoParadoTotal:0},
+    {dateISO:"2026-07-02", dateRaw:"02/07/2026", produto:"Pastel de Nata Frango", maquina:"PANITEC 4",
+     inicio:"07:05:00", fim:"08:05:00", velocidade:98, colab:4, unidadesHora:3100, caixaHora:74, tempoMedioCaixa:66,
+     paradas:[
+       {causa:"Falta de Recheio", duracaoSec:480},
+       {causa:"Falta de caixa", duracaoSec:75},
+     ], tempoParadoTotal:555},
     {dateISO:"2027-07-03", dateRaw:"03/07/2027", produto:"Pastel de Nata Frango", maquina:"PANITEC 4",
      inicio:"13:26:00", fim:"14:26:00", velocidade:100, colab:4, unidadesHora:3378, caixaHora:80, tempoMedioCaixa:62,
      paradas:[
@@ -2882,7 +2915,7 @@ function TP_transformCsvMachine(csvText, cfg){
       if(iso){
         current = {
           dateISO: iso,
-          dateRaw,
+          dateRaw: dataRaw,
           produto: (r[cfg.cols.produto]||'').trim(),
           maquina: (r[cfg.cols.maquina]||'').trim(),
           inicio: (r[cfg.cols.inicio]||'').trim(),
