@@ -2509,17 +2509,17 @@ function V_renderVariacao(){
 
   const curMap={}, prevMap={};
   dataSource.filter(r=>r.periodo===curP && (!busca||r.descricao.toLowerCase().includes(busca)||r.material.toLowerCase().includes(busca)))
-    .forEach(r=>{ curMap[r.material]=(curMap[r.material]||0)+r.vlrNota; });
+    .forEach(r=>{ const k=r.descricao.trim().toUpperCase(); curMap[k]=(curMap[k]||0)+r.vlrNota; });
   dataSource.filter(r=>r.periodo===prevP && (!busca||r.descricao.toLowerCase().includes(busca)||r.material.toLowerCase().includes(busca)))
-    .forEach(r=>{ prevMap[r.material]=(prevMap[r.material]||0)+r.vlrNota; });
+    .forEach(r=>{ const k=r.descricao.trim().toUpperCase(); prevMap[k]=(prevMap[k]||0)+r.vlrNota; });
 
   const prodMap = {};
-  dataSource.filter(r=>r.periodo===curP||r.periodo===prevP).forEach(r=>{ prodMap[r.material]=r.descricao; });
+  dataSource.filter(r=>r.periodo===curP||r.periodo===prevP).forEach(r=>{ prodMap[r.descricao.trim().toUpperCase()]=r.descricao; });
 
-  const items = Object.keys(curMap).filter(m=>prevMap[m]).map(m=>({
-    material:m, descricao:prodMap[m]||m,
-    cur:curMap[m], prev:prevMap[m],
-    var: ((curMap[m]-prevMap[m])/prevMap[m])*100
+  const items = Object.keys(curMap).filter(k=>prevMap[k]).map(k=>({
+    material:k, descricao:prodMap[k]||k,
+    cur:curMap[k], prev:prevMap[k],
+    var: ((curMap[k]-prevMap[k])/prevMap[k])*100
   })).filter(i=>Math.abs(i.var)>=0.5).sort((a,b)=>b.cur-a.cur).slice(0,15);
 
   if(!items.length){ document.getElementById('vChartVariacao').innerHTML=`<div class="empty-state"><span class="empty-icon">📊</span>Nenhum produto em comum entre os dois períodos.</div>`; return; }
@@ -2907,6 +2907,17 @@ function TP_transformCsvMachine(csvText, cfg){
     const n = parseFloat(String(s||'').replace(/\./g,'').replace(',','.'));
     return isNaN(n) ? null : n;
   };
+  /* Aceita tanto formato de horário "H:MM:SS" quanto um número decimal
+     simples (com vírgula ou ponto) representando segundos diretamente,
+     já que a planilha às vezes registra "Tempo Médio por Caixa" assim. */
+  const parseTempoMedioCaixa = s => {
+    const t = String(s||'').trim();
+    if(!t) return null;
+    const asTime = TP_timeToSeconds(t);
+    if(asTime !== null) return asTime;
+    const n = parseFloat(t.replace(',','.'));
+    return isNaN(n) ? null : n;
+  };
 
   dataRows.forEach(r=>{
     const dataRaw = (r[cfg.cols.data]||'').trim();
@@ -2924,7 +2935,7 @@ function TP_transformCsvMachine(csvText, cfg){
           colab: parsePlainNum(r[cfg.cols.colab]),
           unidadesHora: parsePlainNum(r[cfg.cols.unidadesHora]),
           caixaHora: parsePlainNum(r[cfg.cols.caixaHora]),
-          tempoMedioCaixa: TP_timeToSeconds(r[cfg.cols.tempoMedioCaixa]),
+          tempoMedioCaixa: parseTempoMedioCaixa(r[cfg.cols.tempoMedioCaixa]),
           paradas: [],
           tempoParadoTotal: 0,
         };
