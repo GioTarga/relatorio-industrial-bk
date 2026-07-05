@@ -2516,13 +2516,20 @@ function V_renderVariacao(){
   const prodMap = {};
   dataSource.filter(r=>r.periodo===curP||r.periodo===prevP).forEach(r=>{ prodMap[r.descricao.trim().toUpperCase()]=r.descricao; });
 
-  const items = Object.keys(curMap).filter(k=>prevMap[k]).map(k=>({
+  const commonKeys = Object.keys(curMap).filter(k=>prevMap[k]);
+  const items = commonKeys.map(k=>({
     material:k, descricao:prodMap[k]||k,
     cur:curMap[k], prev:prevMap[k],
     var: ((curMap[k]-prevMap[k])/prevMap[k])*100
   })).filter(i=>Math.abs(i.var)>=0.5).sort((a,b)=>b.cur-a.cur).slice(0,15);
 
-  if(!items.length){ document.getElementById('vChartVariacao').innerHTML=`<div class="empty-state"><span class="empty-icon">📊</span>Nenhum produto em comum entre os dois períodos.</div>`; return; }
+  if(!items.length){
+    const msg = commonKeys.length
+      ? `Encontramos ${commonKeys.length} produto(s) em comum entre ${curP} e ${prevP}, mas nenhum com variação relevante (≥0,5%).`
+      : `Nenhum produto em comum entre ${curP} e ${prevP}.`;
+    document.getElementById('vChartVariacao').innerHTML=`<div class="empty-state"><span class="empty-icon">📊</span>${msg}</div>`;
+    return;
+  }
 
   const rowH=26, gap=7, leftW=240, chartW=200, rightW=80;
   const h=items.length*(rowH+gap);
