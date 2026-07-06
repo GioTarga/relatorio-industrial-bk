@@ -2756,12 +2756,12 @@ const TP_LINE_CONFIGS = {
     csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBFGt1vkh6HsLtIO2FB34RcTIkb9XCxEYW6lrq3zGK1Jyn6vw-YCCuB6mBD29hMQatFgpOtsh1go2p/pub?gid=2049824067&single=true&output=csv",
     // Esta linha vem de uma máquina contínua (não bateladas com etapas):
     // Data(0), Produto(1), Máquina(2), Início(3), Fim(4), Velocidade(5), Qtd Colab.(6),
-    // Unidades por Hora(7), Produção Caixa/hora(8), Tempo Médio por Caixa(9),
-    // Paradas Registradas(10), Tempo Parado(11) — linhas seguintes sem Data
-    // repetem apenas as colunas 10 e 11 para cada causa de parada adicional.
+    // Unidades por Hora(7), Produção Caixa ou telas/hora(8), Tempo Médio(9),
+    // Unidade de medida(10), Paradas Registradas(11), Tempo Parado(12) — linhas
+    // seguintes sem Data repetem apenas as colunas 11 e 12 para cada causa de parada adicional.
     type: 'machine',
     cols: { data:0, produto:1, maquina:2, inicio:3, fim:4, velocidade:5, colab:6,
-            unidadesHora:7, caixaHora:8, tempoMedioCaixa:9, causa:10, tempoParado:11 },
+            unidadesHora:7, caixaHora:8, tempoMedioCaixa:9, unidadeMedida:10, causa:11, tempoParado:12 },
   },
 };
 // Retenção é sempre tratada como a última "etapa" de cada linha, com cor fixa
@@ -2906,10 +2906,6 @@ function TP_transformCsvMachine(csvText, cfg){
   const records = [];
   let current = null;
 
-  const parseVelocidade = s => {
-    const n = parseFloat(String(s||'').replace('%','').replace(',','.'));
-    return isNaN(n) ? null : n;
-  };
   const parsePlainNum = s => {
     const n = parseFloat(String(s||'').replace(/\./g,'').replace(',','.'));
     return isNaN(n) ? null : n;
@@ -2938,11 +2934,14 @@ function TP_transformCsvMachine(csvText, cfg){
           maquina: (r[cfg.cols.maquina]||'').trim(),
           inicio: (r[cfg.cols.inicio]||'').trim(),
           fim: (r[cfg.cols.fim]||'').trim(),
-          velocidade: parseVelocidade(r[cfg.cols.velocidade]),
+          // Velocidade agora é um texto livre (ex: "1.6s"), não mais percentual —
+          // mantido como veio na planilha, sem conversão numérica.
+          velocidade: (r[cfg.cols.velocidade]||'').trim() || null,
           colab: parsePlainNum(r[cfg.cols.colab]),
           unidadesHora: parsePlainNum(r[cfg.cols.unidadesHora]),
           caixaHora: parsePlainNum(r[cfg.cols.caixaHora]),
           tempoMedioCaixa: parseTempoMedioCaixa(r[cfg.cols.tempoMedioCaixa]),
+          unidadeMedida: cfg.cols.unidadeMedida !== undefined ? ((r[cfg.cols.unidadeMedida]||'').trim() || null) : null,
           paradas: [],
           tempoParadoTotal: 0,
         };
@@ -3397,7 +3396,7 @@ function TP_renderTableHead(){
     document.getElementById('tpTheadRow').innerHTML =
       '<th>Data</th><th>Produto</th><th>Máquina</th><th class="center">Início</th><th class="center">Fim</th>' +
       '<th class="center">Veloc.</th><th class="center">Colab.</th><th class="center">Unid/h</th>' +
-      '<th class="center">Cx/h</th><th class="center">T.Médio/Cx</th><th>Paradas Registradas</th><th class="center">Tempo Parado</th>';
+      '<th class="center">Cx/h</th><th class="center">T.Médio</th><th class="center">Uni.</th><th>Paradas Registradas</th><th class="center">Tempo Parado</th>';
     return;
   }
   const stages = TP_getStages();
@@ -3424,15 +3423,16 @@ function TP_renderTable(){
         <td>${r.maquina}</td>
         <td class="center">${r.inicio||'—'}</td>
         <td class="center">${r.fim||'—'}</td>
-        <td class="center">${r.velocidade!==null ? r.velocidade+'%' : '—'}</td>
+        <td class="center">${r.velocidade||'—'}</td>
         <td class="center">${r.colab!==null ? r.colab : '—'}</td>
         <td class="center">${r.unidadesHora!==null ? Math.round(r.unidadesHora).toLocaleString('pt-BR') : '—'}</td>
         <td class="center">${r.caixaHora!==null ? Math.round(r.caixaHora).toLocaleString('pt-BR') : '—'}</td>
         <td class="center">${TP_fmtDuration(r.tempoMedioCaixa)}</td>
+        <td class="center">${r.unidadeMedida||'—'}</td>
         <td class="center">${paradasTxt}</td>
         <td class="center"><b style="color:var(--red);">${TP_fmtDuration(r.tempoParadoTotal)}</b></td>
       </tr>`;
-    }).join('') || `<tr><td colspan="12" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro encontrado.</td></tr>`;
+    }).join('') || `<tr><td colspan="13" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro encontrado.</td></tr>`;
     return;
   }
 
