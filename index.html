@@ -3131,7 +3131,7 @@ function TP_renderKPIs(){
         <div class="value">${avgUnidHora!==null ? Math.round(avgUnidHora).toLocaleString('pt-BR') : '—'}</div>
       </div>
       <div class="kpi-card">
-        <div class="label">Caixas por Hora</div>
+        <div class="label">Caixas/Telas por Hora</div>
         <div class="value">${avgCaixaHora!==null ? Math.round(avgCaixaHora).toLocaleString('pt-BR') : '—'}</div>
       </div>
       <div class="kpi-card warn">
@@ -3396,7 +3396,7 @@ function TP_renderTableHead(){
     document.getElementById('tpTheadRow').innerHTML =
       '<th>Data</th><th>Produto</th><th>Máquina</th><th class="center">Início</th><th class="center">Fim</th>' +
       '<th class="center">Veloc.</th><th class="center">Colab.</th><th class="center">Unid/h</th>' +
-      '<th class="center">Cx/h</th><th class="center">T.Médio</th><th class="center">Uni.</th><th>Paradas Registradas</th><th class="center">Tempo Parado</th>';
+      '<th class="center">Cx/h ou Tela/h</th><th class="center">T.Médio</th><th class="center">Uni.</th><th>Paradas Registradas</th><th class="center">Tempo Parado</th>';
     return;
   }
   const stages = TP_getStages();
