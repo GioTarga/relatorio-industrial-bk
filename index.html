@@ -503,6 +503,8 @@
       </select>
       <label for="tpProduto">Produto</label>
       <select id="tpProduto"><option value="">Todos os produtos</option></select>
+      <label for="tpMaquina" id="tpMaquinaLabel" style="display:none;">Máquina</label>
+      <select id="tpMaquina" style="display:none;"><option value="">Todas as máquinas</option></select>
       <button class="btn-refresh" id="tpBtnRefresh" title="Verificar dados novos">⟳ Atualizar</button>
       <span class="period-info" id="tpPeriodInfo"></span>
     </div>
@@ -2757,11 +2759,14 @@ const TP_LINE_CONFIGS = {
     // Esta linha vem de uma máquina contínua (não bateladas com etapas):
     // Data(0), Produto(1), Máquina(2), Início(3), Fim(4), Velocidade(5), Qtd Colab.(6),
     // Unidades por Hora(7), Produção Caixa ou telas/hora(8), Tempo Médio(9),
-    // Unidade de medida(10), Paradas Registradas(11), Tempo Parado(12) — linhas
-    // seguintes sem Data repetem apenas as colunas 11 e 12 para cada causa de parada adicional.
+    // Unidade de medida(10), Duração do Rolo de Massa(11), Paradas Registradas(12),
+    // Tempo Parado(13) — linhas seguintes sem Data repetem apenas as colunas 12 e 13
+    // para cada causa de parada adicional. A coluna de Duração do Rolo de Massa só
+    // passou a ser coletada a partir de 07/2026, por isso vem vazia em registros antigos.
     type: 'machine',
     cols: { data:0, produto:1, maquina:2, inicio:3, fim:4, velocidade:5, colab:6,
-            unidadesHora:7, caixaHora:8, tempoMedioCaixa:9, unidadeMedida:10, causa:11, tempoParado:12 },
+            unidadesHora:7, caixaHora:8, tempoMedioCaixa:9, unidadeMedida:10,
+            duracaoRoloMassa:11, causa:12, tempoParado:13 },
   },
 };
 // Retenção é sempre tratada como a última "etapa" de cada linha, com cor fixa
@@ -2942,6 +2947,7 @@ function TP_transformCsvMachine(csvText, cfg){
           caixaHora: parsePlainNum(r[cfg.cols.caixaHora]),
           tempoMedioCaixa: parseTempoMedioCaixa(r[cfg.cols.tempoMedioCaixa]),
           unidadeMedida: cfg.cols.unidadeMedida !== undefined ? ((r[cfg.cols.unidadeMedida]||'').trim() || null) : null,
+          duracaoRoloMassa: cfg.cols.duracaoRoloMassa !== undefined ? TP_timeToSeconds(r[cfg.cols.duracaoRoloMassa]) : null,
           paradas: [],
           tempoParadoTotal: 0,
         };
@@ -3075,6 +3081,8 @@ const tpLinhaEl = document.getElementById('tpLinha');
 const tpDateStartEl = document.getElementById('tpDateStart');
 const tpDateEndEl = document.getElementById('tpDateEnd');
 const tpProdutoEl = document.getElementById('tpProduto');
+const tpMaquinaEl = document.getElementById('tpMaquina');
+const tpMaquinaLabelEl = document.getElementById('tpMaquinaLabel');
 let TP_allDates = [];
 
 tpLinhaEl.addEventListener('change', ()=>{
@@ -3082,6 +3090,7 @@ tpLinhaEl.addEventListener('change', ()=>{
   TP_DATA = [];
   tpDateStartEl.value = ''; tpDateEndEl.value = '';
   tpProdutoEl.value = '';
+  tpMaquinaEl.value = '';
   TP_loadData(false);
 });
 
@@ -3099,6 +3108,23 @@ function TP_applyDateBoundsAndRefresh(){
   produtos.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; tpProdutoEl.appendChild(o); });
   if(produtos.includes(curProd)) tpProdutoEl.value = curProd;
 
+  // Filtro de Máquina: só faz sentido para linhas do tipo 'machine' (ex: SALGADO),
+  // já que as demais linhas não têm o conceito de máquina (usam masseira).
+  const cfg = TP_LINE_CONFIGS[TP_currentLine];
+  if(cfg.type === 'machine'){
+    const maquinas = [...new Set(TP_DATA.map(r=>r.maquina).filter(Boolean))].sort();
+    const curMaq = tpMaquinaEl.value;
+    tpMaquinaEl.innerHTML = '<option value="">Todas as máquinas</option>';
+    maquinas.forEach(m=>{ const o=document.createElement('option'); o.value=m; o.textContent=m; tpMaquinaEl.appendChild(o); });
+    if(maquinas.includes(curMaq)) tpMaquinaEl.value = curMaq;
+    tpMaquinaEl.style.display = '';
+    tpMaquinaLabelEl.style.display = '';
+  } else {
+    tpMaquinaEl.value = '';
+    tpMaquinaEl.style.display = 'none';
+    tpMaquinaLabelEl.style.display = 'none';
+  }
+
   TP_renderTableHead();
   TP_refreshAll();
 }
@@ -3106,10 +3132,12 @@ function TP_applyDateBoundsAndRefresh(){
 function TP_applyFilters(){
   const ds = tpDateStartEl.value, de = tpDateEndEl.value;
   const prod = tpProdutoEl.value;
+  const maq = tpMaquinaEl.value;
   TP_FILTERED = TP_DATA.filter(r=>{
     if(ds && r.dateISO < ds) return false;
     if(de && r.dateISO > de) return false;
     if(prod && r.produto !== prod) return false;
+    if(maq && r.maquina !== maq) return false;
     return true;
   });
 }
@@ -3265,38 +3293,32 @@ function TP_renderStagesChart(){
 /* ---------- Gráfico: Lead Time por batelada (linha) ---------- */
 function TP_renderLeadTimeChart(){
   const cfg = TP_LINE_CONFIGS[TP_currentLine];
-  document.getElementById('tpLeadTimeTitle').textContent = cfg.type === 'machine' ? 'Tempo Parado por Registro' : 'Lead Time por Batelada';
+  document.getElementById('tpLeadTimeTitle').textContent = cfg.type === 'machine' ? 'Tempo Parado por Produto' : 'Lead Time por Batelada';
 
   if(cfg.type === 'machine'){
-    const rows = TP_FILTERED.slice().sort((a,b)=> a.dateISO.localeCompare(b.dateISO));
-    if(rows.length === 0){
+    const rows = TP_FILTERED;
+    const byProduto = {};
+    rows.forEach(r=>{ (byProduto[r.produto]=byProduto[r.produto]||[]).push(r); });
+    const items = Object.keys(byProduto)
+      .map(p=>({ label: p, value: TP_avg(byProduto[p].map(r=>r.tempoParadoTotal)) || 0 }))
+      .sort((a,b)=>b.value-a.value);
+    if(items.length === 0){
       document.getElementById('tpChartLeadTime').innerHTML = `<div class="empty-state"><span class="empty-icon">⏱</span>Nenhum registro no período selecionado.</div>`;
       return;
     }
-    const w = Math.max(500, rows.length*70), h=240, padTop=24, padBottom=46, padLeft=55, padRight=20;
-    const vals = rows.map(r=>r.tempoParadoTotal||0);
-    const maxVal = Math.max(...vals, 1);
-    const xStep = (w-padLeft-padRight)/Math.max(rows.length-1,1);
-    let grid='';
-    const step = maxVal > 3600 ? 600 : 300;
-    for(let v=0; v<=maxVal; v+=step){
-      const y = h-padBottom-(v/maxVal)*(h-padTop-padBottom);
-      grid += `<line x1="${padLeft}" y1="${y}" x2="${w-padRight}" y2="${y}" stroke="#f0ddc0" stroke-width="1"/>`;
-      grid += `<text x="${padLeft-8}" y="${y+4}" font-size="10" fill="#6b5c5c" text-anchor="end">${TP_fmtDuration(v)}</text>`;
-    }
-    let path='', dots='', labels='';
-    rows.forEach((r,i)=>{
-      const x = padLeft + i*xStep;
-      const y = h-padBottom-((r.tempoParadoTotal||0)/maxVal)*(h-padTop-padBottom);
-      path += (i===0?'M':'L')+x+' '+y+' ';
-      dots += `<circle cx="${x}" cy="${y}" r="3.5" fill="#A10101"/>`;
-      dots += `<text x="${x}" y="${y-9}" font-size="9" fill="#A10101" font-weight="700" text-anchor="middle">${TP_fmtDuration(r.tempoParadoTotal)}</text>`;
-      labels += `<text x="${x}" y="${h-padBottom+18}" font-size="9.5" fill="#4a3a3a" text-anchor="middle">${r.dateRaw}</text>`;
+    const maxVal = Math.max(...items.map(i=>i.value), 1);
+    const rowH=28, gap=10, leftLabelW=200, chartW=380;
+    const h = items.length*(rowH+gap);
+    let bars='';
+    items.forEach((item,i)=>{
+      const y = i*(rowH+gap);
+      const w = (item.value/maxVal)*chartW;
+      bars += `<text x="${leftLabelW-10}" y="${y+rowH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${item.label}</text>`;
+      bars += `<rect x="${leftLabelW}" y="${y}" width="${w}" height="${rowH}" rx="6" fill="#A10101"/>`;
+      bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="11.5" fill="#A10101" font-weight="700">${TP_fmtDuration(item.value)}</text>`;
     });
     document.getElementById('tpChartLeadTime').innerHTML = `
-      <svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" style="overflow:visible;font-family:Arial;display:inline-block;">
-        ${grid}<path d="${path}" fill="none" stroke="#A10101" stroke-width="2.4"/>${dots}${labels}
-      </svg>`;
+      <svg viewBox="0 0 ${leftLabelW+chartW+90} ${h+10}" width="${leftLabelW+chartW+90}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">${bars}</svg>`;
     return;
   }
 
@@ -3396,7 +3418,7 @@ function TP_renderTableHead(){
     document.getElementById('tpTheadRow').innerHTML =
       '<th>Data</th><th>Produto</th><th>Máquina</th><th class="center">Início</th><th class="center">Fim</th>' +
       '<th class="center">Veloc.</th><th class="center">Colab.</th><th class="center">Unid/h</th>' +
-      '<th class="center">Cx/h ou Tela/h</th><th class="center">T.Médio</th><th class="center">Uni.</th><th>Paradas Registradas</th><th class="center">Tempo Parado</th>';
+      '<th class="center">Cx/h ou Tela/h</th><th class="center">T.Médio</th><th class="center">Uni.</th><th class="center">Rolo de Massa</th><th>Paradas Registradas</th><th class="center">Tempo Parado</th>';
     return;
   }
   const stages = TP_getStages();
@@ -3429,10 +3451,11 @@ function TP_renderTable(){
         <td class="center">${r.caixaHora!==null ? Math.round(r.caixaHora).toLocaleString('pt-BR') : '—'}</td>
         <td class="center">${TP_fmtDuration(r.tempoMedioCaixa)}</td>
         <td class="center">${r.unidadeMedida||'—'}</td>
+        <td class="center">${TP_fmtDuration(r.duracaoRoloMassa)}</td>
         <td class="center">${paradasTxt}</td>
         <td class="center"><b style="color:var(--red);">${TP_fmtDuration(r.tempoParadoTotal)}</b></td>
       </tr>`;
-    }).join('') || `<tr><td colspan="13" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro encontrado.</td></tr>`;
+    }).join('') || `<tr><td colspan="14" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro encontrado.</td></tr>`;
     return;
   }
 
@@ -3466,7 +3489,7 @@ function TP_refreshAll(){
   TP_renderTable();
 }
 
-[tpDateStartEl, tpDateEndEl, tpProdutoEl].forEach(el=>{
+[tpDateStartEl, tpDateEndEl, tpProdutoEl, tpMaquinaEl].forEach(el=>{
   el.addEventListener('change', TP_refreshAll);
 });
 document.getElementById('tpBtnRefresh').addEventListener('click', ()=> TP_loadData(true));
