@@ -615,6 +615,7 @@
                 <th class="center">Pacotes</th>
                 <th class="center">Caixas</th>
                 <th class="center">Fardos</th>
+                <th class="center">Massa</th>
                 <th class="center">Vlr Unit.</th>
                 <th class="center">Faturamento</th>
                 <th class="center">% Part.</th>
@@ -1914,6 +1915,24 @@ const V_CONVERSOES = {
     "CROISSANT FRANGO BREAD KING 90G - FD C/5KG": 5.0,
     "MINI CROISSANT GOIABADA BREAD KING 50G - FD C/5KG": 5.0,
     "MINI CROISSANT FRANGO BREAD KING 50G - FD C/5KG": 5.0
+  },
+  "massa": {
+    "MASSA P/ PAO FRANCES PREMIUM 6H BREAD KING 75G - C/6KG": 160,
+    "MASSA P/ PAO FRANCES PREMIUM 12H BREAD KING 75G - C/6KG": 160,
+    "MASSA P/PAO FRANCES OU DE SAL 6H NUTRI BREAD KING 65G -C/6KG": 160,
+    "MASSA P/ PAO DE QUEIJO TRAD BREAD KING 50G - C/5KG": 204,
+    "MASSA P/ PAO DE QUEIJO TRAD BREAD KING 75G - C/5KG": 204,
+    "MASSA P/ PAO FRANCES 6H COTRISAL 75G - C/5KG": 160,
+    "MASSA P/ PAO MASSINHA DOCE S/FAROFA BREAD KING 70G - C/3,8KG": 168,
+    "MASSA P/ PAO SOVADO SS BREAD KING 50G - C/6KG": 164,
+    "MASSA P/ PAO CASEIRINHO/SOVADINHO 65G - C/6KG": 164,
+    "MASSA P/ PAO BILHA/CERVEJINHA BREAD KING 75G - C/6KG": 163,
+    "MASSA P/ PAOZINHO DOCE BREAD KING 70G - C/3,8KG": 163,
+    "MASSA P/ PAO HOT DOG  BREAD KING 80G- C/5KG": 160,
+    "MASSA P/ PAO FRANCES SESI 50G - 6KG": 160,
+    "MASSA P/ PAO DE QUEIJO TRAD BREAD KING 30G - C/5KG": 204,
+    "MASSA P/ CHIPA BREAD KING 40G - C/3KG": 248,
+    "MASSA P/ PAO SUPERFOFO BREAD KING 50G - C/5KG": 166
   }
 };
 
@@ -2609,9 +2628,14 @@ function V_renderTable(){
     const pacQty = V_CONVERSOES.pacotes[nomeProd];
     const cxQty  = V_CONVERSOES.caixa[nomeProd];
     const farQty = V_CONVERSOES.fardo[nomeProd];
+    const massaQty = V_CONVERSOES.massa[nomeProd];
     const pacHtml = pacQty ? `<b>${(r.qtde/pacQty).toLocaleString('pt-BR',{maximumFractionDigits:1})}</b>` : '<span style="color:var(--ink-soft)">—</span>';
     const cxHtml  = cxQty  ? `<b>${(r.qtde/cxQty).toLocaleString('pt-BR',{maximumFractionDigits:1})}</b>` : '<span style="color:var(--ink-soft)">—</span>';
     const farHtml = farQty ? `<b>${(r.qtde/farQty).toLocaleString('pt-BR',{maximumFractionDigits:1})}</b>` : '<span style="color:var(--ink-soft)">—</span>';
+    const massaCalc = massaQty ? r.qtde/massaQty : null;
+    const massaHtml = massaCalc !== null
+      ? `<b>${massaCalc.toLocaleString('pt-BR',{maximumFractionDigits:1})}</b><span style="color:var(--ink-soft);font-size:10px;"> ${massaCalc>=1&&massaCalc<2?'massa':'massas'}</span>`
+      : '<span style="color:var(--ink-soft)">—</span>';
 
     return `<tr style="${bgStyle}">
       <td class="center" style="font-size:11px;${rankStyle}">${i+1}</td>
@@ -2621,12 +2645,13 @@ function V_renderTable(){
       <td class="center" style="font-size:11.5px;">${pacHtml}</td>
       <td class="center" style="font-size:11.5px;">${cxHtml}</td>
       <td class="center" style="font-size:11.5px;">${farHtml}</td>
+      <td class="center" style="font-size:11.5px;">${massaHtml}</td>
       <td class="center">${fmtBRL(r.unitario)}</td>
       <td class="center" style="font-weight:700;color:var(--red);">${fmtBRL(r.vlrNota)}</td>
       <td class="center">${r.pctPart.toFixed(2)}%</td>
       <td class="center">${varHtml}</td>
     </tr>`;
-  }).join('') || `<tr><td colspan="11" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum dado encontrado.</td></tr>`;
+  }).join('') || `<tr><td colspan="12" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum dado encontrado.</td></tr>`;
 }
 
 /* ---------- Atualiza tudo ---------- */
