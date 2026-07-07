@@ -513,6 +513,12 @@
 
       <div class="kpi-grid" id="tpKpiGrid"></div>
 
+      <div class="panel" id="tpProjecaoPanel" style="display:none;">
+        <div class="panel-title">Projeção de Produção por Nível de Utilização do Tempo</div>
+        <div class="chart-wrap" id="tpChartProjecao"></div>
+        <div class="trend-foot">Projeção calculada a partir da taxa de produção real (quando a máquina está rodando), aplicada ao total de tempo disponível no período filtrado.</div>
+      </div>
+
       <div class="panel">
         <div class="panel-title" id="tpStagesTitle">Composição do Tempo de Processo</div>
         <div class="legend" id="tpStageLegend"></div>
@@ -3145,6 +3151,30 @@ function TP_applyFilters(){
 function TP_avg(arr){ const a = arr.filter(v=>v!==null && !isNaN(v)); return a.length ? a.reduce((s,v)=>s+v,0)/a.length : null; }
 
 /* ---------- KPIs ---------- */
+/* Calcula, a partir dos registros filtrados de uma linha do tipo 'machine':
+   - tempo total (soma de Início→Fim de cada registro)
+   - tempo parado (soma das paradas registradas)
+   - tempo produzindo (tempo total - tempo parado)
+   - taxa real de produção (unidades/hora) apenas durante o tempo produzindo
+   Serve de base tanto para o card de % Produzindo x Parado quanto para a
+   projeção de produção em diferentes níveis de utilização do tempo. */
+function TP_computeUtilization(rows){
+  let sumTotalSec = 0, sumStoppedSec = 0, sumUnits = 0;
+  rows.forEach(r=>{
+    const totalSec = TP_clockDiff(r.inicio, r.fim);
+    if(totalSec === null || r.unidadesHora === null) return;
+    const stoppedSec = r.tempoParadoTotal || 0;
+    sumTotalSec += totalSec;
+    sumStoppedSec += stoppedSec;
+    sumUnits += r.unidadesHora * (totalSec/3600);
+  });
+  const netSec = sumTotalSec - sumStoppedSec;
+  const netRate = netSec > 0 ? sumUnits / (netSec/3600) : null; // unidades/hora só quando produzindo
+  const pctParado = sumTotalSec > 0 ? (sumStoppedSec/sumTotalSec)*100 : null;
+  const pctProduzindo = pctParado !== null ? 100-pctParado : null;
+  return { sumTotalSec, sumStoppedSec, sumUnits, netSec, netRate, pctParado, pctProduzindo };
+}
+
 function TP_renderKPIs(){
   const rows = TP_FILTERED;
   const cfg = TP_LINE_CONFIGS[TP_currentLine];
@@ -3152,7 +3182,10 @@ function TP_renderKPIs(){
   if(cfg.type === 'machine'){
     const avgUnidHora = TP_avg(rows.map(r=>r.unidadesHora));
     const avgCaixaHora = TP_avg(rows.map(r=>r.caixaHora));
-    const avgTempoParado = TP_avg(rows.map(r=>r.tempoParadoTotal));
+    const util = TP_computeUtilization(rows);
+    const tempoParadoPorHora = util.sumTotalSec > 0 ? util.sumStoppedSec / (util.sumTotalSec/3600) : null;
+    const pctClass = util.pctParado === null ? '' : util.pctParado <= 15 ? 'sem-good' : util.pctParado <= 30 ? 'sem-warn' : 'sem-bad';
+    document.getElementById('tpKpiGrid').style.gridTemplateColumns = 'repeat(4,1fr)';
     document.getElementById('tpKpiGrid').innerHTML = `
       <div class="kpi-card">
         <div class="label">Unidades por Hora</div>
@@ -3163,12 +3196,20 @@ function TP_renderKPIs(){
         <div class="value">${avgCaixaHora!==null ? Math.round(avgCaixaHora).toLocaleString('pt-BR') : '—'}</div>
       </div>
       <div class="kpi-card warn">
-        <div class="label">Tempo Parado Médio</div>
-        <div class="value" style="font-size:22px;">${TP_fmtDuration(avgTempoParado)}</div>
+        <div class="label">Tempo Parado por Hora</div>
+        <div class="value" style="font-size:22px;">${TP_fmtDuration(tempoParadoPorHora)}</div>
+      </div>
+      <div class="kpi-card ${pctClass}">
+        <div class="label">Produzindo × Parado</div>
+        <div class="value" style="font-size:22px;">${util.pctProduzindo!==null ? util.pctProduzindo.toFixed(0)+'%' : '—'}</div>
+        <div class="trend-foot" style="margin-top:4px;color:var(--red);">${util.pctParado!==null ? util.pctParado.toFixed(0)+'% parado' : ''}</div>
       </div>
     `;
+    TP_renderProjecaoChart(util);
     return;
   }
+  document.getElementById('tpProjecaoPanel').style.display = 'none';
+  document.getElementById('tpKpiGrid').style.gridTemplateColumns = 'repeat(3,1fr)';
 
   const processStages = TP_getProcessStages(); // sem Retenção — ela não é processo, não tem margem de redução
 
@@ -3198,6 +3239,39 @@ function TP_renderKPIs(){
       <div class="trend-foot" style="margin-top:4px;">${slowest ? TP_fmtDuration(slowest.avg)+' em média' : ''}</div>
     </div>
   `;
+}
+
+/* ---------- Gráfico: projeção de produção em diferentes níveis de utilização do tempo ---------- */
+function TP_renderProjecaoChart(util){
+  const panel = document.getElementById('tpProjecaoPanel');
+  if(util.netRate === null || util.sumTotalSec === 0){
+    panel.style.display = '';
+    document.getElementById('tpChartProjecao').innerHTML = `<div class="empty-state"><span class="empty-icon">📈</span>Sem dados suficientes no período selecionado para calcular a projeção.</div>`;
+    return;
+  }
+  panel.style.display = '';
+  const totalHoras = util.sumTotalSec/3600;
+  const niveis = [
+    { pct:100, label:'100% do tempo', color:'#2f7d52' },
+    { pct:80,  label:'80% do tempo',  color:'#B5640B' },
+    { pct:60,  label:'60% do tempo',  color:'#A10101' },
+  ];
+  const items = niveis.map(n => ({ ...n, value: util.netRate * totalHoras * (n.pct/100) }));
+  const maxVal = Math.max(...items.map(i=>i.value), 1);
+
+  const rowH=40, gap=18, leftLabelW=110, chartW=420, rightW=110;
+  const h = items.length*(rowH+gap);
+  let bars='';
+  items.forEach((item,i)=>{
+    const y = i*(rowH+gap);
+    const w = (item.value/maxVal)*chartW;
+    bars += `<text x="${leftLabelW-10}" y="${y+rowH/2+4}" font-size="13" fill="#2a1a1a" text-anchor="end" font-weight="700">${item.label}</text>`;
+    bars += `<rect x="${leftLabelW}" y="${y}" width="${w}" height="${rowH}" rx="7" fill="${item.color}"/>`;
+    bars += `<text x="${leftLabelW+w+10}" y="${y+rowH/2+5}" font-size="14" fill="${item.color}" font-weight="800">${Math.round(item.value).toLocaleString('pt-BR')} un.</text>`;
+  });
+
+  document.getElementById('tpChartProjecao').innerHTML = `
+    <svg viewBox="0 0 ${leftLabelW+chartW+rightW} ${h+10}" width="${leftLabelW+chartW+rightW}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">${bars}</svg>`;
 }
 
 /* ---------- Gráfico: composição do tempo de processo (barras empilhadas por etapa) ---------- */
