@@ -617,7 +617,19 @@
       </div>
 
       <div class="panel">
-        <div class="panel-title">Top 10 Produtos por Quantidade Vendida</div>
+        <div class="chart-toolbar" style="justify-content:space-between;">
+          <div class="panel-title" style="margin:0;flex:none;">Top 10 Produtos por Quantidade Vendida</div>
+          <div class="ms-wrap">
+            <label for="vQtdUnidade" style="font-size:11px;color:var(--ink-soft);font-weight:700;text-transform:uppercase;letter-spacing:0.6px;margin-right:6px;">Unidade</label>
+            <select id="vQtdUnidade" style="border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12.5px;font-family:inherit;color:var(--red);font-weight:700;background:var(--cream);cursor:pointer;">
+              <option value="unidades">Unidades</option>
+              <option value="massa">Massas</option>
+              <option value="pacotes">Pacotes</option>
+              <option value="caixa">Caixas</option>
+              <option value="fardo">Fardos</option>
+            </select>
+          </div>
+        </div>
         <div class="chart-wrap" id="vChartTop10Qtd"></div>
       </div>
 
@@ -2461,24 +2473,44 @@ function V_renderTop10Fat(){
 }
 
 /* ---------- Gráfico: top 10 por quantidade ---------- */
+let V_qtdUnidade = 'unidades';
 function V_renderTop10Qtd(){
   const rows = V_FILTERED;
   const byProd = {};
   rows.forEach(r=>{ (byProd[r.material]=byProd[r.material]||{descricao:r.descricao,qtd:0}).qtd+=r.qtde; });
-  const items = Object.values(byProd).sort((a,b)=>b.qtd-a.qtd).slice(0,10);
-  if(!items.length){ document.getElementById('vChartTop10Qtd').innerHTML=`<div class="empty-state"><span class="empty-icon">📦</span>Nenhum dado carregado.</div>`; return; }
 
-  const maxQtd = items[0].qtd;
-  const rowH=30, gap=8, leftW=420, chartW=300, rightW=100;
+  const unidadeLabels = { unidades:'unid.', massa:'massas', pacotes:'pacotes', caixa:'caixas', fardo:'fardos' };
+  let items;
+  if(V_qtdUnidade === 'unidades'){
+    items = Object.values(byProd).map(p=>({ descricao:p.descricao, valor:p.qtd }));
+  } else {
+    const map = V_CONVERSOES[V_qtdUnidade] || {};
+    items = Object.values(byProd)
+      .map(p=>{ const divisor = map[p.descricao.toUpperCase()]; return divisor ? { descricao:p.descricao, valor:p.qtd/divisor } : null; })
+      .filter(Boolean);
+  }
+  items = items.sort((a,b)=>b.valor-a.valor).slice(0,10);
+
+  if(!items.length){
+    const msg = V_qtdUnidade === 'unidades'
+      ? 'Nenhum dado carregado.'
+      : `Nenhum produto no filtro atual tem fator de conversão para "${unidadeLabels[V_qtdUnidade]}" cadastrado.`;
+    document.getElementById('vChartTop10Qtd').innerHTML=`<div class="empty-state"><span class="empty-icon">📦</span>${msg}</div>`;
+    return;
+  }
+
+  const maxQtd = items[0].valor;
+  const rowH=30, gap=8, leftW=420, chartW=300, rightW=110;
   const h = items.length*(rowH+gap);
+  const casasDecimais = V_qtdUnidade === 'unidades' ? 0 : 1;
 
   let bars='';
   items.forEach((item,i)=>{
     const y=i*(rowH+gap);
-    const w=Math.max((item.qtd/maxQtd)*chartW, 4);
+    const w=Math.max((item.valor/maxQtd)*chartW, 4);
     bars += `<text x="${leftW-8}" y="${y+rowH/2+4}" font-size="10.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${item.descricao}</text>`;
     bars += `<rect x="${leftW}" y="${y}" width="${w}" height="${rowH}" rx="5" fill="#B5640B"/>`;
-    bars += `<text x="${leftW+w+8}" y="${y+rowH/2+4}" font-size="11" fill="#8a4c08" font-weight="700">${item.qtd.toLocaleString('pt-BR',{maximumFractionDigits:0})}</text>`;
+    bars += `<text x="${leftW+w+8}" y="${y+rowH/2+4}" font-size="11" fill="#8a4c08" font-weight="700">${item.valor.toLocaleString('pt-BR',{maximumFractionDigits:casasDecimais})} ${unidadeLabels[V_qtdUnidade]}</text>`;
   });
 
   document.getElementById('vChartTop10Qtd').innerHTML=`
@@ -2726,6 +2758,10 @@ function V_refreshAll(){
 
 vPeriodoEl.addEventListener('change', V_refreshAll);
 vBuscaEl.addEventListener('input', V_refreshAll);
+document.getElementById('vQtdUnidade').addEventListener('change', (e)=>{
+  V_qtdUnidade = e.target.value;
+  V_renderTop10Qtd();
+});
 vAgrupamentoEl.addEventListener('change', ()=>{
   vPeriodoEl.value = ''; // reseta seleção ao mudar agrupamento
   V_populatePeriodos();
