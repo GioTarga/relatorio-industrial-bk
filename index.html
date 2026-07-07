@@ -3462,26 +3462,37 @@ function TP_renderProdutoChart(){
   if(cfg.type === 'machine'){
     const byProduto = {};
     rows.forEach(r=>{ (byProduto[r.produto]=byProduto[r.produto]||[]).push(r); });
-    const items = Object.keys(byProduto)
-      .map(p=>({ label: p, value: TP_avg(byProduto[p].map(r=>r.unidadesHora)) || 0 }))
-      .sort((a,b)=>b.value-a.value);
+    const items = Object.keys(byProduto).map(p=>{
+      const recs = byProduto[p];
+      const real = TP_avg(recs.map(r=>r.unidadesHora)) || 0;
+      const util = TP_computeUtilization(recs);
+      const semParadas = util.netRate || 0;
+      return { label: p, real, semParadas };
+    }).sort((a,b)=>b.real-a.real);
     if(items.length === 0){
       document.getElementById('tpChartProduto').innerHTML = `<div class="empty-state"><span class="empty-icon">⏱</span>Nenhum registro no período selecionado.</div>`;
       return;
     }
-    const maxVal = Math.max(...items.map(i=>i.value), 1);
-    const rowH=28, gap=10, leftLabelW=200, chartW=380;
-    const h = items.length*(rowH+gap);
+    const maxVal = Math.max(...items.map(i=>Math.max(i.real,i.semParadas)), 1);
+    const subBarH=16, subGap=4, groupGap=16, leftLabelW=200, chartW=380;
+    const rowH = subBarH*2+subGap;
+    const h = items.length*(rowH+groupGap);
     let bars='';
     items.forEach((item,i)=>{
-      const y = i*(rowH+gap);
-      const w = (item.value/maxVal)*chartW;
-      bars += `<text x="${leftLabelW-10}" y="${y+rowH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${item.label}</text>`;
-      bars += `<rect x="${leftLabelW}" y="${y}" width="${w}" height="${rowH}" rx="6" fill="#B5640B"/>`;
-      bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="11.5" fill="#8a4c08" font-weight="700">${Math.round(item.value).toLocaleString('pt-BR')}</text>`;
+      const yGroup = i*(rowH+groupGap);
+      const yReal = yGroup;
+      const ySemParadas = yGroup + subBarH + subGap;
+      const wReal = (item.real/maxVal)*chartW;
+      const wSemParadas = (item.semParadas/maxVal)*chartW;
+      bars += `<text x="${leftLabelW-10}" y="${yGroup+rowH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${item.label}</text>`;
+      bars += `<rect x="${leftLabelW}" y="${yReal}" width="${wReal}" height="${subBarH}" rx="4" fill="#B5640B"/>`;
+      bars += `<text x="${leftLabelW+wReal+8}" y="${yReal+subBarH-3}" font-size="10.5" fill="#8a4c08" font-weight="700">${Math.round(item.real).toLocaleString('pt-BR')}</text>`;
+      bars += `<rect x="${leftLabelW}" y="${ySemParadas}" width="${wSemParadas}" height="${subBarH}" rx="4" fill="#2f7d52"/>`;
+      bars += `<text x="${leftLabelW+wSemParadas+8}" y="${ySemParadas+subBarH-3}" font-size="10.5" fill="#2f7d52" font-weight="700">${Math.round(item.semParadas).toLocaleString('pt-BR')}</text>`;
     });
     document.getElementById('tpChartProduto').innerHTML = `
-      <svg viewBox="0 0 ${leftLabelW+chartW+90} ${h+10}" width="${leftLabelW+chartW+90}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">${bars}</svg>`;
+      <div class="legend" style="margin-bottom:10px;"><span><i class="dot" style="background:#B5640B"></i>Real (com paradas)</span><span><i class="dot" style="background:#2f7d52"></i>Estimado sem paradas</span></div>
+      <svg viewBox="0 0 ${leftLabelW+chartW+100} ${h+10}" width="${leftLabelW+chartW+100}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">${bars}</svg>`;
     return;
   }
 
