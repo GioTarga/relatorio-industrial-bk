@@ -516,7 +516,7 @@
       <div class="panel" id="tpProjecaoPanel" style="display:none;">
         <div class="panel-title">Projeção de Produção por Nível de Utilização do Tempo</div>
         <div class="chart-wrap" id="tpChartProjecao"></div>
-        <div class="trend-foot">Projeção calculada a partir da taxa de produção real (quando a máquina está rodando), aplicada ao total de tempo disponível no período filtrado.</div>
+        <div class="trend-foot">Taxa de produção (unidades/hora) projetada a partir do desempenho real quando a máquina está rodando, aplicada a cada nível de utilização do tempo total do período filtrado.</div>
       </div>
 
       <div class="panel">
@@ -3250,16 +3250,17 @@ function TP_renderProjecaoChart(util){
     return;
   }
   panel.style.display = '';
-  const totalHoras = util.sumTotalSec/3600;
   const niveis = [
     { pct:100, label:'100% do tempo', color:'#2f7d52' },
     { pct:80,  label:'80% do tempo',  color:'#B5640B' },
     { pct:60,  label:'60% do tempo',  color:'#A10101' },
   ];
-  const items = niveis.map(n => ({ ...n, value: util.netRate * totalHoras * (n.pct/100) }));
+  // Valor expresso como taxa (unidades/hora) considerando o tempo total do
+  // período (parado + produzindo) — não o total de unidades acumuladas.
+  const items = niveis.map(n => ({ ...n, value: util.netRate * (n.pct/100) }));
   const maxVal = Math.max(...items.map(i=>i.value), 1);
 
-  const rowH=40, gap=18, leftLabelW=110, chartW=420, rightW=110;
+  const rowH=40, gap=18, leftLabelW=110, chartW=420, rightW=140;
   const h = items.length*(rowH+gap);
   let bars='';
   items.forEach((item,i)=>{
@@ -3267,7 +3268,7 @@ function TP_renderProjecaoChart(util){
     const w = (item.value/maxVal)*chartW;
     bars += `<text x="${leftLabelW-10}" y="${y+rowH/2+4}" font-size="13" fill="#2a1a1a" text-anchor="end" font-weight="700">${item.label}</text>`;
     bars += `<rect x="${leftLabelW}" y="${y}" width="${w}" height="${rowH}" rx="7" fill="${item.color}"/>`;
-    bars += `<text x="${leftLabelW+w+10}" y="${y+rowH/2+5}" font-size="14" fill="${item.color}" font-weight="800">${Math.round(item.value).toLocaleString('pt-BR')} un.</text>`;
+    bars += `<text x="${leftLabelW+w+10}" y="${y+rowH/2+5}" font-size="14" fill="${item.color}" font-weight="800">${Math.round(item.value).toLocaleString('pt-BR')} un/h</text>`;
   });
 
   document.getElementById('tpChartProjecao').innerHTML = `
@@ -3367,32 +3368,45 @@ function TP_renderStagesChart(){
 /* ---------- Gráfico: Lead Time por batelada (linha) ---------- */
 function TP_renderLeadTimeChart(){
   const cfg = TP_LINE_CONFIGS[TP_currentLine];
-  document.getElementById('tpLeadTimeTitle').textContent = cfg.type === 'machine' ? 'Tempo Parado por Produto' : 'Lead Time por Batelada';
+  document.getElementById('tpLeadTimeTitle').textContent = cfg.type === 'machine' ? 'Tempo Parado × Tempo Rodando por Produto' : 'Lead Time por Batelada';
 
   if(cfg.type === 'machine'){
     const rows = TP_FILTERED;
     const byProduto = {};
     rows.forEach(r=>{ (byProduto[r.produto]=byProduto[r.produto]||[]).push(r); });
-    const items = Object.keys(byProduto)
-      .map(p=>({ label: p, value: TP_avg(byProduto[p].map(r=>r.tempoParadoTotal)) || 0 }))
-      .sort((a,b)=>b.value-a.value);
+    const items = Object.keys(byProduto).map(p=>{
+      const recs = byProduto[p];
+      const parado = TP_avg(recs.map(r=>r.tempoParadoTotal)) || 0;
+      const rodando = TP_avg(recs.map(r=>{
+        const totalSec = TP_clockDiff(r.inicio, r.fim);
+        return totalSec !== null ? Math.max(totalSec - (r.tempoParadoTotal||0), 0) : null;
+      })) || 0;
+      return { label: p, parado, rodando };
+    }).sort((a,b)=>b.parado-a.parado);
     if(items.length === 0){
       document.getElementById('tpChartLeadTime').innerHTML = `<div class="empty-state"><span class="empty-icon">⏱</span>Nenhum registro no período selecionado.</div>`;
       return;
     }
-    const maxVal = Math.max(...items.map(i=>i.value), 1);
-    const rowH=28, gap=10, leftLabelW=200, chartW=380;
-    const h = items.length*(rowH+gap);
+    const maxVal = Math.max(...items.map(i=>Math.max(i.parado,i.rodando)), 1);
+    const subBarH=16, subGap=4, groupGap=16, leftLabelW=200, chartW=380;
+    const rowH = subBarH*2+subGap;
+    const h = items.length*(rowH+groupGap);
     let bars='';
     items.forEach((item,i)=>{
-      const y = i*(rowH+gap);
-      const w = (item.value/maxVal)*chartW;
-      bars += `<text x="${leftLabelW-10}" y="${y+rowH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${item.label}</text>`;
-      bars += `<rect x="${leftLabelW}" y="${y}" width="${w}" height="${rowH}" rx="6" fill="#A10101"/>`;
-      bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="11.5" fill="#A10101" font-weight="700">${TP_fmtDuration(item.value)}</text>`;
+      const yGroup = i*(rowH+groupGap);
+      const yRodando = yGroup;
+      const yParado = yGroup + subBarH + subGap;
+      const wRodando = (item.rodando/maxVal)*chartW;
+      const wParado = (item.parado/maxVal)*chartW;
+      bars += `<text x="${leftLabelW-10}" y="${yGroup+rowH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${item.label}</text>`;
+      bars += `<rect x="${leftLabelW}" y="${yRodando}" width="${wRodando}" height="${subBarH}" rx="4" fill="#2f7d52"/>`;
+      bars += `<text x="${leftLabelW+wRodando+8}" y="${yRodando+subBarH-3}" font-size="10.5" fill="#2f7d52" font-weight="700">${TP_fmtDuration(item.rodando)}</text>`;
+      bars += `<rect x="${leftLabelW}" y="${yParado}" width="${wParado}" height="${subBarH}" rx="4" fill="#A10101"/>`;
+      bars += `<text x="${leftLabelW+wParado+8}" y="${yParado+subBarH-3}" font-size="10.5" fill="#A10101" font-weight="700">${TP_fmtDuration(item.parado)}</text>`;
     });
     document.getElementById('tpChartLeadTime').innerHTML = `
-      <svg viewBox="0 0 ${leftLabelW+chartW+90} ${h+10}" width="${leftLabelW+chartW+90}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">${bars}</svg>`;
+      <div class="legend" style="margin-bottom:10px;"><span><i class="dot" style="background:#2f7d52"></i>Tempo Rodando</span><span><i class="dot" style="background:#A10101"></i>Tempo Parado</span></div>
+      <svg viewBox="0 0 ${leftLabelW+chartW+100} ${h+10}" width="${leftLabelW+chartW+100}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">${bars}</svg>`;
     return;
   }
 
