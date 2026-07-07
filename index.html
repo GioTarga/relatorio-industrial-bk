@@ -116,6 +116,30 @@
     border:1px solid var(--line); border-radius:8px; padding:8px 12px;
     font-size:13.5px; color:var(--ink); font-family:inherit; background:var(--cream); cursor:pointer;
   }
+  .ms-wrap{ position:relative; display:inline-block; }
+  .btn-multiselect{
+    border:1px solid var(--line); border-radius:8px; padding:8px 12px;
+    font-size:13.5px; color:var(--red); font-weight:700; font-family:inherit;
+    background:var(--cream); cursor:pointer; white-space:nowrap;
+  }
+  .ms-dropdown{
+    display:none; position:absolute; top:calc(100% + 4px); left:0; z-index:50;
+    background:#fff; border:1px solid var(--line); border-radius:10px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.14); padding:8px; min-width:260px;
+    max-height:280px; overflow-y:auto;
+  }
+  .ms-dropdown.open{ display:block; }
+  .ms-toolbar{ display:flex; justify-content:space-between; gap:8px; padding:2px 4px 8px; border-bottom:1px solid var(--line); margin-bottom:6px; }
+  .ms-toolbar button{
+    background:none; border:none; color:var(--red); font-size:11.5px; font-weight:700;
+    cursor:pointer; font-family:inherit; padding:0;
+  }
+  .ms-item{
+    display:flex; align-items:center; gap:8px; padding:6px 6px; border-radius:6px;
+    cursor:pointer; font-size:12.5px; color:var(--ink);
+  }
+  .ms-item:hover{ background:var(--cream); }
+  .ms-item input{ accent-color:var(--red); cursor:pointer; flex-shrink:0; }
   .btn-refresh{
     background:var(--red); color:#fff; border:none; border-radius:8px;
     padding:9px 16px; font-size:13px; font-weight:700; cursor:pointer;
@@ -501,8 +525,13 @@
         <option value="padaria">PADARIA</option>
         <option value="salgado_panitec4">SALGADO</option>
       </select>
-      <label for="tpProduto">Produto</label>
-      <select id="tpProduto"><option value="">Todos os produtos</option></select>
+      <label for="tpProdutoBtn">Produto</label>
+      <div class="ms-wrap">
+        <button type="button" id="tpProdutoBtn" class="btn-multiselect">Todos os produtos ▾</button>
+        <div id="tpProdutoDropdown" class="ms-dropdown"></div>
+      </div>
+      <label for="tpMasseira" id="tpMasseiraLabel" style="display:none;">Masseira</label>
+      <select id="tpMasseira" style="display:none;"><option value="">Todas as masseiras</option></select>
       <label for="tpMaquina" id="tpMaquinaLabel" style="display:none;">Máquina</label>
       <select id="tpMaquina" style="display:none;"><option value="">Todas as máquinas</option></select>
       <button class="btn-refresh" id="tpBtnRefresh" title="Verificar dados novos">⟳ Atualizar</button>
@@ -2749,16 +2778,16 @@ const TP_LINE_CONFIGS = {
   frances: {
     label: 'GIRO — Pão Francês',
     csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBFGt1vkh6HsLtIO2FB34RcTIkb9XCxEYW6lrq3zGK1Jyn6vw-YCCuB6mBD29hMQatFgpOtsh1go2p/pub?gid=757040881&single=true&output=csv",
-    hasMasseira: false,
-    // Data(0), Batelada(1), Produto(2),
-    // Início(3), Fim(4), Duração(5)   — Preparo
-    // Início(6), Fim(7), Duração(8)   — Mistura 1
-    // Início(9), Fim(10), Duração(11) — Mistura 2
-    // Início(12), Fim(13), Duração(14)— Transporte
-    // Início(15), Fim(16), Duração(17)— Modelagem GA
-    // Retenção(18)
-    cols: { data:0, batelada:1, masseira:null, produto:2, retencao:18, leadTime:null,
-            stageTriplets:[ [3,4,5], [6,7,8], [9,10,11], [12,13,14], [15,16,17] ] },
+    hasMasseira: true,
+    // Data(0), Batelada(1), Masseira(2), Produto(3),
+    // Início(4), Fim(5), Duração(6)   — Preparo
+    // Início(7), Fim(8), Duração(9)   — Mistura 1
+    // Início(10), Fim(11), Duração(12) — Mistura 2
+    // Início(13), Fim(14), Duração(15)— Transporte
+    // Início(16), Fim(17), Duração(18)— Modelagem GA
+    // Retenção(19)
+    cols: { data:0, batelada:1, masseira:2, produto:3, retencao:19, leadTime:null,
+            stageTriplets:[ [4,5,6], [7,8,9], [10,11,12], [13,14,15], [16,17,18] ] },
     stages: [
       { key:'s1', label:'Preparo',      color:'#A10101' },
       { key:'s2', label:'Mistura 1',    color:'#B5640B' },
@@ -3148,18 +3177,84 @@ async function TP_loadData(isManualRefresh){
 const tpLinhaEl = document.getElementById('tpLinha');
 const tpDateStartEl = document.getElementById('tpDateStart');
 const tpDateEndEl = document.getElementById('tpDateEnd');
-const tpProdutoEl = document.getElementById('tpProduto');
+const tpProdutoBtnEl = document.getElementById('tpProdutoBtn');
+const tpProdutoDropdownEl = document.getElementById('tpProdutoDropdown');
+const tpMasseiraEl = document.getElementById('tpMasseira');
+const tpMasseiraLabelEl = document.getElementById('tpMasseiraLabel');
 const tpMaquinaEl = document.getElementById('tpMaquina');
 const tpMaquinaLabelEl = document.getElementById('tpMaquinaLabel');
 let TP_allDates = [];
+let TP_selectedProdutos = []; // vazio = todos os produtos disponíveis
 
 tpLinhaEl.addEventListener('change', ()=>{
   TP_currentLine = tpLinhaEl.value;
   TP_DATA = [];
   tpDateStartEl.value = ''; tpDateEndEl.value = '';
-  tpProdutoEl.value = '';
+  TP_selectedProdutos = [];
+  tpMasseiraEl.value = '';
   tpMaquinaEl.value = '';
   TP_loadData(false);
+});
+
+/* Dropdown de múltipla seleção de produtos — permite escolher vários produtos
+   ao mesmo tempo, útil para simular diferentes "mixes" de produção. Quando
+   filtrando por uma máquina específica (linhas do tipo 'machine'), a lista
+   de produtos é restrita apenas aos que rodam naquela máquina. */
+function TP_populateProdutoOptions(){
+  const cfg = TP_LINE_CONFIGS[TP_currentLine];
+  let source = TP_DATA;
+  if(cfg.type === 'machine' && tpMaquinaEl.value){
+    source = source.filter(r=>r.maquina === tpMaquinaEl.value);
+  }
+  const produtos = [...new Set(source.map(r=>r.produto))].sort();
+  TP_selectedProdutos = TP_selectedProdutos.filter(p=>produtos.includes(p));
+
+  tpProdutoDropdownEl.innerHTML = `
+    <div class="ms-toolbar">
+      <button type="button" id="tpProdutoAll">Selecionar todos</button>
+      <button type="button" id="tpProdutoNone">Limpar seleção</button>
+    </div>
+    ${produtos.map(p=>`
+      <label class="ms-item">
+        <input type="checkbox" value="${p.replace(/"/g,'&quot;')}" ${TP_selectedProdutos.includes(p)?'checked':''}>
+        <span>${p}</span>
+      </label>`).join('') || '<div style="padding:8px;color:var(--ink-soft);font-size:12px;">Nenhum produto disponível.</div>'}
+  `;
+  tpProdutoDropdownEl.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      if(cb.checked){ if(!TP_selectedProdutos.includes(cb.value)) TP_selectedProdutos.push(cb.value); }
+      else { TP_selectedProdutos = TP_selectedProdutos.filter(p=>p!==cb.value); }
+      TP_updateProdutoBtnLabel(produtos.length);
+      TP_refreshAll();
+    });
+  });
+  const btnAll = document.getElementById('tpProdutoAll');
+  const btnNone = document.getElementById('tpProdutoNone');
+  if(btnAll) btnAll.addEventListener('click', ()=>{ TP_selectedProdutos=[...produtos]; TP_populateProdutoOptions(); TP_refreshAll(); });
+  if(btnNone) btnNone.addEventListener('click', ()=>{ TP_selectedProdutos=[]; TP_populateProdutoOptions(); TP_refreshAll(); });
+
+  TP_updateProdutoBtnLabel(produtos.length);
+}
+
+function TP_updateProdutoBtnLabel(total){
+  if(TP_selectedProdutos.length === 0 || TP_selectedProdutos.length === total){
+    tpProdutoBtnEl.textContent = 'Todos os produtos ▾';
+  } else if(TP_selectedProdutos.length === 1){
+    const nome = TP_selectedProdutos[0];
+    tpProdutoBtnEl.textContent = (nome.length>26 ? nome.slice(0,26)+'…' : nome) + ' ▾';
+  } else {
+    tpProdutoBtnEl.textContent = TP_selectedProdutos.length + ' produtos selecionados ▾';
+  }
+}
+
+tpProdutoBtnEl.addEventListener('click', (e)=>{
+  e.stopPropagation();
+  tpProdutoDropdownEl.classList.toggle('open');
+});
+document.addEventListener('click', (e)=>{
+  if(tpProdutoDropdownEl.classList.contains('open') && !tpProdutoDropdownEl.contains(e.target) && e.target!==tpProdutoBtnEl){
+    tpProdutoDropdownEl.classList.remove('open');
+  }
 });
 
 function TP_applyDateBoundsAndRefresh(){
@@ -3170,15 +3265,26 @@ function TP_applyDateBoundsAndRefresh(){
   tpDateStartEl.min = TP_allDates[0]; tpDateStartEl.max = TP_allDates[TP_allDates.length-1];
   tpDateEndEl.min = TP_allDates[0]; tpDateEndEl.max = TP_allDates[TP_allDates.length-1];
 
-  const produtos = [...new Set(TP_DATA.map(r=>r.produto))].sort();
-  const curProd = tpProdutoEl.value;
-  tpProdutoEl.innerHTML = '<option value="">Todos os produtos</option>';
-  produtos.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; tpProdutoEl.appendChild(o); });
-  if(produtos.includes(curProd)) tpProdutoEl.value = curProd;
+  const cfg = TP_LINE_CONFIGS[TP_currentLine];
+
+  // Filtro de Masseira: só aparece para linhas com coluna de masseira mapeada
+  // (ex: GIRO — Pão Francês) e que já tenham algum valor preenchido nos dados.
+  if(cfg.cols.masseira !== null && cfg.cols.masseira !== undefined){
+    const masseiras = [...new Set(TP_DATA.map(r=>r.masseira).filter(Boolean))].sort();
+    const curMass = tpMasseiraEl.value;
+    tpMasseiraEl.innerHTML = '<option value="">Todas as masseiras</option>';
+    masseiras.forEach(m=>{ const o=document.createElement('option'); o.value=m; o.textContent=m; tpMasseiraEl.appendChild(o); });
+    if(masseiras.includes(curMass)) tpMasseiraEl.value = curMass;
+    tpMasseiraEl.style.display = masseiras.length ? '' : 'none';
+    tpMasseiraLabelEl.style.display = masseiras.length ? '' : 'none';
+  } else {
+    tpMasseiraEl.value = '';
+    tpMasseiraEl.style.display = 'none';
+    tpMasseiraLabelEl.style.display = 'none';
+  }
 
   // Filtro de Máquina: só faz sentido para linhas do tipo 'machine' (ex: SALGADO),
   // já que as demais linhas não têm o conceito de máquina (usam masseira).
-  const cfg = TP_LINE_CONFIGS[TP_currentLine];
   if(cfg.type === 'machine'){
     const maquinas = [...new Set(TP_DATA.map(r=>r.maquina).filter(Boolean))].sort();
     const curMaq = tpMaquinaEl.value;
@@ -3193,18 +3299,28 @@ function TP_applyDateBoundsAndRefresh(){
     tpMaquinaLabelEl.style.display = 'none';
   }
 
+  // Produto (depende da máquina selecionada acima, por isso vem depois)
+  TP_populateProdutoOptions();
+
   TP_renderTableHead();
   TP_refreshAll();
 }
 
+// Ao trocar a máquina, a lista de produtos disponíveis muda (cascata)
+tpMaquinaEl.addEventListener('change', ()=>{
+  TP_populateProdutoOptions();
+  TP_refreshAll();
+});
+
 function TP_applyFilters(){
   const ds = tpDateStartEl.value, de = tpDateEndEl.value;
-  const prod = tpProdutoEl.value;
+  const mass = tpMasseiraEl.value;
   const maq = tpMaquinaEl.value;
   TP_FILTERED = TP_DATA.filter(r=>{
     if(ds && r.dateISO < ds) return false;
     if(de && r.dateISO > de) return false;
-    if(prod && r.produto !== prod) return false;
+    if(TP_selectedProdutos.length && !TP_selectedProdutos.includes(r.produto)) return false;
+    if(mass && r.masseira !== mass) return false;
     if(maq && r.maquina !== maq) return false;
     return true;
   });
@@ -3583,7 +3699,8 @@ function TP_renderTableHead(){
     return;
   }
   const stages = TP_getStages();
-  let html = '<th>Data</th><th class="center">Batelada</th><th>Produto</th>';
+  const hasMasseira = cfg.cols.masseira !== null && cfg.cols.masseira !== undefined;
+  let html = '<th>Data</th><th class="center">Batelada</th>' + (hasMasseira ? '<th class="center">Masseira</th>' : '') + '<th>Produto</th>';
   stages.forEach(s=>{ html += `<th class="center">${s.label}</th>`; });
   html += '<th class="center">Lead Time</th>';
   document.getElementById('tpTheadRow').innerHTML = html;
@@ -3621,10 +3738,13 @@ function TP_renderTable(){
   }
 
   const stages = TP_getStages();
+  const hasMasseira = cfg.cols.masseira !== null && cfg.cols.masseira !== undefined;
   const rows = TP_FILTERED.slice().sort((a,b)=> (b.dateISO+b.batelada.padStart(4,'0')).localeCompare(a.dateISO+a.batelada.padStart(4,'0')));
-  const colCount = 3 + stages.length + 1;
+  const colCount = (hasMasseira ? 4 : 3) + stages.length + 1;
   tbody.innerHTML = rows.map(r=>{
-    let html = `<tr><td>${r.dateRaw}</td><td class="center">${r.batelada}</td><td class="prod-name">${r.produto}</td>`;
+    let html = `<tr><td>${r.dateRaw}</td><td class="center">${r.batelada}</td>` +
+      (hasMasseira ? `<td class="center">${r.masseira||'—'}</td>` : '') +
+      `<td class="prod-name">${r.produto}</td>`;
     stages.forEach(s=>{
       const val = s.key === 'retencao' ? r.retencao : r.stages[s.key];
       html += `<td class="center">${TP_fmtDuration(val)}</td>`;
@@ -3650,7 +3770,7 @@ function TP_refreshAll(){
   TP_renderTable();
 }
 
-[tpDateStartEl, tpDateEndEl, tpProdutoEl, tpMaquinaEl].forEach(el=>{
+[tpDateStartEl, tpDateEndEl, tpMasseiraEl].forEach(el=>{
   el.addEventListener('change', TP_refreshAll);
 });
 document.getElementById('tpBtnRefresh').addEventListener('click', ()=> TP_loadData(true));
