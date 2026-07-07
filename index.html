@@ -2763,16 +2763,19 @@ const TP_LINE_CONFIGS = {
     label: 'SALGADO',
     csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBFGt1vkh6HsLtIO2FB34RcTIkb9XCxEYW6lrq3zGK1Jyn6vw-YCCuB6mBD29hMQatFgpOtsh1go2p/pub?gid=2049824067&single=true&output=csv",
     // Esta linha vem de uma máquina contínua (não bateladas com etapas):
-    // Data(0), Produto(1), Máquina(2), Início(3), Fim(4), Velocidade(5), Qtd Colab.(6),
-    // Unidades por Hora(7), Produção Caixa ou telas/hora(8), Tempo Médio(9),
-    // Unidade de medida(10), Duração do Rolo de Massa(11), Paradas Registradas(12),
-    // Tempo Parado(13) — linhas seguintes sem Data repetem apenas as colunas 12 e 13
-    // para cada causa de parada adicional. A coluna de Duração do Rolo de Massa só
-    // passou a ser coletada a partir de 07/2026, por isso vem vazia em registros antigos.
+    // Data(0), Início da Coleta(1), Fim da Coleta(2), Produto(3), Máquina(4),
+    // Início(5), Fim(6), Velocidade(7), Qtd Colab.(8), Unidades por Hora(9),
+    // Produção Caixa ou telas/hora(10), Tempo Médio(11), Unidade de medida(12),
+    // Duração do Rolo de Massa(13), Paradas Registradas(14), Tempo Parado(15) —
+    // linhas seguintes sem Data repetem apenas as colunas 14 e 15 para cada causa
+    // de parada adicional. Início/Fim da Coleta representam a janela real de
+    // observação (usada para calcular tempo rodando x parado); Início/Fim (produção)
+    // são só informativos. Duração do Rolo de Massa e Início/Fim da Coleta só
+    // passaram a ser coletadas a partir de 07/2026, por isso vêm vazias em registros antigos.
     type: 'machine',
-    cols: { data:0, produto:1, maquina:2, inicio:3, fim:4, velocidade:5, colab:6,
-            unidadesHora:7, caixaHora:8, tempoMedioCaixa:9, unidadeMedida:10,
-            duracaoRoloMassa:11, causa:12, tempoParado:13 },
+    cols: { data:0, inicioColeta:1, fimColeta:2, produto:3, maquina:4, inicio:5, fim:6,
+            velocidade:7, colab:8, unidadesHora:9, caixaHora:10, tempoMedioCaixa:11,
+            unidadeMedida:12, duracaoRoloMassa:13, causa:14, tempoParado:15 },
   },
 };
 // Retenção é sempre tratada como a última "etapa" de cada linha, com cor fixa
@@ -2945,6 +2948,14 @@ function TP_transformCsvMachine(csvText, cfg){
           maquina: (r[cfg.cols.maquina]||'').trim(),
           inicio: (r[cfg.cols.inicio]||'').trim(),
           fim: (r[cfg.cols.fim]||'').trim(),
+          // Início/Fim da Coleta representam a janela real de observação (usada
+          // para os cálculos de tempo rodando x parado). Quando ainda não
+          // preenchidos (registros antigos), cai de volta no Início/Fim de
+          // produção, mantendo compatibilidade com dados anteriores a 07/2026.
+          inicioColeta: (cfg.cols.inicioColeta !== undefined && (r[cfg.cols.inicioColeta]||'').trim())
+            ? (r[cfg.cols.inicioColeta]||'').trim() : (r[cfg.cols.inicio]||'').trim(),
+          fimColeta: (cfg.cols.fimColeta !== undefined && (r[cfg.cols.fimColeta]||'').trim())
+            ? (r[cfg.cols.fimColeta]||'').trim() : (r[cfg.cols.fim]||'').trim(),
           // Velocidade agora é um texto livre (ex: "1.6s"), não mais percentual —
           // mantido como veio na planilha, sem conversão numérica.
           velocidade: (r[cfg.cols.velocidade]||'').trim() || null,
@@ -3161,7 +3172,7 @@ function TP_avg(arr){ const a = arr.filter(v=>v!==null && !isNaN(v)); return a.l
 function TP_computeUtilization(rows){
   let sumTotalSec = 0, sumStoppedSec = 0, sumUnits = 0;
   rows.forEach(r=>{
-    const totalSec = TP_clockDiff(r.inicio, r.fim);
+    const totalSec = TP_clockDiff(r.inicioColeta, r.fimColeta);
     if(totalSec === null || r.unidadesHora === null) return;
     const stoppedSec = r.tempoParadoTotal || 0;
     sumTotalSec += totalSec;
@@ -3378,7 +3389,7 @@ function TP_renderLeadTimeChart(){
       const recs = byProduto[p];
       const parado = TP_avg(recs.map(r=>r.tempoParadoTotal)) || 0;
       const rodando = TP_avg(recs.map(r=>{
-        const totalSec = TP_clockDiff(r.inicio, r.fim);
+        const totalSec = TP_clockDiff(r.inicioColeta, r.fimColeta);
         return totalSec !== null ? Math.max(totalSec - (r.tempoParadoTotal||0), 0) : null;
       })) || 0;
       return { label: p, parado, rodando };
@@ -3504,7 +3515,7 @@ function TP_renderTableHead(){
   const cfg = TP_LINE_CONFIGS[TP_currentLine];
   if(cfg.type === 'machine'){
     document.getElementById('tpTheadRow').innerHTML =
-      '<th>Data</th><th>Produto</th><th>Máquina</th><th class="center">Início</th><th class="center">Fim</th>' +
+      '<th>Data</th><th>Produto</th><th>Máquina</th><th class="center">Início Coleta</th><th class="center">Fim Coleta</th><th class="center">Início</th><th class="center">Fim</th>' +
       '<th class="center">Veloc.</th><th class="center">Colab.</th><th class="center">Unid/h</th>' +
       '<th class="center">Cx/h ou Tela/h</th><th class="center">T.Médio</th><th class="center">Uni.</th><th class="center">Rolo de Massa</th><th>Paradas Registradas</th><th class="center">Tempo Parado</th>';
     return;
@@ -3531,6 +3542,8 @@ function TP_renderTable(){
         <td>${r.dateRaw}</td>
         <td class="prod-name">${r.produto}</td>
         <td>${r.maquina}</td>
+        <td class="center">${r.inicioColeta||'—'}</td>
+        <td class="center">${r.fimColeta||'—'}</td>
         <td class="center">${r.inicio||'—'}</td>
         <td class="center">${r.fim||'—'}</td>
         <td class="center">${r.velocidade||'—'}</td>
@@ -3543,7 +3556,7 @@ function TP_renderTable(){
         <td class="center">${paradasTxt}</td>
         <td class="center"><b style="color:var(--red);">${TP_fmtDuration(r.tempoParadoTotal)}</b></td>
       </tr>`;
-    }).join('') || `<tr><td colspan="14" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro encontrado.</td></tr>`;
+    }).join('') || `<tr><td colspan="16" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro encontrado.</td></tr>`;
     return;
   }
 
