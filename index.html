@@ -116,30 +116,6 @@
     border:1px solid var(--line); border-radius:8px; padding:8px 12px;
     font-size:13.5px; color:var(--ink); font-family:inherit; background:var(--cream); cursor:pointer;
   }
-  .ms-wrap{ position:relative; display:inline-block; }
-  .btn-multiselect{
-    border:1px solid var(--line); border-radius:8px; padding:8px 12px;
-    font-size:13.5px; color:var(--red); font-weight:700; font-family:inherit;
-    background:var(--cream); cursor:pointer; white-space:nowrap;
-  }
-  .ms-dropdown{
-    display:none; position:absolute; top:calc(100% + 4px); left:0; z-index:50;
-    background:#fff; border:1px solid var(--line); border-radius:10px;
-    box-shadow:0 6px 18px rgba(0,0,0,0.14); padding:8px; min-width:260px;
-    max-height:280px; overflow-y:auto;
-  }
-  .ms-dropdown.open{ display:block; }
-  .ms-toolbar{ display:flex; justify-content:space-between; gap:8px; padding:2px 4px 8px; border-bottom:1px solid var(--line); margin-bottom:6px; }
-  .ms-toolbar button{
-    background:none; border:none; color:var(--red); font-size:11.5px; font-weight:700;
-    cursor:pointer; font-family:inherit; padding:0;
-  }
-  .ms-item{
-    display:flex; align-items:center; gap:8px; padding:6px 6px; border-radius:6px;
-    cursor:pointer; font-size:12.5px; color:var(--ink);
-  }
-  .ms-item:hover{ background:var(--cream); }
-  .ms-item input{ accent-color:var(--red); cursor:pointer; flex-shrink:0; }
   .btn-refresh{
     background:var(--red); color:#fff; border:none; border-radius:8px;
     padding:9px 16px; font-size:13px; font-weight:700; cursor:pointer;
@@ -149,7 +125,7 @@
   .btn-refresh:disabled{ opacity:0.6; cursor:default; }
   .period-bar .period-info{ font-size:12px; color:var(--ink-soft); margin-left:6px; }
 
-  .container{ max-width:1180px; margin:0 auto; padding:22px 22px 50px; }
+  .container{ max-width:1600px; margin:0 auto; padding:22px 32px 50px; }
 
   .kpi-grid{
     display:grid;
@@ -404,6 +380,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
         Vendas
       </button>
+      <button class="nav-item" data-page="produtividade">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+        Produtividade
+      </button>
     </nav>
   </aside>
 
@@ -523,17 +503,9 @@
         <option value="frances">GIRO — Pão Francês</option>
         <option value="queijo">GIRO — Pão de Queijo</option>
         <option value="padaria">PADARIA</option>
-        <option value="salgado_panitec4">SALGADO</option>
       </select>
-      <label for="tpProdutoBtn">Produto</label>
-      <div class="ms-wrap">
-        <button type="button" id="tpProdutoBtn" class="btn-multiselect">Todos os produtos ▾</button>
-        <div id="tpProdutoDropdown" class="ms-dropdown"></div>
-      </div>
-      <label for="tpMasseira" id="tpMasseiraLabel" style="display:none;">Masseira</label>
-      <select id="tpMasseira" style="display:none;"><option value="">Todas as masseiras</option></select>
-      <label for="tpMaquina" id="tpMaquinaLabel" style="display:none;">Máquina</label>
-      <select id="tpMaquina" style="display:none;"><option value="">Todas as máquinas</option></select>
+      <label for="tpProduto">Produto</label>
+      <select id="tpProduto"><option value="">Todos os produtos</option></select>
       <button class="btn-refresh" id="tpBtnRefresh" title="Verificar dados novos">⟳ Atualizar</button>
       <span class="period-info" id="tpPeriodInfo"></span>
     </div>
@@ -542,25 +514,19 @@
 
       <div class="kpi-grid" id="tpKpiGrid"></div>
 
-      <div class="panel" id="tpProjecaoPanel" style="display:none;">
-        <div class="panel-title">Projeção de Produção por Nível de Utilização do Tempo</div>
-        <div class="chart-wrap" id="tpChartProjecao"></div>
-        <div class="trend-foot">Taxa de produção (unidades/hora) projetada a partir do desempenho real quando a máquina está rodando, aplicada a cada nível de utilização do tempo total do período filtrado.</div>
-      </div>
-
       <div class="panel">
-        <div class="panel-title" id="tpStagesTitle">Composição do Tempo de Processo</div>
+        <div class="panel-title">Composição do Tempo de Processo</div>
         <div class="legend" id="tpStageLegend"></div>
         <div class="chart-wrap" id="tpChartStages"></div>
       </div>
 
       <div class="panel">
-        <div class="panel-title" id="tpLeadTimeTitle">Lead Time por Batelada</div>
+        <div class="panel-title">Lead Time por Batelada</div>
         <div class="chart-wrap" id="tpChartLeadTime"></div>
       </div>
 
       <div class="panel">
-        <div class="panel-title" id="tpProdutoTitle">Comparativo por Produto (Lead Time Médio)</div>
+        <div class="panel-title">Comparativo por Produto (Lead Time Médio)</div>
         <div class="chart-wrap" id="tpChartProduto"></div>
       </div>
 
@@ -617,19 +583,7 @@
       </div>
 
       <div class="panel">
-        <div class="chart-toolbar" style="justify-content:space-between;">
-          <div class="panel-title" style="margin:0;flex:none;">Top 10 Produtos por Quantidade Vendida</div>
-          <div class="ms-wrap">
-            <label for="vQtdUnidade" style="font-size:11px;color:var(--ink-soft);font-weight:700;text-transform:uppercase;letter-spacing:0.6px;margin-right:6px;">Unidade</label>
-            <select id="vQtdUnidade" style="border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12.5px;font-family:inherit;color:var(--red);font-weight:700;background:var(--cream);cursor:pointer;">
-              <option value="unidades">Unidades</option>
-              <option value="massa">Massas</option>
-              <option value="pacotes">Pacotes</option>
-              <option value="caixa">Caixas</option>
-              <option value="fardo">Fardos</option>
-            </select>
-          </div>
-        </div>
+        <div class="panel-title">Top 10 Produtos por Quantidade Vendida</div>
         <div class="chart-wrap" id="vChartTop10Qtd"></div>
       </div>
 
@@ -641,6 +595,18 @@
       <div class="panel">
         <div class="panel-title">Variação vs. Período Anterior</div>
         <div class="chart-wrap" id="vChartVariacao"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          Evolução de Quantidade por Produto
+          <select id="vProdutoQtd" style="border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:var(--red);background:var(--cream);max-width:340px;cursor:pointer;">
+            <option value="">Selecione um produto...</option>
+          </select>
+        </div>
+        <div class="chart-wrap" id="vChartQtdEvolucao">
+          <div class="empty-state"><span class="empty-icon">📦</span>Selecione um produto para ver a evolução de quantidade.</div>
+        </div>
       </div>
 
       <div class="panel">
@@ -656,8 +622,6 @@
                 <th class="center">Pacotes</th>
                 <th class="center">Caixas</th>
                 <th class="center">Fardos</th>
-                <th class="center">Massa</th>
-                <th class="center">Paletes</th>
                 <th class="center">Vlr Unit.</th>
                 <th class="center">Faturamento</th>
                 <th class="center">% Part.</th>
@@ -670,6 +634,79 @@
       </div>
     </div>
   </div> <!-- /page-vendas -->
+
+  <!-- ============================================================ PÁGINA PRODUTIVIDADE ============================================================ -->
+  <div id="page-produtividade" class="report-page" style="display:none;">
+
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo-wrap">
+          <img class="logo" src="data:image/png;base64,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" alt="Bread King">
+        </div>
+        <div class="text-block">
+          <div class="eyebrow">Bread King · Produtividade</div>
+          <h1>Produtividade</h1>
+          <div class="subtitle">Velocidade de produção, paradas e volume de massa, por setor e produto</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="period-bar">
+      <label for="prDateStart">Data inicial</label>
+      <input type="date" id="prDateStart">
+      <span class="sep">até</span>
+      <label for="prDateEnd">Data final</label>
+      <input type="date" id="prDateEnd">
+      <label for="prSetor">Setor</label>
+      <select id="prSetor"></select>
+      <label for="prProduto">Produto</label>
+      <select id="prProduto"><option value="">Todos os produtos</option></select>
+      <button class="btn-refresh" id="prBtnRefresh" title="Verificar dados novos">⟳ Atualizar</button>
+      <span class="period-info" id="prPeriodInfo"></span>
+    </div>
+
+    <div class="container">
+
+      <div class="kpi-grid" id="prKpiGrid"></div>
+
+      <div class="panel">
+        <div class="panel-title">Velocidade Média por Produto (pães/hora)</div>
+        <div class="chart-wrap" id="prChartVelocidade"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Peso de Massa Produzido por Dia (kg)</div>
+        <div class="chart-wrap" id="prChartPeso"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Paradas por Motivo</div>
+        <div class="chart-wrap" id="prChartParadas"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Registros Detalhados</div>
+        <div class="table-wrap">
+          <table class="detail">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th class="center">Masseira</th>
+                <th class="center">Hora da Massa</th>
+                <th>Produto</th>
+                <th class="center">Velocidade GA (pães/hora)</th>
+                <th class="center">Parada</th>
+                <th>Motivo</th>
+                <th class="center">Peso da Massa (kg)</th>
+              </tr>
+            </thead>
+            <tbody id="prTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div> <!-- /page-produtividade -->
 
   </div> <!-- /main-content -->
 </div> <!-- /app-shell -->
@@ -688,13 +725,19 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     document.getElementById('page-industrial').style.display = target === 'industrial' ? 'block' : 'none';
     document.getElementById('page-tempo').style.display = target === 'tempo' ? 'block' : 'none';
     document.getElementById('page-vendas').style.display = target === 'vendas' ? 'block' : 'none';
+    document.getElementById('page-produtividade').style.display = target === 'produtividade' ? 'block' : 'none';
     if(target === 'tempo' && !TP_loadedOnce){
       TP_loadedOnce = true;
       TP_loadData(false);
     }
+    if(target === 'produtividade' && !PR_loadedOnce){
+      PR_loadedOnce = true;
+      PR_loadData(false);
+    }
   });
 });
 let TP_loadedOnce = false;
+let PR_loadedOnce = false;
 
 /* ======================================================================
    BASE DE DADOS — cada novo dia é adicionado aqui como uma nova entrada.
@@ -1957,42 +2000,6 @@ const V_CONVERSOES = {
     "CROISSANT FRANGO BREAD KING 90G - FD C/5KG": 5.0,
     "MINI CROISSANT GOIABADA BREAD KING 50G - FD C/5KG": 5.0,
     "MINI CROISSANT FRANGO BREAD KING 50G - FD C/5KG": 5.0
-  },
-  "massa": {
-    "MASSA P/ PAO FRANCES PREMIUM 6H BREAD KING 75G - C/6KG": 160,
-    "MASSA P/ PAO FRANCES PREMIUM 12H BREAD KING 75G - C/6KG": 160,
-    "MASSA P/PAO FRANCES OU DE SAL 6H NUTRI BREAD KING 65G -C/6KG": 160,
-    "MASSA P/ PAO DE QUEIJO TRAD BREAD KING 50G - C/5KG": 204,
-    "MASSA P/ PAO DE QUEIJO TRAD BREAD KING 75G - C/5KG": 204,
-    "MASSA P/ PAO FRANCES 6H COTRISAL 75G - C/5KG": 160,
-    "MASSA P/ PAO MASSINHA DOCE S/FAROFA BREAD KING 70G - C/3,8KG": 168,
-    "MASSA P/ PAO SOVADO SS BREAD KING 50G - C/6KG": 164,
-    "MASSA P/ PAO CASEIRINHO/SOVADINHO 65G - C/6KG": 164,
-    "MASSA P/ PAO BILHA/CERVEJINHA BREAD KING 75G - C/6KG": 163,
-    "MASSA P/ PAOZINHO DOCE BREAD KING 70G - C/3,8KG": 163,
-    "MASSA P/ PAO HOT DOG  BREAD KING 80G- C/5KG": 160,
-    "MASSA P/ PAO FRANCES SESI 50G - 6KG": 160,
-    "MASSA P/ PAO DE QUEIJO TRAD BREAD KING 30G - C/5KG": 204,
-    "MASSA P/ CHIPA BREAD KING 40G - C/3KG": 248,
-    "MASSA P/ PAO SUPERFOFO BREAD KING 50G - C/5KG": 166
-  },
-  "palete": {
-    "MASSA P/ PAO FRANCES PREMIUM 6H BREAD KING 75G - C/6KG": 170,
-    "MASSA P/ PAO FRANCES PREMIUM 12H BREAD KING 75G - C/6KG": 170,
-    "MASSA P/PAO FRANCES OU DE SAL 6H NUTRI BREAD KING 65G -C/6KG": 170,
-    "MASSA P/ PAO DE QUEIJO TRAD BREAD KING 50G - C/5KG": 170,
-    "MASSA P/ PAO DE QUEIJO TRAD BREAD KING 75G - C/5KG": 170,
-    "MASSA P/ PAO FRANCES 6H COTRISAL 75G - C/5KG": 170,
-    "MASSA P/ PAO MASSINHA DOCE S/FAROFA BREAD KING 70G - C/3,8KG": 170,
-    "MASSA P/ PAO SOVADO SS BREAD KING 50G - C/6KG": 170,
-    "MASSA P/ PAO CASEIRINHO/SOVADINHO 65G - C/6KG": 170,
-    "MASSA P/ PAO BILHA/CERVEJINHA BREAD KING 75G - C/6KG": 170,
-    "MASSA P/ PAOZINHO DOCE BREAD KING 70G - C/3,8KG": 170,
-    "MASSA P/ PAO HOT DOG  BREAD KING 80G- C/5KG": 170,
-    "MASSA P/ PAO FRANCES SESI 50G - 6KG": 170,
-    "MASSA P/ PAO DE QUEIJO TRAD BREAD KING 30G - C/5KG": 170,
-    "MASSA P/ CHIPA BREAD KING 40G - C/3KG": 170,
-    "MASSA P/ PAO SUPERFOFO BREAD KING 50G - C/5KG": 170
   }
 };
 
@@ -2455,7 +2462,7 @@ function V_renderTop10Fat(){
   if(!items.length){ document.getElementById('vChartTop10Fat').innerHTML=`<div class="empty-state"><span class="empty-icon">📊</span>Nenhum dado carregado.</div>`; return; }
 
   const maxFat = items[0].fat;
-  const rowH=30, gap=8, leftW=420, chartW=300, rightW=140;
+  const rowH=28, gap=7, leftW=380, chartW=260, rightW=130;
   const h = items.length*(rowH+gap);
   const fmtBRL = v => 'R$ ' + v.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
 
@@ -2469,52 +2476,32 @@ function V_renderTop10Fat(){
   });
 
   document.getElementById('vChartTop10Fat').innerHTML=`
-    <svg viewBox="0 0 ${leftW+chartW+rightW} ${h+8}" width="${leftW+chartW+rightW}" height="${h+8}" style="overflow:visible;font-family:Arial;display:inline-block;">${bars}</svg>`;
+    <svg viewBox="0 0 ${leftW+chartW+rightW} ${h+8}" width="100%" style="max-width:${leftW+chartW+rightW}px;overflow:visible;font-family:Arial;display:block;">${bars}</svg>`;
 }
 
 /* ---------- Gráfico: top 10 por quantidade ---------- */
-let V_qtdUnidade = 'unidades';
 function V_renderTop10Qtd(){
   const rows = V_FILTERED;
   const byProd = {};
   rows.forEach(r=>{ (byProd[r.material]=byProd[r.material]||{descricao:r.descricao,qtd:0}).qtd+=r.qtde; });
+  const items = Object.values(byProd).sort((a,b)=>b.qtd-a.qtd).slice(0,10);
+  if(!items.length){ document.getElementById('vChartTop10Qtd').innerHTML=`<div class="empty-state"><span class="empty-icon">📦</span>Nenhum dado carregado.</div>`; return; }
 
-  const unidadeLabels = { unidades:'unid.', massa:'massas', pacotes:'pacotes', caixa:'caixas', fardo:'fardos' };
-  let items;
-  if(V_qtdUnidade === 'unidades'){
-    items = Object.values(byProd).map(p=>({ descricao:p.descricao, valor:p.qtd }));
-  } else {
-    const map = V_CONVERSOES[V_qtdUnidade] || {};
-    items = Object.values(byProd)
-      .map(p=>{ const divisor = map[p.descricao.toUpperCase()]; return divisor ? { descricao:p.descricao, valor:p.qtd/divisor } : null; })
-      .filter(Boolean);
-  }
-  items = items.sort((a,b)=>b.valor-a.valor).slice(0,10);
-
-  if(!items.length){
-    const msg = V_qtdUnidade === 'unidades'
-      ? 'Nenhum dado carregado.'
-      : `Nenhum produto no filtro atual tem fator de conversão para "${unidadeLabels[V_qtdUnidade]}" cadastrado.`;
-    document.getElementById('vChartTop10Qtd').innerHTML=`<div class="empty-state"><span class="empty-icon">📦</span>${msg}</div>`;
-    return;
-  }
-
-  const maxQtd = items[0].valor;
-  const rowH=30, gap=8, leftW=420, chartW=300, rightW=110;
+  const maxQtd = items[0].qtd;
+  const rowH=28, gap=7, leftW=380, chartW=260, rightW=100;
   const h = items.length*(rowH+gap);
-  const casasDecimais = V_qtdUnidade === 'unidades' ? 0 : 1;
 
   let bars='';
   items.forEach((item,i)=>{
     const y=i*(rowH+gap);
-    const w=Math.max((item.valor/maxQtd)*chartW, 4);
+    const w=Math.max((item.qtd/maxQtd)*chartW, 4);
     bars += `<text x="${leftW-8}" y="${y+rowH/2+4}" font-size="10.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${item.descricao}</text>`;
     bars += `<rect x="${leftW}" y="${y}" width="${w}" height="${rowH}" rx="5" fill="#B5640B"/>`;
-    bars += `<text x="${leftW+w+8}" y="${y+rowH/2+4}" font-size="11" fill="#8a4c08" font-weight="700">${item.valor.toLocaleString('pt-BR',{maximumFractionDigits:casasDecimais})} ${unidadeLabels[V_qtdUnidade]}</text>`;
+    bars += `<text x="${leftW+w+8}" y="${y+rowH/2+4}" font-size="11" fill="#8a4c08" font-weight="700">${item.qtd.toLocaleString('pt-BR',{maximumFractionDigits:0})}</text>`;
   });
 
   document.getElementById('vChartTop10Qtd').innerHTML=`
-    <svg viewBox="0 0 ${leftW+chartW+rightW} ${h+8}" width="${leftW+chartW+rightW}" height="${h+8}" style="overflow:visible;font-family:Arial;display:inline-block;">${bars}</svg>`;
+    <svg viewBox="0 0 ${leftW+chartW+rightW} ${h+8}" width="100%" style="max-width:${leftW+chartW+rightW}px;overflow:visible;font-family:Arial;display:block;">${bars}</svg>`;
 }
 
 /* ---------- Gráfico: evolução de faturamento por período (linha) ---------- */
@@ -2586,64 +2573,43 @@ function V_renderVariacao(){
   const mesSelecionado = vPeriodoEl.value;
   const busca = vBuscaEl.value.toLowerCase().trim();
 
-  let periodos, dataSource;
+  // Sempre usa dados efetivos (agrupados por mês se em modo mês)
+  const dataSource = V_getEffectiveData();
+  const periodos = [...new Set(dataSource.map(r=>r.periodo))].sort((a,b)=>{
+    const toDate=s=>{const parts=s.split('/');if(parts.length===2)return new Date(parts[1],parseInt(parts[0],10)-1,1);return new Date(parts[2],parseInt(parts[1],10)-1,parseInt(parts[0],10));};
+    return toDate(a)-toDate(b);
+  });
 
-  if(isMes && mesSelecionado){
-    // Modo Mês com mês selecionado: compara semanas dentro do mês
-    dataSource = V_DATA;
-    periodos = [...new Set(V_DATA
-      .filter(r=>V_periodoToMes(r.periodo) === mesSelecionado)
-      .map(r=>r.periodo)
-    )].sort((a,b)=>{
-      const toDate=s=>{const[d,m,y]=s.split('/');return new Date(y,m-1,d);};
-      return toDate(a)-toDate(b);
-    });
-  } else {
-    // Modo Período ou Mês sem seleção: usa dados efetivos
-    dataSource = V_getEffectiveData();
-    periodos = [...new Set(dataSource.map(r=>r.periodo))].sort((a,b)=>{
-      const toDate=s=>{const parts=s.split('/');if(parts.length===2)return new Date(parts[1],parseInt(parts[0],10)-1,1);return new Date(parts[2],parseInt(parts[1],10)-1,parseInt(parts[0],10));};
-      return toDate(a)-toDate(b);
-    });
-  }
+  if(periodos.length < 2){ document.getElementById('vChartVariacao').innerHTML=`<div class="empty-state"><span class="empty-icon">📊</span>Carregue pelo menos 2 períodos para ver a variação.</div>`; return; }
 
-  if(periodos.length < 2){ document.getElementById('vChartVariacao').innerHTML=`<div class="empty-state"><span class="empty-icon">📊</span>${isMes&&mesSelecionado?'Selecione um mês com pelo menos 2 semanas de dados.':'Carregue pelo menos 2 períodos para ver a variação.'}</div>`; return; }
-
-  const curP = isMes && mesSelecionado ? periodos[periodos.length-1] : (vPeriodoEl.value || periodos[periodos.length-1]);
+  const curP = mesSelecionado || periodos[periodos.length-1];
   const idx = periodos.indexOf(curP);
-  if(idx <= 0){ document.getElementById('vChartVariacao').innerHTML=`<div class="empty-state"><span class="empty-icon">📊</span>Selecione um período com dados anteriores para comparar.</div>`; return; }
+  if(idx <= 0){ document.getElementById('vChartVariacao').innerHTML=`<div class="empty-state"><span class="empty-icon">📊</span>Selecione um ${isMes?'mês':'período'} com dados anteriores para comparar.</div>`; return; }
   const prevP = periodos[idx-1];
 
   const curMap={}, prevMap={};
   dataSource.filter(r=>r.periodo===curP && (!busca||r.descricao.toLowerCase().includes(busca)||r.material.toLowerCase().includes(busca)))
-    .forEach(r=>{ const k=r.descricao.trim().toUpperCase(); curMap[k]=(curMap[k]||0)+r.vlrNota; });
+    .forEach(r=>{ curMap[r.material]=(curMap[r.material]||0)+r.vlrNota; });
   dataSource.filter(r=>r.periodo===prevP && (!busca||r.descricao.toLowerCase().includes(busca)||r.material.toLowerCase().includes(busca)))
-    .forEach(r=>{ const k=r.descricao.trim().toUpperCase(); prevMap[k]=(prevMap[k]||0)+r.vlrNota; });
+    .forEach(r=>{ prevMap[r.material]=(prevMap[r.material]||0)+r.vlrNota; });
 
   const prodMap = {};
-  dataSource.filter(r=>r.periodo===curP||r.periodo===prevP).forEach(r=>{ prodMap[r.descricao.trim().toUpperCase()]=r.descricao; });
+  dataSource.filter(r=>r.periodo===curP||r.periodo===prevP).forEach(r=>{ prodMap[r.material]=r.descricao; });
 
-  const commonKeys = Object.keys(curMap).filter(k=>prevMap[k]);
-  const items = commonKeys.map(k=>({
-    material:k, descricao:prodMap[k]||k,
-    cur:curMap[k], prev:prevMap[k],
-    var: ((curMap[k]-prevMap[k])/prevMap[k])*100
+  const items = Object.keys(curMap).filter(m=>prevMap[m]).map(m=>({
+    material:m, descricao:prodMap[m]||m,
+    cur:curMap[m], prev:prevMap[m],
+    var: ((curMap[m]-prevMap[m])/prevMap[m])*100
   })).filter(i=>Math.abs(i.var)>=0.5).sort((a,b)=>b.cur-a.cur).slice(0,15);
 
-  if(!items.length){
-    const msg = commonKeys.length
-      ? `Encontramos ${commonKeys.length} produto(s) em comum entre ${curP} e ${prevP}, mas nenhum com variação relevante (≥0,5%).`
-      : `Nenhum produto em comum entre ${curP} e ${prevP}.`;
-    document.getElementById('vChartVariacao').innerHTML=`<div class="empty-state"><span class="empty-icon">📊</span>${msg}</div>`;
-    return;
-  }
+  if(!items.length){ document.getElementById('vChartVariacao').innerHTML=`<div class="empty-state"><span class="empty-icon">📊</span>Nenhum produto em comum entre os dois períodos.</div>`; return; }
 
   const rowH=26, gap=7, leftW=240, chartW=200, rightW=80;
   const h=items.length*(rowH+gap);
   const maxAbs=Math.max(...items.map(i=>Math.abs(i.var)),10);
 
-  const curLabel = isMes && mesSelecionado ? curP : curP;
-  const prevLabel = isMes && mesSelecionado ? prevP : prevP;
+  const curLabel = isMes ? V_mesLabel(curP) : curP;
+  const prevLabel = isMes ? V_mesLabel(prevP) : prevP;
 
   let bars='';
   items.forEach((item,i)=>{
@@ -2658,11 +2624,78 @@ function V_renderVariacao(){
   });
 
   document.getElementById('vChartVariacao').innerHTML=`
-    <div style="font-size:11px;color:var(--ink-soft);margin-bottom:8px;">Comparando semana <b>${curLabel}</b> vs. <b>${prevLabel}</b> — top 15 produtos por faturamento</div>
+    <div style="font-size:11px;color:var(--ink-soft);margin-bottom:8px;">Comparando <b>${curLabel}</b> vs. <b>${prevLabel}</b> — top 15 produtos por faturamento</div>
     <svg viewBox="0 0 ${leftW+chartW+rightW} ${h+8}" width="${leftW+chartW+rightW}" height="${h+8}" style="overflow:visible;font-family:Arial;display:inline-block;">${bars}</svg>`;
 }
 
 /* ---------- Tabela completa ---------- */
+/* ---------- Gráfico: evolução de quantidade por produto (linha) ---------- */
+function V_renderQtdEvolucao(){
+  const prodSel = document.getElementById('vProdutoQtd').value;
+  const el = document.getElementById('vChartQtdEvolucao');
+  if(!prodSel){ el.innerHTML=`<div class="empty-state"><span class="empty-icon">📦</span>Selecione um produto para ver a evolução de quantidade.</div>`; return; }
+
+  const isMes = vAgrupamentoEl.value === 'mes';
+  const fmtQtd = v => v.toLocaleString('pt-BR',{maximumFractionDigits:1});
+
+  // Obtém todos os períodos (não apenas os filtrados) para o produto selecionado
+  const ef = V_getEffectiveData();
+  const allPeriodos = [...new Set(ef.map(r=>r.periodo))].sort((a,b)=>{
+    const toDate=s=>{const parts=s.split('/');if(parts.length===2)return new Date(parts[1],parseInt(parts[0],10)-1,1);return new Date(parts[2],parseInt(parts[1],10)-1,parseInt(parts[0],10));};
+    return toDate(a)-toDate(b);
+  });
+
+  const pontos = allPeriodos.map(p=>{
+    const rows = ef.filter(r=>r.periodo===p && r.material===prodSel);
+    return { periodo: isMes ? V_mesLabel(p) : p, qtde: rows.reduce((s,r)=>s+r.qtde,0) };
+  }).filter(p=>p.qtde>0);
+
+  if(pontos.length < 1){ el.innerHTML=`<div class="empty-state"><span class="empty-icon">📦</span>Nenhum dado de quantidade para esse produto no período selecionado.</div>`; return; }
+
+  const w=Math.max(500, pontos.length*120), h=220, padTop=28, padBottom=44, padLeft=80, padRight=20;
+  const vals=pontos.map(p=>p.qtde), maxVal=Math.max(...vals);
+  const xStep=(w-padLeft-padRight)/Math.max(pontos.length-1,1);
+
+  let grid='';
+  const step = maxVal > 100000 ? 50000 : maxVal > 10000 ? 10000 : maxVal > 1000 ? 1000 : 500;
+  for(let v=0; v<=maxVal; v+=step){
+    const y=h-padBottom-(v/maxVal)*(h-padTop-padBottom);
+    grid += `<line x1="${padLeft}" y1="${y}" x2="${w-padRight}" y2="${y}" stroke="#f0ddc0" stroke-width="1"/>`;
+    grid += `<text x="${padLeft-8}" y="${y+4}" font-size="10" fill="#6b5c5c" text-anchor="end">${fmtQtd(v)}</text>`;
+  }
+
+  let path='', dots='', labels='';
+  pontos.forEach((p,i)=>{
+    const x=padLeft+i*xStep;
+    const y=h-padBottom-(p.qtde/maxVal)*(h-padTop-padBottom);
+    path += (i===0?'M':'L')+x+' '+y+' ';
+    dots += `<circle cx="${x}" cy="${y}" r="4" fill="#B5640B"/>`;
+    dots += `<text x="${x}" y="${y-10}" font-size="9.5" fill="#8a4c08" font-weight="700" text-anchor="middle">${fmtQtd(p.qtde)}</text>`;
+    labels += `<text x="${x}" y="${h-padBottom+16}" font-size="10" fill="#4a3a3a" text-anchor="middle">${p.periodo}</text>`;
+  });
+
+  el.innerHTML=`
+    <svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" style="overflow:visible;font-family:Arial;display:inline-block;">
+      ${grid}<path d="${path}" fill="none" stroke="#B5640B" stroke-width="2.5"/>${dots}${labels}
+    </svg>`;
+}
+
+/* ---------- Popula o seletor de produto do gráfico de quantidade ---------- */
+function V_populateProdutoQtd(){
+  const sel = document.getElementById('vProdutoQtd');
+  const cur = sel.value;
+  const ef = V_getEffectiveData();
+  const produtos = [...new Map(ef.map(r=>[r.material, r.descricao])).entries()]
+    .sort((a,b)=>a[1].localeCompare(b[1]));
+  sel.innerHTML = '<option value="">Selecione um produto...</option>';
+  produtos.forEach(([mat,desc])=>{
+    const o=document.createElement('option');
+    o.value=mat; o.textContent=desc;
+    sel.appendChild(o);
+  });
+  if(produtos.some(([m])=>m===cur)) sel.value=cur;
+}
+
 function V_renderTable(){
   const rows = [...V_FILTERED].sort((a,b)=>b.vlrNota-a.vlrNota);
   const fmtBRL = v => 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -2708,21 +2741,9 @@ function V_renderTable(){
     const pacQty = V_CONVERSOES.pacotes[nomeProd];
     const cxQty  = V_CONVERSOES.caixa[nomeProd];
     const farQty = V_CONVERSOES.fardo[nomeProd];
-    const massaQty = V_CONVERSOES.massa[nomeProd];
-    const paleteQty = V_CONVERSOES.palete[nomeProd];
     const pacHtml = pacQty ? `<b>${(r.qtde/pacQty).toLocaleString('pt-BR',{maximumFractionDigits:1})}</b>` : '<span style="color:var(--ink-soft)">—</span>';
     const cxHtml  = cxQty  ? `<b>${(r.qtde/cxQty).toLocaleString('pt-BR',{maximumFractionDigits:1})}</b>` : '<span style="color:var(--ink-soft)">—</span>';
     const farHtml = farQty ? `<b>${(r.qtde/farQty).toLocaleString('pt-BR',{maximumFractionDigits:1})}</b>` : '<span style="color:var(--ink-soft)">—</span>';
-    // Massa arredondada para baixo (número de massas inteiras necessárias)
-    const massaCalc = massaQty ? Math.floor(r.qtde/massaQty) : null;
-    const massaHtml = massaCalc !== null
-      ? `<b>${massaCalc.toLocaleString('pt-BR')}</b><span style="color:var(--ink-soft);font-size:10px;"> ${massaCalc===1?'massa':'massas'}</span>`
-      : '<span style="color:var(--ink-soft)">—</span>';
-    // Paletes são calculados sobre a quantidade de Pacotes (não sobre a Qtde bruta)
-    const paleteCalc = (pacQty && paleteQty) ? Math.floor((r.qtde/pacQty)/paleteQty) : null;
-    const paleteHtml = paleteCalc !== null
-      ? `<b>${paleteCalc.toLocaleString('pt-BR')}</b><span style="color:var(--ink-soft);font-size:10px;"> ${paleteCalc===1?'palete':'paletes'}</span>`
-      : '<span style="color:var(--ink-soft)">—</span>';
 
     return `<tr style="${bgStyle}">
       <td class="center" style="font-size:11px;${rankStyle}">${i+1}</td>
@@ -2732,36 +2753,33 @@ function V_renderTable(){
       <td class="center" style="font-size:11.5px;">${pacHtml}</td>
       <td class="center" style="font-size:11.5px;">${cxHtml}</td>
       <td class="center" style="font-size:11.5px;">${farHtml}</td>
-      <td class="center" style="font-size:11.5px;">${massaHtml}</td>
-      <td class="center" style="font-size:11.5px;">${paleteHtml}</td>
       <td class="center">${fmtBRL(r.unitario)}</td>
       <td class="center" style="font-weight:700;color:var(--red);">${fmtBRL(r.vlrNota)}</td>
       <td class="center">${r.pctPart.toFixed(2)}%</td>
       <td class="center">${varHtml}</td>
     </tr>`;
-  }).join('') || `<tr><td colspan="13" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum dado encontrado.</td></tr>`;
+  }).join('') || `<tr><td colspan="11" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum dado encontrado.</td></tr>`;
 }
 
 /* ---------- Atualiza tudo ---------- */
 function V_refreshAll(){
   V_applyFilters();
+  V_populateProdutoQtd();
   const periodos=[...new Set(V_getEffectiveData().map(r=>r.periodo))];
   document.getElementById('vPeriodInfo').textContent =
-    V_DATA.length ? `${periodos.length} período(s) carregado(s) · ${V_FILTERED.length} produtos no filtro atual` : 'Nenhum dado carregado.';
+    V_DATA.length ? `${periodos.length} ${vAgrupamentoEl.value==='mes'?'mês(es)':'período(s)'} carregado(s) · ${V_FILTERED.length} produtos no filtro atual` : 'Nenhum dado carregado.';
   V_renderKPIs();
   V_renderTop10Fat();
   V_renderTop10Qtd();
   V_renderEvolucao();
   V_renderVariacao();
+  V_renderQtdEvolucao();
   V_renderTable();
 }
 
 vPeriodoEl.addEventListener('change', V_refreshAll);
 vBuscaEl.addEventListener('input', V_refreshAll);
-document.getElementById('vQtdUnidade').addEventListener('change', (e)=>{
-  V_qtdUnidade = e.target.value;
-  V_renderTop10Qtd();
-});
+document.getElementById('vProdutoQtd').addEventListener('change', V_renderQtdEvolucao);
 vAgrupamentoEl.addEventListener('change', ()=>{
   vPeriodoEl.value = ''; // reseta seleção ao mudar agrupamento
   V_populatePeriodos();
@@ -2814,16 +2832,16 @@ const TP_LINE_CONFIGS = {
   frances: {
     label: 'GIRO — Pão Francês',
     csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBFGt1vkh6HsLtIO2FB34RcTIkb9XCxEYW6lrq3zGK1Jyn6vw-YCCuB6mBD29hMQatFgpOtsh1go2p/pub?gid=757040881&single=true&output=csv",
-    hasMasseira: true,
-    // Data(0), Batelada(1), Masseira(2), Produto(3),
-    // Início(4), Fim(5), Duração(6)   — Preparo
-    // Início(7), Fim(8), Duração(9)   — Mistura 1
-    // Início(10), Fim(11), Duração(12) — Mistura 2
-    // Início(13), Fim(14), Duração(15)— Transporte
-    // Início(16), Fim(17), Duração(18)— Modelagem GA
-    // Retenção(19)
-    cols: { data:0, batelada:1, masseira:2, produto:3, retencao:19, leadTime:null,
-            stageTriplets:[ [4,5,6], [7,8,9], [10,11,12], [13,14,15], [16,17,18] ] },
+    hasMasseira: false,
+    // Data(0), Batelada(1), Produto(2),
+    // Início(3), Fim(4), Duração(5)   — Preparo
+    // Início(6), Fim(7), Duração(8)   — Mistura 1
+    // Início(9), Fim(10), Duração(11) — Mistura 2
+    // Início(12), Fim(13), Duração(14)— Transporte
+    // Início(15), Fim(16), Duração(17)— Modelagem GA
+    // Retenção(18)
+    cols: { data:0, batelada:1, masseira:null, produto:2, retencao:18, leadTime:null,
+            stageTriplets:[ [3,4,5], [6,7,8], [9,10,11], [12,13,14], [15,16,17] ] },
     stages: [
       { key:'s1', label:'Preparo',      color:'#A10101' },
       { key:'s2', label:'Mistura 1',    color:'#B5640B' },
@@ -2876,23 +2894,6 @@ const TP_LINE_CONFIGS = {
       { key:'s7', label:'Bolear Pão',        color:'#c47d2a' },
     ],
   },
-  salgado_panitec4: {
-    label: 'SALGADO',
-    csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBFGt1vkh6HsLtIO2FB34RcTIkb9XCxEYW6lrq3zGK1Jyn6vw-YCCuB6mBD29hMQatFgpOtsh1go2p/pub?gid=2049824067&single=true&output=csv",
-    // Esta linha vem de uma máquina contínua (não bateladas com etapas):
-    // Data(0), Produto(1), Máquina(2), Início(3), Fim(4), Velocidade(5), Qtd Colab.(6),
-    // Unidades por Hora(7), Produção Caixa ou telas/hora(8), Tempo Médio(9),
-    // Unidade de medida(10), Duração do Rolo de Massa(11), Paradas Registradas(12),
-    // Tempo Parado(13) — linhas seguintes sem Data repetem apenas as colunas 12 e 13
-    // para cada causa de parada adicional. Início/Fim já representam a janela real
-    // de coleta (usada para calcular tempo rodando x parado). A coluna de Duração
-    // do Rolo de Massa só passou a ser coletada a partir de 07/2026, por isso vem
-    // vazia em registros antigos.
-    type: 'machine',
-    cols: { data:0, produto:1, maquina:2, inicio:3, fim:4, velocidade:5, colab:6,
-            unidadesHora:7, caixaHora:8, tempoMedioCaixa:9, unidadeMedida:10,
-            duracaoRoloMassa:11, causa:12, tempoParado:13 },
-  },
 };
 // Retenção é sempre tratada como a última "etapa" de cada linha, com cor fixa
 const TP_RETENCAO_COLOR = '#7a5ca1';
@@ -2926,49 +2927,6 @@ const TP_FALLBACK_DATA = {
   ],
   padaria: [
     {dateISO:"2026-07-01", dateRaw:"01/07/2026", batelada:"1", masseira:"", produto:"Pão Melão", stages:{s1:158,s2:1009,s3:857,s4:392,s5:176,s6:757,s7:1267}, retencao:null, leadTime:4616},
-  ],
-  salgado_panitec4: [
-    {dateISO:"2026-06-29", dateRaw:"29/06/2026", produto:"Pastel de Nata Frango", maquina:"PANITEC 4",
-     inicio:"07:10:00", fim:"08:10:00", velocidade:100, colab:4, unidadesHora:3200, caixaHora:76, tempoMedioCaixa:65,
-     paradas:[
-       {causa:"Falta de Recheio", duracaoSec:300},
-       {causa:"Falta de Massa", duracaoSec:120},
-     ], tempoParadoTotal:420},
-    {dateISO:"2026-06-29", dateRaw:"29/06/2026", produto:"Pastel de Nata Carne", maquina:"PANITEC 4",
-     inicio:"09:00:00", fim:"10:00:00", velocidade:95, colab:3, unidadesHora:2850, caixaHora:68, tempoMedioCaixa:70,
-     paradas:[
-       {causa:"Falta de Colaborador", duracaoSec:540},
-       {causa:"Falta de caixa", duracaoSec:90},
-     ], tempoParadoTotal:630},
-    {dateISO:"2026-06-30", dateRaw:"30/06/2026", produto:"Pastel de Nata Frango", maquina:"PANITEC 4",
-     inicio:"07:15:00", fim:"08:15:00", velocidade:100, colab:4, unidadesHora:3450, caixaHora:82, tempoMedioCaixa:58,
-     paradas:[
-       {causa:"Abastecimento de Recheio", duracaoSec:150},
-     ], tempoParadoTotal:150},
-    {dateISO:"2026-06-30", dateRaw:"30/06/2026", produto:"Pastel de Nata Frango", maquina:"PANITEC 4",
-     inicio:"10:30:00", fim:"11:30:00", velocidade:90, colab:4, unidadesHora:2700, caixaHora:64, tempoMedioCaixa:75,
-     paradas:[
-       {causa:"Falha Mecânica", duracaoSec:900},
-       {causa:"Falta de Recheio", duracaoSec:240},
-       {causa:"Falta de Massa", duracaoSec:60},
-     ], tempoParadoTotal:1200},
-    {dateISO:"2026-07-01", dateRaw:"01/07/2026", produto:"Pastel de Nata Carne", maquina:"PANITEC 4",
-     inicio:"07:00:00", fim:"08:00:00", velocidade:100, colab:4, unidadesHora:3550, caixaHora:85, tempoMedioCaixa:56,
-     paradas:[], tempoParadoTotal:0},
-    {dateISO:"2026-07-02", dateRaw:"02/07/2026", produto:"Pastel de Nata Frango", maquina:"PANITEC 4",
-     inicio:"07:05:00", fim:"08:05:00", velocidade:98, colab:4, unidadesHora:3100, caixaHora:74, tempoMedioCaixa:66,
-     paradas:[
-       {causa:"Falta de Recheio", duracaoSec:480},
-       {causa:"Falta de caixa", duracaoSec:75},
-     ], tempoParadoTotal:555},
-    {dateISO:"2027-07-03", dateRaw:"03/07/2027", produto:"Pastel de Nata Frango", maquina:"PANITEC 4",
-     inicio:"13:26:00", fim:"14:26:00", velocidade:100, colab:4, unidadesHora:3378, caixaHora:80, tempoMedioCaixa:62,
-     paradas:[
-       {causa:"Falta de Recheio", duracaoSec:437},
-       {causa:"Abastecimento de Recheio", duracaoSec:168},
-       {causa:"Falta de caixa", duracaoSec:62},
-       {causa:"Falta de Massa", duracaoSec:45},
-     ], tempoParadoTotal:712},
   ],
 };
 
@@ -3026,80 +2984,8 @@ function TP_getProcessStages(){
   return TP_LINE_CONFIGS[TP_currentLine].stages;
 }
 
-/* Linhas do tipo 'machine' (ex: Panitec 4) não têm etapas de batelada —
-   são um registro contínuo de produção por máquina, com uma lista de
-   causas de parada e suas durações (linhas seguintes sem Data repetem
-   apenas as colunas de causa/tempo, como células mescladas). */
-function TP_transformCsvMachine(csvText, cfg){
-  const rows = parseCSV(csvText).filter(r => r.some(c => c && c.trim() !== ''));
-  const dataRows = rows.slice(1);
-  const records = [];
-  let current = null;
-
-  const parsePlainNum = s => {
-    const n = parseFloat(String(s||'').replace(/\./g,'').replace(',','.'));
-    return isNaN(n) ? null : n;
-  };
-  /* Aceita tanto formato de horário "H:MM:SS" quanto um número decimal
-     simples (com vírgula ou ponto) representando segundos diretamente,
-     já que a planilha às vezes registra "Tempo Médio por Caixa" assim. */
-  const parseTempoMedioCaixa = s => {
-    const t = String(s||'').trim();
-    if(!t) return null;
-    const asTime = TP_timeToSeconds(t);
-    if(asTime !== null) return asTime;
-    const n = parseFloat(t.replace(',','.'));
-    return isNaN(n) ? null : n;
-  };
-
-  dataRows.forEach(r=>{
-    const dataRaw = (r[cfg.cols.data]||'').trim();
-    if(dataRaw){
-      const iso = parseDataBR(dataRaw);
-      if(iso){
-        current = {
-          dateISO: iso,
-          dateRaw: dataRaw,
-          produto: (r[cfg.cols.produto]||'').trim(),
-          maquina: (r[cfg.cols.maquina]||'').trim(),
-          inicio: (r[cfg.cols.inicio]||'').trim(),
-          fim: (r[cfg.cols.fim]||'').trim(),
-          // Início/Fim da Coleta representam a janela real de observação (usada
-          // para os cálculos de tempo rodando x parado). Quando ainda não
-          // preenchidos (registros antigos), cai de volta no Início/Fim de
-          // produção, mantendo compatibilidade com dados anteriores a 07/2026.
-          inicioColeta: (cfg.cols.inicioColeta !== undefined && (r[cfg.cols.inicioColeta]||'').trim())
-            ? (r[cfg.cols.inicioColeta]||'').trim() : (r[cfg.cols.inicio]||'').trim(),
-          fimColeta: (cfg.cols.fimColeta !== undefined && (r[cfg.cols.fimColeta]||'').trim())
-            ? (r[cfg.cols.fimColeta]||'').trim() : (r[cfg.cols.fim]||'').trim(),
-          // Velocidade agora é um texto livre (ex: "1.6s"), não mais percentual —
-          // mantido como veio na planilha, sem conversão numérica.
-          velocidade: (r[cfg.cols.velocidade]||'').trim() || null,
-          colab: parsePlainNum(r[cfg.cols.colab]),
-          unidadesHora: parsePlainNum(r[cfg.cols.unidadesHora]),
-          caixaHora: parsePlainNum(r[cfg.cols.caixaHora]),
-          tempoMedioCaixa: parseTempoMedioCaixa(r[cfg.cols.tempoMedioCaixa]),
-          unidadeMedida: cfg.cols.unidadeMedida !== undefined ? ((r[cfg.cols.unidadeMedida]||'').trim() || null) : null,
-          duracaoRoloMassa: cfg.cols.duracaoRoloMassa !== undefined ? TP_timeToSeconds(r[cfg.cols.duracaoRoloMassa]) : null,
-          paradas: [],
-          tempoParadoTotal: 0,
-        };
-        records.push(current);
-      }
-    }
-    const causa = (r[cfg.cols.causa]||'').trim();
-    if(causa && current){
-      const dur = TP_timeToSeconds(r[cfg.cols.tempoParado]) || 0;
-      current.paradas.push({ causa, duracaoSec: dur });
-      current.tempoParadoTotal += dur;
-    }
-  });
-  return records;
-}
-
 function TP_transformCsv(csvText, lineKey){
   const cfg = TP_LINE_CONFIGS[lineKey];
-  if(cfg.type === 'machine') return TP_transformCsvMachine(csvText, cfg);
   const rows = parseCSV(csvText).filter(r => r.some(c => c && c.trim() !== ''));
   const dataRows = rows.slice(1); // descarta o cabeçalho
   const records = [];
@@ -3213,84 +3099,15 @@ async function TP_loadData(isManualRefresh){
 const tpLinhaEl = document.getElementById('tpLinha');
 const tpDateStartEl = document.getElementById('tpDateStart');
 const tpDateEndEl = document.getElementById('tpDateEnd');
-const tpProdutoBtnEl = document.getElementById('tpProdutoBtn');
-const tpProdutoDropdownEl = document.getElementById('tpProdutoDropdown');
-const tpMasseiraEl = document.getElementById('tpMasseira');
-const tpMasseiraLabelEl = document.getElementById('tpMasseiraLabel');
-const tpMaquinaEl = document.getElementById('tpMaquina');
-const tpMaquinaLabelEl = document.getElementById('tpMaquinaLabel');
+const tpProdutoEl = document.getElementById('tpProduto');
 let TP_allDates = [];
-let TP_selectedProdutos = []; // vazio = todos os produtos disponíveis
 
 tpLinhaEl.addEventListener('change', ()=>{
   TP_currentLine = tpLinhaEl.value;
   TP_DATA = [];
   tpDateStartEl.value = ''; tpDateEndEl.value = '';
-  TP_selectedProdutos = [];
-  tpMasseiraEl.value = '';
-  tpMaquinaEl.value = '';
+  tpProdutoEl.value = '';
   TP_loadData(false);
-});
-
-/* Dropdown de múltipla seleção de produtos — permite escolher vários produtos
-   ao mesmo tempo, útil para simular diferentes "mixes" de produção. Quando
-   filtrando por uma máquina específica (linhas do tipo 'machine'), a lista
-   de produtos é restrita apenas aos que rodam naquela máquina. */
-function TP_populateProdutoOptions(){
-  const cfg = TP_LINE_CONFIGS[TP_currentLine];
-  let source = TP_DATA;
-  if(cfg.type === 'machine' && tpMaquinaEl.value){
-    source = source.filter(r=>r.maquina === tpMaquinaEl.value);
-  }
-  const produtos = [...new Set(source.map(r=>r.produto))].sort();
-  TP_selectedProdutos = TP_selectedProdutos.filter(p=>produtos.includes(p));
-
-  tpProdutoDropdownEl.innerHTML = `
-    <div class="ms-toolbar">
-      <button type="button" id="tpProdutoAll">Selecionar todos</button>
-      <button type="button" id="tpProdutoNone">Limpar seleção</button>
-    </div>
-    ${produtos.map(p=>`
-      <label class="ms-item">
-        <input type="checkbox" value="${p.replace(/"/g,'&quot;')}" ${TP_selectedProdutos.includes(p)?'checked':''}>
-        <span>${p}</span>
-      </label>`).join('') || '<div style="padding:8px;color:var(--ink-soft);font-size:12px;">Nenhum produto disponível.</div>'}
-  `;
-  tpProdutoDropdownEl.querySelectorAll('input[type=checkbox]').forEach(cb=>{
-    cb.addEventListener('change', ()=>{
-      if(cb.checked){ if(!TP_selectedProdutos.includes(cb.value)) TP_selectedProdutos.push(cb.value); }
-      else { TP_selectedProdutos = TP_selectedProdutos.filter(p=>p!==cb.value); }
-      TP_updateProdutoBtnLabel(produtos.length);
-      TP_refreshAll();
-    });
-  });
-  const btnAll = document.getElementById('tpProdutoAll');
-  const btnNone = document.getElementById('tpProdutoNone');
-  if(btnAll) btnAll.addEventListener('click', ()=>{ TP_selectedProdutos=[...produtos]; TP_populateProdutoOptions(); TP_refreshAll(); });
-  if(btnNone) btnNone.addEventListener('click', ()=>{ TP_selectedProdutos=[]; TP_populateProdutoOptions(); TP_refreshAll(); });
-
-  TP_updateProdutoBtnLabel(produtos.length);
-}
-
-function TP_updateProdutoBtnLabel(total){
-  if(TP_selectedProdutos.length === 0 || TP_selectedProdutos.length === total){
-    tpProdutoBtnEl.textContent = 'Todos os produtos ▾';
-  } else if(TP_selectedProdutos.length === 1){
-    const nome = TP_selectedProdutos[0];
-    tpProdutoBtnEl.textContent = (nome.length>26 ? nome.slice(0,26)+'…' : nome) + ' ▾';
-  } else {
-    tpProdutoBtnEl.textContent = TP_selectedProdutos.length + ' produtos selecionados ▾';
-  }
-}
-
-tpProdutoBtnEl.addEventListener('click', (e)=>{
-  e.stopPropagation();
-  tpProdutoDropdownEl.classList.toggle('open');
-});
-document.addEventListener('click', (e)=>{
-  if(tpProdutoDropdownEl.classList.contains('open') && !tpProdutoDropdownEl.contains(e.target) && e.target!==tpProdutoBtnEl){
-    tpProdutoDropdownEl.classList.remove('open');
-  }
 });
 
 function TP_applyDateBoundsAndRefresh(){
@@ -3301,63 +3118,23 @@ function TP_applyDateBoundsAndRefresh(){
   tpDateStartEl.min = TP_allDates[0]; tpDateStartEl.max = TP_allDates[TP_allDates.length-1];
   tpDateEndEl.min = TP_allDates[0]; tpDateEndEl.max = TP_allDates[TP_allDates.length-1];
 
-  const cfg = TP_LINE_CONFIGS[TP_currentLine];
-
-  // Filtro de Masseira: só aparece para linhas com coluna de masseira mapeada
-  // (ex: GIRO — Pão Francês) e que já tenham algum valor preenchido nos dados.
-  if(cfg.cols.masseira !== null && cfg.cols.masseira !== undefined){
-    const masseiras = [...new Set(TP_DATA.map(r=>r.masseira).filter(Boolean))].sort();
-    const curMass = tpMasseiraEl.value;
-    tpMasseiraEl.innerHTML = '<option value="">Todas as masseiras</option>';
-    masseiras.forEach(m=>{ const o=document.createElement('option'); o.value=m; o.textContent=m; tpMasseiraEl.appendChild(o); });
-    if(masseiras.includes(curMass)) tpMasseiraEl.value = curMass;
-    tpMasseiraEl.style.display = masseiras.length ? '' : 'none';
-    tpMasseiraLabelEl.style.display = masseiras.length ? '' : 'none';
-  } else {
-    tpMasseiraEl.value = '';
-    tpMasseiraEl.style.display = 'none';
-    tpMasseiraLabelEl.style.display = 'none';
-  }
-
-  // Filtro de Máquina: só faz sentido para linhas do tipo 'machine' (ex: SALGADO),
-  // já que as demais linhas não têm o conceito de máquina (usam masseira).
-  if(cfg.type === 'machine'){
-    const maquinas = [...new Set(TP_DATA.map(r=>r.maquina).filter(Boolean))].sort();
-    const curMaq = tpMaquinaEl.value;
-    tpMaquinaEl.innerHTML = '<option value="">Todas as máquinas</option>';
-    maquinas.forEach(m=>{ const o=document.createElement('option'); o.value=m; o.textContent=m; tpMaquinaEl.appendChild(o); });
-    if(maquinas.includes(curMaq)) tpMaquinaEl.value = curMaq;
-    tpMaquinaEl.style.display = '';
-    tpMaquinaLabelEl.style.display = '';
-  } else {
-    tpMaquinaEl.value = '';
-    tpMaquinaEl.style.display = 'none';
-    tpMaquinaLabelEl.style.display = 'none';
-  }
-
-  // Produto (depende da máquina selecionada acima, por isso vem depois)
-  TP_populateProdutoOptions();
+  const produtos = [...new Set(TP_DATA.map(r=>r.produto))].sort();
+  const curProd = tpProdutoEl.value;
+  tpProdutoEl.innerHTML = '<option value="">Todos os produtos</option>';
+  produtos.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; tpProdutoEl.appendChild(o); });
+  if(produtos.includes(curProd)) tpProdutoEl.value = curProd;
 
   TP_renderTableHead();
   TP_refreshAll();
 }
 
-// Ao trocar a máquina, a lista de produtos disponíveis muda (cascata)
-tpMaquinaEl.addEventListener('change', ()=>{
-  TP_populateProdutoOptions();
-  TP_refreshAll();
-});
-
 function TP_applyFilters(){
   const ds = tpDateStartEl.value, de = tpDateEndEl.value;
-  const mass = tpMasseiraEl.value;
-  const maq = tpMaquinaEl.value;
+  const prod = tpProdutoEl.value;
   TP_FILTERED = TP_DATA.filter(r=>{
     if(ds && r.dateISO < ds) return false;
     if(de && r.dateISO > de) return false;
-    if(TP_selectedProdutos.length && !TP_selectedProdutos.includes(r.produto)) return false;
-    if(mass && r.masseira !== mass) return false;
-    if(maq && r.maquina !== maq) return false;
+    if(prod && r.produto !== prod) return false;
     return true;
   });
 }
@@ -3365,66 +3142,8 @@ function TP_applyFilters(){
 function TP_avg(arr){ const a = arr.filter(v=>v!==null && !isNaN(v)); return a.length ? a.reduce((s,v)=>s+v,0)/a.length : null; }
 
 /* ---------- KPIs ---------- */
-/* Calcula, a partir dos registros filtrados de uma linha do tipo 'machine':
-   - tempo total (soma de Início→Fim de cada registro)
-   - tempo parado (soma das paradas registradas)
-   - tempo produzindo (tempo total - tempo parado)
-   - taxa real de produção (unidades/hora) apenas durante o tempo produzindo
-   Serve de base tanto para o card de % Produzindo x Parado quanto para a
-   projeção de produção em diferentes níveis de utilização do tempo. */
-function TP_computeUtilization(rows){
-  let sumTotalSec = 0, sumStoppedSec = 0, sumUnits = 0;
-  rows.forEach(r=>{
-    const totalSec = TP_clockDiff(r.inicioColeta, r.fimColeta);
-    if(totalSec === null || r.unidadesHora === null) return;
-    const stoppedSec = r.tempoParadoTotal || 0;
-    sumTotalSec += totalSec;
-    sumStoppedSec += stoppedSec;
-    sumUnits += r.unidadesHora * (totalSec/3600);
-  });
-  const netSec = sumTotalSec - sumStoppedSec;
-  const netRate = netSec > 0 ? sumUnits / (netSec/3600) : null; // unidades/hora só quando produzindo
-  const pctParado = sumTotalSec > 0 ? (sumStoppedSec/sumTotalSec)*100 : null;
-  const pctProduzindo = pctParado !== null ? 100-pctParado : null;
-  return { sumTotalSec, sumStoppedSec, sumUnits, netSec, netRate, pctParado, pctProduzindo };
-}
-
 function TP_renderKPIs(){
   const rows = TP_FILTERED;
-  const cfg = TP_LINE_CONFIGS[TP_currentLine];
-
-  if(cfg.type === 'machine'){
-    const avgUnidHora = TP_avg(rows.map(r=>r.unidadesHora));
-    const avgCaixaHora = TP_avg(rows.map(r=>r.caixaHora));
-    const util = TP_computeUtilization(rows);
-    const tempoParadoPorHora = util.sumTotalSec > 0 ? util.sumStoppedSec / (util.sumTotalSec/3600) : null;
-    const pctClass = util.pctParado === null ? '' : util.pctParado <= 15 ? 'sem-good' : util.pctParado <= 30 ? 'sem-warn' : 'sem-bad';
-    document.getElementById('tpKpiGrid').style.gridTemplateColumns = 'repeat(4,1fr)';
-    document.getElementById('tpKpiGrid').innerHTML = `
-      <div class="kpi-card">
-        <div class="label">Unidades por Hora</div>
-        <div class="value">${avgUnidHora!==null ? Math.round(avgUnidHora).toLocaleString('pt-BR') : '—'}</div>
-      </div>
-      <div class="kpi-card">
-        <div class="label">Caixas/Telas por Hora</div>
-        <div class="value">${avgCaixaHora!==null ? Math.round(avgCaixaHora).toLocaleString('pt-BR') : '—'}</div>
-      </div>
-      <div class="kpi-card warn">
-        <div class="label">Tempo Parado por Hora</div>
-        <div class="value" style="font-size:22px;">${TP_fmtDuration(tempoParadoPorHora)}</div>
-      </div>
-      <div class="kpi-card ${pctClass}">
-        <div class="label">Produzindo × Parado</div>
-        <div class="value" style="font-size:22px;">${util.pctProduzindo!==null ? util.pctProduzindo.toFixed(0)+'%' : '—'}</div>
-        <div class="trend-foot" style="margin-top:4px;color:var(--red);">${util.pctParado!==null ? util.pctParado.toFixed(0)+'% parado' : ''}</div>
-      </div>
-    `;
-    TP_renderProjecaoChart(util);
-    return;
-  }
-  document.getElementById('tpProjecaoPanel').style.display = 'none';
-  document.getElementById('tpKpiGrid').style.gridTemplateColumns = 'repeat(3,1fr)';
-
   const processStages = TP_getProcessStages(); // sem Retenção — ela não é processo, não tem margem de redução
 
   // Tempo médio de processo (Lead Time menos a Retenção) — base para o throughput por hora
@@ -3455,77 +3174,9 @@ function TP_renderKPIs(){
   `;
 }
 
-/* ---------- Gráfico: projeção de produção em diferentes níveis de utilização do tempo ---------- */
-function TP_renderProjecaoChart(util){
-  const panel = document.getElementById('tpProjecaoPanel');
-  if(util.netRate === null || util.sumTotalSec === 0){
-    panel.style.display = '';
-    document.getElementById('tpChartProjecao').innerHTML = `<div class="empty-state"><span class="empty-icon">📈</span>Sem dados suficientes no período selecionado para calcular a projeção.</div>`;
-    return;
-  }
-  panel.style.display = '';
-  const niveis = [
-    { pct:100, label:'100% do tempo', color:'#2f7d52' },
-    { pct:80,  label:'80% do tempo',  color:'#B5640B' },
-    { pct:60,  label:'60% do tempo',  color:'#A10101' },
-  ];
-  // Valor expresso como taxa (unidades/hora) considerando o tempo total do
-  // período (parado + produzindo) — não o total de unidades acumuladas.
-  const items = niveis.map(n => ({ ...n, value: util.netRate * (n.pct/100) }));
-  const maxVal = Math.max(...items.map(i=>i.value), 1);
-
-  const rowH=40, gap=18, leftLabelW=110, chartW=420, rightW=140;
-  const h = items.length*(rowH+gap);
-  let bars='';
-  items.forEach((item,i)=>{
-    const y = i*(rowH+gap);
-    const w = (item.value/maxVal)*chartW;
-    bars += `<text x="${leftLabelW-10}" y="${y+rowH/2+4}" font-size="13" fill="#2a1a1a" text-anchor="end" font-weight="700">${item.label}</text>`;
-    bars += `<rect x="${leftLabelW}" y="${y}" width="${w}" height="${rowH}" rx="7" fill="${item.color}"/>`;
-    bars += `<text x="${leftLabelW+w+10}" y="${y+rowH/2+5}" font-size="14" fill="${item.color}" font-weight="800">${Math.round(item.value).toLocaleString('pt-BR')} un/h</text>`;
-  });
-
-  document.getElementById('tpChartProjecao').innerHTML = `
-    <svg viewBox="0 0 ${leftLabelW+chartW+rightW} ${h+10}" width="${leftLabelW+chartW+rightW}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">${bars}</svg>`;
-}
-
 /* ---------- Gráfico: composição do tempo de processo (barras empilhadas por etapa) ---------- */
 function TP_renderStagesChart(){
   const rows = TP_FILTERED;
-  const cfg = TP_LINE_CONFIGS[TP_currentLine];
-
-  document.getElementById('tpStagesTitle').textContent = cfg.type === 'machine' ? 'Causas de Parada' : 'Composição do Tempo de Processo';
-
-  if(cfg.type === 'machine'){
-    document.getElementById('tpStageLegend').innerHTML = '';
-    const counts = {};
-    rows.forEach(r => r.paradas.forEach(p => {
-      if(!counts[p.causa]) counts[p.causa] = { count:0, dur:0 };
-      counts[p.causa].count++;
-      counts[p.causa].dur += p.duracaoSec;
-    }));
-    const entries = Object.entries(counts).sort((a,b)=>b[1].dur-a[1].dur);
-    if(entries.length === 0){
-      document.getElementById('tpChartStages').innerHTML = `<div class="empty-state"><span class="empty-icon">✓</span>Nenhuma parada registrada no período selecionado.</div>`;
-      return;
-    }
-    const barH=30, gap=14, leftPad=220, rightPad=90, topPad=10;
-    const chartW=760;
-    const chartH = entries.length*(barH+gap) + topPad;
-    const maxDur = Math.max(...entries.map(([,v])=>v.dur));
-    let bars='';
-    entries.forEach(([causa,v],i)=>{
-      const y = topPad + i*(barH+gap);
-      const w = (v.dur/maxDur) * (chartW-leftPad-rightPad);
-      bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="12" fill="#2a1a1a" text-anchor="end" font-weight="600">${causa}</text>`;
-      bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="#A10101" rx="5"/>`;
-      bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="12" fill="#A10101" font-weight="700">${TP_fmtDuration(v.dur)} (${v.count}x)</text>`;
-    });
-    document.getElementById('tpChartStages').innerHTML = `
-      <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:Arial;display:inline-block;">${bars}</svg>`;
-    return;
-  }
-
   const stages = TP_getProcessStages(); // sem Retenção — é tempo programado, não processo
   document.getElementById('tpStageLegend').innerHTML = stages.map(s=>
     `<span><i class="dot" style="background:${s.color}"></i>${s.label}</span>`
@@ -3581,49 +3232,6 @@ function TP_renderStagesChart(){
 
 /* ---------- Gráfico: Lead Time por batelada (linha) ---------- */
 function TP_renderLeadTimeChart(){
-  const cfg = TP_LINE_CONFIGS[TP_currentLine];
-  document.getElementById('tpLeadTimeTitle').textContent = cfg.type === 'machine' ? 'Tempo Parado × Tempo Rodando por Produto' : 'Lead Time por Batelada';
-
-  if(cfg.type === 'machine'){
-    const rows = TP_FILTERED;
-    const byProduto = {};
-    rows.forEach(r=>{ (byProduto[r.produto]=byProduto[r.produto]||[]).push(r); });
-    const items = Object.keys(byProduto).map(p=>{
-      const recs = byProduto[p];
-      const parado = TP_avg(recs.map(r=>r.tempoParadoTotal)) || 0;
-      const rodando = TP_avg(recs.map(r=>{
-        const totalSec = TP_clockDiff(r.inicioColeta, r.fimColeta);
-        return totalSec !== null ? Math.max(totalSec - (r.tempoParadoTotal||0), 0) : null;
-      })) || 0;
-      return { label: p, parado, rodando };
-    }).sort((a,b)=>b.parado-a.parado);
-    if(items.length === 0){
-      document.getElementById('tpChartLeadTime').innerHTML = `<div class="empty-state"><span class="empty-icon">⏱</span>Nenhum registro no período selecionado.</div>`;
-      return;
-    }
-    const maxVal = Math.max(...items.map(i=>Math.max(i.parado,i.rodando)), 1);
-    const subBarH=16, subGap=4, groupGap=16, leftLabelW=200, chartW=380;
-    const rowH = subBarH*2+subGap;
-    const h = items.length*(rowH+groupGap);
-    let bars='';
-    items.forEach((item,i)=>{
-      const yGroup = i*(rowH+groupGap);
-      const yRodando = yGroup;
-      const yParado = yGroup + subBarH + subGap;
-      const wRodando = (item.rodando/maxVal)*chartW;
-      const wParado = (item.parado/maxVal)*chartW;
-      bars += `<text x="${leftLabelW-10}" y="${yGroup+rowH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${item.label}</text>`;
-      bars += `<rect x="${leftLabelW}" y="${yRodando}" width="${wRodando}" height="${subBarH}" rx="4" fill="#2f7d52"/>`;
-      bars += `<text x="${leftLabelW+wRodando+8}" y="${yRodando+subBarH-3}" font-size="10.5" fill="#2f7d52" font-weight="700">${TP_fmtDuration(item.rodando)}</text>`;
-      bars += `<rect x="${leftLabelW}" y="${yParado}" width="${wParado}" height="${subBarH}" rx="4" fill="#A10101"/>`;
-      bars += `<text x="${leftLabelW+wParado+8}" y="${yParado+subBarH-3}" font-size="10.5" fill="#A10101" font-weight="700">${TP_fmtDuration(item.parado)}</text>`;
-    });
-    document.getElementById('tpChartLeadTime').innerHTML = `
-      <div class="legend" style="margin-bottom:10px;"><span><i class="dot" style="background:#2f7d52"></i>Tempo Rodando</span><span><i class="dot" style="background:#A10101"></i>Tempo Parado</span></div>
-      <svg viewBox="0 0 ${leftLabelW+chartW+100} ${h+10}" width="${leftLabelW+chartW+100}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">${bars}</svg>`;
-    return;
-  }
-
   const rows = TP_FILTERED.slice().sort((a,b)=> (a.dateISO+a.batelada.padStart(4,'0')).localeCompare(b.dateISO+b.batelada.padStart(4,'0')));
   if(rows.length === 0){
     document.getElementById('tpChartLeadTime').innerHTML = `<div class="empty-state"><span class="empty-icon">⏱</span>Nenhum registro no período selecionado.</div>`;
@@ -3660,46 +3268,6 @@ function TP_renderLeadTimeChart(){
 /* ---------- Gráfico: ranking por produto (Lead Time médio, barras horizontais) ---------- */
 function TP_renderProdutoChart(){
   const rows = TP_FILTERED;
-  const cfg = TP_LINE_CONFIGS[TP_currentLine];
-  document.getElementById('tpProdutoTitle').textContent = cfg.type === 'machine' ? 'Unidades por Hora, por Produto' : 'Comparativo por Produto (Lead Time Médio)';
-
-  if(cfg.type === 'machine'){
-    const byProduto = {};
-    rows.forEach(r=>{ (byProduto[r.produto]=byProduto[r.produto]||[]).push(r); });
-    const items = Object.keys(byProduto).map(p=>{
-      const recs = byProduto[p];
-      const real = TP_avg(recs.map(r=>r.unidadesHora)) || 0;
-      const util = TP_computeUtilization(recs);
-      const semParadas = util.netRate || 0;
-      return { label: p, real, semParadas };
-    }).sort((a,b)=>b.real-a.real);
-    if(items.length === 0){
-      document.getElementById('tpChartProduto').innerHTML = `<div class="empty-state"><span class="empty-icon">⏱</span>Nenhum registro no período selecionado.</div>`;
-      return;
-    }
-    const maxVal = Math.max(...items.map(i=>Math.max(i.real,i.semParadas)), 1);
-    const subBarH=16, subGap=4, groupGap=16, leftLabelW=200, chartW=380;
-    const rowH = subBarH*2+subGap;
-    const h = items.length*(rowH+groupGap);
-    let bars='';
-    items.forEach((item,i)=>{
-      const yGroup = i*(rowH+groupGap);
-      const yReal = yGroup;
-      const ySemParadas = yGroup + subBarH + subGap;
-      const wReal = (item.real/maxVal)*chartW;
-      const wSemParadas = (item.semParadas/maxVal)*chartW;
-      bars += `<text x="${leftLabelW-10}" y="${yGroup+rowH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${item.label}</text>`;
-      bars += `<rect x="${leftLabelW}" y="${yReal}" width="${wReal}" height="${subBarH}" rx="4" fill="#B5640B"/>`;
-      bars += `<text x="${leftLabelW+wReal+8}" y="${yReal+subBarH-3}" font-size="10.5" fill="#8a4c08" font-weight="700">${Math.round(item.real).toLocaleString('pt-BR')}</text>`;
-      bars += `<rect x="${leftLabelW}" y="${ySemParadas}" width="${wSemParadas}" height="${subBarH}" rx="4" fill="#2f7d52"/>`;
-      bars += `<text x="${leftLabelW+wSemParadas+8}" y="${ySemParadas+subBarH-3}" font-size="10.5" fill="#2f7d52" font-weight="700">${Math.round(item.semParadas).toLocaleString('pt-BR')}</text>`;
-    });
-    document.getElementById('tpChartProduto').innerHTML = `
-      <div class="legend" style="margin-bottom:10px;"><span><i class="dot" style="background:#B5640B"></i>Real (com paradas)</span><span><i class="dot" style="background:#2f7d52"></i>Estimado sem paradas</span></div>
-      <svg viewBox="0 0 ${leftLabelW+chartW+100} ${h+10}" width="${leftLabelW+chartW+100}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">${bars}</svg>`;
-    return;
-  }
-
   const byProduto = {};
   rows.forEach(r=>{ (byProduto[r.produto]=byProduto[r.produto]||[]).push(r); });
   const items = Object.keys(byProduto).map(p=>({ label:p, value: TP_avg(byProduto[p].map(r=>r.leadTime)) || 0 })).sort((a,b)=>b.value-a.value);
@@ -3726,17 +3294,8 @@ function TP_renderProdutoChart(){
 
 /* ---------- Cabeçalho dinâmico da tabela (muda conforme a linha de produto) ---------- */
 function TP_renderTableHead(){
-  const cfg = TP_LINE_CONFIGS[TP_currentLine];
-  if(cfg.type === 'machine'){
-    document.getElementById('tpTheadRow').innerHTML =
-      '<th>Data</th><th>Produto</th><th>Máquina</th><th class="center">Início</th><th class="center">Fim</th>' +
-      '<th class="center">Veloc.</th><th class="center">Colab.</th><th class="center">Unid/h</th>' +
-      '<th class="center">Cx/h ou Tela/h</th><th class="center">T.Médio</th><th class="center">Uni.</th><th class="center">Rolo de Massa</th><th>Paradas Registradas</th><th class="center">Tempo Parado</th>';
-    return;
-  }
   const stages = TP_getStages();
-  const hasMasseira = cfg.cols.masseira !== null && cfg.cols.masseira !== undefined;
-  let html = '<th>Data</th><th class="center">Batelada</th>' + (hasMasseira ? '<th class="center">Masseira</th>' : '') + '<th>Produto</th>';
+  let html = '<th>Data</th><th class="center">Batelada</th><th>Produto</th>';
   stages.forEach(s=>{ html += `<th class="center">${s.label}</th>`; });
   html += '<th class="center">Lead Time</th>';
   document.getElementById('tpTheadRow').innerHTML = html;
@@ -3744,43 +3303,12 @@ function TP_renderTableHead(){
 
 /* ---------- Tabela detalhada ---------- */
 function TP_renderTable(){
-  const cfg = TP_LINE_CONFIGS[TP_currentLine];
-  const tbody = document.getElementById('tpTbody');
-
-  if(cfg.type === 'machine'){
-    const rows = TP_FILTERED.slice().sort((a,b)=> b.dateISO.localeCompare(a.dateISO));
-    tbody.innerHTML = rows.map(r=>{
-      const paradasTxt = r.paradas.length
-        ? `${r.paradas.length} parada${r.paradas.length>1?'s':''}`
-        : '<span class="obs-text">—</span>';
-      return `<tr>
-        <td>${r.dateRaw}</td>
-        <td class="prod-name">${r.produto}</td>
-        <td>${r.maquina}</td>
-        <td class="center">${r.inicio||'—'}</td>
-        <td class="center">${r.fim||'—'}</td>
-        <td class="center">${r.velocidade||'—'}</td>
-        <td class="center">${r.colab!==null ? r.colab : '—'}</td>
-        <td class="center">${r.unidadesHora!==null ? Math.round(r.unidadesHora).toLocaleString('pt-BR') : '—'}</td>
-        <td class="center">${r.caixaHora!==null ? Math.round(r.caixaHora).toLocaleString('pt-BR') : '—'}</td>
-        <td class="center">${TP_fmtDuration(r.tempoMedioCaixa)}</td>
-        <td class="center">${r.unidadeMedida||'—'}</td>
-        <td class="center">${TP_fmtDuration(r.duracaoRoloMassa)}</td>
-        <td class="center">${paradasTxt}</td>
-        <td class="center"><b style="color:var(--red);">${TP_fmtDuration(r.tempoParadoTotal)}</b></td>
-      </tr>`;
-    }).join('') || `<tr><td colspan="14" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro encontrado.</td></tr>`;
-    return;
-  }
-
   const stages = TP_getStages();
-  const hasMasseira = cfg.cols.masseira !== null && cfg.cols.masseira !== undefined;
+  const tbody = document.getElementById('tpTbody');
   const rows = TP_FILTERED.slice().sort((a,b)=> (b.dateISO+b.batelada.padStart(4,'0')).localeCompare(a.dateISO+a.batelada.padStart(4,'0')));
-  const colCount = (hasMasseira ? 4 : 3) + stages.length + 1;
+  const colCount = 3 + stages.length + 1;
   tbody.innerHTML = rows.map(r=>{
-    let html = `<tr><td>${r.dateRaw}</td><td class="center">${r.batelada}</td>` +
-      (hasMasseira ? `<td class="center">${r.masseira||'—'}</td>` : '') +
-      `<td class="prod-name">${r.produto}</td>`;
+    let html = `<tr><td>${r.dateRaw}</td><td class="center">${r.batelada}</td><td class="prod-name">${r.produto}</td>`;
     stages.forEach(s=>{
       const val = s.key === 'retencao' ? r.retencao : r.stages[s.key];
       html += `<td class="center">${TP_fmtDuration(val)}</td>`;
@@ -3793,11 +3321,9 @@ function TP_renderTable(){
 function TP_refreshAll(){
   TP_applyFilters();
   const ds = tpDateStartEl.value, de = tpDateEndEl.value;
-  const cfg = TP_LINE_CONFIGS[TP_currentLine];
-  const unidade = cfg.type === 'machine' ? 'registro(s)' : 'batelada(s)';
   if(TP_allDates.length){
     document.getElementById('tpPeriodInfo').textContent =
-      TP_FILTERED.length + ' ' + unidade + ' no período' + (ds && de ? ` (${ds.split('-').reverse().join('/')} a ${de.split('-').reverse().join('/')})` : '');
+      TP_FILTERED.length + ' batelada(s) no período' + (ds && de ? ` (${ds.split('-').reverse().join('/')} a ${de.split('-').reverse().join('/')})` : '');
   }
   TP_renderKPIs();
   TP_renderStagesChart();
@@ -3806,10 +3332,339 @@ function TP_refreshAll(){
   TP_renderTable();
 }
 
-[tpDateStartEl, tpDateEndEl, tpMasseiraEl].forEach(el=>{
+[tpDateStartEl, tpDateEndEl, tpProdutoEl].forEach(el=>{
   el.addEventListener('change', TP_refreshAll);
 });
 document.getElementById('tpBtnRefresh').addEventListener('click', ()=> TP_loadData(true));
+
+/* ============================================================================
+   PÁGINA 4 — PRODUTIVIDADE
+   ============================================================================
+   Assim como em Tempo de Processo, suporta múltiplos "setores", cada um vindo
+   de uma aba/CSV diferente da mesma planilha. Por enquanto só temos dados do
+   GIRO MEIO — outros setores serão adicionados aqui conforme forem coletados.
+   Colunas da planilha: Data(0), Produto(1), Masseira(2), Hora da Massa(3),
+   Velocidade GA pães/hora(4), Parada(5), Motivo(6), Peso da Massa em kg(7). */
+
+const PR_SETOR_CONFIGS = {
+  giro_meio: {
+    label: 'GIRO MEIO',
+    csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBFGt1vkh6HsLtIO2FB34RcTIkb9XCxEYW6lrq3zGK1Jyn6vw-YCCuB6mBD29hMQatFgpOtsh1go2p/pub?gid=993894836&single=true&output=csv",
+  },
+  // Novos setores (SALGADO, MASSA SALGADO...) entram aqui quando os dados
+  // estiverem disponíveis, seguindo o mesmo formato de coluna.
+};
+
+let PR_currentSetor = 'giro_meio';
+let PR_DATA = [];
+let PR_FILTERED = [];
+let PR_allDates = [];
+let PR_lastSignature = {};
+
+/* Dados de segurança, usados apenas se a planilha não puder ser carregada */
+const PR_FALLBACK_DATA = {
+  giro_meio: [
+    {dateISO:"2026-07-08", dateRaw:"08/07/2026", produto:"Massinha 80g", masseira:"1", hora:"08:37:00", velocidade:27000, parada:null, motivo:"", peso:170},
+    {dateISO:"2026-07-08", dateRaw:"08/07/2026", produto:"Nutri", masseira:"4", hora:"11:09:00", velocidade:32400, parada:null, motivo:"", peso:156},
+    {dateISO:"2026-07-08", dateRaw:"08/07/2026", produto:"Ultra", masseira:"1", hora:"13:14:00", velocidade:11000, parada:1080, motivo:"Encontrar Carrinhos", peso:156},
+  ],
+};
+
+/* Popula o seletor de Setor a partir das configs disponíveis */
+function PR_populateSetorSelect(){
+  const el = document.getElementById('prSetor');
+  el.innerHTML = '';
+  Object.keys(PR_SETOR_CONFIGS).forEach(key=>{
+    const o = document.createElement('option');
+    o.value = key; o.textContent = PR_SETOR_CONFIGS[key].label;
+    el.appendChild(o);
+  });
+  el.value = PR_currentSetor;
+}
+
+function PR_transformCsv(csvText){
+  const rows = parseCSV(csvText).filter(r => r.some(c => c && c.trim() !== ''));
+  const dataRows = rows.slice(1); // descarta o cabeçalho
+  const records = [];
+  dataRows.forEach(r=>{
+    const dataRaw = (r[0]||'').trim();
+    if(!dataRaw) return;
+    const iso = parseDataBR(dataRaw);
+    if(!iso) return;
+    const produto = (r[1]||'').trim();
+    if(!produto) return;
+    const masseira = (r[2]||'').trim();
+    const hora = (r[3]||'').trim();
+    const velocidadeRaw = (r[4]||'').trim().replace(/\./g,'').replace(',', '.');
+    const velocidade = velocidadeRaw ? parseFloat(velocidadeRaw) : null;
+    const parada = TP_timeToSeconds((r[5]||'').trim());
+    const motivo = (r[6]||'').trim();
+    const pesoRaw = (r[7]||'').trim().replace(/\./g,'').replace(',', '.');
+    const peso = pesoRaw ? parseFloat(pesoRaw) : null;
+
+    records.push({
+      dateISO: iso, dateRaw: dataRaw, produto, masseira, hora,
+      velocidade: (velocidade!==null && !isNaN(velocidade)) ? velocidade : null,
+      parada, motivo,
+      peso: (peso!==null && !isNaN(peso)) ? peso : null,
+    });
+  });
+  return records;
+}
+
+async function PR_loadData(isManualRefresh){
+  const setorKey = PR_currentSetor;
+  const cfg = PR_SETOR_CONFIGS[setorKey];
+  const btn = document.getElementById('prBtnRefresh');
+  const original = btn ? btn.textContent : null;
+  if(btn){ btn.disabled = true; btn.textContent = '⟳ Verificando...'; }
+
+  try{
+    const bust = (cfg.csvUrl.includes('?') ? '&' : '?') + 'cb=' + Date.now();
+    const res = await fetch(cfg.csvUrl + bust, { cache:'no-store' });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+
+    const signature = text.length + ':' + text.slice(0,300);
+    const changed = signature !== PR_lastSignature[setorKey];
+    PR_lastSignature[setorKey] = signature;
+
+    const records = PR_transformCsv(text);
+    if(records.length === 0) throw new Error('Nenhum dado válido encontrado na planilha.');
+
+    PR_DATA = records;
+    PR_applyDateBoundsAndRefresh();
+
+    if(btn){
+      btn.textContent = isManualRefresh ? (changed ? '✓ Dados atualizados' : '✓ Sem dados novos') : original;
+      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 1600);
+    }
+  }catch(err){
+    console.error('Erro ao carregar Produtividade ('+setorKey+'):', err);
+    if(btn){
+      btn.textContent = '⚠ Erro ao atualizar';
+      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 2200);
+    }
+    if(PR_DATA.length === 0){
+      PR_DATA = PR_FALLBACK_DATA[setorKey] || [];
+      PR_applyDateBoundsAndRefresh();
+      const hint = location.protocol === 'file:'
+        ? ' Abra este arquivo por um servidor local (http://) — Google Sheets bloqueia requisições de arquivos locais (file://).'
+        : '';
+      document.getElementById('prPeriodInfo').textContent =
+        '⚠ Não foi possível conectar à planilha (' + (err.message||err) + '). Mostrando dados de exemplo.' + hint;
+    }
+  }
+}
+
+const prDateStartEl = document.getElementById('prDateStart');
+const prDateEndEl = document.getElementById('prDateEnd');
+const prSetorEl = document.getElementById('prSetor');
+const prProdutoEl = document.getElementById('prProduto');
+
+PR_populateSetorSelect();
+
+prSetorEl.addEventListener('change', ()=>{
+  PR_currentSetor = prSetorEl.value;
+  PR_DATA = [];
+  prDateStartEl.value = ''; prDateEndEl.value = '';
+  prProdutoEl.value = '';
+  PR_loadData(false);
+});
+
+function PR_applyDateBoundsAndRefresh(){
+  PR_allDates = [...new Set(PR_DATA.map(r=>r.dateISO))].sort();
+  if(PR_allDates.length === 0) return;
+  if(!prDateStartEl.value || !PR_allDates.includes(prDateStartEl.value)) prDateStartEl.value = PR_allDates[0];
+  if(!prDateEndEl.value || !PR_allDates.includes(prDateEndEl.value)) prDateEndEl.value = PR_allDates[PR_allDates.length-1];
+  prDateStartEl.min = PR_allDates[0]; prDateStartEl.max = PR_allDates[PR_allDates.length-1];
+  prDateEndEl.min = PR_allDates[0]; prDateEndEl.max = PR_allDates[PR_allDates.length-1];
+
+  const produtos = [...new Set(PR_DATA.map(r=>r.produto))].sort();
+  const curProd = prProdutoEl.value;
+  prProdutoEl.innerHTML = '<option value="">Todos os produtos</option>';
+  produtos.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; prProdutoEl.appendChild(o); });
+  if(produtos.includes(curProd)) prProdutoEl.value = curProd;
+
+  PR_refreshAll();
+}
+
+function PR_applyFilters(){
+  const ds = prDateStartEl.value, de = prDateEndEl.value;
+  const prod = prProdutoEl.value;
+  PR_FILTERED = PR_DATA.filter(r=>{
+    if(ds && r.dateISO < ds) return false;
+    if(de && r.dateISO > de) return false;
+    if(prod && r.produto !== prod) return false;
+    return true;
+  });
+}
+
+function PR_avg(arr){ const a = arr.filter(v=>v!==null && !isNaN(v)); return a.length ? a.reduce((s,v)=>s+v,0)/a.length : null; }
+function PR_sum(arr){ const a = arr.filter(v=>v!==null && !isNaN(v)); return a.length ? a.reduce((s,v)=>s+v,0) : 0; }
+function PR_fmtNum(v, decimals){
+  if(v === null || v === undefined || isNaN(v)) return '—';
+  return v.toLocaleString('pt-BR', { minimumFractionDigits: decimals||0, maximumFractionDigits: decimals||0 });
+}
+
+function PR_renderKPIs(){
+  const rows = PR_FILTERED;
+  const velMedia = PR_avg(rows.map(r=>r.velocidade));
+  const pesoTotal = PR_sum(rows.map(r=>r.peso));
+  const paradaTotal = PR_sum(rows.map(r=>r.parada));
+  const nParadas = rows.filter(r=>r.parada && r.parada > 0).length;
+
+  document.getElementById('prKpiGrid').innerHTML = `
+    <div class="kpi-card">
+      <div class="label">Massadas no Período</div>
+      <div class="value">${rows.length}</div>
+    </div>
+    <div class="kpi-card good">
+      <div class="label">Velocidade Média (pães/h)</div>
+      <div class="value">${velMedia !== null ? PR_fmtNum(velMedia) : '—'}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Peso Total de Massa</div>
+      <div class="value">${PR_fmtNum(pesoTotal)}<span style="font-size:14px;">kg</span></div>
+    </div>
+    <div class="kpi-card warn">
+      <div class="label">Tempo Total de Parada</div>
+      <div class="value" style="font-size:22px;">${TP_fmtDuration(paradaTotal)}</div>
+      <div class="trend-foot" style="margin-top:4px;">${nParadas} parada(s) registrada(s)</div>
+    </div>
+  `;
+}
+
+/* ---------- Gráfico: velocidade média por produto (barras horizontais) ---------- */
+function PR_renderVelocidadeChart(){
+  const rows = PR_FILTERED;
+  const byProduto = {};
+  rows.forEach(r=>{ (byProduto[r.produto]=byProduto[r.produto]||[]).push(r); });
+  const items = Object.keys(byProduto).map(p=>({ label:p, value: PR_avg(byProduto[p].map(r=>r.velocidade)) || 0 })).sort((a,b)=>b.value-a.value);
+  if(items.length === 0){
+    document.getElementById('prChartVelocidade').innerHTML = `<div class="empty-state"><span class="empty-icon">⚡</span>Nenhum produto no período selecionado.</div>`;
+    return;
+  }
+  const maxVal = Math.max(...items.map(i=>i.value), 1);
+  const rowH=28, gap=10, leftLabelW=170, chartW=380;
+  const h = items.length*(rowH+gap);
+  let bars='';
+  items.forEach((item,i)=>{
+    const y = i*(rowH+gap);
+    const w = (item.value/maxVal)*chartW;
+    bars += `<text x="${leftLabelW-10}" y="${y+rowH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${item.label}</text>`;
+    bars += `<rect x="${leftLabelW}" y="${y}" width="${w}" height="${rowH}" rx="6" fill="#A10101"/>`;
+    bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="11.5" fill="#A10101" font-weight="700">${PR_fmtNum(item.value)}</text>`;
+  });
+  document.getElementById('prChartVelocidade').innerHTML = `
+    <svg viewBox="0 0 ${leftLabelW+chartW+90} ${h+10}" width="${leftLabelW+chartW+90}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+      ${bars}
+    </svg>`;
+}
+
+/* ---------- Gráfico: peso de massa produzido por dia (barras verticais) ---------- */
+function PR_renderPesoChart(){
+  const rows = PR_FILTERED;
+  const byDia = {};
+  rows.forEach(r=>{ (byDia[r.dateISO]=byDia[r.dateISO]||[]).push(r); });
+  const dias = Object.keys(byDia).sort();
+  if(dias.length === 0){
+    document.getElementById('prChartPeso').innerHTML = `<div class="empty-state"><span class="empty-icon">⚖</span>Nenhum registro no período selecionado.</div>`;
+    return;
+  }
+  const items = dias.map(d=>({
+    label: byDia[d][0].dateRaw,
+    value: PR_sum(byDia[d].map(r=>r.peso)),
+  }));
+  const barW = 50, gap = 24, leftPad = 55, topPad = 20, baseY = 240;
+  const chartWidth = items.length*(barW+gap) + leftPad + 20;
+  const maxVal = Math.max(...items.map(i=>i.value), 1);
+
+  let grid = '', bars = '';
+  const step = maxVal > 2000 ? 500 : (maxVal > 500 ? 200 : 50);
+  for(let v=0; v<=maxVal; v+=step){
+    const y = baseY - (v/maxVal)*(baseY-topPad);
+    grid += `<line x1="${leftPad}" y1="${y}" x2="${chartWidth-10}" y2="${y}" stroke="#f0ddc0" stroke-width="1"/>`;
+    grid += `<text x="${leftPad-8}" y="${y+4}" font-size="10" fill="#6b5c5c" text-anchor="end">${PR_fmtNum(v)}</text>`;
+  }
+  items.forEach((item,i)=>{
+    const x = leftPad + i*(barW+gap);
+    const h = (item.value/maxVal)*(baseY-topPad);
+    bars += `<rect x="${x}" y="${baseY-h}" width="${barW}" height="${h}" rx="4" fill="#B5640B"/>`;
+    bars += `<text x="${x+barW/2}" y="${baseY-h-8}" font-size="10.5" fill="#B5640B" font-weight="700" text-anchor="middle">${PR_fmtNum(item.value)}</text>`;
+    bars += `<text x="${x+barW/2}" y="${baseY+16}" font-size="10.5" fill="#4a3a3a" text-anchor="end" transform="rotate(-35 ${x+barW/2} ${baseY+16})">${item.label}</text>`;
+  });
+
+  document.getElementById('prChartPeso').innerHTML = `
+    <svg viewBox="0 0 ${chartWidth} 290" width="${chartWidth}" height="290" style="overflow:visible;font-family:Arial;display:inline-block;">
+      ${grid}${bars}
+    </svg>`;
+}
+
+/* ---------- Gráfico: tempo de parada por motivo (barras horizontais) ---------- */
+function PR_renderParadasChart(){
+  const rows = PR_FILTERED.filter(r=>r.parada && r.parada > 0);
+  if(rows.length === 0){
+    document.getElementById('prChartParadas').innerHTML = `<div class="empty-state"><span class="empty-icon">✓</span>Nenhuma parada registrada no período selecionado.</div>`;
+    return;
+  }
+  const byMotivo = {};
+  rows.forEach(r=>{ const m = r.motivo || '(sem motivo informado)'; (byMotivo[m]=byMotivo[m]||[]).push(r.parada); });
+  const items = Object.keys(byMotivo).map(m=>({ label:m, value: PR_sum(byMotivo[m]) })).sort((a,b)=>b.value-a.value);
+  const maxVal = Math.max(...items.map(i=>i.value), 1);
+  const rowH=28, gap=10, leftLabelW=190, chartW=360;
+  const h = items.length*(rowH+gap);
+  let bars='';
+  items.forEach((item,i)=>{
+    const y = i*(rowH+gap);
+    const w = (item.value/maxVal)*chartW;
+    bars += `<text x="${leftLabelW-10}" y="${y+rowH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${item.label}</text>`;
+    bars += `<rect x="${leftLabelW}" y="${y}" width="${w}" height="${rowH}" rx="6" fill="#B5640B"/>`;
+    bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="11.5" fill="#B5640B" font-weight="700">${TP_fmtDuration(item.value)}</text>`;
+  });
+  document.getElementById('prChartParadas').innerHTML = `
+    <svg viewBox="0 0 ${leftLabelW+chartW+100} ${h+10}" width="${leftLabelW+chartW+100}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+      ${bars}
+    </svg>`;
+}
+
+/* ---------- Tabela detalhada ---------- */
+function PR_renderTable(){
+  const tbody = document.getElementById('prTbody');
+  const rows = PR_FILTERED.slice().sort((a,b)=> (b.dateISO+b.hora).localeCompare(a.dateISO+a.hora));
+  tbody.innerHTML = rows.map(r=>`
+    <tr>
+      <td>${r.dateRaw}</td>
+      <td class="center">${r.masseira||'—'}</td>
+      <td class="center">${r.hora||'—'}</td>
+      <td class="prod-name">${r.produto}</td>
+      <td class="center">${r.velocidade!==null ? PR_fmtNum(r.velocidade) : '—'}</td>
+      <td class="center">${r.parada ? TP_fmtDuration(r.parada) : '—'}</td>
+      <td>${r.motivo||'—'}</td>
+      <td class="center">${r.peso!==null ? PR_fmtNum(r.peso) : '—'}</td>
+    </tr>
+  `).join('') || `<tr><td colspan="8" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro encontrado.</td></tr>`;
+}
+
+function PR_refreshAll(){
+  PR_applyFilters();
+  const ds = prDateStartEl.value, de = prDateEndEl.value;
+  if(PR_allDates.length){
+    document.getElementById('prPeriodInfo').textContent =
+      PR_FILTERED.length + ' massada(s) no período' + (ds && de ? ` (${ds.split('-').reverse().join('/')} a ${de.split('-').reverse().join('/')})` : '');
+  }
+  PR_renderKPIs();
+  PR_renderVelocidadeChart();
+  PR_renderPesoChart();
+  PR_renderParadasChart();
+  PR_renderTable();
+}
+
+[prDateStartEl, prDateEndEl, prProdutoEl].forEach(el=>{
+  el.addEventListener('change', PR_refreshAll);
+});
+document.getElementById('prBtnRefresh').addEventListener('click', ()=> PR_loadData(true));
+
 </script>
 </body>
 </html>
