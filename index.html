@@ -3378,10 +3378,14 @@ const PR_FALLBACK_DATA = {
     {dateISO:"2026-07-08", dateRaw:"08/07/2026", produto:"Ultra", masseira:"1", hora:"13:14:00", velocidade:11000, parada:1080, motivo:"Encontrar Carrinhos", peso:156},
   ],
   salgado: [
-    {dateISO:"2026-07-06", dateRaw:"06/07/2026", produto:"Esfina de Frango", maquina:"USIFOOD 2", inicio:"08:30:00", fim:"11:13:00", velocidadePrensa:1.3, qtdColab:3, unidadesPorHora:28, producaoHora:448, tempoMedio:2100, unidadeMedida:"Carrinho", duracaoRolo:null,
-      paradas:[{motivo:"Problema no Requeijão", duracaoSec:600},{motivo:"Problema Mecânico - Bicos de Recheio", duracaoSec:1860}]},
-    {dateISO:"2026-07-07", dateRaw:"07/07/2026", produto:"Pastel Mini Nata Carne", maquina:"PANITEC 4", inicio:"08:32:00", fim:"11:00:00", velocidadePrensa:1.6, qtdColab:4, unidadesPorHora:84, producaoHora:919, tempoMedio:43, unidadeMedida:"Caixa", duracaoRolo:145,
-      paradas:[{motivo:"Falta de massa", duracaoSec:120},{motivo:"Ajuste do recheio", duracaoSec:540}]},
+    {dateISO:"2027-07-03", dateRaw:"03/07/2027", produto:"Pastel Mini Nata Frango", maquina:"PANITEC 4", inicio:"13:26:00", fim:"14:26:00", velocidadePrensa:1.6, qtdColab:4, unidadesPorHora:3906, producaoHora:93, tempoMedio:38, unidadeMedida:"Caixa", duracaoRolo:null,
+      paradas:[{motivo:"Falta de Recheio", duracaoSec:437},{motivo:"Abastecimento de Recheio", duracaoSec:168},{motivo:"Falta de caixa", duracaoSec:62},{motivo:"Falta de Massa", duracaoSec:45}]},
+    {dateISO:"2026-07-06", dateRaw:"06/07/2026", produto:"Esfina de Frango", maquina:"USIFOOD 2", inicio:"08:30:00", fim:"11:13:00", velocidadePrensa:1.3, qtdColab:3, unidadesPorHora:448, producaoHora:28, tempoMedio:2100, unidadeMedida:"Carrinho", duracaoRolo:null,
+      paradas:[{motivo:"Falta de Massa", duracaoSec:207},{motivo:"Abastecimento de Recheio", duracaoSec:187},{motivo:"Problema no Requeijão", duracaoSec:50},{motivo:"Problema no Requeijão", duracaoSec:430},{motivo:"Problema Mecânico - Bicos de Recheio", duracaoSec:1860},{motivo:"Abastecimento de Recheio", duracaoSec:238},{motivo:"Falta de Recheio", duracaoSec:744}]},
+    {dateISO:"2026-07-06", dateRaw:"06/07/2026", produto:"Bauru de Frango Bauru de Pizza", maquina:"USIFOOD 2", inicio:"12:30:00", fim:"15:53:00", velocidadePrensa:1.5, qtdColab:3, unidadesPorHora:1149, producaoHora:71, tempoMedio:953, unidadeMedida:"Carrinho", duracaoRolo:null,
+      paradas:[{motivo:"Limpeza de peças e troca de setup", duracaoSec:1964},{motivo:"Ajuste de Massa", duracaoSec:153},{motivo:"Falta de Massa", duracaoSec:399},{motivo:"Abastecer Recheio", duracaoSec:224}]},
+    {dateISO:"2026-07-07", dateRaw:"07/07/2026", produto:"Pastel Mini Nata Carne", maquina:"PANITEC 4", inicio:"08:32:00", fim:"11:00:00", velocidadePrensa:1.6, qtdColab:4, unidadesPorHora:919, producaoHora:84, tempoMedio:43, unidadeMedida:"Caixa", duracaoRolo:145,
+      paradas:[{motivo:"Falta de massa", duracaoSec:120},{motivo:"Falta de massa", duracaoSec:240},{motivo:"Abastecimento do recheio", duracaoSec:180},{motivo:"Falta de massa", duracaoSec:480},{motivo:"Falta de massa", duracaoSec:120},{motivo:"Falta de massa", duracaoSec:120},{motivo:"Ajuste do recheio", duracaoSec:540},{motivo:"Abastecimento de recheio", duracaoSec:360},{motivo:"Ajuste nos bicos injetores", duracaoSec:360},{motivo:"Falta de massa", duracaoSec:180},{motivo:"Falta de massa", duracaoSec:120},{motivo:"Abastecimento do recheio", duracaoSec:120},{motivo:"Falta de massa", duracaoSec:240},{motivo:"Falta de massa", duracaoSec:240},{motivo:"Falta de massa", duracaoSec:180},{motivo:"Falta de massa", duracaoSec:120},{motivo:"Falta de massa", duracaoSec:120}]},
   ],
 };
 
@@ -3792,8 +3796,10 @@ function PR_renderTable(){
 
 function PR_renderKPIsProducao(rows){
   const unidadesHora = PR_avg(rows.map(r=>r.unidadesPorHora));
-  const producaoHora = PR_avg(rows.map(r=>r.producaoHora));
-  const tempoMedio = PR_avg(rows.map(r=>r.tempoMedio));
+  const caixaRows = rows.filter(r=> (r.unidadeMedida||'').toLowerCase() === 'caixa');
+  const carrinhoRows = rows.filter(r=> (r.unidadeMedida||'').toLowerCase() === 'carrinho');
+  const caixasHora = caixaRows.length ? PR_avg(caixaRows.map(r=>r.producaoHora)) : null;
+  const carrinhosHora = carrinhoRows.length ? PR_avg(carrinhoRows.map(r=>r.producaoHora)) : null;
   let paradaTotal = 0, nParadas = 0;
   rows.forEach(r=> (r.paradas||[]).forEach(p=>{ if(p.duracaoSec){ paradaTotal += p.duracaoSec; nParadas++; } }));
 
@@ -3803,12 +3809,12 @@ function PR_renderKPIsProducao(rows){
       <div class="value">${unidadesHora !== null ? PR_fmtNum(unidadesHora, 1) : '—'}</div>
     </div>
     <div class="kpi-card">
-      <div class="label">Produção por Hora</div>
-      <div class="value">${producaoHora !== null ? PR_fmtNum(producaoHora, 1) : '—'}</div>
+      <div class="label">Caixas/Hora</div>
+      <div class="value">${caixasHora !== null ? PR_fmtNum(caixasHora, 1) : '—'}</div>
     </div>
-    <div class="kpi-card good">
-      <div class="label">Tempo Médio de Ciclo</div>
-      <div class="value" style="font-size:22px;">${tempoMedio !== null ? TP_fmtDuration(tempoMedio) : '—'}</div>
+    <div class="kpi-card">
+      <div class="label">Carrinhos/Hora</div>
+      <div class="value">${carrinhosHora !== null ? PR_fmtNum(carrinhosHora, 1) : '—'}</div>
     </div>
     <div class="kpi-card warn">
       <div class="label">Tempo Total de Parada</div>
@@ -3881,6 +3887,7 @@ function PR_renderTableProducao(rows){
       <th class="center">Colab.</th>
       <th class="center">Unidades/h</th>
       <th class="center">Produção/h</th>
+      <th class="center">Unidade</th>
       <th class="center">Tempo Médio</th>
     </tr>`;
   const sorted = rows.slice().sort((a,b)=> (b.dateISO+(b.inicio||'')).localeCompare(a.dateISO+(a.inicio||'')));
@@ -3894,9 +3901,10 @@ function PR_renderTableProducao(rows){
       <td class="center">${r.qtdColab!==null ? PR_fmtNum(r.qtdColab) : '—'}</td>
       <td class="center">${r.unidadesPorHora!==null ? PR_fmtNum(r.unidadesPorHora) : '—'}</td>
       <td class="center">${r.producaoHora!==null ? PR_fmtNum(r.producaoHora) : '—'}</td>
+      <td class="center">${r.unidadeMedida||'—'}</td>
       <td class="center">${r.tempoMedio!==null ? TP_fmtDuration(r.tempoMedio) : '—'}</td>
     </tr>
-  `).join('') || `<tr><td colspan="9" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro encontrado.</td></tr>`;
+  `).join('') || `<tr><td colspan="10" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro encontrado.</td></tr>`;
 }
 
 function PR_refreshAll(){
