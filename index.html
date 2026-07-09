@@ -3476,7 +3476,7 @@ function PR_transformCsvProducao(csvText){
     last = {dataRaw, produto, maquina, inicio, fim};
 
     records.push({
-      dateISO: iso, dateRaw, produto, maquina, inicio, fim,
+      dateISO: iso, dateRaw: dataRaw, produto, maquina, inicio, fim,
       velocidadePrensa: (velocidadePrensa!==null && !isNaN(velocidadePrensa)) ? velocidadePrensa : null,
       qtdColab: (qtdColab!==null && !isNaN(qtdColab)) ? qtdColab : null,
       unidadesPorHora: (unidadesPorHora!==null && !isNaN(unidadesPorHora)) ? unidadesPorHora : null,
