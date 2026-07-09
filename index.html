@@ -699,7 +699,7 @@ let PR_loadedOnce = false;
    na web (Google Sheets → Arquivo → Compartilhar → Publicar na web).
    Sempre que a planilha for atualizada, basta clicar em "Atualizar"
    no topo da página para buscar a versão mais recente. */
-const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQK1CzN7cjk4dLMUm2ayYZ2aLL3bgzs_bLDJxwrL1ZDVDPW3EGugFbTvktmdgZxp5I-Boi_C9hwtkJt/pub?gid=1294851829&single=true&output=csv";
+const CSV_URL = "https://docs.google.com/spreadsheets/d/1dPOqVznVZ3Z1AueP8o2H8nlu2AaWjIs1nqg47eUUYUg/export?format=csv&gid=1294851829";
 
 /* Dados de segurança (snapshot dos dias 22 a 25/06/2026) usados apenas se
    a planilha publicada não puder ser carregada (ex: bloqueio de CORS ao
@@ -1845,7 +1845,7 @@ loadData(false);
 const TP_LINE_CONFIGS = {
   frances: {
     label: 'GIRO — Pão Francês',
-    csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBFGt1vkh6HsLtIO2FB34RcTIkb9XCxEYW6lrq3zGK1Jyn6vw-YCCuB6mBD29hMQatFgpOtsh1go2p/pub?gid=757040881&single=true&output=csv",
+    csvUrl: "https://docs.google.com/spreadsheets/d/1y53NRhc2GPiIEdAtCibX1oi31EG327uv9aEAJov7Owk/export?format=csv&gid=757040881",
     hasMasseira: false,
     // Data(0), Batelada(1), Produto(2),
     // Início(3), Fim(4), Duração(5)   — Preparo
@@ -1866,7 +1866,7 @@ const TP_LINE_CONFIGS = {
   },
   queijo: {
     label: 'GIRO — Pão de Queijo',
-    csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBFGt1vkh6HsLtIO2FB34RcTIkb9XCxEYW6lrq3zGK1Jyn6vw-YCCuB6mBD29hMQatFgpOtsh1go2p/pub?gid=1924094362&single=true&output=csv",
+    csvUrl: "https://docs.google.com/spreadsheets/d/1y53NRhc2GPiIEdAtCibX1oi31EG327uv9aEAJov7Owk/export?format=csv&gid=1924094362",
     hasMasseira: false,
     // Data(0), Batelada(1), Produto(2),
     // Início(3), Fim(4), Duração(5) — Preparação
@@ -1885,7 +1885,7 @@ const TP_LINE_CONFIGS = {
   },
   padaria: {
     label: 'Padaria',
-    csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBFGt1vkh6HsLtIO2FB34RcTIkb9XCxEYW6lrq3zGK1Jyn6vw-YCCuB6mBD29hMQatFgpOtsh1go2p/pub?gid=2017595390&single=true&output=csv",
+    csvUrl: "https://docs.google.com/spreadsheets/d/1y53NRhc2GPiIEdAtCibX1oi31EG327uv9aEAJov7Owk/export?format=csv&gid=2017595390",
     hasMasseira: false,
     // Data(0), Batelada(1), Produto(2),
     // Início Preparo(3), Fim Preparo(4),
@@ -2370,13 +2370,13 @@ const PR_SETOR_CONFIGS = {
   giro_meio: {
     label: 'GIRO MEIO',
     type: 'massada',
-    csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBFGt1vkh6HsLtIO2FB34RcTIkb9XCxEYW6lrq3zGK1Jyn6vw-YCCuB6mBD29hMQatFgpOtsh1go2p/pub?gid=993894836&single=true&output=csv",
+    csvUrl: "https://docs.google.com/spreadsheets/d/1y53NRhc2GPiIEdAtCibX1oi31EG327uv9aEAJov7Owk/export?format=csv&gid=993894836",
   },
   salgado: {
     label: 'SALGADO',
     type: 'producao',
-    csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBFGt1vkh6HsLtIO2FB34RcTIkb9XCxEYW6lrq3zGK1Jyn6vw-YCCuB6mBD29hMQatFgpOtsh1go2p/pub?gid=2049824067&single=true&output=csv",
-    insumoCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBFGt1vkh6HsLtIO2FB34RcTIkb9XCxEYW6lrq3zGK1Jyn6vw-YCCuB6mBD29hMQatFgpOtsh1go2p/pub?gid=1545091990&single=true&output=csv",
+    csvUrl: "https://docs.google.com/spreadsheets/d/1y53NRhc2GPiIEdAtCibX1oi31EG327uv9aEAJov7Owk/export?format=csv&gid=2049824067",
+    insumoCsvUrl: "https://docs.google.com/spreadsheets/d/1y53NRhc2GPiIEdAtCibX1oi31EG327uv9aEAJov7Owk/export?format=csv&gid=1545091990",
   },
   // Novos setores (MASSA SALGADO...) entram aqui quando os dados
   // estiverem disponíveis. Use type:'massada' para planilhas no formato
