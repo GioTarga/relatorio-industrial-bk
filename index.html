@@ -134,6 +134,29 @@
   .setor-tab-btn:hover{ background:#fff; color:var(--ink); }
   .setor-tab-btn.active{ background:var(--paper); color:var(--red-dark); border-color:var(--line); position:relative; top:1px; }
 
+  .ms-wrap{ position:relative; display:inline-block; }
+  .ms-btn{
+    background:#fff8e7; border:1px solid #e8d3a3; border-radius:8px; padding:8px 14px;
+    font-size:13px; font-weight:600; color:var(--ink); cursor:pointer; min-width:170px; max-width:280px;
+    display:inline-flex; align-items:center; justify-content:space-between; gap:10px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .ms-btn::after{ content:"▾"; font-size:10px; color:var(--ink-soft); flex-shrink:0; }
+  .ms-btn:hover{ border-color:var(--red); }
+  .ms-panel{
+    position:absolute; top:calc(100% + 4px); left:0; z-index:80; background:#fff;
+    border:1px solid var(--line); border-radius:10px; box-shadow:0 10px 28px rgba(0,0,0,0.15);
+    min-width:260px; max-height:300px; overflow-y:auto; padding:8px; display:none;
+  }
+  .ms-panel.open{ display:block; }
+  .ms-panel-actions{ display:flex; gap:14px; padding:2px 6px 8px; border-bottom:1px solid var(--line); margin-bottom:6px; }
+  .ms-panel-actions button{ background:none; border:none; color:var(--red); font-size:11px; font-weight:800; cursor:pointer; text-transform:uppercase; letter-spacing:0.4px; padding:0; }
+  .ms-panel-actions button:hover{ text-decoration:underline; }
+  .ms-option{ display:flex; align-items:center; gap:9px; padding:6px 6px; border-radius:6px; cursor:pointer; font-size:13px; color:var(--ink); }
+  .ms-option:hover{ background:var(--cream); }
+  .ms-option input{ cursor:pointer; flex-shrink:0; }
+  .ms-empty{ padding:10px 6px; color:var(--ink-soft); font-size:12.5px; }
+
   .container{ max-width:1600px; margin:0 auto; padding:22px 32px 50px; }
 
   .kpi-grid{
@@ -562,12 +585,15 @@
       <span class="sep">até</span>
       <label for="prDateEnd">Data final</label>
       <input type="date" id="prDateEnd">
-      <label for="prProduto">Produto</label>
-      <select id="prProduto"><option value="">Todos os produtos</option></select>
       <span id="prMaquinaWrap" style="display:none;">
         <label for="prMaquina">Máquina</label>
         <select id="prMaquina"><option value="">Todas as máquinas</option></select>
       </span>
+      <label>Produto</label>
+      <div class="ms-wrap" id="prProdutoMS">
+        <button type="button" class="ms-btn" id="prProdutoMSBtn">Todos os produtos</button>
+        <div class="ms-panel" id="prProdutoMSPanel"></div>
+      </div>
       <button class="btn-refresh" id="prBtnRefresh" title="Verificar dados novos">⟳ Atualizar</button>
       <span class="period-info" id="prPeriodInfo"></span>
     </div>
@@ -2341,6 +2367,7 @@ let PR_DATA = [];
 let PR_FILTERED = [];
 let PR_allDates = [];
 let PR_lastSignature = {};
+let PR_selectedProdutos = new Set(); // vazio = todos os produtos
 
 /* Dados de segurança, usados apenas se a planilha não puder ser carregada */
 const PR_FALLBACK_DATA = {
@@ -2375,7 +2402,7 @@ function PR_renderSetorTabs(){
       PR_currentSetor = key;
       PR_DATA = [];
       prDateStartEl.value = ''; prDateEndEl.value = '';
-      prProdutoEl.value = '';
+      PR_selectedProdutos.clear();
       PR_renderSetorTabs();
       PR_loadData(false);
     });
@@ -2532,11 +2559,84 @@ async function PR_loadData(isManualRefresh){
 
 const prDateStartEl = document.getElementById('prDateStart');
 const prDateEndEl = document.getElementById('prDateEnd');
-const prProdutoEl = document.getElementById('prProduto');
 const prMaquinaEl = document.getElementById('prMaquina');
 const prMaquinaWrapEl = document.getElementById('prMaquinaWrap');
+const prProdutoMSBtn = document.getElementById('prProdutoMSBtn');
+const prProdutoMSPanel = document.getElementById('prProdutoMSPanel');
 
 PR_renderSetorTabs();
+
+/* Produtos disponíveis para seleção: se uma máquina estiver escolhida,
+   restringe aos produtos que rodaram naquela máquina. */
+function PR_getAvailableProdutos(){
+  const maquina = prMaquinaEl.value;
+  const base = maquina ? PR_DATA.filter(r => r.maquina === maquina) : PR_DATA;
+  return [...new Set(base.map(r=>r.produto))].sort();
+}
+
+function PR_updateProdutoBtnLabel(){
+  if(PR_selectedProdutos.size === 0) prProdutoMSBtn.textContent = 'Todos os produtos';
+  else if(PR_selectedProdutos.size === 1) prProdutoMSBtn.textContent = [...PR_selectedProdutos][0];
+  else prProdutoMSBtn.textContent = PR_selectedProdutos.size + ' produtos selecionados';
+}
+
+/* Reconstrói a lista de checkboxes de produto, respeitando a máquina
+   selecionada, e descarta da seleção qualquer produto que não esteja
+   mais disponível (ex: depois de trocar de máquina). */
+function PR_renderProdutoMultiSelect(){
+  const produtos = PR_getAvailableProdutos();
+  [...PR_selectedProdutos].forEach(p=>{ if(!produtos.includes(p)) PR_selectedProdutos.delete(p); });
+
+  if(produtos.length === 0){
+    prProdutoMSPanel.innerHTML = `<div class="ms-empty">Nenhum produto disponível.</div>`;
+  } else {
+    prProdutoMSPanel.innerHTML = `
+      <div class="ms-panel-actions">
+        <button type="button" id="prProdutoSelAll">Selecionar todos</button>
+        <button type="button" id="prProdutoSelNone">Limpar</button>
+      </div>
+      ${produtos.map(p=>`
+        <label class="ms-option">
+          <input type="checkbox" value="${p}" ${PR_selectedProdutos.has(p) ? 'checked' : ''}>
+          <span>${p}</span>
+        </label>
+      `).join('')}
+    `;
+    prProdutoMSPanel.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+      cb.addEventListener('change', ()=>{
+        if(cb.checked) PR_selectedProdutos.add(cb.value); else PR_selectedProdutos.delete(cb.value);
+        PR_updateProdutoBtnLabel();
+        PR_refreshAll();
+      });
+    });
+    document.getElementById('prProdutoSelAll').addEventListener('click', ()=>{
+      produtos.forEach(p=>PR_selectedProdutos.add(p));
+      PR_renderProdutoMultiSelect();
+      PR_updateProdutoBtnLabel();
+      PR_refreshAll();
+    });
+    document.getElementById('prProdutoSelNone').addEventListener('click', ()=>{
+      PR_selectedProdutos.clear();
+      PR_renderProdutoMultiSelect();
+      PR_updateProdutoBtnLabel();
+      PR_refreshAll();
+    });
+  }
+  PR_updateProdutoBtnLabel();
+}
+
+prProdutoMSBtn.addEventListener('click', (e)=>{
+  e.stopPropagation();
+  prProdutoMSPanel.classList.toggle('open');
+});
+document.addEventListener('click', (e)=>{
+  if(!document.getElementById('prProdutoMS').contains(e.target)) prProdutoMSPanel.classList.remove('open');
+});
+
+prMaquinaEl.addEventListener('change', ()=>{
+  PR_renderProdutoMultiSelect();
+  PR_refreshAll();
+});
 
 function PR_applyDateBoundsAndRefresh(){
   PR_allDates = [...new Set(PR_DATA.map(r=>r.dateISO))].sort();
@@ -2545,12 +2645,6 @@ function PR_applyDateBoundsAndRefresh(){
   if(!prDateEndEl.value || !PR_allDates.includes(prDateEndEl.value)) prDateEndEl.value = PR_allDates[PR_allDates.length-1];
   prDateStartEl.min = PR_allDates[0]; prDateStartEl.max = PR_allDates[PR_allDates.length-1];
   prDateEndEl.min = PR_allDates[0]; prDateEndEl.max = PR_allDates[PR_allDates.length-1];
-
-  const produtos = [...new Set(PR_DATA.map(r=>r.produto))].sort();
-  const curProd = prProdutoEl.value;
-  prProdutoEl.innerHTML = '<option value="">Todos os produtos</option>';
-  produtos.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; prProdutoEl.appendChild(o); });
-  if(produtos.includes(curProd)) prProdutoEl.value = curProd;
 
   const temMaquina = PR_currentSetorType === 'producao';
   prMaquinaWrapEl.style.display = temMaquina ? '' : 'none';
@@ -2564,17 +2658,17 @@ function PR_applyDateBoundsAndRefresh(){
     prMaquinaEl.value = '';
   }
 
+  PR_renderProdutoMultiSelect();
   PR_refreshAll();
 }
 
 function PR_applyFilters(){
   const ds = prDateStartEl.value, de = prDateEndEl.value;
-  const prod = prProdutoEl.value;
   const maquina = prMaquinaEl.value;
   PR_FILTERED = PR_DATA.filter(r=>{
     if(ds && r.dateISO < ds) return false;
     if(de && r.dateISO > de) return false;
-    if(prod && r.produto !== prod) return false;
+    if(PR_selectedProdutos.size > 0 && !PR_selectedProdutos.has(r.produto)) return false;
     if(maquina && r.maquina !== maquina) return false;
     return true;
   });
@@ -2946,7 +3040,7 @@ function PR_refreshAll(){
   }
 }
 
-[prDateStartEl, prDateEndEl, prProdutoEl, prMaquinaEl].forEach(el=>{
+[prDateStartEl, prDateEndEl].forEach(el=>{
   el.addEventListener('change', PR_refreshAll);
 });
 document.getElementById('prBtnRefresh').addEventListener('click', ()=> PR_loadData(true));
