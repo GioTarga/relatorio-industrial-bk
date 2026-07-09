@@ -2905,6 +2905,23 @@ function PR_renderTable(){
    1 carrinho = 19 telas, então convertemos antes de calcular a média. */
 const PR_TELAS_POR_CARRINHO = 19;
 
+/* Tempo total (soma do Início ao Fim de cada corrida), tempo parado (soma
+   de todas as paradas) e tempo rodando (diferença), com os percentuais
+   correspondentes. Reaproveitado pelo card de aproveitamento e pelo
+   gráfico de Tempo Rodando × Tempo Parado. */
+function PR_computeRodadoParado(rows){
+  let tempoTotal = 0, tempoParado = 0;
+  rows.forEach(r=>{
+    const ini = TP_clockToSeconds(r.inicio), fim = TP_clockToSeconds(r.fim);
+    if(ini !== null && fim !== null && fim > ini) tempoTotal += (fim - ini);
+    (r.paradas||[]).forEach(p=>{ if(p.duracaoSec) tempoParado += p.duracaoSec; });
+  });
+  const tempoRodando = Math.max(tempoTotal - tempoParado, 0);
+  const pctRodando = tempoTotal > 0 ? (tempoRodando/tempoTotal*100) : null;
+  const pctParado = tempoTotal > 0 ? (tempoParado/tempoTotal*100) : null;
+  return { tempoTotal, tempoParado, tempoRodando, pctRodando, pctParado };
+}
+
 function PR_renderKPIsProducao(rows){
   const unidadesHora = PR_avg(rows.map(r=>r.unidadesPorHora));
   const caixaRows = rows.filter(r=> (r.unidadeMedida||'').toLowerCase() === 'caixa');
@@ -2913,6 +2930,7 @@ function PR_renderKPIsProducao(rows){
   const carrinhosHora = carrinhoRows.length ? PR_avg(carrinhoRows.map(r=> r.producaoHora !== null ? r.producaoHora / PR_TELAS_POR_CARRINHO : null)) : null;
   let paradaTotal = 0, nParadas = 0;
   rows.forEach(r=> (r.paradas||[]).forEach(p=>{ if(p.duracaoSec){ paradaTotal += p.duracaoSec; nParadas++; } }));
+  const { pctRodando, pctParado } = PR_computeRodadoParado(rows);
 
   document.getElementById('prKpiGrid').innerHTML = `
     <div class="kpi-card">
@@ -2932,6 +2950,11 @@ function PR_renderKPIsProducao(rows){
       <div class="label">Tempo Total de Parada</div>
       <div class="value" style="font-size:22px;">${TP_fmtDuration(paradaTotal)}</div>
       <div class="trend-foot" style="margin-top:4px;">${nParadas} parada(s) registrada(s)</div>
+    </div>
+    <div class="kpi-card good">
+      <div class="label">Aproveitamento do Turno</div>
+      <div class="value" style="font-size:22px;">${pctRodando !== null ? pctRodando.toFixed(0)+'%' : '—'}<span style="font-size:13px;"> rodando</span></div>
+      <div class="trend-foot" style="margin-top:4px;">${pctParado !== null ? pctParado.toFixed(0)+'% parado' : '—'}</div>
     </div>
   `;
 }
@@ -2998,11 +3021,11 @@ function PR_renderEstimativaChart(rows){
   }
   const turnoSec = 8*3600;
   const items = [1, 0.8, 0.6].map(pct=>({
-    label: Math.round(pct*100) + '% do turno (' + TP_fmtDuration(turnoSec*pct) + ')',
-    value: unidadesHora * (turnoSec*pct/3600),
+    label: Math.round(pct*100) + '% do turno rodando (' + TP_fmtDuration(turnoSec*pct) + ' de 8h)',
+    value: unidadesHora * pct,
   }));
   const maxVal = Math.max(...items.map(i=>i.value), 1);
-  const rowH=34, gap=16, leftLabelW=210, chartW=380;
+  const rowH=34, gap=16, leftLabelW=250, chartW=340;
   const h = items.length*(rowH+gap);
   let bars='';
   items.forEach((item,i)=>{
@@ -3010,13 +3033,13 @@ function PR_renderEstimativaChart(rows){
     const w = (item.value/maxVal)*chartW;
     bars += `<text x="${leftLabelW-10}" y="${y+rowH/2+4}" font-size="12" fill="#2a1a1a" text-anchor="end" font-weight="700">${item.label}</text>`;
     bars += `<rect x="${leftLabelW}" y="${y}" width="${w}" height="${rowH}" rx="7" fill="#A10101"/>`;
-    bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="13" fill="#A10101" font-weight="800">${PR_fmtNum(item.value)} un</text>`;
+    bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="13" fill="#A10101" font-weight="800">${PR_fmtNum(item.value,1)} un/h</text>`;
   });
   el.innerHTML = `
-    <svg viewBox="0 0 ${leftLabelW+chartW+120} ${h+10}" width="${leftLabelW+chartW+120}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+    <svg viewBox="0 0 ${leftLabelW+chartW+130} ${h+10}" width="${leftLabelW+chartW+130}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
       ${bars}
     </svg>
-    <div style="margin-top:10px;font-size:11.5px;color:var(--ink-soft);">Projeção com base na velocidade média observada no período (${PR_fmtNum(unidadesHora,1)} unidades/hora), aplicada a um turno de 8 horas em cada cenário de aproveitamento.</div>
+    <div style="margin-top:10px;font-size:11.5px;color:var(--ink-soft);">O turno é sempre de 8 horas — o que muda entre os cenários é o quanto dele passa rodando (o resto é parada). Estimativa com base na velocidade média observada no período (${PR_fmtNum(unidadesHora,1)} unidades/hora).</div>
   `;
 }
 
@@ -3027,13 +3050,7 @@ function PR_renderRodadoParadoChart(rows){
     el.innerHTML = `<div class="empty-state"><span class="empty-icon">⏱</span>Nenhum registro no período selecionado.</div>`;
     return;
   }
-  let tempoTotal = 0, tempoParado = 0;
-  rows.forEach(r=>{
-    const ini = TP_clockToSeconds(r.inicio), fim = TP_clockToSeconds(r.fim);
-    if(ini !== null && fim !== null && fim > ini) tempoTotal += (fim - ini);
-    (r.paradas||[]).forEach(p=>{ if(p.duracaoSec) tempoParado += p.duracaoSec; });
-  });
-  const tempoRodando = Math.max(tempoTotal - tempoParado, 0);
+  const { tempoTotal, tempoParado, tempoRodando } = PR_computeRodadoParado(rows);
   if(tempoTotal === 0){
     el.innerHTML = `<div class="empty-state"><span class="empty-icon">⏱</span>Sem horários de Início/Fim válidos no período selecionado.</div>`;
     return;
