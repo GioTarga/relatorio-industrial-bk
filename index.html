@@ -618,7 +618,7 @@
       </div>
 
       <div class="panel" id="prPanelEstimativa" style="display:none;">
-        <div class="panel-title">Estimativa de Produção por Turno (8h)</div>
+        <div class="panel-title">Produtividade Estimada</div>
         <div class="chart-wrap" id="prChartEstimativa"></div>
       </div>
 
@@ -2747,6 +2747,7 @@ function PR_renderKPIs(){
   const paradaTotal = PR_sum(rows.map(r=>r.parada));
   const nParadas = rows.filter(r=>r.parada && r.parada > 0).length;
 
+  document.getElementById('prKpiGrid').style.gridTemplateColumns = 'repeat(4,1fr)';
   document.getElementById('prKpiGrid').innerHTML = `
     <div class="kpi-card">
       <div class="label">Massa/Hora</div>
@@ -2932,6 +2933,7 @@ function PR_renderKPIsProducao(rows){
   rows.forEach(r=> (r.paradas||[]).forEach(p=>{ if(p.duracaoSec){ paradaTotal += p.duracaoSec; nParadas++; } }));
   const { pctRodando, pctParado } = PR_computeRodadoParado(rows);
 
+  document.getElementById('prKpiGrid').style.gridTemplateColumns = 'repeat(5,1fr)';
   document.getElementById('prKpiGrid').innerHTML = `
     <div class="kpi-card">
       <div class="label">Unidades/Hora</div>
@@ -2954,7 +2956,7 @@ function PR_renderKPIsProducao(rows){
     <div class="kpi-card good">
       <div class="label">Aproveitamento do Turno</div>
       <div class="value" style="font-size:22px;">${pctRodando !== null ? pctRodando.toFixed(0)+'%' : '—'}<span style="font-size:13px;"> rodando</span></div>
-      <div class="trend-foot" style="margin-top:4px;">${pctParado !== null ? pctParado.toFixed(0)+'% parado' : '—'}</div>
+      <div class="trend-foot" style="margin-top:4px;">${pctParado !== null ? `<span style="color:var(--red);font-size:11.5px;">${pctParado.toFixed(0)}% parado</span>` : '—'}</div>
     </div>
   `;
 }
@@ -3014,15 +3016,26 @@ function PR_renderParadasChartProducao(rows){
 /* ---------- Gráfico: estimativa de produção projetada para um turno de 8h ---------- */
 function PR_renderEstimativaChart(rows){
   const el = document.getElementById('prChartEstimativa');
-  const unidadesHora = PR_avg(rows.map(r=>r.unidadesPorHora));
-  if(unidadesHora === null){
+  const unidadesHoraObservado = PR_avg(rows.map(r=>r.unidadesPorHora));
+  if(unidadesHoraObservado === null){
     el.innerHTML = `<div class="empty-state"><span class="empty-icon">⏱</span>Sem dados de Unidades/Hora no período selecionado.</div>`;
     return;
   }
+  const { pctRodando } = PR_computeRodadoParado(rows);
+  if(!pctRodando){
+    el.innerHTML = `<div class="empty-state"><span class="empty-icon">⏱</span>Sem horários de Início/Fim válidos para estimar o aproveitamento real do período.</div>`;
+    return;
+  }
+  /* "Unidades por Hora" observado é uma média que já vem diluída pelo tempo
+     parado real do período (ex: rodando só 57% do turno). Pra projetar os
+     cenários corretamente, primeiro isola a velocidade "pura" — só enquanto
+     a máquina está de fato rodando — e a partir dela aplica cada cenário. */
+  const velocidadeRodando = unidadesHoraObservado / (pctRodando/100);
+
   const turnoSec = 8*3600;
   const items = [1, 0.8, 0.6].map(pct=>({
     label: Math.round(pct*100) + '% do turno rodando (' + TP_fmtDuration(turnoSec*pct) + ' de 8h)',
-    value: unidadesHora * pct,
+    value: velocidadeRodando * pct,
   }));
   const maxVal = Math.max(...items.map(i=>i.value), 1);
   const rowH=34, gap=16, leftLabelW=250, chartW=340;
@@ -3039,7 +3052,7 @@ function PR_renderEstimativaChart(rows){
     <svg viewBox="0 0 ${leftLabelW+chartW+130} ${h+10}" width="${leftLabelW+chartW+130}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
       ${bars}
     </svg>
-    <div style="margin-top:10px;font-size:11.5px;color:var(--ink-soft);">O turno é sempre de 8 horas — o que muda entre os cenários é o quanto dele passa rodando (o resto é parada). Estimativa com base na velocidade média observada no período (${PR_fmtNum(unidadesHora,1)} unidades/hora).</div>
+    <div style="margin-top:10px;font-size:11.5px;color:var(--ink-soft);">Aproveitamento real do período: ${pctRodando.toFixed(0)}% do turno rodando (produtividade observada de ${PR_fmtNum(unidadesHoraObservado,1)} un/h já reflete essa parada). A 100% de aproveitamento, a velocidade real de operação da máquina seria de ${PR_fmtNum(velocidadeRodando,1)} un/h — é essa velocidade que projetamos em cada cenário abaixo.</div>
   `;
 }
 
