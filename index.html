@@ -670,6 +670,10 @@
       <input type="date" id="prDateEnd">
       <label for="prProduto">Produto</label>
       <select id="prProduto"><option value="">Todos os produtos</option></select>
+      <span id="prMaquinaWrap" style="display:none;">
+        <label for="prMaquina">Máquina</label>
+        <select id="prMaquina"><option value="">Todas as máquinas</option></select>
+      </span>
       <button class="btn-refresh" id="prBtnRefresh" title="Verificar dados novos">⟳ Atualizar</button>
       <span class="period-info" id="prPeriodInfo"></span>
     </div>
@@ -3570,6 +3574,8 @@ async function PR_loadData(isManualRefresh){
 const prDateStartEl = document.getElementById('prDateStart');
 const prDateEndEl = document.getElementById('prDateEnd');
 const prProdutoEl = document.getElementById('prProduto');
+const prMaquinaEl = document.getElementById('prMaquina');
+const prMaquinaWrapEl = document.getElementById('prMaquinaWrap');
 
 PR_renderSetorTabs();
 
@@ -3587,16 +3593,30 @@ function PR_applyDateBoundsAndRefresh(){
   produtos.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; prProdutoEl.appendChild(o); });
   if(produtos.includes(curProd)) prProdutoEl.value = curProd;
 
+  const temMaquina = PR_currentSetorType === 'producao';
+  prMaquinaWrapEl.style.display = temMaquina ? '' : 'none';
+  if(temMaquina){
+    const maquinas = [...new Set(PR_DATA.map(r=>r.maquina).filter(Boolean))].sort();
+    const curMaq = prMaquinaEl.value;
+    prMaquinaEl.innerHTML = '<option value="">Todas as máquinas</option>';
+    maquinas.forEach(m=>{ const o=document.createElement('option'); o.value=m; o.textContent=m; prMaquinaEl.appendChild(o); });
+    if(maquinas.includes(curMaq)) prMaquinaEl.value = curMaq;
+  } else {
+    prMaquinaEl.value = '';
+  }
+
   PR_refreshAll();
 }
 
 function PR_applyFilters(){
   const ds = prDateStartEl.value, de = prDateEndEl.value;
   const prod = prProdutoEl.value;
+  const maquina = prMaquinaEl.value;
   PR_FILTERED = PR_DATA.filter(r=>{
     if(ds && r.dateISO < ds) return false;
     if(de && r.dateISO > de) return false;
     if(prod && r.produto !== prod) return false;
+    if(maquina && r.maquina !== maquina) return false;
     return true;
   });
 }
@@ -3967,7 +3987,7 @@ function PR_refreshAll(){
   }
 }
 
-[prDateStartEl, prDateEndEl, prProdutoEl].forEach(el=>{
+[prDateStartEl, prDateEndEl, prProdutoEl, prMaquinaEl].forEach(el=>{
   el.addEventListener('change', PR_refreshAll);
 });
 document.getElementById('prBtnRefresh').addEventListener('click', ()=> PR_loadData(true));
