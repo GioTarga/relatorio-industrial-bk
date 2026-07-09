@@ -125,6 +125,15 @@
   .btn-refresh:disabled{ opacity:0.6; cursor:default; }
   .period-bar .period-info{ font-size:12px; color:var(--ink-soft); margin-left:6px; }
 
+  .setor-tabs{ display:flex; gap:8px; padding:16px 32px 0; flex-wrap:wrap; }
+  .setor-tab-btn{
+    padding:9px 20px; border-radius:9px 9px 0 0; border:1px solid var(--line); border-bottom:none;
+    background:#fbeed0; font-weight:800; font-size:12.5px; letter-spacing:0.6px; text-transform:uppercase;
+    color:var(--ink-soft); cursor:pointer; transition:background 0.15s, color 0.15s;
+  }
+  .setor-tab-btn:hover{ background:#fff; color:var(--ink); }
+  .setor-tab-btn.active{ background:var(--paper); color:var(--red-dark); border-color:var(--line); position:relative; top:1px; }
+
   .container{ max-width:1600px; margin:0 auto; padding:22px 32px 50px; }
 
   .kpi-grid{
@@ -380,9 +389,13 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
         Vendas
       </button>
-      <button class="nav-item" data-page="produtividade">
+      <button class="nav-item" data-page="produtividade" data-setor="giro_meio">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
-        Produtividade
+        Produtividade · Giro Meio
+      </button>
+      <button class="nav-item" data-page="produtividade" data-setor="salgado">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+        Produtividade · Salgado
       </button>
     </nav>
   </aside>
@@ -651,14 +664,14 @@
       </div>
     </div>
 
+    <div class="setor-tabs" id="prSetorTabs"></div>
+
     <div class="period-bar">
       <label for="prDateStart">Data inicial</label>
       <input type="date" id="prDateStart">
       <span class="sep">até</span>
       <label for="prDateEnd">Data final</label>
       <input type="date" id="prDateEnd">
-      <label for="prSetor">Setor</label>
-      <select id="prSetor"></select>
       <label for="prProduto">Produto</label>
       <select id="prProduto"><option value="">Todos os produtos</option></select>
       <button class="btn-refresh" id="prBtnRefresh" title="Verificar dados novos">⟳ Atualizar</button>
@@ -3389,16 +3402,26 @@ const PR_FALLBACK_DATA = {
   ],
 };
 
-/* Popula o seletor de Setor a partir das configs disponíveis */
-function PR_populateSetorSelect(){
-  const el = document.getElementById('prSetor');
+/* Gera as abas (pills) de Setor a partir das configs disponíveis */
+function PR_renderSetorTabs(){
+  const el = document.getElementById('prSetorTabs');
   el.innerHTML = '';
   Object.keys(PR_SETOR_CONFIGS).forEach(key=>{
-    const o = document.createElement('option');
-    o.value = key; o.textContent = PR_SETOR_CONFIGS[key].label;
-    el.appendChild(o);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'setor-tab-btn' + (key === PR_currentSetor ? ' active' : '');
+    btn.textContent = PR_SETOR_CONFIGS[key].label;
+    btn.addEventListener('click', ()=>{
+      if(key === PR_currentSetor) return;
+      PR_currentSetor = key;
+      PR_DATA = [];
+      prDateStartEl.value = ''; prDateEndEl.value = '';
+      prProdutoEl.value = '';
+      PR_renderSetorTabs();
+      PR_loadData(false);
+    });
+    el.appendChild(btn);
   });
-  el.value = PR_currentSetor;
 }
 
 function PR_transformCsv(csvText){
@@ -3550,18 +3573,9 @@ async function PR_loadData(isManualRefresh){
 
 const prDateStartEl = document.getElementById('prDateStart');
 const prDateEndEl = document.getElementById('prDateEnd');
-const prSetorEl = document.getElementById('prSetor');
 const prProdutoEl = document.getElementById('prProduto');
 
-PR_populateSetorSelect();
-
-prSetorEl.addEventListener('change', ()=>{
-  PR_currentSetor = prSetorEl.value;
-  PR_DATA = [];
-  prDateStartEl.value = ''; prDateEndEl.value = '';
-  prProdutoEl.value = '';
-  PR_loadData(false);
-});
+PR_renderSetorTabs();
 
 function PR_applyDateBoundsAndRefresh(){
   PR_allDates = [...new Set(PR_DATA.map(r=>r.dateISO))].sort();
@@ -3807,12 +3821,17 @@ function PR_renderTable(){
    em cada corrida) e tabela detalhada com colunas próprias desse formato.
    ============================================================================ */
 
+/* Regra de conversão: quando a Unidade de medida é "Carrinho", a coluna
+   "Produção Caixa ou telas/hora" vem em TELAS por hora, não em carrinhos.
+   1 carrinho = 19 telas, então convertemos antes de calcular a média. */
+const PR_TELAS_POR_CARRINHO = 19;
+
 function PR_renderKPIsProducao(rows){
   const unidadesHora = PR_avg(rows.map(r=>r.unidadesPorHora));
   const caixaRows = rows.filter(r=> (r.unidadeMedida||'').toLowerCase() === 'caixa');
   const carrinhoRows = rows.filter(r=> (r.unidadeMedida||'').toLowerCase() === 'carrinho');
   const caixasHora = caixaRows.length ? PR_avg(caixaRows.map(r=>r.producaoHora)) : null;
-  const carrinhosHora = carrinhoRows.length ? PR_avg(carrinhoRows.map(r=>r.producaoHora)) : null;
+  const carrinhosHora = carrinhoRows.length ? PR_avg(carrinhoRows.map(r=> r.producaoHora !== null ? r.producaoHora / PR_TELAS_POR_CARRINHO : null)) : null;
   let paradaTotal = 0, nParadas = 0;
   rows.forEach(r=> (r.paradas||[]).forEach(p=>{ if(p.duracaoSec){ paradaTotal += p.duracaoSec; nParadas++; } }));
 
@@ -3828,6 +3847,7 @@ function PR_renderKPIsProducao(rows){
     <div class="kpi-card">
       <div class="label">Carrinhos/Hora</div>
       <div class="value">${carrinhosHora !== null ? PR_fmtNum(carrinhosHora, 1) : '—'}</div>
+      ${carrinhosHora !== null ? `<div class="trend-foot" style="margin-top:4px;">telas/h ÷ ${PR_TELAS_POR_CARRINHO}</div>` : ''}
     </div>
     <div class="kpi-card warn">
       <div class="label">Tempo Total de Parada</div>
