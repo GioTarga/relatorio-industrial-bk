@@ -608,11 +608,6 @@
         <div class="chart-wrap" id="prChartVelocidade"></div>
       </div>
 
-      <div class="panel" id="prPanelPeso">
-        <div class="panel-title">Peso de Massa Produzido por Dia (kg)</div>
-        <div class="chart-wrap" id="prChartPeso"></div>
-      </div>
-
       <div class="panel" id="prPanelInsumo" style="display:none;">
         <div class="panel-title">Produção de Insumos (Blocos de Massa e Rolos Laminados)</div>
         <div class="kpi-grid" id="prKpiGridInsumo" style="margin-bottom:0;"></div>
@@ -2381,7 +2376,7 @@ const PR_SETOR_CONFIGS = {
     label: 'SALGADO',
     type: 'producao',
     csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBFGt1vkh6HsLtIO2FB34RcTIkb9XCxEYW6lrq3zGK1Jyn6vw-YCCuB6mBD29hMQatFgpOtsh1go2p/pub?gid=2049824067&single=true&output=csv",
-    insumoCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBFGt1vkh6HsLtIO2FB34RcTIkb9XCxEYW6lrq3zGK1Jyn6vw-YCCuB6mBD29hMQatFgpOtsh1go2p/pub?output=csv",
+    insumoCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBFGt1vkh6HsLtIO2FB34RcTIkb9XCxEYW6lrq3zGK1Jyn6vw-YCCuB6mBD29hMQatFgpOtsh1go2p/pub?gid=1545091990&single=true&output=csv",
   },
   // Novos setores (MASSA SALGADO...) entram aqui quando os dados
   // estiverem disponíveis. Use type:'massada' para planilhas no formato
@@ -2909,45 +2904,6 @@ function PR_renderVelocidadeChart(){
     </svg>`;
 }
 
-/* ---------- Gráfico: peso de massa produzido por dia (barras verticais) ---------- */
-function PR_renderPesoChart(){
-  const rows = PR_FILTERED;
-  const byDia = {};
-  rows.forEach(r=>{ (byDia[r.dateISO]=byDia[r.dateISO]||[]).push(r); });
-  const dias = Object.keys(byDia).sort();
-  if(dias.length === 0){
-    document.getElementById('prChartPeso').innerHTML = `<div class="empty-state"><span class="empty-icon">⚖</span>Nenhum registro no período selecionado.</div>`;
-    return;
-  }
-  const items = dias.map(d=>({
-    label: byDia[d][0].dateRaw,
-    value: PR_sum(byDia[d].map(r=>r.peso)),
-  }));
-  const barW = 50, gap = 24, leftPad = 55, topPad = 20, baseY = 240;
-  const chartWidth = items.length*(barW+gap) + leftPad + 20;
-  const maxVal = Math.max(...items.map(i=>i.value), 1);
-
-  let grid = '', bars = '';
-  const step = maxVal > 2000 ? 500 : (maxVal > 500 ? 200 : 50);
-  for(let v=0; v<=maxVal; v+=step){
-    const y = baseY - (v/maxVal)*(baseY-topPad);
-    grid += `<line x1="${leftPad}" y1="${y}" x2="${chartWidth-10}" y2="${y}" stroke="#f0ddc0" stroke-width="1"/>`;
-    grid += `<text x="${leftPad-8}" y="${y+4}" font-size="10" fill="#6b5c5c" text-anchor="end">${PR_fmtNum(v)}</text>`;
-  }
-  items.forEach((item,i)=>{
-    const x = leftPad + i*(barW+gap);
-    const h = (item.value/maxVal)*(baseY-topPad);
-    bars += `<rect x="${x}" y="${baseY-h}" width="${barW}" height="${h}" rx="4" fill="#B5640B"/>`;
-    bars += `<text x="${x+barW/2}" y="${baseY-h-8}" font-size="10.5" fill="#B5640B" font-weight="700" text-anchor="middle">${PR_fmtNum(item.value)}</text>`;
-    bars += `<text x="${x+barW/2}" y="${baseY+16}" font-size="10.5" fill="#4a3a3a" text-anchor="end" transform="rotate(-35 ${x+barW/2} ${baseY+16})">${item.label}</text>`;
-  });
-
-  document.getElementById('prChartPeso').innerHTML = `
-    <svg viewBox="0 0 ${chartWidth} 290" width="${chartWidth}" height="290" style="overflow:visible;font-family:Arial;display:inline-block;">
-      ${grid}${bars}
-    </svg>`;
-}
-
 /* ---------- Gráfico: tempo de parada por motivo (barras horizontais) ---------- */
 function PR_renderParadasChart(){
   const rows = PR_FILTERED.filter(r=>r.parada && r.parada > 0);
@@ -3328,7 +3284,6 @@ function PR_refreshAll(){
       PR_FILTERED.length + ' ' + unidadeLabel + ' no período' + (ds && de ? ` (${ds.split('-').reverse().join('/')} a ${de.split('-').reverse().join('/')})` : '');
   }
 
-  const panelPeso = document.getElementById('prPanelPeso');
   const panelEstimativa = document.getElementById('prPanelEstimativa');
   const panelRodadoParado = document.getElementById('prPanelRodadoParado');
   const panelInsumo = document.getElementById('prPanelInsumo');
@@ -3341,7 +3296,6 @@ function PR_refreshAll(){
   if(temInsumo) PR_renderParadasRolosChart(PR_INSUMO_FILTERED);
 
   if(isProducao){
-    panelPeso.style.display = 'none';
     panelEstimativa.style.display = 'block';
     panelRodadoParado.style.display = 'block';
     titleChart1.textContent = 'Unidades/Hora por Produto';
@@ -3352,13 +3306,11 @@ function PR_refreshAll(){
     PR_renderRodadoParadoChart(PR_FILTERED);
     PR_renderTableProducao(PR_FILTERED);
   } else {
-    panelPeso.style.display = 'block';
     panelEstimativa.style.display = 'none';
     panelRodadoParado.style.display = 'none';
     titleChart1.textContent = 'Massa/Hora por Produto (quantidade de massas)';
     PR_renderKPIs();
     PR_renderVelocidadeChart();
-    PR_renderPesoChart();
     PR_renderParadasChart();
     PR_renderTable();
   }
