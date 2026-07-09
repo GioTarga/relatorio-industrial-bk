@@ -3431,60 +3431,73 @@ function PR_transformCsv(csvText){
   return records;
 }
 
-/* Formato "produção" (ex: SALGADO): 1 linha = 1 corrida de produção numa
-   máquina, com várias paradas registradas dentro da mesma célula (uma por
-   linha, pareadas por posição entre "Paradas Registradas" e "Tempo Parado").
+/* Formato "produção" (ex: SALGADO): CADA PARADA é uma linha própria na
+   planilha. Só a PRIMEIRA linha de cada corrida de produção vem com as
+   colunas de métricas preenchidas (Velocidade de Prensa, Qtd Colab.,
+   Unidades por Hora, Produção/Hora, Tempo Médio, Unidade de medida); as
+   linhas seguintes da MESMA corrida repetem Data/Produto/Máquina/Início/Fim
+   mas vêm com essas métricas em branco, e servem só para registrar mais uma
+   parada (Motivo + Tempo Parado).
    Colunas: Data(0) Produto(1) Máquina(2) Início(3) Fim(4) Velocidade de
    Prensa(5) Qtd Colab.(6) Unidades por Hora(7) Produção Caixa/telas por
    Hora(8) Tempo Médio(9) Unidade de medida(10) Duração do Rolo de Massa(11)
-   Paradas Registradas(12) Tempo Parado(13).
-   Algumas planilhas usam células mescladas para Data/Produto/Máquina/
-   Início/Fim quando há várias linhas de parada — por segurança, se uma
-   dessas vier em branco, repete o último valor não-vazio (forward-fill). */
+   Motivo da Parada(12) Tempo Parado(13).
+   Estratégia: uma linha com "Unidades por Hora" preenchido inicia uma NOVA
+   corrida; linhas com essa coluna vazia são tratadas como mais uma parada
+   pertencente à corrida em aberto mais recente. */
 function PR_transformCsvProducao(csvText){
   const rows = parseCSV(csvText).filter(r => r.some(c => c && c.trim() !== ''));
   const dataRows = rows.slice(1);
   const records = [];
-  let last = {};
+  let current = null;
+
   dataRows.forEach(r=>{
-    const dataRaw = (r[0]||'').trim() || last.dataRaw || '';
-    if(!dataRaw) return;
-    const iso = parseDataBR(dataRaw);
-    if(!iso) return;
-    const produto = (r[1]||'').trim() || last.produto || '';
-    if(!produto) return;
-    const maquina = (r[2]||'').trim() || last.maquina || '';
-    const inicio = (r[3]||'').trim() || last.inicio || '';
-    const fim = (r[4]||'').trim() || last.fim || '';
-
-    const velPrensaRaw = (r[5]||'').trim().replace('s','').replace(',', '.');
-    const velocidadePrensa = velPrensaRaw ? parseFloat(velPrensaRaw) : null;
-    const qtdColabRaw = (r[6]||'').trim().replace(',', '.');
-    const qtdColab = qtdColabRaw ? parseFloat(qtdColabRaw) : null;
+    const dataRaw = (r[0]||'').trim();
+    const produto = (r[1]||'').trim();
     const unidadesPorHoraRaw = (r[7]||'').trim().replace(/\./g,'').replace(',', '.');
-    const unidadesPorHora = unidadesPorHoraRaw ? parseFloat(unidadesPorHoraRaw) : null;
-    const producaoHoraRaw = (r[8]||'').trim().replace(/\./g,'').replace(',', '.');
-    const producaoHora = producaoHoraRaw ? parseFloat(producaoHoraRaw) : null;
-    const tempoMedio = TP_timeToSeconds((r[9]||'').trim());
-    const unidadeMedida = (r[10]||'').trim();
-    const duracaoRolo = TP_timeToSeconds((r[11]||'').trim());
+    const isNovaCorrida = unidadesPorHoraRaw !== '';
 
-    const motivos = (r[12]||'').split('\n').map(s=>s.trim()).filter(Boolean);
-    const tempos = (r[13]||'').split('\n').map(s=>s.trim()).filter(Boolean);
-    const paradas = motivos.map((motivo,i)=>({ motivo, duracaoSec: TP_timeToSeconds(tempos[i]||'') }));
+    if(isNovaCorrida){
+      if(current) records.push(current);
+      current = null;
 
-    last = {dataRaw, produto, maquina, inicio, fim};
+      if(!dataRaw || !produto) return; // linha inválida, ignora
+      const iso = parseDataBR(dataRaw);
+      if(!iso) return;
 
-    records.push({
-      dateISO: iso, dateRaw: dataRaw, produto, maquina, inicio, fim,
-      velocidadePrensa: (velocidadePrensa!==null && !isNaN(velocidadePrensa)) ? velocidadePrensa : null,
-      qtdColab: (qtdColab!==null && !isNaN(qtdColab)) ? qtdColab : null,
-      unidadesPorHora: (unidadesPorHora!==null && !isNaN(unidadesPorHora)) ? unidadesPorHora : null,
-      producaoHora: (producaoHora!==null && !isNaN(producaoHora)) ? producaoHora : null,
-      tempoMedio, unidadeMedida, duracaoRolo,
-      paradas,
-    });
+      const maquina = (r[2]||'').trim();
+      const inicio = (r[3]||'').trim();
+      const fim = (r[4]||'').trim();
+      const velPrensaRaw = (r[5]||'').trim().replace('s','').replace(',', '.');
+      const velocidadePrensa = velPrensaRaw ? parseFloat(velPrensaRaw) : null;
+      const qtdColabRaw = (r[6]||'').trim().replace(',', '.');
+      const qtdColab = qtdColabRaw ? parseFloat(qtdColabRaw) : null;
+      const unidadesPorHora = parseFloat(unidadesPorHoraRaw);
+      const producaoHoraRaw = (r[8]||'').trim().replace(/\./g,'').replace(',', '.');
+      const producaoHora = producaoHoraRaw ? parseFloat(producaoHoraRaw) : null;
+      const tempoMedio = TP_timeToSeconds((r[9]||'').trim());
+      const unidadeMedida = (r[10]||'').trim();
+      const duracaoRolo = TP_timeToSeconds((r[11]||'').trim());
+
+      current = {
+        dateISO: iso, dateRaw: dataRaw, produto, maquina, inicio, fim,
+        velocidadePrensa: (velocidadePrensa!==null && !isNaN(velocidadePrensa)) ? velocidadePrensa : null,
+        qtdColab: (qtdColab!==null && !isNaN(qtdColab)) ? qtdColab : null,
+        unidadesPorHora: (!isNaN(unidadesPorHora)) ? unidadesPorHora : null,
+        producaoHora: (producaoHora!==null && !isNaN(producaoHora)) ? producaoHora : null,
+        tempoMedio, unidadeMedida, duracaoRolo,
+        paradas: [],
+      };
+    }
+
+    // Toda linha (inclusive a primeira da corrida) pode carregar 1 parada.
+    const motivo = (r[12]||'').trim();
+    const tempoStr = (r[13]||'').trim();
+    if(current && motivo){
+      current.paradas.push({ motivo, duracaoSec: TP_timeToSeconds(tempoStr) });
+    }
   });
+  if(current) records.push(current);
   return records;
 }
 
