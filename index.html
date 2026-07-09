@@ -669,12 +669,12 @@
 
       <div class="kpi-grid" id="prKpiGrid"></div>
 
-      <div class="panel">
-        <div class="panel-title">Massa/Hora por Produto (quantidade de massas)</div>
+      <div class="panel" id="prPanelChart1">
+        <div class="panel-title" id="prTitleChart1">Massa/Hora por Produto (quantidade de massas)</div>
         <div class="chart-wrap" id="prChartVelocidade"></div>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="prPanelPeso">
         <div class="panel-title">Peso de Massa Produzido por Dia (kg)</div>
         <div class="chart-wrap" id="prChartPeso"></div>
       </div>
@@ -688,7 +688,7 @@
         <div class="panel-title">Registros Detalhados</div>
         <div class="table-wrap">
           <table class="detail">
-            <thead>
+            <thead id="prThead">
               <tr>
                 <th>Data</th>
                 <th class="center">Masseira</th>
@@ -3349,13 +3349,22 @@ document.getElementById('tpBtnRefresh').addEventListener('click', ()=> TP_loadDa
 const PR_SETOR_CONFIGS = {
   giro_meio: {
     label: 'GIRO MEIO',
+    type: 'massada',
     csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBFGt1vkh6HsLtIO2FB34RcTIkb9XCxEYW6lrq3zGK1Jyn6vw-YCCuB6mBD29hMQatFgpOtsh1go2p/pub?gid=993894836&single=true&output=csv",
   },
-  // Novos setores (SALGADO, MASSA SALGADO...) entram aqui quando os dados
-  // estiverem disponíveis, seguindo o mesmo formato de coluna.
+  salgado: {
+    label: 'SALGADO',
+    type: 'producao',
+    csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBFGt1vkh6HsLtIO2FB34RcTIkb9XCxEYW6lrq3zGK1Jyn6vw-YCCuB6mBD29hMQatFgpOtsh1go2p/pub?gid=2049824067&single=true&output=csv",
+  },
+  // Novos setores (MASSA SALGADO...) entram aqui quando os dados
+  // estiverem disponíveis. Use type:'massada' para planilhas no formato
+  // do GIRO MEIO (1 linha = 1 massada) ou type:'producao' para o formato
+  // do SALGADO (1 linha = 1 corrida de produção com paradas embutidas).
 };
 
 let PR_currentSetor = 'giro_meio';
+let PR_currentSetorType = 'massada';
 let PR_DATA = [];
 let PR_FILTERED = [];
 let PR_allDates = [];
@@ -3367,6 +3376,12 @@ const PR_FALLBACK_DATA = {
     {dateISO:"2026-07-08", dateRaw:"08/07/2026", produto:"Massinha 80g", masseira:"1", hora:"08:37:00", velocidade:27000, parada:null, motivo:"", peso:170},
     {dateISO:"2026-07-08", dateRaw:"08/07/2026", produto:"Nutri", masseira:"4", hora:"11:09:00", velocidade:32400, parada:null, motivo:"", peso:156},
     {dateISO:"2026-07-08", dateRaw:"08/07/2026", produto:"Ultra", masseira:"1", hora:"13:14:00", velocidade:11000, parada:1080, motivo:"Encontrar Carrinhos", peso:156},
+  ],
+  salgado: [
+    {dateISO:"2026-07-06", dateRaw:"06/07/2026", produto:"Esfina de Frango", maquina:"USIFOOD 2", inicio:"08:30:00", fim:"11:13:00", velocidadePrensa:1.3, qtdColab:3, unidadesPorHora:28, producaoHora:448, tempoMedio:2100, unidadeMedida:"Carrinho", duracaoRolo:null,
+      paradas:[{motivo:"Problema no Requeijão", duracaoSec:600},{motivo:"Problema Mecânico - Bicos de Recheio", duracaoSec:1860}]},
+    {dateISO:"2026-07-07", dateRaw:"07/07/2026", produto:"Pastel Mini Nata Carne", maquina:"PANITEC 4", inicio:"08:32:00", fim:"11:00:00", velocidadePrensa:1.6, qtdColab:4, unidadesPorHora:84, producaoHora:919, tempoMedio:43, unidadeMedida:"Caixa", duracaoRolo:145,
+      paradas:[{motivo:"Falta de massa", duracaoSec:120},{motivo:"Ajuste do recheio", duracaoSec:540}]},
   ],
 };
 
@@ -3412,6 +3427,63 @@ function PR_transformCsv(csvText){
   return records;
 }
 
+/* Formato "produção" (ex: SALGADO): 1 linha = 1 corrida de produção numa
+   máquina, com várias paradas registradas dentro da mesma célula (uma por
+   linha, pareadas por posição entre "Paradas Registradas" e "Tempo Parado").
+   Colunas: Data(0) Produto(1) Máquina(2) Início(3) Fim(4) Velocidade de
+   Prensa(5) Qtd Colab.(6) Unidades por Hora(7) Produção Caixa/telas por
+   Hora(8) Tempo Médio(9) Unidade de medida(10) Duração do Rolo de Massa(11)
+   Paradas Registradas(12) Tempo Parado(13).
+   Algumas planilhas usam células mescladas para Data/Produto/Máquina/
+   Início/Fim quando há várias linhas de parada — por segurança, se uma
+   dessas vier em branco, repete o último valor não-vazio (forward-fill). */
+function PR_transformCsvProducao(csvText){
+  const rows = parseCSV(csvText).filter(r => r.some(c => c && c.trim() !== ''));
+  const dataRows = rows.slice(1);
+  const records = [];
+  let last = {};
+  dataRows.forEach(r=>{
+    const dataRaw = (r[0]||'').trim() || last.dataRaw || '';
+    if(!dataRaw) return;
+    const iso = parseDataBR(dataRaw);
+    if(!iso) return;
+    const produto = (r[1]||'').trim() || last.produto || '';
+    if(!produto) return;
+    const maquina = (r[2]||'').trim() || last.maquina || '';
+    const inicio = (r[3]||'').trim() || last.inicio || '';
+    const fim = (r[4]||'').trim() || last.fim || '';
+
+    const velPrensaRaw = (r[5]||'').trim().replace('s','').replace(',', '.');
+    const velocidadePrensa = velPrensaRaw ? parseFloat(velPrensaRaw) : null;
+    const qtdColabRaw = (r[6]||'').trim().replace(',', '.');
+    const qtdColab = qtdColabRaw ? parseFloat(qtdColabRaw) : null;
+    const unidadesPorHoraRaw = (r[7]||'').trim().replace(/\./g,'').replace(',', '.');
+    const unidadesPorHora = unidadesPorHoraRaw ? parseFloat(unidadesPorHoraRaw) : null;
+    const producaoHoraRaw = (r[8]||'').trim().replace(/\./g,'').replace(',', '.');
+    const producaoHora = producaoHoraRaw ? parseFloat(producaoHoraRaw) : null;
+    const tempoMedio = TP_timeToSeconds((r[9]||'').trim());
+    const unidadeMedida = (r[10]||'').trim();
+    const duracaoRolo = TP_timeToSeconds((r[11]||'').trim());
+
+    const motivos = (r[12]||'').split('\n').map(s=>s.trim()).filter(Boolean);
+    const tempos = (r[13]||'').split('\n').map(s=>s.trim()).filter(Boolean);
+    const paradas = motivos.map((motivo,i)=>({ motivo, duracaoSec: TP_timeToSeconds(tempos[i]||'') }));
+
+    last = {dataRaw, produto, maquina, inicio, fim};
+
+    records.push({
+      dateISO: iso, dateRaw, produto, maquina, inicio, fim,
+      velocidadePrensa: (velocidadePrensa!==null && !isNaN(velocidadePrensa)) ? velocidadePrensa : null,
+      qtdColab: (qtdColab!==null && !isNaN(qtdColab)) ? qtdColab : null,
+      unidadesPorHora: (unidadesPorHora!==null && !isNaN(unidadesPorHora)) ? unidadesPorHora : null,
+      producaoHora: (producaoHora!==null && !isNaN(producaoHora)) ? producaoHora : null,
+      tempoMedio, unidadeMedida, duracaoRolo,
+      paradas,
+    });
+  });
+  return records;
+}
+
 async function PR_loadData(isManualRefresh){
   const setorKey = PR_currentSetor;
   const cfg = PR_SETOR_CONFIGS[setorKey];
@@ -3429,10 +3501,11 @@ async function PR_loadData(isManualRefresh){
     const changed = signature !== PR_lastSignature[setorKey];
     PR_lastSignature[setorKey] = signature;
 
-    const records = PR_transformCsv(text);
+    const records = cfg.type === 'producao' ? PR_transformCsvProducao(text) : PR_transformCsv(text);
     if(records.length === 0) throw new Error('Nenhum dado válido encontrado na planilha.');
 
     PR_DATA = records;
+    PR_currentSetorType = cfg.type;
     PR_applyDateBoundsAndRefresh();
 
     if(btn){
@@ -3447,6 +3520,7 @@ async function PR_loadData(isManualRefresh){
     }
     if(PR_DATA.length === 0){
       PR_DATA = PR_FALLBACK_DATA[setorKey] || [];
+      PR_currentSetorType = cfg.type;
       PR_applyDateBoundsAndRefresh();
       const hint = location.protocol === 'file:'
         ? ' Abra este arquivo por um servidor local (http://) — Google Sheets bloqueia requisições de arquivos locais (file://).'
@@ -3683,6 +3757,17 @@ function PR_renderParadasChart(){
 
 /* ---------- Tabela detalhada ---------- */
 function PR_renderTable(){
+  document.getElementById('prThead').innerHTML = `
+    <tr>
+      <th>Data</th>
+      <th class="center">Masseira</th>
+      <th class="center">Hora da Massa</th>
+      <th>Produto</th>
+      <th class="center">Velocidade GA (pães/hora)</th>
+      <th class="center">Parada</th>
+      <th>Motivo</th>
+      <th class="center">Peso da Massa (kg)</th>
+    </tr>`;
   const tbody = document.getElementById('prTbody');
   const rows = PR_FILTERED.slice().sort((a,b)=> (b.dateISO+b.hora).localeCompare(a.dateISO+a.hora));
   tbody.innerHTML = rows.map(r=>`
@@ -3699,18 +3784,150 @@ function PR_renderTable(){
   `).join('') || `<tr><td colspan="8" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro encontrado.</td></tr>`;
 }
 
+/* ============================================================================
+   Renderização — formato "produção" (SALGADO): KPIs, gráfico de unidades/hora
+   por produto, gráfico de paradas por motivo (agregando as paradas embutidas
+   em cada corrida) e tabela detalhada com colunas próprias desse formato.
+   ============================================================================ */
+
+function PR_renderKPIsProducao(rows){
+  const unidadesHora = PR_avg(rows.map(r=>r.unidadesPorHora));
+  const producaoHora = PR_avg(rows.map(r=>r.producaoHora));
+  const tempoMedio = PR_avg(rows.map(r=>r.tempoMedio));
+  let paradaTotal = 0, nParadas = 0;
+  rows.forEach(r=> (r.paradas||[]).forEach(p=>{ if(p.duracaoSec){ paradaTotal += p.duracaoSec; nParadas++; } }));
+
+  document.getElementById('prKpiGrid').innerHTML = `
+    <div class="kpi-card">
+      <div class="label">Unidades/Hora</div>
+      <div class="value">${unidadesHora !== null ? PR_fmtNum(unidadesHora, 1) : '—'}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Produção por Hora</div>
+      <div class="value">${producaoHora !== null ? PR_fmtNum(producaoHora, 1) : '—'}</div>
+    </div>
+    <div class="kpi-card good">
+      <div class="label">Tempo Médio de Ciclo</div>
+      <div class="value" style="font-size:22px;">${tempoMedio !== null ? TP_fmtDuration(tempoMedio) : '—'}</div>
+    </div>
+    <div class="kpi-card warn">
+      <div class="label">Tempo Total de Parada</div>
+      <div class="value" style="font-size:22px;">${TP_fmtDuration(paradaTotal)}</div>
+      <div class="trend-foot" style="margin-top:4px;">${nParadas} parada(s) registrada(s)</div>
+    </div>
+  `;
+}
+
+function PR_renderChartUnidadesProduto(rows){
+  const byProduto = {};
+  rows.forEach(r=>{ (byProduto[r.produto]=byProduto[r.produto]||[]).push(r); });
+  const items = Object.keys(byProduto).map(p=>({ label:p, value: PR_avg(byProduto[p].map(r=>r.unidadesPorHora)) || 0 })).sort((a,b)=>b.value-a.value);
+  if(items.length === 0){
+    document.getElementById('prChartVelocidade').innerHTML = `<div class="empty-state"><span class="empty-icon">⚡</span>Nenhum produto no período selecionado.</div>`;
+    return;
+  }
+  const maxVal = Math.max(...items.map(i=>i.value), 1);
+  const rowH=28, gap=10, leftLabelW=190, chartW=360;
+  const h = items.length*(rowH+gap);
+  let bars='';
+  items.forEach((item,i)=>{
+    const y = i*(rowH+gap);
+    const w = (item.value/maxVal)*chartW;
+    bars += `<text x="${leftLabelW-10}" y="${y+rowH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${item.label}</text>`;
+    bars += `<rect x="${leftLabelW}" y="${y}" width="${w}" height="${rowH}" rx="6" fill="#A10101"/>`;
+    bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="11.5" fill="#A10101" font-weight="700">${PR_fmtNum(item.value, 1)} un/h</text>`;
+  });
+  document.getElementById('prChartVelocidade').innerHTML = `
+    <svg viewBox="0 0 ${leftLabelW+chartW+100} ${h+10}" width="${leftLabelW+chartW+100}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+      ${bars}
+    </svg>`;
+}
+
+function PR_renderParadasChartProducao(rows){
+  const allParadas = [];
+  rows.forEach(r=> (r.paradas||[]).forEach(p=>{ if(p.duracaoSec) allParadas.push(p); }));
+  if(allParadas.length === 0){
+    document.getElementById('prChartParadas').innerHTML = `<div class="empty-state"><span class="empty-icon">✓</span>Nenhuma parada registrada no período selecionado.</div>`;
+    return;
+  }
+  const byMotivo = {};
+  allParadas.forEach(p=>{ const m = p.motivo || '(sem motivo informado)'; (byMotivo[m]=byMotivo[m]||[]).push(p.duracaoSec); });
+  const items = Object.keys(byMotivo).map(m=>({ label:m, value: PR_sum(byMotivo[m]) })).sort((a,b)=>b.value-a.value);
+  const maxVal = Math.max(...items.map(i=>i.value), 1);
+  const rowH=28, gap=10, leftLabelW=230, chartW=330;
+  const h = items.length*(rowH+gap);
+  let bars='';
+  items.forEach((item,i)=>{
+    const y = i*(rowH+gap);
+    const w = (item.value/maxVal)*chartW;
+    bars += `<text x="${leftLabelW-10}" y="${y+rowH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${item.label}</text>`;
+    bars += `<rect x="${leftLabelW}" y="${y}" width="${w}" height="${rowH}" rx="6" fill="#B5640B"/>`;
+    bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="11.5" fill="#B5640B" font-weight="700">${TP_fmtDuration(item.value)}</text>`;
+  });
+  document.getElementById('prChartParadas').innerHTML = `
+    <svg viewBox="0 0 ${leftLabelW+chartW+100} ${h+10}" width="${leftLabelW+chartW+100}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+      ${bars}
+    </svg>`;
+}
+
+function PR_renderTableProducao(rows){
+  document.getElementById('prThead').innerHTML = `
+    <tr>
+      <th>Data</th>
+      <th>Produto</th>
+      <th class="center">Máquina</th>
+      <th class="center">Início</th>
+      <th class="center">Fim</th>
+      <th class="center">Colab.</th>
+      <th class="center">Unidades/h</th>
+      <th class="center">Produção/h</th>
+      <th class="center">Tempo Médio</th>
+    </tr>`;
+  const sorted = rows.slice().sort((a,b)=> (b.dateISO+(b.inicio||'')).localeCompare(a.dateISO+(a.inicio||'')));
+  document.getElementById('prTbody').innerHTML = sorted.map(r=>`
+    <tr>
+      <td>${r.dateRaw}</td>
+      <td class="prod-name">${r.produto}</td>
+      <td class="center">${r.maquina||'—'}</td>
+      <td class="center">${r.inicio||'—'}</td>
+      <td class="center">${r.fim||'—'}</td>
+      <td class="center">${r.qtdColab!==null ? PR_fmtNum(r.qtdColab) : '—'}</td>
+      <td class="center">${r.unidadesPorHora!==null ? PR_fmtNum(r.unidadesPorHora) : '—'}</td>
+      <td class="center">${r.producaoHora!==null ? PR_fmtNum(r.producaoHora) : '—'}</td>
+      <td class="center">${r.tempoMedio!==null ? TP_fmtDuration(r.tempoMedio) : '—'}</td>
+    </tr>
+  `).join('') || `<tr><td colspan="9" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro encontrado.</td></tr>`;
+}
+
 function PR_refreshAll(){
   PR_applyFilters();
   const ds = prDateStartEl.value, de = prDateEndEl.value;
+  const isProducao = PR_currentSetorType === 'producao';
+  const unidadeLabel = isProducao ? 'corrida(s) de produção' : 'massada(s)';
   if(PR_allDates.length){
     document.getElementById('prPeriodInfo').textContent =
-      PR_FILTERED.length + ' massada(s) no período' + (ds && de ? ` (${ds.split('-').reverse().join('/')} a ${de.split('-').reverse().join('/')})` : '');
+      PR_FILTERED.length + ' ' + unidadeLabel + ' no período' + (ds && de ? ` (${ds.split('-').reverse().join('/')} a ${de.split('-').reverse().join('/')})` : '');
   }
-  PR_renderKPIs();
-  PR_renderVelocidadeChart();
-  PR_renderPesoChart();
-  PR_renderParadasChart();
-  PR_renderTable();
+
+  const panelPeso = document.getElementById('prPanelPeso');
+  const titleChart1 = document.getElementById('prTitleChart1');
+
+  if(isProducao){
+    panelPeso.style.display = 'none';
+    titleChart1.textContent = 'Unidades/Hora por Produto';
+    PR_renderKPIsProducao(PR_FILTERED);
+    PR_renderChartUnidadesProduto(PR_FILTERED);
+    PR_renderParadasChartProducao(PR_FILTERED);
+    PR_renderTableProducao(PR_FILTERED);
+  } else {
+    panelPeso.style.display = 'block';
+    titleChart1.textContent = 'Massa/Hora por Produto (quantidade de massas)';
+    PR_renderKPIs();
+    PR_renderVelocidadeChart();
+    PR_renderPesoChart();
+    PR_renderParadasChart();
+    PR_renderTable();
+  }
 }
 
 [prDateStartEl, prDateEndEl, prProdutoEl].forEach(el=>{
