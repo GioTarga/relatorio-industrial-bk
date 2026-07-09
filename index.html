@@ -166,6 +166,7 @@
     margin-bottom:30px;
   }
   #tpKpiGrid{ grid-template-columns:repeat(3,1fr); }
+  #prKpiGridInsumo{ grid-template-columns:repeat(4,1fr); }
   .kpi-card{
     background:var(--paper);
     border:1px solid var(--line);
@@ -610,6 +611,16 @@
       <div class="panel" id="prPanelPeso">
         <div class="panel-title">Peso de Massa Produzido por Dia (kg)</div>
         <div class="chart-wrap" id="prChartPeso"></div>
+      </div>
+
+      <div class="panel" id="prPanelInsumo" style="display:none;">
+        <div class="panel-title">Produção de Insumos (Blocos de Massa e Rolos Laminados)</div>
+        <div class="kpi-grid" id="prKpiGridInsumo" style="margin-bottom:0;"></div>
+      </div>
+
+      <div class="panel" id="prPanelParadasRolos" style="display:none;">
+        <div class="panel-title">Paradas na Produção de Rolos Laminados e Blocos de Massa</div>
+        <div class="chart-wrap" id="prChartParadasRolos"></div>
       </div>
 
       <div class="panel">
@@ -2340,8 +2351,14 @@ function TP_refreshAll(){
   TP_renderTable();
 }
 
-[tpDateStartEl, tpDateEndEl, tpProdutoEl].forEach(el=>{
-  el.addEventListener('change', TP_refreshAll);
+tpProdutoEl.addEventListener('change', TP_refreshAll);
+tpDateStartEl.addEventListener('change', () => {
+  if(tpDateStartEl.value > tpDateEndEl.value) tpDateEndEl.value = tpDateStartEl.value;
+  TP_refreshAll();
+});
+tpDateEndEl.addEventListener('change', () => {
+  if(tpDateEndEl.value < tpDateStartEl.value) tpDateStartEl.value = tpDateEndEl.value;
+  TP_refreshAll();
 });
 document.getElementById('tpBtnRefresh').addEventListener('click', ()=> TP_loadData(true));
 
@@ -2364,6 +2381,7 @@ const PR_SETOR_CONFIGS = {
     label: 'SALGADO',
     type: 'producao',
     csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBFGt1vkh6HsLtIO2FB34RcTIkb9XCxEYW6lrq3zGK1Jyn6vw-YCCuB6mBD29hMQatFgpOtsh1go2p/pub?gid=2049824067&single=true&output=csv",
+    insumoCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBFGt1vkh6HsLtIO2FB34RcTIkb9XCxEYW6lrq3zGK1Jyn6vw-YCCuB6mBD29hMQatFgpOtsh1go2p/pub?output=csv",
   },
   // Novos setores (MASSA SALGADO...) entram aqui quando os dados
   // estiverem disponíveis. Use type:'massada' para planilhas no formato
@@ -2375,8 +2393,11 @@ let PR_currentSetor = 'giro_meio';
 let PR_currentSetorType = 'massada';
 let PR_DATA = [];
 let PR_FILTERED = [];
+let PR_INSUMO_DATA = [];
+let PR_INSUMO_FILTERED = [];
 let PR_allDates = [];
 let PR_lastSignature = {};
+let PR_insumoLastSignature = {};
 let PR_selectedProdutos = new Set(); // vazio = todos os produtos
 
 /* Dados de segurança, usados apenas se a planilha não puder ser carregada */
@@ -2387,7 +2408,7 @@ const PR_FALLBACK_DATA = {
     {dateISO:"2026-07-08", dateRaw:"08/07/2026", produto:"Ultra", masseira:"1", hora:"13:14:00", velocidade:11000, parada:1080, motivo:"Encontrar Carrinhos", peso:156},
   ],
   salgado: [
-    {dateISO:"2027-07-03", dateRaw:"03/07/2027", produto:"Pastel Mini Nata Frango", maquina:"PANITEC 4", inicio:"13:26:00", fim:"14:26:00", velocidadePrensa:1.6, qtdColab:4, unidadesPorHora:3906, producaoHora:93, tempoMedio:38, unidadeMedida:"Caixa", duracaoRolo:null,
+    {dateISO:"2027-07-03", dateRaw:"03/07/2027", produto:"Pastel Mini Nata Frango", maquina:"PANITEC 4", inicio:"13:26:00", fim:"14:26:00", velocidadePrensa:1.6, qtdColab:4, unidadesPorHora:3906, producaoHora:93, tempoMedio:38, unidadeMedida:"Caixa", duracaoRolo:150,
       paradas:[{motivo:"Falta de Recheio", duracaoSec:437},{motivo:"Abastecimento de Recheio", duracaoSec:168},{motivo:"Falta de caixa", duracaoSec:62},{motivo:"Falta de Massa", duracaoSec:45}]},
     {dateISO:"2026-07-06", dateRaw:"06/07/2026", produto:"Esfina de Frango", maquina:"USIFOOD 2", inicio:"08:30:00", fim:"11:13:00", velocidadePrensa:1.3, qtdColab:3, unidadesPorHora:448, producaoHora:28, tempoMedio:2100, unidadeMedida:"Carrinho", duracaoRolo:null,
       paradas:[{motivo:"Falta de Massa", duracaoSec:207},{motivo:"Abastecimento de Recheio", duracaoSec:187},{motivo:"Problema no Requeijão", duracaoSec:50},{motivo:"Problema no Requeijão", duracaoSec:430},{motivo:"Problema Mecânico - Bicos de Recheio", duracaoSec:1860},{motivo:"Abastecimento de Recheio", duracaoSec:238},{motivo:"Falta de Recheio", duracaoSec:744}]},
@@ -2397,6 +2418,16 @@ const PR_FALLBACK_DATA = {
       paradas:[{motivo:"Falta de massa", duracaoSec:120},{motivo:"Falta de massa", duracaoSec:240},{motivo:"Abastecimento do recheio", duracaoSec:180},{motivo:"Falta de massa", duracaoSec:480},{motivo:"Falta de massa", duracaoSec:120},{motivo:"Falta de massa", duracaoSec:120},{motivo:"Ajuste do recheio", duracaoSec:540},{motivo:"Abastecimento de recheio", duracaoSec:360},{motivo:"Ajuste nos bicos injetores", duracaoSec:360},{motivo:"Falta de massa", duracaoSec:180},{motivo:"Falta de massa", duracaoSec:120},{motivo:"Abastecimento do recheio", duracaoSec:120},{motivo:"Falta de massa", duracaoSec:240},{motivo:"Falta de massa", duracaoSec:240},{motivo:"Falta de massa", duracaoSec:180},{motivo:"Falta de massa", duracaoSec:120},{motivo:"Falta de massa", duracaoSec:120}]},
   ],
 };
+
+/* Dados de exemplo para a fonte de insumos (Blocos de Massa / Rolos
+   Laminados), usados só se a planilha correspondente não puder ser
+   carregada. */
+const PR_FALLBACK_INSUMO_DATA = [
+  {dateISO:"2026-07-10", dateRaw:"10/07/2026", produto:"Rolos Laminados", inicio:"10:36:00", fim:"11:36:00", quantidade:47, tempoMedio:61,
+    paradas:[]},
+  {dateISO:"2026-07-10", dateRaw:"10/07/2026", produto:"Bloco de Massa", inicio:"13:00:00", fim:"14:00:00", quantidade:51, tempoMedio:59,
+    paradas:[{motivo:"Coleta de Massa", duracaoSec:180},{motivo:"Coleta de Massa", duracaoSec:300},{motivo:"Atraso de massa", duracaoSec:240},{motivo:"Coleta de Massa", duracaoSec:180},{motivo:"Coleta de Massa", duracaoSec:180},{motivo:"Coleta de Massa", duracaoSec:180},{motivo:"Coleta de Massa", duracaoSec:180}]},
+];
 
 /* Gera as abas (pills) de Setor a partir das configs disponíveis */
 function PR_renderSetorTabs(){
@@ -2411,6 +2442,7 @@ function PR_renderSetorTabs(){
       if(key === PR_currentSetor) return;
       PR_currentSetor = key;
       PR_DATA = [];
+      PR_INSUMO_DATA = [];
       prDateStartEl.value = ''; prDateEndEl.value = '';
       PR_selectedProdutos.clear();
       PR_renderSetorTabs();
@@ -2520,12 +2552,84 @@ function PR_transformCsvProducao(csvText){
   return records;
 }
 
+/* Formato "insumo" (ex: MASSA SALGADO — Blocos de Massa e Rolos Laminados):
+   mesma lógica de agrupamento do formato "produção" (uma linha inicia uma
+   nova corrida, linhas seguintes com métricas em branco só acrescentam mais
+   uma parada), mas com um layout de colunas mais simples e sem máquina.
+   Colunas: Data(0) Produto(1) Início(2) Fim(3) Quantidade(4) Tempo
+   Médio/Rolo(5) Paradas(6) Motivo(7). Uma linha inicia nova corrida quando
+   "Quantidade" vem preenchida. */
+function PR_transformCsvInsumo(csvText){
+  const rows = parseCSV(csvText).filter(r => r.some(c => c && c.trim() !== ''));
+  const dataRows = rows.slice(1);
+  const records = [];
+  let current = null;
+
+  dataRows.forEach(r=>{
+    const dataRaw = (r[0]||'').trim();
+    const produto = (r[1]||'').trim();
+    const quantidadeRaw = (r[4]||'').trim().replace(/\./g,'').replace(',', '.');
+    const isNovaCorrida = quantidadeRaw !== '';
+
+    if(isNovaCorrida){
+      if(current) records.push(current);
+      current = null;
+
+      if(!dataRaw || !produto) return;
+      const iso = parseDataBR(dataRaw);
+      if(!iso) return;
+
+      const inicio = (r[2]||'').trim();
+      const fim = (r[3]||'').trim();
+      const quantidade = parseFloat(quantidadeRaw);
+      const tempoMedio = TP_timeToSeconds((r[5]||'').trim());
+
+      current = {
+        dateISO: iso, dateRaw: dataRaw, produto, inicio, fim,
+        quantidade: !isNaN(quantidade) ? quantidade : null,
+        tempoMedio,
+        paradas: [],
+      };
+    }
+
+    const motivo = (r[7]||'').trim();
+    const tempoStr = (r[6]||'').trim();
+    if(current && motivo){
+      current.paradas.push({ motivo, duracaoSec: TP_timeToSeconds(tempoStr) });
+    }
+  });
+  if(current) records.push(current);
+  return records;
+}
+
+/* Carrega (silenciosamente) os dados de insumo (Blocos de Massa / Rolos
+   Laminados) associados ao setor atual, se houver essa fonte configurada. */
+async function PR_loadInsumoData(url){
+  try{
+    const bust = (url.includes('?') ? '&' : '?') + 'cb=' + Date.now();
+    const res = await fetch(url + bust, { cache:'no-store' });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const records = PR_transformCsvInsumo(text);
+    PR_INSUMO_DATA = records;
+  }catch(err){
+    console.error('Erro ao carregar dados de insumo (Massa Salgado):', err);
+    if(PR_INSUMO_DATA.length === 0) PR_INSUMO_DATA = PR_FALLBACK_INSUMO_DATA;
+  }
+}
+
 async function PR_loadData(isManualRefresh){
   const setorKey = PR_currentSetor;
   const cfg = PR_SETOR_CONFIGS[setorKey];
   const btn = document.getElementById('prBtnRefresh');
   const original = btn ? btn.textContent : null;
   if(btn){ btn.disabled = true; btn.textContent = '⟳ Verificando...'; }
+
+  if(cfg.insumoCsvUrl){
+    await PR_loadInsumoData(cfg.insumoCsvUrl);
+  } else {
+    PR_INSUMO_DATA = [];
+  }
 
   try{
     const bust = (cfg.csvUrl.includes('?') ? '&' : '?') + 'cb=' + Date.now();
@@ -2680,6 +2784,11 @@ function PR_applyFilters(){
     if(de && r.dateISO > de) return false;
     if(PR_selectedProdutos.size > 0 && !PR_selectedProdutos.has(r.produto)) return false;
     if(maquina && r.maquina !== maquina) return false;
+    return true;
+  });
+  PR_INSUMO_FILTERED = PR_INSUMO_DATA.filter(r=>{
+    if(ds && r.dateISO < ds) return false;
+    if(de && r.dateISO > de) return false;
     return true;
   });
 }
@@ -2923,6 +3032,58 @@ function PR_computeRodadoParado(rows){
   return { tempoTotal, tempoParado, tempoRodando, pctRodando, pctParado };
 }
 
+/* Cards de produção de insumos (Blocos de Massa / Rolos Laminados). Taxa de
+   cada linha = quantidade produzida ÷ horas da corrida (Fim − Início);
+   tempo médio também é calculado separadamente por tipo de produto, já que
+   "tempo médio por rolo" e "por bloco" não são a mesma coisa.
+   producaoRows: registros do formato "produção" do próprio setor (SALGADO),
+   usados só para calcular o Consumo de Rolos/Hora a partir da coluna
+   "Duração do Rolo de Massa" — só entram nessa conta os produtos que têm
+   esse dado preenchido. */
+function PR_renderKPIsInsumo(rows, producaoRows){
+  const comTaxa = rows.map(r=>{
+    const iniS = TP_clockToSeconds(r.inicio), fimS = TP_clockToSeconds(r.fim);
+    const horas = (iniS!==null && fimS!==null && fimS>iniS) ? (fimS-iniS)/3600 : null;
+    const rate = (horas && r.quantidade!==null) ? r.quantidade/horas : null;
+    return Object.assign({}, r, { rate });
+  });
+  const rolosRows = comTaxa.filter(r=> (r.produto||'').toLowerCase().includes('rolo'));
+  const blocosRows = comTaxa.filter(r=> (r.produto||'').toLowerCase().includes('bloco'));
+  const rolosHora = rolosRows.length ? PR_avg(rolosRows.map(r=>r.rate)) : null;
+  const blocosHora = blocosRows.length ? PR_avg(blocosRows.map(r=>r.rate)) : null;
+  const rolosTempoMedio = rolosRows.length ? PR_avg(rolosRows.map(r=>r.tempoMedio)) : null;
+  const blocosTempoMedio = blocosRows.length ? PR_avg(blocosRows.map(r=>r.tempoMedio)) : null;
+  let paradaTotal = 0, nParadas = 0;
+  rows.forEach(r=> (r.paradas||[]).forEach(p=>{ if(p.duracaoSec){ paradaTotal += p.duracaoSec; nParadas++; } }));
+
+  const comDuracaoRolo = (producaoRows||[]).filter(r=> r.duracaoRolo !== null && r.duracaoRolo > 0);
+  const consumoRolosHora = comDuracaoRolo.length ? PR_avg(comDuracaoRolo.map(r=> 3600/r.duracaoRolo)) : null;
+  const maquinasComRolo = [...new Set(comDuracaoRolo.map(r=>r.maquina).filter(Boolean))];
+
+  document.getElementById('prKpiGridInsumo').innerHTML = `
+    <div class="kpi-card">
+      <div class="label">Rolos Laminados/Hora</div>
+      <div class="value">${rolosHora !== null ? PR_fmtNum(rolosHora, 1) : '—'}</div>
+      ${rolosTempoMedio !== null ? `<div class="trend-foot" style="margin-top:4px;">Tempo médio: ${TP_fmtDuration(rolosTempoMedio)}/rolo</div>` : ''}
+    </div>
+    <div class="kpi-card">
+      <div class="label">Blocos de Massa/Hora</div>
+      <div class="value">${blocosHora !== null ? PR_fmtNum(blocosHora, 1) : '—'}</div>
+      ${blocosTempoMedio !== null ? `<div class="trend-foot" style="margin-top:4px;">Tempo médio: ${TP_fmtDuration(blocosTempoMedio)}/bloco</div>` : ''}
+    </div>
+    <div class="kpi-card">
+      <div class="label">Consumo de Rolos/Hora</div>
+      <div class="value">${consumoRolosHora !== null ? PR_fmtNum(consumoRolosHora, 1) : '—'}</div>
+      ${maquinasComRolo.length ? `<div class="trend-foot" style="margin-top:4px;">${maquinasComRolo.join(', ')}</div>` : ''}
+    </div>
+    <div class="kpi-card warn">
+      <div class="label">Tempo Total de Parada</div>
+      <div class="value" style="font-size:22px;">${TP_fmtDuration(paradaTotal)}</div>
+      <div class="trend-foot" style="margin-top:4px;">${nParadas} parada(s) registrada(s)</div>
+    </div>
+  `;
+}
+
 function PR_renderKPIsProducao(rows){
   const unidadesHora = PR_avg(rows.map(r=>r.unidadesPorHora));
   const caixaRows = rows.filter(r=> (r.unidadeMedida||'').toLowerCase() === 'caixa');
@@ -3013,6 +3174,41 @@ function PR_renderParadasChartProducao(rows){
     </svg>`;
 }
 
+/* ---------- Gráfico: paradas nas corridas que têm Duração do Rolo de Massa
+   preenchida — ou seja, produtos que usam o sistema de rolos. ---------- */
+function PR_renderParadasRolosChart(insumoRows){
+  const el = document.getElementById('prChartParadasRolos');
+  const rows = insumoRows || [];
+  const allParadas = [];
+  rows.forEach(r=> (r.paradas||[]).forEach(p=>{ if(p.duracaoSec) allParadas.push(p); }));
+  if(rows.length === 0){
+    el.innerHTML = `<div class="empty-state"><span class="empty-icon">🎞</span>Nenhuma corrida de Rolos Laminados ou Blocos de Massa no período selecionado.</div>`;
+    return;
+  }
+  if(allParadas.length === 0){
+    el.innerHTML = `<div class="empty-state"><span class="empty-icon">✓</span>Nenhuma parada registrada na produção de Rolos Laminados ou Blocos de Massa no período selecionado.</div>`;
+    return;
+  }
+  const byMotivo = {};
+  allParadas.forEach(p=>{ const m = p.motivo || '(sem motivo informado)'; (byMotivo[m]=byMotivo[m]||[]).push(p.duracaoSec); });
+  const items = Object.keys(byMotivo).map(m=>({ label:m, value: PR_sum(byMotivo[m]) })).sort((a,b)=>b.value-a.value);
+  const maxVal = Math.max(...items.map(i=>i.value), 1);
+  const rowH=28, gap=10, leftLabelW=230, chartW=330;
+  const h = items.length*(rowH+gap);
+  let bars='';
+  items.forEach((item,i)=>{
+    const y = i*(rowH+gap);
+    const w = (item.value/maxVal)*chartW;
+    bars += `<text x="${leftLabelW-10}" y="${y+rowH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${item.label}</text>`;
+    bars += `<rect x="${leftLabelW}" y="${y}" width="${w}" height="${rowH}" rx="6" fill="#B5640B"/>`;
+    bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="11.5" fill="#B5640B" font-weight="700">${TP_fmtDuration(item.value)}</text>`;
+  });
+  el.innerHTML = `
+    <svg viewBox="0 0 ${leftLabelW+chartW+100} ${h+10}" width="${leftLabelW+chartW+100}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+      ${bars}
+    </svg>`;
+}
+
 /* ---------- Gráfico: estimativa de produção projetada para um turno de 8h ---------- */
 function PR_renderEstimativaChart(rows){
   const el = document.getElementById('prChartEstimativa');
@@ -3052,7 +3248,6 @@ function PR_renderEstimativaChart(rows){
     <svg viewBox="0 0 ${leftLabelW+chartW+130} ${h+10}" width="${leftLabelW+chartW+130}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
       ${bars}
     </svg>
-    <div style="margin-top:10px;font-size:11.5px;color:var(--ink-soft);">Aproveitamento real do período: ${pctRodando.toFixed(0)}% do turno rodando (produtividade observada de ${PR_fmtNum(unidadesHoraObservado,1)} un/h já reflete essa parada). A 100% de aproveitamento, a velocidade real de operação da máquina seria de ${PR_fmtNum(velocidadeRodando,1)} un/h — é essa velocidade que projetamos em cada cenário abaixo.</div>
   `;
 }
 
@@ -3136,7 +3331,14 @@ function PR_refreshAll(){
   const panelPeso = document.getElementById('prPanelPeso');
   const panelEstimativa = document.getElementById('prPanelEstimativa');
   const panelRodadoParado = document.getElementById('prPanelRodadoParado');
+  const panelInsumo = document.getElementById('prPanelInsumo');
+  const panelParadasRolos = document.getElementById('prPanelParadasRolos');
   const titleChart1 = document.getElementById('prTitleChart1');
+  const temInsumo = !!(PR_SETOR_CONFIGS[PR_currentSetor] && PR_SETOR_CONFIGS[PR_currentSetor].insumoCsvUrl);
+  panelInsumo.style.display = temInsumo ? 'block' : 'none';
+  if(temInsumo) PR_renderKPIsInsumo(PR_INSUMO_FILTERED, PR_FILTERED);
+  panelParadasRolos.style.display = temInsumo ? 'block' : 'none';
+  if(temInsumo) PR_renderParadasRolosChart(PR_INSUMO_FILTERED);
 
   if(isProducao){
     panelPeso.style.display = 'none';
@@ -3162,8 +3364,13 @@ function PR_refreshAll(){
   }
 }
 
-[prDateStartEl, prDateEndEl].forEach(el=>{
-  el.addEventListener('change', PR_refreshAll);
+prDateStartEl.addEventListener('change', () => {
+  if(prDateStartEl.value > prDateEndEl.value) prDateEndEl.value = prDateStartEl.value;
+  PR_refreshAll();
+});
+prDateEndEl.addEventListener('change', () => {
+  if(prDateEndEl.value < prDateStartEl.value) prDateStartEl.value = prDateEndEl.value;
+  PR_refreshAll();
 });
 document.getElementById('prBtnRefresh').addEventListener('click', ()=> PR_loadData(true));
 
