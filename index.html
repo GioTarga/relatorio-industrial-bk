@@ -3451,13 +3451,13 @@ document.getElementById('prBtnRefresh').addEventListener('click', ()=> PR_loadDa
 const RC_CSV_URL = "https://docs.google.com/spreadsheets/d/1dPOqVznVZ3Z1AueP8o2H8nlu2AaWjIs1nqg47eUUYUg/export?format=csv&gid=600917311";
 
 const RC_FALLBACK_DATA = [
-  {setor:"Salgado", identificacao:"USIfood 2", modelo:"USIfood – Double Master Contínua", capacidade:"Até 2.500 un/h", produtos:"Esfiha Carne, Esfiha Frango, Bauru Frango, Bauru Calabresa, Bauru Pizza"},
-  {setor:"Salgado", identificacao:"Panitec 1", modelo:"Panitec LYNEA-300 SUPRA", capacidade:"Até 2.500 un/h", produtos:"Hamburguinho, Doguinho, Pastel Mini Bolha, Pastel Mini Nata, Mini Natinha Integral"},
-  {setor:"Salgado", identificacao:"Panitec 5", modelo:"Panitec LYNEA-600 SUPRA*", capacidade:"Até 2.500 un/h", produtos:"Pastel Bolha, Pastel Mini Nata, Mini Natinha Integral"},
-  {setor:"Salgado", identificacao:"Panitec 4", modelo:"Panitec LYNEA-480 SUPRA", capacidade:"Até 4.000 un/h", produtos:"Hamburguinho, Doguinho, Pastel Mini Bolha, Pastel Mini Nata, Mini Natinha Integral"},
-  {setor:"Salgado", identificacao:"Panitec 3", modelo:"Panitec LYNEA-480 SUPRA", capacidade:"Até 4.000 un/h", produtos:"Pastel Nata (Frango, Carne, Calabresa), Pastel Nata de Frios, Pastel Nata de Palmito, Pastel Nata Filé com Cheddar, Pastel Mini Bolha, Pastel Mini Nata, Mini Natinha Integral"},
-  {setor:"Salgado", identificacao:"Panitec 2", modelo:"Panitec LYNEA-300 SUPRA", capacidade:"Até 2.500 un/h", produtos:"Pastel para Fritar (Frango, Carne, Pizza e Queijo)"},
-  {setor:"Salgado", identificacao:"USIfood 6", modelo:"USIfood Double Master Contínua", capacidade:"Até 2.500 un/h", produtos:"Pastel Mini Bolha, Pastel Mini Nata, Mini Natinha Integral"},
+  {setor:"Salgado", identificacao:"USIfood 2", modelo:"USIfood – Double Master Contínua", capacidade:"Até 2.500 un/h", equipe:"4", produtos:"Esfiha Carne, Esfiha Frango, Bauru Frango, Bauru Calabresa, Bauru Pizza"},
+  {setor:"Salgado", identificacao:"Panitec 1", modelo:"Panitec LYNEA-300 SUPRA", capacidade:"Até 2.500 un/h", equipe:"4", produtos:"Hamburguinho, Doguinho, Pastel Mini Bolha, Pastel Mini Nata, Mini Natinha Integral"},
+  {setor:"Salgado", identificacao:"Panitec 5", modelo:"Panitec LYNEA-600 SUPRA*", capacidade:"Até 2.500 un/h", equipe:"3", produtos:"Pastel Bolha, Pastel Mini Nata, Mini Natinha Integral"},
+  {setor:"Salgado", identificacao:"Panitec 4", modelo:"Panitec LYNEA-480 SUPRA", capacidade:"Até 4.000 un/h", equipe:"4", produtos:"Hamburguinho, Doguinho, Pastel Mini Bolha, Pastel Mini Nata, Mini Natinha Integral"},
+  {setor:"Salgado", identificacao:"Panitec 3", modelo:"Panitec LYNEA-480 SUPRA", capacidade:"Até 4.000 un/h", equipe:"3", produtos:"Pastel Nata (Frango, Carne, Calabresa), Pastel Nata de Frios, Pastel Nata de Palmito, Pastel Nata Filé com Cheddar, Pastel Mini Bolha, Pastel Mini Nata, Mini Natinha Integral"},
+  {setor:"Salgado", identificacao:"Panitec 2", modelo:"Panitec LYNEA-300 SUPRA", capacidade:"Até 2.500 un/h", equipe:"3", produtos:"Pastel para Fritar (Frango, Carne, Pizza e Queijo)"},
+  {setor:"Salgado", identificacao:"USIfood 6", modelo:"USIfood Double Master Contínua", capacidade:"Até 2.500 un/h", equipe:"4", produtos:"Pastel Mini Bolha, Pastel Mini Nata, Mini Natinha Integral"},
 ];
 
 let RC_DATA = [];
@@ -3554,13 +3554,14 @@ function RC_transformCsv(csvText){
     if(!setor || !identificacao) return;
     const modelo = (r[2]||'').trim();
     const capacidade = (r[3]||'').trim();
-    const produtos = RC_splitProdutos((r[4]||'').trim());
+    const equipe = (r[4]||'').trim();
+    const produtos = RC_splitProdutos((r[5]||'').trim());
 
     if(produtos.length === 0){
-      records.push({ produto: '—', identificacao, capacidade, equipe: '', modelo, setor });
+      records.push({ produto: '—', identificacao, capacidade, equipe, modelo, setor });
     } else {
       produtos.forEach(produto=>{
-        records.push({ produto, identificacao, capacidade, equipe: '', modelo, setor });
+        records.push({ produto, identificacao, capacidade, equipe, modelo, setor });
       });
     }
   });
@@ -3617,7 +3618,7 @@ function RC_transformCsvFromFallback(){
   RC_FALLBACK_DATA.forEach(eq=>{
     const produtos = RC_splitProdutos(eq.produtos);
     produtos.forEach(produto=>{
-      records.push({ produto, identificacao: eq.identificacao, capacidade: eq.capacidade, equipe: '', modelo: eq.modelo, setor: eq.setor });
+      records.push({ produto, identificacao: eq.identificacao, capacidade: eq.capacidade, equipe: eq.equipe||'', modelo: eq.modelo, setor: eq.setor });
     });
   });
   return records;
