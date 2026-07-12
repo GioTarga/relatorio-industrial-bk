@@ -157,6 +157,46 @@
   .ms-option input{ cursor:pointer; flex-shrink:0; }
   .ms-empty{ padding:10px 6px; color:var(--ink-soft); font-size:12.5px; }
 
+  .dr-wrap{ position:relative; display:inline-block; }
+  .dr-btn{
+    background:#fff8e7; border:1px solid #e8d3a3; border-radius:8px; padding:8px 14px;
+    font-size:13px; font-weight:600; color:var(--ink); cursor:pointer; white-space:nowrap;
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  .dr-btn::before{ content:"📅"; font-size:12px; }
+  .dr-btn:hover{ border-color:var(--red); }
+  .dr-panel{
+    position:absolute; top:calc(100% + 4px); left:0; z-index:90; background:#fff;
+    border:1px solid var(--line); border-radius:12px; box-shadow:0 10px 28px rgba(0,0,0,0.15);
+    padding:14px; display:none; width:280px;
+  }
+  .dr-panel.open{ display:block; }
+  .dr-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .dr-nav{ background:none; border:none; cursor:pointer; font-size:16px; color:var(--red-dark); font-weight:800; padding:2px 8px; border-radius:6px; }
+  .dr-nav:hover{ background:var(--cream); }
+  .dr-nav:disabled{ color:#ccc; cursor:default; }
+  .dr-nav:disabled:hover{ background:none; }
+  .dr-month-label{ font-weight:800; font-size:13px; color:var(--ink); text-transform:capitalize; }
+  .dr-weekdays{ display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:10.5px; font-weight:700; color:var(--ink-soft); margin-bottom:4px; }
+  .dr-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+  .dr-day{
+    aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-size:12px;
+    border-radius:6px; cursor:pointer; color:var(--ink); background:transparent; border:none;
+  }
+  .dr-day:hover:not(.dr-disabled):not(.dr-empty){ background:var(--cream); }
+  .dr-day.dr-empty{ cursor:default; }
+  .dr-day.dr-disabled{ color:#ddd; cursor:default; }
+  .dr-day.dr-in-range{ background:#fbeed0; border-radius:0; }
+  .dr-day.dr-range-start{ background:var(--red); color:#fff; font-weight:700; border-radius:6px 0 0 6px; }
+  .dr-day.dr-range-end{ background:var(--red); color:#fff; font-weight:700; border-radius:0 6px 6px 0; }
+  .dr-day.dr-range-start.dr-range-end{ border-radius:6px; }
+  .dr-day.dr-pending{ background:var(--red); color:#fff; font-weight:700; }
+  .dr-day.dr-today{ box-shadow:inset 0 0 0 1.5px var(--red); }
+  .dr-footer{ display:flex; justify-content:space-between; margin-top:10px; padding-top:8px; border-top:1px solid var(--line); }
+  .dr-footer button{ background:none; border:none; color:var(--red); font-size:11.5px; font-weight:800; cursor:pointer; text-transform:uppercase; letter-spacing:0.4px; padding:0; }
+  .dr-footer button:hover{ text-decoration:underline; }
+  .dr-hint{ font-size:10.5px; color:var(--ink-soft); text-align:center; margin-top:8px; }
+
   .container{ max-width:1600px; margin:0 auto; padding:22px 32px 50px; }
 
   .kpi-grid{
@@ -424,11 +464,26 @@
 </div>
 
 <div class="period-bar">
-  <label for="dateStart">Data inicial</label>
-  <input type="date" id="dateStart">
-  <span class="sep">até</span>
-  <label for="dateEnd">Data final</label>
-  <input type="date" id="dateEnd">
+  <label>Período</label>
+  <div class="dr-wrap" id="drWrap_main">
+    <button type="button" class="dr-btn" id="drBtn_main"></button>
+    <div class="dr-panel" id="drPanel_main">
+      <div class="dr-header">
+        <button type="button" class="dr-nav" id="drPrev_main">‹</button>
+        <div class="dr-month-label" id="drLabel_main"></div>
+        <button type="button" class="dr-nav" id="drNext_main">›</button>
+      </div>
+      <div class="dr-weekdays"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+      <div class="dr-grid" id="drGrid_main"></div>
+      <div class="dr-hint" id="drHint_main">Clique numa data para começar, e em outra pra fechar o intervalo</div>
+      <div class="dr-footer">
+        <button type="button" id="drClear_main">Limpar</button>
+        <button type="button" id="drToday_main">Hoje</button>
+      </div>
+    </div>
+  </div>
+  <input type="date" id="dateStart" style="display:none;">
+  <input type="date" id="dateEnd" style="display:none;">
   <label for="fSetor">Setor</label>
   <select id="fSetor"><option value="">Todos os setores</option></select>
   <button class="btn-refresh" id="btnRefreshData" title="Verificar dados novos">⟳ Atualizar</button>
@@ -481,6 +536,7 @@
           <tr>
             <th>Setor</th>
             <th>Produto</th>
+            <th class="center">Equipe</th>
             <th class="center">Prod. Prevista</th>
             <th class="center">Prod. Real</th>
             <th class="center">Uni.</th>
@@ -513,11 +569,26 @@
     </div>
 
     <div class="period-bar">
-      <label for="tpDateStart">Data inicial</label>
-      <input type="date" id="tpDateStart">
-      <span class="sep">até</span>
-      <label for="tpDateEnd">Data final</label>
-      <input type="date" id="tpDateEnd">
+      <label>Período</label>
+      <div class="dr-wrap" id="drWrap_tp">
+        <button type="button" class="dr-btn" id="drBtn_tp"></button>
+        <div class="dr-panel" id="drPanel_tp">
+          <div class="dr-header">
+            <button type="button" class="dr-nav" id="drPrev_tp">‹</button>
+            <div class="dr-month-label" id="drLabel_tp"></div>
+            <button type="button" class="dr-nav" id="drNext_tp">›</button>
+          </div>
+          <div class="dr-weekdays"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+          <div class="dr-grid" id="drGrid_tp"></div>
+          <div class="dr-hint" id="drHint_tp">Clique numa data para começar, e em outra pra fechar o intervalo</div>
+          <div class="dr-footer">
+            <button type="button" id="drClear_tp">Limpar</button>
+            <button type="button" id="drToday_tp">Hoje</button>
+          </div>
+        </div>
+      </div>
+      <input type="date" id="tpDateStart" style="display:none;">
+      <input type="date" id="tpDateEnd" style="display:none;">
       <label for="tpLinha">Linha de Produto</label>
       <select id="tpLinha">
         <option value="frances">GIRO — Pão Francês</option>
@@ -585,11 +656,26 @@
     <div class="setor-tabs" id="prSetorTabs"></div>
 
     <div class="period-bar">
-      <label for="prDateStart">Data inicial</label>
-      <input type="date" id="prDateStart">
-      <span class="sep">até</span>
-      <label for="prDateEnd">Data final</label>
-      <input type="date" id="prDateEnd">
+      <label>Período</label>
+      <div class="dr-wrap" id="drWrap_pr">
+        <button type="button" class="dr-btn" id="drBtn_pr"></button>
+        <div class="dr-panel" id="drPanel_pr">
+          <div class="dr-header">
+            <button type="button" class="dr-nav" id="drPrev_pr">‹</button>
+            <div class="dr-month-label" id="drLabel_pr"></div>
+            <button type="button" class="dr-nav" id="drNext_pr">›</button>
+          </div>
+          <div class="dr-weekdays"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+          <div class="dr-grid" id="drGrid_pr"></div>
+          <div class="dr-hint" id="drHint_pr">Clique numa data para começar, e em outra pra fechar o intervalo</div>
+          <div class="dr-footer">
+            <button type="button" id="drClear_pr">Limpar</button>
+            <button type="button" id="drToday_pr">Hoje</button>
+          </div>
+        </div>
+      </div>
+      <input type="date" id="prDateStart" style="display:none;">
+      <input type="date" id="prDateEnd" style="display:none;">
       <span id="prMaquinaWrap" style="display:none;">
         <label for="prMaquina">Máquina</label>
         <select id="prMaquina"><option value="">Todas as máquinas</option></select>
@@ -1008,6 +1094,159 @@ function parseNumOrNull(s){
   return isNaN(n) ? null : n;
 }
 
+/* ============================================================================
+   SELETOR DE INTERVALO DE DATAS (calendário único, clique-clique)
+   ============================================================================
+   Substitui os dois <input type="date"> nativos (que ficam escondidos, só
+   guardando o valor real e mantendo toda a lógica de filtro/validação já
+   existente funcionando sem mudança). Clique numa data = início provisório;
+   clique em outra = fecha o intervalo; clique de novo na mesma data = só
+   aquele dia. Um único componente reaproveitado nas 3 páginas com filtro de
+   data (Relatório Industrial, Tempo de Processo, Produtividade). */
+const DR_updaters = {};
+
+function initDateRangePicker(prefix, startInput, endInput, onChange){
+  const wrap = document.getElementById('drWrap_'+prefix);
+  const btn = document.getElementById('drBtn_'+prefix);
+  const panel = document.getElementById('drPanel_'+prefix);
+  const label = document.getElementById('drLabel_'+prefix);
+  const grid = document.getElementById('drGrid_'+prefix);
+  const prevBtn = document.getElementById('drPrev_'+prefix);
+  const nextBtn = document.getElementById('drNext_'+prefix);
+  const clearBtn = document.getElementById('drClear_'+prefix);
+  const todayBtn = document.getElementById('drToday_'+prefix);
+  const hint = document.getElementById('drHint_'+prefix);
+
+  let pending = null; // ISO da data clicada aguardando o segundo clique
+  let viewYear, viewMonth; // mês exibido no calendário (0-indexado)
+
+  function todayISO(){
+    const d = new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function fmtBR(iso){
+    if(!iso) return '';
+    const [y,m,d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  }
+  function updateBtnLabel(){
+    const s = startInput.value, e = endInput.value;
+    if(!s && !e){ btn.textContent = 'Selecionar período'; return; }
+    if(s === e || !e){ btn.textContent = fmtBR(s); return; }
+    btn.textContent = fmtBR(s) + ' até ' + fmtBR(e);
+  }
+
+  function renderCalendar(){
+    const minISO = startInput.min || null;
+    const maxISO = startInput.max || null;
+    label.textContent = MONTH_NAMES_PT[viewMonth] + ' de ' + viewYear;
+
+    const first = new Date(viewYear, viewMonth, 1);
+    const startWeekday = first.getDay();
+    const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+    const s = startInput.value, e = endInput.value;
+    const rangeStart = pending || s;
+    const rangeEnd = pending ? null : e;
+    const today = todayISO();
+
+    prevBtn.disabled = !!(minISO && new Date(viewYear, viewMonth, 1) <= new Date(minISO+'T00:00:00') && (viewYear === Number(minISO.slice(0,4)) && viewMonth === Number(minISO.slice(5,7))-1));
+    nextBtn.disabled = !!(maxISO && viewYear === Number(maxISO.slice(0,4)) && viewMonth === Number(maxISO.slice(5,7))-1);
+
+    let html = '';
+    for(let i=0;i<startWeekday;i++) html += `<span class="dr-day dr-empty"></span>`;
+    for(let d=1; d<=daysInMonth; d++){
+      const iso = viewYear+'-'+String(viewMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      const disabled = (minISO && iso < minISO) || (maxISO && iso > maxISO);
+      let cls = 'dr-day';
+      if(disabled) cls += ' dr-disabled';
+      if(iso === today) cls += ' dr-today';
+      if(pending){
+        if(iso === pending) cls += ' dr-pending';
+      } else if(s && e){
+        if(iso === s) cls += ' dr-range-start';
+        if(iso === e) cls += ' dr-range-end';
+        if(iso > s && iso < e) cls += ' dr-in-range';
+      } else if(s && iso === s){
+        cls += ' dr-range-start dr-range-end';
+      }
+      html += `<button type="button" class="${cls}" data-iso="${iso}" ${disabled?'disabled':''}>${d}</button>`;
+    }
+    grid.innerHTML = html;
+
+    grid.querySelectorAll('.dr-day:not(.dr-empty):not(.dr-disabled)').forEach(el=>{
+      el.addEventListener('click', (e)=>{ e.stopPropagation(); onDayClick(el.dataset.iso); });
+    });
+
+    hint.textContent = pending ? `Início: ${fmtBR(pending)} — clique noutra data pra fechar, ou na mesma pra ver só esse dia` : 'Clique numa data para começar, e em outra pra fechar o intervalo';
+  }
+
+  function onDayClick(iso){
+    if(!pending){
+      pending = iso;
+      renderCalendar();
+      return;
+    }
+    let ns = pending, ne = iso;
+    if(ns > ne){ const t=ns; ns=ne; ne=t; }
+    pending = null;
+    startInput.value = ns;
+    endInput.value = ne;
+    updateBtnLabel();
+    panel.classList.remove('open');
+    startInput.dispatchEvent(new Event('change'));
+    if(onChange) onChange();
+  }
+
+  function openPanel(){
+    pending = null;
+    const ref = startInput.value || todayISO();
+    viewYear = Number(ref.slice(0,4));
+    viewMonth = Number(ref.slice(5,7)) - 1;
+    renderCalendar();
+    panel.classList.add('open');
+  }
+
+  btn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    if(panel.classList.contains('open')) panel.classList.remove('open');
+    else openPanel();
+  });
+  document.addEventListener('click', (e)=>{
+    if(!wrap.contains(e.target)) panel.classList.remove('open');
+  });
+  prevBtn.addEventListener('click', ()=>{
+    viewMonth--; if(viewMonth < 0){ viewMonth = 11; viewYear--; }
+    renderCalendar();
+  });
+  nextBtn.addEventListener('click', ()=>{
+    viewMonth++; if(viewMonth > 11){ viewMonth = 0; viewYear++; }
+    renderCalendar();
+  });
+  clearBtn.addEventListener('click', ()=>{
+    pending = null;
+    if(startInput.min) startInput.value = startInput.min;
+    if(startInput.max) endInput.value = startInput.max;
+    updateBtnLabel();
+    renderCalendar();
+    startInput.dispatchEvent(new Event('change'));
+    if(onChange) onChange();
+  });
+  todayBtn.addEventListener('click', ()=>{
+    const t = todayISO();
+    viewYear = Number(t.slice(0,4));
+    viewMonth = Number(t.slice(5,7)) - 1;
+    renderCalendar();
+  });
+
+  updateBtnLabel();
+  DR_updaters[prefix] = updateBtnLabel;
+
+  // Reexibe o label sempre que o valor do input mudar por outra via (ex:
+  // ajuste automático de limites quando a planilha recarrega).
+  startInput.addEventListener('change', updateBtnLabel);
+  endInput.addEventListener('change', updateBtnLabel);
+}
+
 function parsePctOrNull(s){
   if(!s) return null;
   const t = String(s).trim().replace('%','').replace(',', '.');
@@ -1069,20 +1308,21 @@ function transformCsvToData(csvText){
     if(!dateISO) return; // linha sem nenhuma data de referência até agora — ignora
 
     const setor = normalizeSector(r[1]);
-    const produto = (r[2]||'').trim();
+    const equipe = (r[2]||'').trim();
+    const produto = (r[3]||'').trim();
     if(!produto) return;
 
-    const planRaw = (r[3]||'').trim();
+    const planRaw = (r[4]||'').trim();
     const prev = parseNumOrNull(planRaw); // null cobre "S/ Quantidade Planejada" e "Fora do plano de produção"
-    const real = parseNumOrNull(r[4]) ?? 0;
-    const uni = normalizeUnitDisplay(r[5]);
-    const dif = parsePctOrNull(r[6]);
-    const obs = (r[7]||'').trim();
-    const inicio = (r[12]||'').trim();
-    const fim = (r[13]||'').trim();
+    const real = parseNumOrNull(r[5]) ?? 0;
+    const uni = normalizeUnitDisplay(r[6]);
+    const dif = parsePctOrNull(r[7]);
+    const obs = (r[8]||'').trim();
+    const inicio = (r[13]||'').trim();
+    const fim = (r[14]||'').trim();
 
     if(!byDate[dateISO]) byDate[dateISO] = [];
-    byDate[dateISO].push({ setor, produto, prev, real, uni, dif, obs, inicio, fim });
+    byDate[dateISO].push({ setor, equipe, produto, prev, real, uni, dif, obs, inicio, fim });
   });
 
   const result = {};
@@ -1105,7 +1345,7 @@ function transformCsvToData(csvText){
       label: buildLabelFromISO(iso),
       setores: setoresUnicos.length ? setoresUnicos.join(' · ') : '—',
       stopMinutes,
-      rows: rows.map(({setor,produto,prev,real,uni,dif,obs})=>({setor,produto,prev,real,uni,dif,obs}))
+      rows: rows.map(({setor,equipe,produto,prev,real,uni,dif,obs})=>({setor,equipe,produto,prev,real,uni,dif,obs}))
     };
   });
   return result;
@@ -1507,6 +1747,7 @@ function renderTable(dayKey){
     tr.innerHTML = `
       <td><span class="sector-tag">${r.setor}</span></td>
       <td class="prod-name">${r.produto}</td>
+      <td class="center">${r.equipe||'—'}</td>
       <td class="center">${prevTxt}</td>
       <td class="center">${r.real.toLocaleString('pt-BR')}</td>
       <td class="center">${r.uni}</td>
@@ -1516,7 +1757,7 @@ function renderTable(dayKey){
     tbody.appendChild(tr);
   });
   if(tbody.children.length === 0){
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro para o setor selecionado neste dia.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro para o setor selecionado neste dia.</td></tr>`;
   }
 }
 
@@ -1627,6 +1868,7 @@ function refreshDaySelectOptions(filteredDates){
 }
 
 function refreshAll(){
+  if(DR_updaters.main) DR_updaters.main();
   const filteredDates = getFilteredDates();
   if(filteredDates.length === 0){
     periodInfo.textContent = 'Nenhum dia disponível no período escolhido.';
@@ -1652,6 +1894,7 @@ dateEndInput.addEventListener('change', () => {
   if(dateEndInput.value < dateStartInput.value) dateStartInput.value = dateEndInput.value;
   refreshAll();
 });
+initDateRangePicker('main', dateStartInput, dateEndInput);
 daySelect.addEventListener('change', () => renderDayDetail(daySelect.value));
 
 /* ---------- Filtro por setor ---------- */
@@ -1805,6 +2048,7 @@ async function buildDocHtml(dayKey){
     return `<tr style="background:${fill};">
       <td style="padding:6px 8px;border:1px solid #F0DDC0;font-weight:700;">${r.setor}</td>
       <td style="padding:6px 8px;border:1px solid #F0DDC0;">${r.produto}</td>
+      <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;">${r.equipe || '—'}</td>
       <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;color:${isNoPlan?'#6B5C5C':'#2A1A1A'};">${prevTxt}</td>
       <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;">${realTxt}</td>
       <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;">${r.uni}</td>
@@ -1865,7 +2109,7 @@ async function buildDocHtml(dayKey){
     <table>
       <thead>
         <tr>
-          <th>Setor</th><th>Produto</th><th style="text-align:center;">Prod. Prevista</th><th style="text-align:center;">Prod. Real</th><th style="text-align:center;">Uni.</th><th style="text-align:center;">Dif. %</th><th>Observações e Causa</th>
+          <th>Setor</th><th>Produto</th><th style="text-align:center;">Equipe</th><th style="text-align:center;">Prod. Prevista</th><th style="text-align:center;">Prod. Real</th><th style="text-align:center;">Uni.</th><th style="text-align:center;">Dif. %</th><th>Observações e Causa</th>
         </tr>
       </thead>
       <tbody>${rowsHtml}</tbody>
@@ -2402,6 +2646,7 @@ function TP_renderTable(){
 }
 
 function TP_refreshAll(){
+  if(DR_updaters.tp) DR_updaters.tp();
   TP_applyFilters();
   const ds = tpDateStartEl.value, de = tpDateEndEl.value;
   if(TP_allDates.length){
@@ -2424,6 +2669,7 @@ tpDateEndEl.addEventListener('change', () => {
   if(tpDateEndEl.value < tpDateStartEl.value) tpDateStartEl.value = tpDateEndEl.value;
   TP_refreshAll();
 });
+initDateRangePicker('tp', tpDateStartEl, tpDateEndEl);
 document.getElementById('tpBtnRefresh').addEventListener('click', ()=> TP_loadData(true));
 
 /* ============================================================================
@@ -3386,6 +3632,7 @@ function PR_ensureCapacityData(){
 }
 
 function PR_refreshAll(){
+  if(DR_updaters.pr) DR_updaters.pr();
   PR_applyFilters();
   const ds = prDateStartEl.value, de = prDateEndEl.value;
   const isProducao = PR_currentSetorType === 'producao';
@@ -3436,6 +3683,7 @@ prDateEndEl.addEventListener('change', () => {
   if(prDateEndEl.value < prDateStartEl.value) prDateStartEl.value = prDateEndEl.value;
   PR_refreshAll();
 });
+initDateRangePicker('pr', prDateStartEl, prDateEndEl);
 document.getElementById('prBtnRefresh').addEventListener('click', ()=> PR_loadData(true));
 
 /* ============================================================================
