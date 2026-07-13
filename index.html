@@ -1339,7 +1339,7 @@ function transformCsvToData(csvText){
     const inicio = (r[8]||'').trim();   // início do turno (não da parada)
     const fim = (r[9]||'').trim();      // fim do turno (não da parada)
     const obs = (r[10]||'').trim();     // Paradas, Ausências e Desvios de Produção
-    const duracaoParada = (r[11]||'').trim(); // duração da parada em si (HH:MM:SS)
+    const duracaoParada = (r[15]||'').trim(); // coluna P — duração da parada (colunas K-O são um espaçador em branco após "Paradas...")
 
     if(!byDate[dateISO]) byDate[dateISO] = [];
     byDate[dateISO].push({ setor, equipe, produto, prev, real, uni, dif, obs, inicio, fim, duracaoParada });
