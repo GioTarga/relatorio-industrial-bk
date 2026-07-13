@@ -3016,7 +3016,7 @@ function PR_transformCsvTempos(csvText){
     const carrinhoSec = carrinhoRaw ? TP_clockToSeconds(carrinhoRaw) : null;
 
     records.push({
-      dateISO: iso, dateRaw, produto,
+      dateISO: iso, dateRaw: dataRaw, produto,
       pesar, bater, raspar, encher, transportar, buscar, desenformar,
       carrinhoSec, carrinhoRaw,
     });
