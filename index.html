@@ -541,7 +541,10 @@
             <th class="center">Prod. Real</th>
             <th class="center">Uni.</th>
             <th class="center">Dif. %</th>
+            <th class="center">Início</th>
+            <th class="center">Fim</th>
             <th>Observações e Causa</th>
+            <th class="center">Duração da Parada</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -1315,14 +1318,15 @@ function transformCsvToData(csvText){
     const planRaw = (r[4]||'').trim();
     const prev = parseNumOrNull(planRaw); // null cobre "S/ Quantidade Planejada" e "Fora do plano de produção"
     const real = parseNumOrNull(r[5]) ?? 0;
-    const uni = normalizeUnitDisplay(r[6]);
-    const dif = parsePctOrNull(r[7]);
-    const obs = (r[8]||'').trim();
-    const inicio = (r[13]||'').trim();
-    const fim = (r[14]||'').trim();
+    const dif = parsePctOrNull(r[6]);
+    const uni = normalizeUnitDisplay(r[7]);
+    const inicio = (r[8]||'').trim();   // início do turno (não da parada)
+    const fim = (r[9]||'').trim();      // fim do turno (não da parada)
+    const obs = (r[10]||'').trim();     // Paradas, Ausências e Desvios de Produção
+    const duracaoParada = (r[11]||'').trim(); // duração da parada em si (HH:MM:SS)
 
     if(!byDate[dateISO]) byDate[dateISO] = [];
-    byDate[dateISO].push({ setor, equipe, produto, prev, real, uni, dif, obs, inicio, fim });
+    byDate[dateISO].push({ setor, equipe, produto, prev, real, uni, dif, obs, inicio, fim, duracaoParada });
   });
 
   const result = {};
@@ -1330,22 +1334,22 @@ function transformCsvToData(csvText){
     const rows = byDate[iso];
     const setoresUnicos = [...new Set(rows.map(r=>r.setor).filter(Boolean))];
 
-    // Tempo parado: soma (Fim - Início) em minutos, quando ambos preenchidos e válidos
-    let stopMinutes = null, anyValidInterval = false, sumMin = 0;
+    // Tempo parado: soma a coluna "Duração" (duração de cada parada registrada)
+    let stopMinutes = null, anyValidDuration = false, sumMin = 0;
     rows.forEach(r=>{
-      const ini = timeToMinutes(r.inicio), fim = timeToMinutes(r.fim);
-      if(ini !== null && fim !== null && fim > ini){
-        sumMin += (fim - ini);
-        anyValidInterval = true;
+      const min = timeToMinutes(r.duracaoParada);
+      if(min !== null){
+        sumMin += min;
+        anyValidDuration = true;
       }
     });
-    if(anyValidInterval) stopMinutes = sumMin;
+    if(anyValidDuration) stopMinutes = sumMin;
 
     result[iso] = {
       label: buildLabelFromISO(iso),
       setores: setoresUnicos.length ? setoresUnicos.join(' · ') : '—',
       stopMinutes,
-      rows: rows.map(({setor,equipe,produto,prev,real,uni,dif,obs})=>({setor,equipe,produto,prev,real,uni,dif,obs}))
+      rows: rows.map(({setor,equipe,produto,prev,real,uni,dif,obs,inicio,fim,duracaoParada})=>({setor,equipe,produto,prev,real,uni,dif,obs,inicio,fim,duracaoParada}))
     };
   });
   return result;
@@ -1752,12 +1756,15 @@ function renderTable(dayKey){
       <td class="center">${r.real.toLocaleString('pt-BR')}</td>
       <td class="center">${r.uni}</td>
       <td class="center">${difHtml}</td>
+      <td class="center">${r.inicio||'—'}</td>
+      <td class="center">${r.fim||'—'}</td>
       <td>${obsHtml}</td>
+      <td class="center">${r.duracaoParada||'—'}</td>
     `;
     tbody.appendChild(tr);
   });
   if(tbody.children.length === 0){
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro para o setor selecionado neste dia.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro para o setor selecionado neste dia.</td></tr>`;
   }
 }
 
@@ -2053,7 +2060,10 @@ async function buildDocHtml(dayKey){
       <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;">${realTxt}</td>
       <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;">${r.uni}</td>
       <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;font-weight:700;color:${difColor};">${difTxt}</td>
+      <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;">${r.inicio || '—'}</td>
+      <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;">${r.fim || '—'}</td>
       <td style="padding:6px 8px;border:1px solid #F0DDC0;color:${obsColor};">${r.obs || '—'}</td>
+      <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;">${r.duracaoParada || '—'}</td>
     </tr>`;
   }).join('');
 
@@ -2109,7 +2119,7 @@ async function buildDocHtml(dayKey){
     <table>
       <thead>
         <tr>
-          <th>Setor</th><th>Produto</th><th style="text-align:center;">Equipe</th><th style="text-align:center;">Prod. Prevista</th><th style="text-align:center;">Prod. Real</th><th style="text-align:center;">Uni.</th><th style="text-align:center;">Dif. %</th><th>Observações e Causa</th>
+          <th>Setor</th><th>Produto</th><th style="text-align:center;">Equipe</th><th style="text-align:center;">Prod. Prevista</th><th style="text-align:center;">Prod. Real</th><th style="text-align:center;">Uni.</th><th style="text-align:center;">Dif. %</th><th style="text-align:center;">Início</th><th style="text-align:center;">Fim</th><th>Observações e Causa</th><th style="text-align:center;">Duração da Parada</th>
         </tr>
       </thead>
       <tbody>${rowsHtml}</tbody>
