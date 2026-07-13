@@ -1292,8 +1292,24 @@ function timeToMinutes(s){
   if(!s) return null;
   const t = String(s).trim();
   const m = t.match(/^(\d{1,2}):(\d{2})/);
-  if(!m) return null;
-  return parseInt(m[1],10)*60 + parseInt(m[2],10);
+  if(m) return parseInt(m[1],10)*60 + parseInt(m[2],10);
+  // Alguns exports de células calculadas (fórmula) vêm como fração decimal do
+  // dia (ex: "0.0236111" = 34 minutos) em vez do texto "00:34:00" — cobre
+  // esse caso também, pra não perder o dado silenciosamente.
+  const dec = t.replace(',', '.').match(/^0?\.\d+$/);
+  if(dec) return Math.round(parseFloat(dec[0]) * 24 * 60);
+  return null;
+}
+
+/* Formata a duração da parada pra exibição na tabela, aceitando tanto o
+   texto "HH:MM:SS" quanto o formato decimal (fração do dia) que às vezes
+   vem de células com fórmula. Se não conseguir interpretar, mostra o valor
+   bruto em vez de simplesmente esconder o dado. */
+function fmtDuracaoParada(raw){
+  if(!raw) return '—';
+  const min = timeToMinutes(raw);
+  if(min === null) return raw;
+  return TP_fmtDuration(min*60);
 }
 
 /* ---------- Transforma o CSV bruto da planilha no formato interno DATA{} ---------- */
@@ -1761,7 +1777,7 @@ function renderTable(dayKey){
       <td class="center">${difHtml}</td>
       <td class="center">${turnoTxt}</td>
       <td>${obsHtml}</td>
-      <td class="center">${r.duracaoParada||'—'}</td>
+      <td class="center">${fmtDuracaoParada(r.duracaoParada)}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -2065,7 +2081,7 @@ async function buildDocHtml(dayKey){
       <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;font-weight:700;color:${difColor};">${difTxt}</td>
       <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;">${turnoTxt}</td>
       <td style="padding:6px 8px;border:1px solid #F0DDC0;color:${obsColor};">${r.obs || '—'}</td>
-      <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;">${r.duracaoParada || '—'}</td>
+      <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;">${fmtDuracaoParada(r.duracaoParada)}</td>
     </tr>`;
   }).join('');
 
