@@ -701,6 +701,11 @@
         <div class="chart-wrap" id="prChartVelocidade"></div>
       </div>
 
+      <div class="panel" id="prPanelEtapas" style="display:none;">
+        <div class="panel-title">Tempo por Etapa do Processo</div>
+        <div class="chart-wrap" id="prChartEtapas"></div>
+      </div>
+
       <div class="panel" id="prPanelInsumo" style="display:none;">
         <div class="panel-title">Produção de Insumos (Blocos de Massa e Rolos Laminados)</div>
         <div class="kpi-grid" id="prKpiGridInsumo" style="margin-bottom:0;"></div>
@@ -711,7 +716,7 @@
         <div class="chart-wrap" id="prChartParadasRolos"></div>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="prPanelParadas">
         <div class="panel-title">Paradas por Motivo</div>
         <div class="chart-wrap" id="prChartParadas"></div>
       </div>
@@ -2727,10 +2732,17 @@ const PR_SETOR_CONFIGS = {
     csvUrl: "https://docs.google.com/spreadsheets/d/1y53NRhc2GPiIEdAtCibX1oi31EG327uv9aEAJov7Owk/export?format=csv&gid=2049824067",
     insumoCsvUrl: "https://docs.google.com/spreadsheets/d/1y53NRhc2GPiIEdAtCibX1oi31EG327uv9aEAJov7Owk/export?format=csv&gid=1545091990",
   },
+  pao_de_lo: {
+    label: 'PÃO DE LÓ E BOLOS',
+    type: 'tempos',
+    csvUrl: "https://docs.google.com/spreadsheets/d/1y53NRhc2GPiIEdAtCibX1oi31EG327uv9aEAJov7Owk/export?format=csv&gid=1632754315",
+  },
   // Novos setores (MASSA SALGADO...) entram aqui quando os dados
   // estiverem disponíveis. Use type:'massada' para planilhas no formato
-  // do GIRO MEIO (1 linha = 1 massada) ou type:'producao' para o formato
-  // do SALGADO (1 linha = 1 corrida de produção com paradas embutidas).
+  // do GIRO MEIO (1 linha = 1 massada), type:'producao' para o formato
+  // do SALGADO (1 linha = 1 corrida de produção com paradas embutidas),
+  // ou type:'tempos' para estudos de tempo por etapa do processo (como
+  // PÃO DE LÓ E BOLOS).
 };
 
 let PR_currentSetor = 'giro_meio';
@@ -2760,6 +2772,15 @@ const PR_FALLBACK_DATA = {
       paradas:[{motivo:"Limpeza de peças e troca de setup", duracaoSec:1964},{motivo:"Ajuste de Massa", duracaoSec:153},{motivo:"Falta de Massa", duracaoSec:399},{motivo:"Abastecer Recheio", duracaoSec:224}]},
     {dateISO:"2026-07-07", dateRaw:"07/07/2026", produto:"Pastel Mini Nata Carne", maquina:"PANITEC 4", inicio:"08:32:00", fim:"11:00:00", velocidadePrensa:1.6, qtdColab:4, unidadesPorHora:919, producaoHora:84, tempoMedio:43, unidadeMedida:"Caixa", duracaoRolo:145,
       paradas:[{motivo:"Falta de massa", duracaoSec:120},{motivo:"Falta de massa", duracaoSec:240},{motivo:"Abastecimento do recheio", duracaoSec:180},{motivo:"Falta de massa", duracaoSec:480},{motivo:"Falta de massa", duracaoSec:120},{motivo:"Falta de massa", duracaoSec:120},{motivo:"Ajuste do recheio", duracaoSec:540},{motivo:"Abastecimento de recheio", duracaoSec:360},{motivo:"Ajuste nos bicos injetores", duracaoSec:360},{motivo:"Falta de massa", duracaoSec:180},{motivo:"Falta de massa", duracaoSec:120},{motivo:"Abastecimento do recheio", duracaoSec:120},{motivo:"Falta de massa", duracaoSec:240},{motivo:"Falta de massa", duracaoSec:240},{motivo:"Falta de massa", duracaoSec:180},{motivo:"Falta de massa", duracaoSec:120},{motivo:"Falta de massa", duracaoSec:120}]},
+  ],
+  pao_de_lo: [
+    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Pão de Ló", pesar:164, bater:600, raspar:126, encher:64, transportar:127, buscar:137, desenformar:131, carrinhoSec:null, carrinhoRaw:""},
+    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Pão de Ló", pesar:null, bater:600, raspar:76, encher:67, transportar:null, buscar:null, desenformar:137, carrinhoSec:null, carrinhoRaw:""},
+    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Pão de Ló", pesar:null, bater:600, raspar:142, encher:51, transportar:null, buscar:null, desenformar:108, carrinhoSec:null, carrinhoRaw:""},
+    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Bolo Seco", pesar:633, bater:810, raspar:46, encher:75, transportar:null, buscar:null, desenformar:67, carrinhoSec:50040, carrinhoRaw:"13:54"},
+    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Bolo Seco", pesar:840, bater:810, raspar:59, encher:74, transportar:null, buscar:null, desenformar:null, carrinhoSec:52440, carrinhoRaw:"14:34"},
+    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Bolo Seco", pesar:null, bater:810, raspar:61, encher:null, transportar:null, buscar:null, desenformar:null, carrinhoSec:null, carrinhoRaw:""},
+    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Bolo Seco", pesar:null, bater:null, raspar:57, encher:null, transportar:null, buscar:null, desenformar:null, carrinhoSec:null, carrinhoRaw:""},
   ],
 };
 
@@ -2962,6 +2983,47 @@ async function PR_loadInsumoData(url){
   }
 }
 
+/* Formato "tempos" (ex: PÃO DE LÓ E BOLOS): cada linha é uma amostra solta
+   de cronometragem — nem toda linha tem todas as etapas preenchidas, e
+   Data/Produto só vêm preenchidos na primeira linha de cada bloco (as
+   seguintes repetem por herança/mesclagem visual — por isso o forward-fill).
+   Colunas: Data(0) Produto(1) Pesar Insumos(2) Bater na Masseira(3) Raspar e
+   Untar Formas(4) Encher Formas(5) Transportar p/ o Forno(6) Buscar no
+   Forno(7) Desenformar(8) Carrinho Pronto para Fornear(9 — horário de
+   relógio, não duração). */
+function PR_transformCsvTempos(csvText){
+  const rows = parseCSV(csvText).filter(r => r.some(c => c && c.trim() !== ''));
+  const dataRows = rows.slice(1);
+  const records = [];
+  let lastDateRaw = '', lastProduto = '';
+
+  dataRows.forEach(r=>{
+    const dataRaw = (r[0]||'').trim() || lastDateRaw;
+    const produto = (r[1]||'').trim() || lastProduto;
+    if(!dataRaw || !produto) return;
+    const iso = parseDataBR(dataRaw);
+    if(!iso) return;
+    lastDateRaw = dataRaw; lastProduto = produto;
+
+    const pesar = TP_timeToSeconds((r[2]||'').trim());
+    const bater = TP_timeToSeconds((r[3]||'').trim());
+    const raspar = TP_timeToSeconds((r[4]||'').trim());
+    const encher = TP_timeToSeconds((r[5]||'').trim());
+    const transportar = TP_timeToSeconds((r[6]||'').trim());
+    const buscar = TP_timeToSeconds((r[7]||'').trim());
+    const desenformar = TP_timeToSeconds((r[8]||'').trim());
+    const carrinhoRaw = (r[9]||'').trim();
+    const carrinhoSec = carrinhoRaw ? TP_clockToSeconds(carrinhoRaw) : null;
+
+    records.push({
+      dateISO: iso, dateRaw, produto,
+      pesar, bater, raspar, encher, transportar, buscar, desenformar,
+      carrinhoSec, carrinhoRaw,
+    });
+  });
+  return records;
+}
+
 async function PR_loadData(isManualRefresh){
   const setorKey = PR_currentSetor;
   const cfg = PR_SETOR_CONFIGS[setorKey];
@@ -2985,7 +3047,9 @@ async function PR_loadData(isManualRefresh){
     const changed = signature !== PR_lastSignature[setorKey];
     PR_lastSignature[setorKey] = signature;
 
-    const records = cfg.type === 'producao' ? PR_transformCsvProducao(text) : PR_transformCsv(text);
+    const records = cfg.type === 'producao' ? PR_transformCsvProducao(text)
+      : cfg.type === 'tempos' ? PR_transformCsvTempos(text)
+      : PR_transformCsv(text);
     if(records.length === 0) throw new Error('Nenhum dado válido encontrado na planilha.');
 
     PR_DATA = records;
@@ -3389,6 +3453,138 @@ function PR_renderKPIsInsumo(rows, producaoRows){
   `;
 }
 
+/* ============================================================================
+   Renderização — formato "tempos" (PÃO DE LÓ E BOLOS): estudo de tempos por
+   etapa do processo. Unidades por tela variam pelo peso do produto — hoje
+   só se coleta bolo de 1,2kg (9 un/tela); quando entrar produto de 800g
+   (12 un/tela) dá pra tornar isso dependente do produto.
+   ============================================================================ */
+const PR_TELAS_POR_CARRINHO_PL = 12;
+const PR_UNIDADES_POR_TELA_120KG = 9; // bolo de 1,2kg — única coleta atual
+
+const PR_ETAPAS_PL = [
+  {key:'pesar', label:'Pesar Insumos'},
+  {key:'bater', label:'Bater na Masseira'},
+  {key:'raspar', label:'Raspar e Untar Formas'},
+  {key:'encher', label:'Encher Formas'},
+  {key:'transportar', label:'Transportar p/ o Forno'},
+  {key:'buscar', label:'Buscar no Forno'},
+  {key:'desenformar', label:'Desenformar'},
+];
+
+function PR_computeEtapaAverages(rows){
+  return PR_ETAPAS_PL.map(e=>({
+    label: e.label,
+    avgSec: PR_avg(rows.map(r=>r[e.key]).filter(v=>v!==null && v!==undefined)),
+  }));
+}
+
+/* Tempo médio de 1 carrinho = média das diferenças entre horários
+   consecutivos de "Carrinho Pronto para Fornear", dentro de cada dia. */
+function PR_computeTempoCarrinhoPL(rows){
+  const byDia = {};
+  rows.forEach(r=>{ if(r.carrinhoSec !== null && r.carrinhoSec !== undefined) (byDia[r.dateISO]=byDia[r.dateISO]||[]).push(r.carrinhoSec); });
+  const diffs = [];
+  Object.values(byDia).forEach(secs=>{
+    secs.sort((a,b)=>a-b);
+    for(let i=1;i<secs.length;i++) diffs.push(secs[i]-secs[i-1]);
+  });
+  return diffs.length ? PR_avg(diffs) : null;
+}
+
+function PR_renderKPIsTempos(rows){
+  const etapaAvgs = PR_computeEtapaAverages(rows);
+  const etapaLenta = etapaAvgs.filter(e=>e.avgSec!==null).sort((a,b)=>b.avgSec-a.avgSec)[0] || null;
+
+  const tempoCarrinhoSec = PR_computeTempoCarrinhoPL(rows);
+  const carrinhoPorHora = tempoCarrinhoSec ? 3600/tempoCarrinhoSec : null;
+
+  const encherAvg = PR_avg(rows.map(r=>r.encher).filter(v=>v!==null && v!==undefined));
+  const telasPorHora = encherAvg ? 3600/encherAvg : null;
+  const unidadesPorHora = telasPorHora !== null ? telasPorHora * PR_UNIDADES_POR_TELA_120KG : null;
+
+  document.getElementById('prKpiGrid').innerHTML = `
+    <div class="kpi-card">
+      <div class="label">Carrinho/Hora</div>
+      <div class="value">${carrinhoPorHora !== null ? PR_fmtNum(carrinhoPorHora, 1) : '—'}</div>
+      ${tempoCarrinhoSec !== null ? `<div class="trend-foot" style="margin-top:4px;">${TP_fmtDuration(tempoCarrinhoSec)}/carrinho (diferença de horário)</div>` : ''}
+    </div>
+    <div class="kpi-card">
+      <div class="label">Telas/Hora</div>
+      <div class="value">${telasPorHora !== null ? PR_fmtNum(telasPorHora, 1) : '—'}</div>
+      ${encherAvg !== null ? `<div class="trend-foot" style="margin-top:4px;">${TP_fmtDuration(encherAvg)}/tela (Encher Formas)</div>` : ''}
+    </div>
+    <div class="kpi-card good">
+      <div class="label">Unidades/Hora</div>
+      <div class="value">${unidadesPorHora !== null ? PR_fmtNum(unidadesPorHora, 0) : '—'}</div>
+      ${unidadesPorHora !== null ? `<div class="trend-foot" style="margin-top:4px;">${PR_UNIDADES_POR_TELA_120KG} un/tela (bolo 1,2kg)</div>` : ''}
+    </div>
+    <div class="kpi-card warn">
+      <div class="label">Etapa Mais Lenta</div>
+      <div class="value" style="font-size:17px;">${etapaLenta ? etapaLenta.label : '—'}</div>
+      ${etapaLenta ? `<div class="trend-foot" style="margin-top:4px;">${TP_fmtDuration(etapaLenta.avgSec)} em média</div>` : ''}
+    </div>
+  `;
+}
+
+function PR_renderChartEtapas(rows){
+  const el = document.getElementById('prChartEtapas');
+  const items = PR_computeEtapaAverages(rows).filter(e=>e.avgSec!==null).sort((a,b)=>b.avgSec-a.avgSec);
+  if(items.length === 0){
+    el.innerHTML = `<div class="empty-state"><span class="empty-icon">⏱</span>Nenhum tempo de etapa registrado no período selecionado.</div>`;
+    return;
+  }
+  const maxVal = Math.max(...items.map(i=>i.avgSec), 1);
+  const rowH=28, gap=10, leftLabelW=200, chartW=360;
+  const h = items.length*(rowH+gap);
+  let bars='';
+  items.forEach((item,i)=>{
+    const y = i*(rowH+gap);
+    const w = (item.avgSec/maxVal)*chartW;
+    bars += `<text x="${leftLabelW-10}" y="${y+rowH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${item.label}</text>`;
+    bars += `<rect x="${leftLabelW}" y="${y}" width="${w}" height="${rowH}" rx="6" fill="#A10101"/>`;
+    bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="11.5" fill="#A10101" font-weight="700">${TP_fmtDuration(item.avgSec)}</text>`;
+  });
+  el.innerHTML = `
+    <svg viewBox="0 0 ${leftLabelW+chartW+100} ${h+10}" width="${leftLabelW+chartW+100}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+      ${bars}
+    </svg>
+    <div style="margin-top:10px;font-size:11px;color:var(--ink-soft);">Ordenado da etapa mais lenta pra mais rápida — a primeira é o gargalo do processo.</div>
+  `;
+}
+
+function PR_renderTableTempos(rows){
+  document.getElementById('prThead').innerHTML = `
+    <tr>
+      <th>Data</th>
+      <th>Produto</th>
+      <th class="center">Pesar Insumos</th>
+      <th class="center">Bater na Masseira</th>
+      <th class="center">Raspar e Untar</th>
+      <th class="center">Encher Formas</th>
+      <th class="center">Transportar</th>
+      <th class="center">Buscar no Forno</th>
+      <th class="center">Desenformar</th>
+      <th class="center">Carrinho Pronto</th>
+    </tr>`;
+  const sorted = rows.slice().sort((a,b)=> b.dateISO.localeCompare(a.dateISO));
+  const fmt = v => (v!==null && v!==undefined) ? TP_fmtDuration(v) : '—';
+  document.getElementById('prTbody').innerHTML = sorted.map(r=>`
+    <tr>
+      <td>${r.dateRaw}</td>
+      <td class="prod-name">${r.produto}</td>
+      <td class="center">${fmt(r.pesar)}</td>
+      <td class="center">${fmt(r.bater)}</td>
+      <td class="center">${fmt(r.raspar)}</td>
+      <td class="center">${fmt(r.encher)}</td>
+      <td class="center">${fmt(r.transportar)}</td>
+      <td class="center">${fmt(r.buscar)}</td>
+      <td class="center">${fmt(r.desenformar)}</td>
+      <td class="center">${r.carrinhoRaw||'—'}</td>
+    </tr>
+  `).join('') || `<tr><td colspan="10" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro encontrado.</td></tr>`;
+}
+
 function PR_renderKPIsProducao(rows){
   const unidadesHora = PR_avg(rows.map(r=>r.unidadesPorHora));
   const caixaRows = rows.filter(r=> (r.unidadeMedida||'').toLowerCase() === 'caixa');
@@ -3670,16 +3866,20 @@ function PR_refreshAll(){
   PR_applyFilters();
   const ds = prDateStartEl.value, de = prDateEndEl.value;
   const isProducao = PR_currentSetorType === 'producao';
-  const unidadeLabel = isProducao ? 'corrida(s) de produção' : 'massada(s)';
+  const isTempos = PR_currentSetorType === 'tempos';
+  const unidadeLabel = isProducao ? 'corrida(s) de produção' : isTempos ? 'amostra(s) de tempo' : 'massada(s)';
   if(PR_allDates.length){
     document.getElementById('prPeriodInfo').textContent =
       PR_FILTERED.length + ' ' + unidadeLabel + ' no período' + (ds && de ? ` (${ds.split('-').reverse().join('/')} a ${de.split('-').reverse().join('/')})` : '');
   }
 
+  const panelChart1 = document.getElementById('prPanelChart1');
+  const panelEtapas = document.getElementById('prPanelEtapas');
   const panelEstimativa = document.getElementById('prPanelEstimativa');
   const panelRodadoParado = document.getElementById('prPanelRodadoParado');
   const panelInsumo = document.getElementById('prPanelInsumo');
   const panelParadasRolos = document.getElementById('prPanelParadasRolos');
+  const panelParadas = document.getElementById('prPanelParadas');
   const titleChart1 = document.getElementById('prTitleChart1');
   const temInsumo = !!(PR_SETOR_CONFIGS[PR_currentSetor] && PR_SETOR_CONFIGS[PR_currentSetor].insumoCsvUrl);
   panelInsumo.style.display = temInsumo ? 'block' : 'none';
@@ -3687,9 +3887,21 @@ function PR_refreshAll(){
   panelParadasRolos.style.display = temInsumo ? 'block' : 'none';
   if(temInsumo) PR_renderParadasRolosChart(PR_INSUMO_FILTERED);
 
-  if(isProducao){
+  if(isTempos){
+    panelChart1.style.display = 'none';
+    panelEtapas.style.display = 'block';
+    panelEstimativa.style.display = 'none';
+    panelRodadoParado.style.display = 'none';
+    if(panelParadas) panelParadas.style.display = 'none';
+    PR_renderKPIsTempos(PR_FILTERED);
+    PR_renderChartEtapas(PR_FILTERED);
+    PR_renderTableTempos(PR_FILTERED);
+  } else if(isProducao){
+    panelChart1.style.display = 'block';
+    panelEtapas.style.display = 'none';
     panelEstimativa.style.display = 'block';
     panelRodadoParado.style.display = 'block';
+    if(panelParadas) panelParadas.style.display = 'block';
     titleChart1.textContent = 'Unidades/Hora por Produto';
     PR_ensureCapacityData();
     PR_renderKPIsProducao(PR_FILTERED);
@@ -3699,8 +3911,11 @@ function PR_refreshAll(){
     PR_renderRodadoParadoChart(PR_FILTERED);
     PR_renderTableProducao(PR_FILTERED);
   } else {
+    panelChart1.style.display = 'block';
+    panelEtapas.style.display = 'none';
     panelEstimativa.style.display = 'none';
     panelRodadoParado.style.display = 'none';
+    if(panelParadas) panelParadas.style.display = 'block';
     titleChart1.textContent = 'Massa/Hora por Produto (quantidade de massas)';
     PR_renderKPIs();
     PR_renderVelocidadeChart();
