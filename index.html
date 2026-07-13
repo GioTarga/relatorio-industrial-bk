@@ -3599,8 +3599,14 @@ function PR_renderKPIsProducao(rows){
   const carrinhoRows = rows.filter(r=> (r.unidadeMedida||'').toLowerCase() === 'carrinho');
   const telaRows = rows.filter(r=> (r.unidadeMedida||'').toLowerCase().startsWith('tela'));
   const caixasHora = caixaRows.length ? PR_avg(caixaRows.map(r=>r.producaoHora)) : null;
-  const carrinhosHora = carrinhoRows.length ? PR_avg(carrinhoRows.map(r=> r.producaoHora !== null ? r.producaoHora / PR_TELAS_POR_CARRINHO : null)) : null;
   const telasHora = telaRows.length ? PR_avg(telaRows.map(r=>r.producaoHora)) : null;
+  let carrinhosHora = carrinhoRows.length ? PR_avg(carrinhoRows.map(r=> r.producaoHora !== null ? r.producaoHora / PR_TELAS_POR_CARRINHO : null)) : null;
+  let carrinhosHoraEstimado = false;
+  if(carrinhosHora === null && telasHora !== null){
+    // Sem linhas de "Carrinho" próprias — estima a partir de Telas/Hora (1 carrinho = 19 telas)
+    carrinhosHora = telasHora / PR_TELAS_POR_CARRINHO;
+    carrinhosHoraEstimado = true;
+  }
   let paradaTotal = 0, nParadas = 0;
   rows.forEach(r=> (r.paradas||[]).forEach(p=>{ if(p.duracaoSec){ paradaTotal += p.duracaoSec; nParadas++; } }));
   const { pctRodando, pctParado } = PR_computeRodadoParado(rows);
@@ -3622,7 +3628,9 @@ function PR_renderKPIsProducao(rows){
     <div class="kpi-card">
       <div class="label">Carrinhos/Hora</div>
       <div class="value">${carrinhosHora !== null ? PR_fmtNum(carrinhosHora, 1) : '—'}</div>
-      ${carrinhosHora !== null ? `<div class="trend-foot" style="margin-top:4px;">telas/h ÷ ${PR_TELAS_POR_CARRINHO}</div>` : ''}
+      ${carrinhosHora !== null ? (carrinhosHoraEstimado
+        ? `<div class="trend-foot" style="margin-top:4px;">estimado: telas/h ÷ ${PR_TELAS_POR_CARRINHO}</div>`
+        : `<div class="trend-foot" style="margin-top:4px;">telas/h ÷ ${PR_TELAS_POR_CARRINHO}</div>`) : ''}
     </div>
     <div class="kpi-card warn">
       <div class="label">Tempo Total de Parada</div>
