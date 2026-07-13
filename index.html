@@ -3460,7 +3460,8 @@ function PR_renderKPIsInsumo(rows, producaoRows){
    (12 un/tela) dá pra tornar isso dependente do produto.
    ============================================================================ */
 const PR_TELAS_POR_CARRINHO_PL = 12;
-const PR_UNIDADES_POR_TELA_120KG = 9; // bolo de 1,2kg — única coleta atual
+const PR_UNIDADES_POR_TELA_120KG = 9; // bolo de 1,2kg
+const PR_UNIDADES_POR_TELA_800G = 12; // bolo de 800g
 
 const PR_ETAPAS_PL = [
   {key:'pesar', label:'Pesar Insumos'},
@@ -3501,8 +3502,10 @@ function PR_renderKPIsTempos(rows){
 
   const encherAvg = PR_avg(rows.map(r=>r.encher).filter(v=>v!==null && v!==undefined));
   const telasPorHora = encherAvg ? 3600/encherAvg : null;
-  const unidadesPorHora = telasPorHora !== null ? telasPorHora * PR_UNIDADES_POR_TELA_120KG : null;
+  const unidadesPorHora800g = telasPorHora !== null ? telasPorHora * PR_UNIDADES_POR_TELA_800G : null;
+  const unidadesPorHora120kg = telasPorHora !== null ? telasPorHora * PR_UNIDADES_POR_TELA_120KG : null;
 
+  document.getElementById('prKpiGrid').style.gridTemplateColumns = 'repeat(5,1fr)';
   document.getElementById('prKpiGrid').innerHTML = `
     <div class="kpi-card">
       <div class="label">Carrinho/Hora</div>
@@ -3515,9 +3518,14 @@ function PR_renderKPIsTempos(rows){
       ${encherAvg !== null ? `<div class="trend-foot" style="margin-top:4px;">${TP_fmtDuration(encherAvg)}/tela (Encher Formas)</div>` : ''}
     </div>
     <div class="kpi-card good">
-      <div class="label">Unidades/Hora</div>
-      <div class="value">${unidadesPorHora !== null ? PR_fmtNum(unidadesPorHora, 0) : '—'}</div>
-      ${unidadesPorHora !== null ? `<div class="trend-foot" style="margin-top:4px;">${PR_UNIDADES_POR_TELA_120KG} un/tela (bolo 1,2kg)</div>` : ''}
+      <div class="label">Unidades/Hora (800g)</div>
+      <div class="value">${unidadesPorHora800g !== null ? PR_fmtNum(unidadesPorHora800g, 0) : '—'}</div>
+      ${unidadesPorHora800g !== null ? `<div class="trend-foot" style="margin-top:4px;">${PR_UNIDADES_POR_TELA_800G} un/tela</div>` : ''}
+    </div>
+    <div class="kpi-card good">
+      <div class="label">Unidades/Hora (1,2kg)</div>
+      <div class="value">${unidadesPorHora120kg !== null ? PR_fmtNum(unidadesPorHora120kg, 0) : '—'}</div>
+      ${unidadesPorHora120kg !== null ? `<div class="trend-foot" style="margin-top:4px;">${PR_UNIDADES_POR_TELA_120KG} un/tela</div>` : ''}
     </div>
     <div class="kpi-card warn">
       <div class="label">Etapa Mais Lenta</div>
