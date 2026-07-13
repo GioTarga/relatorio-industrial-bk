@@ -294,15 +294,14 @@
   /* Larguras proporcionais às 10 colunas da tabela de Detalhamento (página 1),
      para caber sem rolagem lateral */
   #tableWrap table.detail th:nth-child(1), #tableWrap table.detail td:nth-child(1){ width:7%; }
-  #tableWrap table.detail th:nth-child(2), #tableWrap table.detail td:nth-child(2){ width:21%; }
+  #tableWrap table.detail th:nth-child(2), #tableWrap table.detail td:nth-child(2){ width:25%; }
   #tableWrap table.detail th:nth-child(3), #tableWrap table.detail td:nth-child(3){ width:6%; }
   #tableWrap table.detail th:nth-child(4), #tableWrap table.detail td:nth-child(4){ width:8%; }
   #tableWrap table.detail th:nth-child(5), #tableWrap table.detail td:nth-child(5){ width:8%; }
   #tableWrap table.detail th:nth-child(6), #tableWrap table.detail td:nth-child(6){ width:6%; }
   #tableWrap table.detail th:nth-child(7), #tableWrap table.detail td:nth-child(7){ width:7%; }
-  #tableWrap table.detail th:nth-child(8), #tableWrap table.detail td:nth-child(8){ width:10%; }
-  #tableWrap table.detail th:nth-child(9), #tableWrap table.detail td:nth-child(9){ width:21%; }
-  #tableWrap table.detail th:nth-child(10), #tableWrap table.detail td:nth-child(10){ width:6%; }
+  #tableWrap table.detail th:nth-child(8), #tableWrap table.detail td:nth-child(8){ width:27%; }
+  #tableWrap table.detail th:nth-child(9), #tableWrap table.detail td:nth-child(9){ width:6%; }
 
   /* Tabela de Registros Detalhados (página 2) — largura mais compacta, com
      mais colunas; reduz fonte/padding e deixa as 3 primeiras colunas com
@@ -544,7 +543,6 @@
             <th class="center">Prod. Real</th>
             <th class="center">Uni.</th>
             <th class="center">Dif. %</th>
-            <th class="center">Turno</th>
             <th>Observações e Causa</th>
             <th class="center">Duração da Parada</th>
           </tr>
@@ -1621,10 +1619,15 @@ function categorize(obs){
 /* ---------- Gráfico de causas agregado no período ---------- */
 function renderCauses(filteredDates){
   const counts = {};
+  const durMinutes = {};
   filteredDates.forEach(d=>{
     getDayRows(d).forEach(r=>{
       const cats = categorize(r.obs || '');
-      cats.forEach(cat => { counts[cat] = (counts[cat]||0) + 1; });
+      const min = timeToMinutes(r.duracaoParada);
+      cats.forEach(cat => {
+        counts[cat] = (counts[cat]||0) + 1;
+        if(min !== null) durMinutes[cat] = (durMinutes[cat]||0) + min;
+      });
     });
   });
   const entries = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
@@ -1640,8 +1643,8 @@ function renderCauses(filteredDates){
     return;
   }
 
-  const barH = 30, gap = 14, leftPad = 220, rightPad = 70, topPad = 10;
-  const chartW = 760;
+  const barH = 30, gap = 14, leftPad = 220, rightPad = 130, topPad = 10;
+  const chartW = 820;
   const chartH = entries.length*(barH+gap) + topPad;
   const maxCount = Math.max(...entries.map(([,v])=>v));
   const maxPct = Math.max(...entries.map(([,v])=>v/total*100));
@@ -1672,7 +1675,8 @@ function renderCauses(filteredDates){
     const textColor = intensityTextColor(count);
     bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="12" fill="#2a1a1a" text-anchor="end" font-weight="600">${cat}</text>`;
     bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="${color}" rx="5"/>`;
-    bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="12" fill="${textColor}" font-weight="700">${pct.toFixed(0)}% (${count})</text>`;
+    const durTxt = durMinutes[cat] ? ` · ${TP_fmtDuration(durMinutes[cat]*60)}` : '';
+    bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="12" fill="${textColor}" font-weight="700">${pct.toFixed(0)}% (${count})${durTxt}</text>`;
   });
 
   document.getElementById('causesWrap').innerHTML = `
@@ -1764,7 +1768,6 @@ function renderTable(dayKey){
     }
     const hasObs = r.obs && r.obs.length > 0;
     const obsHtml = hasObs ? `<span class="obs-text has-obs">${r.obs}</span>` : `<span class="obs-text">—</span>`;
-    const turnoTxt = (r.inicio && r.fim) ? `${r.inicio}–${r.fim}` : (r.inicio || r.fim || '—');
     const tr = document.createElement('tr');
     if(isNoPlan) tr.className = 'row-noplan';
     tr.innerHTML = `
@@ -1775,14 +1778,13 @@ function renderTable(dayKey){
       <td class="center">${r.real.toLocaleString('pt-BR')}</td>
       <td class="center">${r.uni}</td>
       <td class="center">${difHtml}</td>
-      <td class="center">${turnoTxt}</td>
       <td>${obsHtml}</td>
       <td class="center">${fmtDuracaoParada(r.duracaoParada)}</td>
     `;
     tbody.appendChild(tr);
   });
   if(tbody.children.length === 0){
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro para o setor selecionado neste dia.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro para o setor selecionado neste dia.</td></tr>`;
   }
 }
 
@@ -2025,16 +2027,21 @@ function buildDaySvgElement(dayKey){
 function buildDayCausesSvgElement(dayKey){
   const day = DATA[dayKey];
   const counts = {};
+  const durMinutes = {};
   getDayRows(dayKey).forEach(r=>{
     const cats = categorize(r.obs || '');
-    cats.forEach(cat => { counts[cat] = (counts[cat]||0) + 1; });
+    const min = timeToMinutes(r.duracaoParada);
+    cats.forEach(cat => {
+      counts[cat] = (counts[cat]||0) + 1;
+      if(min !== null) durMinutes[cat] = (durMinutes[cat]||0) + min;
+    });
   });
   const entries = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
   const total = entries.reduce((a,[,v])=>a+v,0);
   if(entries.length === 0) return null;
 
-  const barH = 30, gap = 14, leftPad = 220, rightPad = 70, topPad = 10;
-  const chartW = 760;
+  const barH = 30, gap = 14, leftPad = 220, rightPad = 130, topPad = 10;
+  const chartW = 820;
   const chartH = entries.length*(barH+gap) + topPad;
   const maxPct = Math.max(...entries.map(([,v])=>v/total*100));
 
@@ -2044,9 +2051,10 @@ function buildDayCausesSvgElement(dayKey){
     const barWmax = chartW - leftPad - rightPad;
     const w = (pct/Math.max(maxPct,1)) * barWmax;
     const y = topPad + i*(barH+gap);
+    const durTxt = durMinutes[cat] ? ` · ${TP_fmtDuration(durMinutes[cat]*60)}` : '';
     bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="12" fill="#2a1a1a" text-anchor="end" font-weight="600">${cat}</text>`;
     bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="#A10101" rx="5"/>`;
-    bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="12" fill="#A10101" font-weight="700">${pct.toFixed(0)}% (${count})</text>`;
+    bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="12" fill="#A10101" font-weight="700">${pct.toFixed(0)}% (${count})${durTxt}</text>`;
   });
 
   const wrapper = document.createElement('div');
@@ -2070,7 +2078,6 @@ async function buildDocHtml(dayKey){
       difColor = r.dif < 0 ? '#A10101' : '#2F7D52';
     }
     const obsColor = r.obs ? '#6e0000' : '#6B5C5C';
-    const turnoTxt = (r.inicio && r.fim) ? `${r.inicio}–${r.fim}` : (r.inicio || r.fim || '—');
     return `<tr style="background:${fill};">
       <td style="padding:6px 8px;border:1px solid #F0DDC0;font-weight:700;">${r.setor}</td>
       <td style="padding:6px 8px;border:1px solid #F0DDC0;">${r.produto}</td>
@@ -2079,7 +2086,6 @@ async function buildDocHtml(dayKey){
       <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;">${realTxt}</td>
       <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;">${r.uni}</td>
       <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;font-weight:700;color:${difColor};">${difTxt}</td>
-      <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;">${turnoTxt}</td>
       <td style="padding:6px 8px;border:1px solid #F0DDC0;color:${obsColor};">${r.obs || '—'}</td>
       <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;">${fmtDuracaoParada(r.duracaoParada)}</td>
     </tr>`;
@@ -2137,7 +2143,7 @@ async function buildDocHtml(dayKey){
     <table>
       <thead>
         <tr>
-          <th>Setor</th><th>Produto</th><th style="text-align:center;">Equipe</th><th style="text-align:center;">Prod. Prevista</th><th style="text-align:center;">Prod. Real</th><th style="text-align:center;">Uni.</th><th style="text-align:center;">Dif. %</th><th style="text-align:center;">Turno</th><th>Observações e Causa</th><th style="text-align:center;">Duração da Parada</th>
+          <th>Setor</th><th>Produto</th><th style="text-align:center;">Equipe</th><th style="text-align:center;">Prod. Prevista</th><th style="text-align:center;">Prod. Real</th><th style="text-align:center;">Uni.</th><th style="text-align:center;">Dif. %</th><th>Observações e Causa</th><th style="text-align:center;">Duração da Parada</th>
         </tr>
       </thead>
       <tbody>${rowsHtml}</tbody>
