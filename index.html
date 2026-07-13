@@ -3597,13 +3597,15 @@ function PR_renderKPIsProducao(rows){
   const unidadesHora = PR_avg(rows.map(r=>r.unidadesPorHora));
   const caixaRows = rows.filter(r=> (r.unidadeMedida||'').toLowerCase() === 'caixa');
   const carrinhoRows = rows.filter(r=> (r.unidadeMedida||'').toLowerCase() === 'carrinho');
+  const telaRows = rows.filter(r=> (r.unidadeMedida||'').toLowerCase().startsWith('tela'));
   const caixasHora = caixaRows.length ? PR_avg(caixaRows.map(r=>r.producaoHora)) : null;
   const carrinhosHora = carrinhoRows.length ? PR_avg(carrinhoRows.map(r=> r.producaoHora !== null ? r.producaoHora / PR_TELAS_POR_CARRINHO : null)) : null;
+  const telasHora = telaRows.length ? PR_avg(telaRows.map(r=>r.producaoHora)) : null;
   let paradaTotal = 0, nParadas = 0;
   rows.forEach(r=> (r.paradas||[]).forEach(p=>{ if(p.duracaoSec){ paradaTotal += p.duracaoSec; nParadas++; } }));
   const { pctRodando, pctParado } = PR_computeRodadoParado(rows);
 
-  document.getElementById('prKpiGrid').style.gridTemplateColumns = 'repeat(5,1fr)';
+  document.getElementById('prKpiGrid').style.gridTemplateColumns = 'repeat(6,1fr)';
   document.getElementById('prKpiGrid').innerHTML = `
     <div class="kpi-card">
       <div class="label">Unidades/Hora</div>
@@ -3612,6 +3614,10 @@ function PR_renderKPIsProducao(rows){
     <div class="kpi-card">
       <div class="label">Caixas/Hora</div>
       <div class="value">${caixasHora !== null ? PR_fmtNum(caixasHora, 1) : '—'}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Telas/Hora</div>
+      <div class="value">${telasHora !== null ? PR_fmtNum(telasHora, 1) : '—'}</div>
     </div>
     <div class="kpi-card">
       <div class="label">Carrinhos/Hora</div>
