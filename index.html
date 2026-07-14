@@ -323,6 +323,12 @@
   .diff-neutral{ background:#f1ecec;color:var(--ink-soft); }
   .no-plan{ color:var(--ink-soft);font-style:italic;font-size:11px; }
   .obs-text{ color:var(--ink-soft);font-size:11px; }
+
+  .noplan-list{ display:flex; flex-direction:column; gap:8px; text-align:left; }
+  .noplan-item{ display:flex; align-items:center; gap:14px; padding:10px 14px; background:var(--cream); border-radius:8px; flex-wrap:wrap; }
+  .noplan-produto{ font-weight:700; color:var(--ink); flex:1; min-width:200px; font-size:13px; }
+  .noplan-qty{ font-weight:700; color:var(--red); white-space:nowrap; font-size:13px; }
+  .noplan-obs{ font-size:11.5px; color:var(--ink-soft); font-style:italic; width:100%; }
   .obs-text.has-obs{ color:var(--red-dark);font-weight:600; }
   .row-noplan{ background:#fbf6ea !important; }
 
@@ -522,7 +528,7 @@
   <div class="panel">
     <div class="panel-title">Produtos Produzidos Fora do Plano de Produção</div>
     <div class="chart-wrap" id="trendWrap"></div>
-    <div class="trend-foot">Quantidade de itens produzidos sem planejamento prévio, por dia, dentro do período selecionado.</div>
+    <div class="trend-foot" id="trendFoot">Quantidade de itens produzidos sem planejamento prévio, por dia, dentro do período selecionado.</div>
   </div>
 
   <div class="panel">
@@ -1094,6 +1100,14 @@ function buildLabelFromISO(iso){
   return `${d} de ${MONTH_NAMES_PT[mo-1]} de ${y}`;
 }
 
+/* Encurta nomes de produto longos pros eixos de gráfico, mantendo o nome
+   completo disponível via <title> (tooltip) no SVG. */
+function truncateProdLabel(s, max){
+  if(!s) return '';
+  max = max || 24;
+  return s.length > max ? s.slice(0, max-1).trimEnd() + '…' : s;
+}
+
 function parseNumOrNull(s){
   if(s === undefined || s === null) return null;
   const t = String(s).trim();
@@ -1635,7 +1649,7 @@ function renderCauses(filteredDates){
       });
     });
   });
-  const entries = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const entries = Object.entries(counts).sort((a,b)=> (durMinutes[b[0]]||0) - (durMinutes[a[0]]||0));
   const total = entries.reduce((a,[,v])=>a+v,0);
 
   if(entries.length === 0){
@@ -1651,13 +1665,13 @@ function renderCauses(filteredDates){
   const barH = 30, gap = 14, leftPad = 220, rightPad = 130, topPad = 10;
   const chartW = 820;
   const chartH = entries.length*(barH+gap) + topPad;
-  const maxCount = Math.max(...entries.map(([,v])=>v));
-  const maxPct = Math.max(...entries.map(([,v])=>v/total*100));
+  const durValues = entries.map(([cat])=> durMinutes[cat]||0);
+  const maxDur = Math.max(...durValues, 1);
 
-  // Degradê de intensidade: vermelho mais forte para o maior valor,
-  // mais claro/fraco para os menores — tudo dentro do tom vermelho da marca
-  function intensityColor(count){
-    const t = maxCount > 1 ? (count-1)/(maxCount-1) : 1; // normaliza 0..1
+  // Degradê de intensidade: vermelho mais forte pro maior tempo parado,
+  // mais claro/fraco pros menores — tudo dentro do tom vermelho da marca
+  function intensityColor(min){
+    const t = min/maxDur;
     const light = [0xFB,0xE2,0xDC]; // tom bem claro do vermelho da marca
     const strong = [0xA1,0x01,0x01]; // vermelho forte da marca
     const r = Math.round(light[0] + (strong[0]-light[0])*t);
@@ -1665,23 +1679,25 @@ function renderCauses(filteredDates){
     const b = Math.round(light[2] + (strong[2]-light[2])*t);
     return `rgb(${r},${g},${b})`;
   }
-  function intensityTextColor(count){
-    const t = maxCount > 1 ? (count-1)/(maxCount-1) : 1;
-    return t > 0.45 ? '#A10101' : '#8a4c08';
+  function intensityTextColor(min){
+    return (min/maxDur) > 0.45 ? '#A10101' : '#8a4c08';
   }
 
   let bars = '';
   entries.forEach(([cat,count], i)=>{
     const pct = count/total*100;
+    const dur = durMinutes[cat] || 0;
     const barWmax = chartW - leftPad - rightPad;
-    const w = (pct/Math.max(maxPct,1)) * barWmax;
+    // Sem duração registrada pra essa causa: mostra uma barrinha mínima
+    // (só pra indicar presença), em cinza, no fim da lista.
+    const w = dur > 0 ? (dur/maxDur) * barWmax : barWmax * 0.05;
     const y = topPad + i*(barH+gap);
-    const color = intensityColor(count);
-    const textColor = intensityTextColor(count);
+    const color = dur > 0 ? intensityColor(dur) : '#e3d9d4';
+    const textColor = dur > 0 ? intensityTextColor(dur) : '#8a7a75';
+    const durTxt = dur > 0 ? TP_fmtDuration(dur*60) : 'sem duração registrada';
     bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="12" fill="#2a1a1a" text-anchor="end" font-weight="600">${cat}</text>`;
     bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="${color}" rx="5"/>`;
-    const durTxt = durMinutes[cat] ? ` · ${TP_fmtDuration(durMinutes[cat]*60)}` : '';
-    bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="12" fill="${textColor}" font-weight="700">${pct.toFixed(0)}% (${count})${durTxt}</text>`;
+    bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="12" fill="${textColor}" font-weight="700">${pct.toFixed(0)}% (${count}) · ${durTxt}</text>`;
   });
 
   document.getElementById('causesWrap').innerHTML = `
@@ -1709,7 +1725,7 @@ function renderDayChart(dayKey){
   const z = zoomLevel; // 0.6 a 2.2
   const barW = 13*z, gap = 5*z, groupGap = 18*z;
   const groupW = barW*2+gap;
-  const baseY = 300, topPad = 30;
+  const baseY = 300, topPad = 70;
   const chartWidth = rows.length*(groupW+groupGap)+50;
   const fsVal = Math.max(8, 10*z), fsLab = Math.max(8, 10*z);
 
@@ -1725,10 +1741,10 @@ function renderDayChart(dayKey){
     const hR = scaledH(r.real);
     const xP = x0, xR = x0+barW+gap;
     bars += `<rect x="${xP}" y="${baseY-hP}" width="${barW}" height="${hP}" fill="#A10101" rx="3"/>`;
-    bars += `<text x="${xP+barW/2}" y="${baseY-hP-7}" font-size="${fsVal}" font-weight="700" fill="#A10101" text-anchor="middle">${Math.round(r.prev).toLocaleString('pt-BR')}</text>`;
+    bars += `<text x="${xP+barW/2}" y="${baseY-hP-9}" font-size="${fsVal}" font-weight="700" fill="#A10101" text-anchor="start" transform="rotate(-90 ${xP+barW/2} ${baseY-hP-9})">${Math.round(r.prev).toLocaleString('pt-BR')}</text>`;
     bars += `<rect x="${xR}" y="${baseY-hR}" width="${barW}" height="${hR}" fill="#B5640B" rx="3"/>`;
-    bars += `<text x="${xR+barW/2}" y="${baseY-hR-7}" font-size="${fsVal}" font-weight="700" fill="#8a4c08" text-anchor="middle">${Math.round(r.real).toLocaleString('pt-BR')}</text>`;
-    bars += `<text x="${xP+barW+gap/2}" y="${baseY+16}" font-size="${fsLab}" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${xP+barW+gap/2} ${baseY+16})">${r.produto}</text>`;
+    bars += `<text x="${xR+barW/2}" y="${baseY-hR-9}" font-size="${fsVal}" font-weight="700" fill="#8a4c08" text-anchor="start" transform="rotate(-90 ${xR+barW/2} ${baseY-hR-9})">${Math.round(r.real).toLocaleString('pt-BR')}</text>`;
+    bars += `<text x="${xP+barW+gap/2}" y="${baseY+16}" font-size="${fsLab}" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${xP+barW+gap/2} ${baseY+16})">${truncateProdLabel(r.produto)}<title>${r.produto}</title></text>`;
   });
 
   let grid = '';
@@ -1751,7 +1767,7 @@ function renderDayChart(dayKey){
   }
 
   document.getElementById('dayChartWrap').innerHTML = `
-    <svg viewBox="0 0 ${chartWidth} 380" width="${chartWidth}" height="380" style="overflow:visible;font-family:Arial;display:inline-block;">
+    <svg viewBox="0 0 ${chartWidth} 460" width="${chartWidth}" height="460" style="overflow:visible;font-family:Arial;display:inline-block;">
       ${grid}${bars}
     </svg>
   `;
@@ -1793,7 +1809,7 @@ function renderTable(dayKey){
   }
 }
 
-/* ---------- Gráfico de evolução no período ---------- */
+/* ---------- Painel de produtos fora do plano ---------- */
 function renderTrend(filteredDates){
   const points = filteredDates.map(d=>{
     const day = DATA[d];
@@ -1812,32 +1828,42 @@ function renderTrend(filteredDates){
         Nenhum dia no período selecionado.
         <div class="empty-sub">Ajuste a data inicial ou final no topo da página para ver dados aqui.</div>
       </div>`;
+    document.getElementById('trendFoot').textContent = 'Quantidade de itens produzidos sem planejamento prévio, por dia, dentro do período selecionado.';
     return;
   }
 
   if(points.length === 1){
-    renderTrendBar(points[0]);
+    renderNoPlanList(points[0]);
+    document.getElementById('trendFoot').textContent = 'Produtos produzidos sem planejamento prévio no dia selecionado.';
   } else {
     renderTrendLine(points);
+    document.getElementById('trendFoot').textContent = 'Quantidade de itens produzidos sem planejamento prévio, por dia, dentro do período selecionado.';
   }
 }
 
-/* Apenas 1 dia selecionado: gráfico de barra única */
-function renderTrendBar(point){
-  const w = 360, h = 240, padTop = 36, padBottom = 50, padLeft = 50, padRight = 50;
-  const maxVal = Math.max(point.foraPlano, 5);
-  const barW = 80;
-  const barH = (point.foraPlano/maxVal) * (h-padTop-padBottom);
-  const x = w/2 - barW/2;
-  const y = h - padBottom - barH;
-
-  document.getElementById('trendWrap').innerHTML = `
-    <svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" style="overflow:visible;font-family:Arial;display:inline-block;">
-      <line x1="${padLeft}" y1="${h-padBottom}" x2="${w-padRight}" y2="${h-padBottom}" stroke="#f0ddc0" stroke-width="1"/>
-      <rect x="${x}" y="${y}" width="${barW}" height="${barH}" fill="#A10101" rx="6"/>
-      <text x="${w/2}" y="${y-12}" font-size="16" font-weight="700" fill="#A10101" text-anchor="middle">${point.foraPlano}</text>
-      <text x="${w/2}" y="${h-22}" font-size="12" fill="#4a3a3a" text-anchor="middle">${point.label}</text>
-    </svg>
+/* Apenas 1 dia selecionado: lista com o nome de cada produto fora do plano */
+function renderNoPlanList(point){
+  const rows = getDayRows(point.date).filter(r => r.prev === null);
+  const wrap = document.getElementById('trendWrap');
+  if(rows.length === 0){
+    wrap.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">✓</span>
+        Nenhum produto fora do plano de produção neste dia.
+      </div>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <div class="noplan-list">
+      ${rows.map(r=>`
+        <div class="noplan-item">
+          <span class="sector-tag">${r.setor}</span>
+          <span class="noplan-produto">${r.produto}</span>
+          <span class="noplan-qty">${r.real.toLocaleString('pt-BR')} ${r.uni}</span>
+          ${r.obs ? `<span class="noplan-obs">${r.obs}</span>` : ''}
+        </div>
+      `).join('')}
+    </div>
   `;
 }
 
@@ -2002,7 +2028,7 @@ function buildDaySvgElement(dayKey){
   const maxVal = Math.max(...rows.map(r=>Math.max(r.prev, r.real)));
   const barW = 13, gap = 5, groupGap = 18;
   const groupW = barW*2+gap;
-  const baseY = 300, topPad = 30;
+  const baseY = 300, topPad = 70;
   const chartWidth = rows.length*(groupW+groupGap)+50;
   let bars = '';
   rows.forEach((r,i)=>{
@@ -2011,10 +2037,10 @@ function buildDaySvgElement(dayKey){
     const hR = (r.real/maxVal)*(baseY-topPad);
     const xP = x0, xR = x0+barW+gap;
     bars += `<rect x="${xP}" y="${baseY-hP}" width="${barW}" height="${hP}" fill="#A10101" rx="3"/>`;
-    bars += `<text x="${xP+barW/2}" y="${baseY-hP-7}" font-size="10" font-weight="700" fill="#A10101" text-anchor="middle">${Math.round(r.prev).toLocaleString('pt-BR')}</text>`;
+    bars += `<text x="${xP+barW/2}" y="${baseY-hP-9}" font-size="10" font-weight="700" fill="#A10101" text-anchor="start" transform="rotate(-90 ${xP+barW/2} ${baseY-hP-9})">${Math.round(r.prev).toLocaleString('pt-BR')}</text>`;
     bars += `<rect x="${xR}" y="${baseY-hR}" width="${barW}" height="${hR}" fill="#B5640B" rx="3"/>`;
-    bars += `<text x="${xR+barW/2}" y="${baseY-hR-7}" font-size="10" font-weight="700" fill="#8a4c08" text-anchor="middle">${Math.round(r.real).toLocaleString('pt-BR')}</text>`;
-    bars += `<text x="${xP+barW+gap/2}" y="${baseY+16}" font-size="10" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${xP+barW+gap/2} ${baseY+16})">${r.produto}</text>`;
+    bars += `<text x="${xR+barW/2}" y="${baseY-hR-9}" font-size="10" font-weight="700" fill="#8a4c08" text-anchor="start" transform="rotate(-90 ${xR+barW/2} ${baseY-hR-9})">${Math.round(r.real).toLocaleString('pt-BR')}</text>`;
+    bars += `<text x="${xP+barW+gap/2}" y="${baseY+16}" font-size="10" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${xP+barW+gap/2} ${baseY+16})">${truncateProdLabel(r.produto)}</text>`;
   });
   let grid = '';
   const step = maxVal > 5000 ? 2000 : (maxVal > 1000 ? 500 : 100);
@@ -2024,7 +2050,7 @@ function buildDaySvgElement(dayKey){
     grid += `<text x="24" y="${y+4}" font-size="10" fill="#6b5c5c" text-anchor="end">${v.toLocaleString('pt-BR')}</text>`;
   }
   const wrapper = document.createElement('div');
-  wrapper.innerHTML = `<svg viewBox="0 0 ${chartWidth} 380" xmlns="http://www.w3.org/2000/svg">${grid}${bars}</svg>`;
+  wrapper.innerHTML = `<svg viewBox="0 0 ${chartWidth} 460" xmlns="http://www.w3.org/2000/svg">${grid}${bars}</svg>`;
   return wrapper.firstElementChild;
 }
 
@@ -2041,25 +2067,29 @@ function buildDayCausesSvgElement(dayKey){
       if(min !== null) durMinutes[cat] = (durMinutes[cat]||0) + min;
     });
   });
-  const entries = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const entries = Object.entries(counts).sort((a,b)=> (durMinutes[b[0]]||0) - (durMinutes[a[0]]||0));
   const total = entries.reduce((a,[,v])=>a+v,0);
   if(entries.length === 0) return null;
 
   const barH = 30, gap = 14, leftPad = 220, rightPad = 130, topPad = 10;
   const chartW = 820;
   const chartH = entries.length*(barH+gap) + topPad;
-  const maxPct = Math.max(...entries.map(([,v])=>v/total*100));
+  const durValues = entries.map(([cat])=> durMinutes[cat]||0);
+  const maxDur = Math.max(...durValues, 1);
 
   let bars = '';
   entries.forEach(([cat,count], i)=>{
     const pct = count/total*100;
+    const dur = durMinutes[cat] || 0;
     const barWmax = chartW - leftPad - rightPad;
-    const w = (pct/Math.max(maxPct,1)) * barWmax;
+    const w = dur > 0 ? (dur/maxDur) * barWmax : barWmax * 0.05;
     const y = topPad + i*(barH+gap);
-    const durTxt = durMinutes[cat] ? ` · ${TP_fmtDuration(durMinutes[cat]*60)}` : '';
+    const color = dur > 0 ? '#A10101' : '#e3d9d4';
+    const textColor = dur > 0 ? '#A10101' : '#8a7a75';
+    const durTxt = dur > 0 ? TP_fmtDuration(dur*60) : 'sem duração registrada';
     bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="12" fill="#2a1a1a" text-anchor="end" font-weight="600">${cat}</text>`;
-    bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="#A10101" rx="5"/>`;
-    bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="12" fill="#A10101" font-weight="700">${pct.toFixed(0)}% (${count})${durTxt}</text>`;
+    bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="${color}" rx="5"/>`;
+    bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="12" fill="${textColor}" font-weight="700">${pct.toFixed(0)}% (${count}) · ${durTxt}</text>`;
   });
 
   const wrapper = document.createElement('div');
