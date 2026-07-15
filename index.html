@@ -710,6 +710,7 @@
 
       <div class="panel" id="prPanelInsumo" style="display:none;">
         <div class="panel-title">Produção de Insumos (Blocos de Massa e Rolos Laminados)</div>
+        <div id="prInsumoError" style="display:none;background:#fbe2dc;border:1px solid #e0a89a;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#7a2a1a;"></div>
         <div class="kpi-grid" id="prKpiGridInsumo" style="margin-bottom:0;"></div>
       </div>
 
@@ -2905,6 +2906,7 @@ function PR_renderSetorTabs(){
       PR_currentSetor = key;
       PR_DATA = [];
       PR_INSUMO_DATA = [];
+      PR_insumoLoadError = null;
       prDateStartEl.value = ''; prDateEndEl.value = '';
       PR_selectedProdutos.clear();
       PR_renderSetorTabs();
@@ -3074,8 +3076,11 @@ function PR_transformCsvInsumo(csvText){
   return records;
 }
 
-/* Carrega (silenciosamente) os dados de insumo (Blocos de Massa / Rolos
-   Laminados) associados ao setor atual, se houver essa fonte configurada. */
+/* Carrega os dados de insumo (Blocos de Massa / Rolos Laminados) associados
+   ao setor atual, se houver essa fonte configurada. Guarda o erro em
+   PR_insumoLoadError pra exibir um aviso visível no painel (antes isso
+   falhava silenciosamente, só no console). */
+let PR_insumoLoadError = null;
 async function PR_loadInsumoData(url){
   try{
     const bust = (url.includes('?') ? '&' : '?') + 'cb=' + Date.now();
@@ -3083,9 +3088,12 @@ async function PR_loadInsumoData(url){
     if(!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
     const records = PR_transformCsvInsumo(text);
+    if(records.length === 0) throw new Error('Nenhum dado válido encontrado na planilha de insumo.');
     PR_INSUMO_DATA = records;
+    PR_insumoLoadError = null;
   }catch(err){
     console.error('Erro ao carregar dados de insumo (Massa Salgado):', err);
+    PR_insumoLoadError = err.message || String(err);
     if(PR_INSUMO_DATA.length === 0) PR_INSUMO_DATA = PR_FALLBACK_INSUMO_DATA;
   }
 }
@@ -4007,6 +4015,13 @@ function PR_refreshAll(){
   const titleChart1 = document.getElementById('prTitleChart1');
   const temInsumo = !!(PR_SETOR_CONFIGS[PR_currentSetor] && PR_SETOR_CONFIGS[PR_currentSetor].insumoCsvUrl);
   panelInsumo.style.display = temInsumo ? 'block' : 'none';
+  const insumoErrorEl = document.getElementById('prInsumoError');
+  if(temInsumo && PR_insumoLoadError){
+    insumoErrorEl.style.display = 'block';
+    insumoErrorEl.textContent = '⚠ Não foi possível conectar à planilha de insumo (' + PR_insumoLoadError + '). Mostrando dados de exemplo — os cards abaixo não refletem a planilha real.';
+  } else {
+    insumoErrorEl.style.display = 'none';
+  }
   if(temInsumo) PR_renderKPIsInsumo(PR_INSUMO_FILTERED, PR_FILTERED);
   panelParadasRolos.style.display = temInsumo ? 'block' : 'none';
   if(temInsumo) PR_renderParadasRolosChart(PR_INSUMO_FILTERED);
