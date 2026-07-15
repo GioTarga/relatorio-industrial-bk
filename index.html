@@ -3015,52 +3015,62 @@ function PR_transformCsvProducao(csvText){
 }
 
 /* Formato "insumo" (ex: MASSA SALGADO — Blocos de Massa e Rolos Laminados):
-   mesma lógica de agrupamento do formato "produção" (uma linha inicia uma
-   nova corrida, linhas seguintes com métricas em branco só acrescentam mais
-   uma parada), mas com um layout de colunas mais simples e sem máquina.
+   uma linha inicia uma nova corrida quando "Quantidade" vem preenchida;
+   linhas seguintes sem Quantidade só acrescentam mais uma parada. Nessa
+   planilha, diferente da de produção, o nome do Produto se REPETE em toda
+   linha de continuação (não fica em branco) — por isso cada parada de
+   continuação é anexada à corrida mais recente DO MESMO PRODUTO, não
+   simplesmente à última corrida criada (que poderia ser de outro produto
+   intercalado). A Data, essa sim, fica em branco nas continuações e herda
+   do último valor preenchido.
    Colunas: Data(0) Produto(1) Início(2) Fim(3) Quantidade(4) Tempo
-   Médio/Rolo(5) Paradas(6) Motivo(7). Uma linha inicia nova corrida quando
-   "Quantidade" vem preenchida. */
+   Médio/Rolo(5) Paradas(6) Motivo(7). */
 function PR_transformCsvInsumo(csvText){
   const rows = parseCSV(csvText).filter(r => r.some(c => c && c.trim() !== ''));
   const dataRows = rows.slice(1);
   const records = [];
-  let current = null;
+  let lastDateRaw = '';
 
   dataRows.forEach(r=>{
-    const dataRaw = (r[0]||'').trim();
+    const dataRawCell = (r[0]||'').trim();
+    const dataRaw = dataRawCell || lastDateRaw;
+    if(!dataRaw) return;
+    const iso = parseDataBR(dataRaw);
+    if(!iso) return;
+    lastDateRaw = dataRaw;
+
     const produto = (r[1]||'').trim();
+    if(!produto) return;
+
     const quantidadeRaw = (r[4]||'').trim().replace(/\./g,'').replace(',', '.');
     const isNovaCorrida = quantidadeRaw !== '';
+    const motivo = (r[7]||'').trim();
+    const tempoStr = (r[6]||'').trim();
 
     if(isNovaCorrida){
-      if(current) records.push(current);
-      current = null;
-
-      if(!dataRaw || !produto) return;
-      const iso = parseDataBR(dataRaw);
-      if(!iso) return;
-
       const inicio = (r[2]||'').trim();
       const fim = (r[3]||'').trim();
       const quantidade = parseFloat(quantidadeRaw);
       const tempoMedio = TP_timeToSeconds((r[5]||'').trim());
-
-      current = {
+      const novaCorrida = {
         dateISO: iso, dateRaw: dataRaw, produto, inicio, fim,
         quantidade: !isNaN(quantidade) ? quantidade : null,
         tempoMedio,
         paradas: [],
       };
-    }
-
-    const motivo = (r[7]||'').trim();
-    const tempoStr = (r[6]||'').trim();
-    if(current && motivo){
-      current.paradas.push({ motivo, duracaoSec: TP_timeToSeconds(tempoStr) });
+      if(motivo) novaCorrida.paradas.push({ motivo, duracaoSec: TP_timeToSeconds(tempoStr) });
+      records.push(novaCorrida);
+    } else if(motivo){
+      // Linha de continuação: acha a corrida mais recente do MESMO produto
+      // (procurando de trás pra frente) pra anexar essa parada.
+      for(let i=records.length-1; i>=0; i--){
+        if(records[i].produto === produto){
+          records[i].paradas.push({ motivo, duracaoSec: TP_timeToSeconds(tempoStr) });
+          break;
+        }
+      }
     }
   });
-  if(current) records.push(current);
   return records;
 }
 
@@ -3695,8 +3705,8 @@ function PR_renderTableTempos(rows){
 
 function PR_renderKPIsProducao(rows){
   const unidadesHora = PR_avg(rows.map(r=>r.unidadesPorHora));
-  const caixaRows = rows.filter(r=> (r.unidadeMedida||'').toLowerCase() === 'caixa');
-  const carrinhoRows = rows.filter(r=> (r.unidadeMedida||'').toLowerCase() === 'carrinho');
+  const caixaRows = rows.filter(r=> (r.unidadeMedida||'').toLowerCase().startsWith('caixa'));
+  const carrinhoRows = rows.filter(r=> (r.unidadeMedida||'').toLowerCase().startsWith('carrinho'));
   const telaRows = rows.filter(r=> (r.unidadeMedida||'').toLowerCase().startsWith('tela'));
   const caixasHora = caixaRows.length ? PR_avg(caixaRows.map(r=>r.producaoHora)) : null;
   const telasHora = telaRows.length ? PR_avg(telaRows.map(r=>r.producaoHora)) : null;
