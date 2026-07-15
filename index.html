@@ -1438,10 +1438,13 @@ async function loadData(isManualRefresh){
 /* Recalcula os limites de data, repopula o filtro de setor e renderiza tudo
    — chamado sempre após um carregamento (inicial ou via botão Atualizar) */
 function applyDateBoundsAndRefresh(){
+  const prevMax = dateEndInput.max || null;
+  const wasTrackingLatest = !dateEndInput.value || dateEndInput.value === prevMax;
+
   allDates = Object.keys(DATA).sort();
   if(allDates.length === 0) return;
   if(!dateStartInput.value || !allDates.includes(dateStartInput.value)) dateStartInput.value = allDates[0];
-  if(!dateEndInput.value || !allDates.includes(dateEndInput.value)) dateEndInput.value = allDates[allDates.length-1];
+  if(!dateEndInput.value || !allDates.includes(dateEndInput.value) || wasTrackingLatest) dateEndInput.value = allDates[allDates.length-1];
   dateStartInput.min = allDates[0];
   dateStartInput.max = allDates[allDates.length-1];
   dateEndInput.min = allDates[0];
@@ -2507,10 +2510,13 @@ tpLinhaEl.addEventListener('change', ()=>{
 });
 
 function TP_applyDateBoundsAndRefresh(){
+  const prevMax = tpDateEndEl.max || null;
+  const wasTrackingLatest = !tpDateEndEl.value || tpDateEndEl.value === prevMax;
+
   TP_allDates = [...new Set(TP_DATA.map(r=>r.dateISO))].sort();
   if(TP_allDates.length === 0) return;
   if(!tpDateStartEl.value || !TP_allDates.includes(tpDateStartEl.value)) tpDateStartEl.value = TP_allDates[0];
-  if(!tpDateEndEl.value || !TP_allDates.includes(tpDateEndEl.value)) tpDateEndEl.value = TP_allDates[TP_allDates.length-1];
+  if(!tpDateEndEl.value || !TP_allDates.includes(tpDateEndEl.value) || wasTrackingLatest) tpDateEndEl.value = TP_allDates[TP_allDates.length-1];
   tpDateStartEl.min = TP_allDates[0]; tpDateStartEl.max = TP_allDates[TP_allDates.length-1];
   tpDateEndEl.min = TP_allDates[0]; tpDateEndEl.max = TP_allDates[TP_allDates.length-1];
 
@@ -3191,10 +3197,13 @@ prMaquinaEl.addEventListener('change', ()=>{
 });
 
 function PR_applyDateBoundsAndRefresh(){
+  const prevMax = prDateEndEl.max || null;
+  const wasTrackingLatest = !prDateEndEl.value || prDateEndEl.value === prevMax;
+
   PR_allDates = [...new Set(PR_DATA.map(r=>r.dateISO))].sort();
   if(PR_allDates.length === 0) return;
   if(!prDateStartEl.value || !PR_allDates.includes(prDateStartEl.value)) prDateStartEl.value = PR_allDates[0];
-  if(!prDateEndEl.value || !PR_allDates.includes(prDateEndEl.value)) prDateEndEl.value = PR_allDates[PR_allDates.length-1];
+  if(!prDateEndEl.value || !PR_allDates.includes(prDateEndEl.value) || wasTrackingLatest) prDateEndEl.value = PR_allDates[PR_allDates.length-1];
   prDateStartEl.min = PR_allDates[0]; prDateStartEl.max = PR_allDates[PR_allDates.length-1];
   prDateEndEl.min = PR_allDates[0]; prDateEndEl.max = PR_allDates[PR_allDates.length-1];
 
