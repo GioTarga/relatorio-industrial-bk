@@ -3531,13 +3531,22 @@ function PR_renderKPIsInsumo(rows, producaoRows){
   const comTaxa = rows.map(r=>{
     const iniS = TP_clockToSeconds(r.inicio), fimS = TP_clockToSeconds(r.fim);
     const horas = (iniS!==null && fimS!==null && fimS>iniS) ? (fimS-iniS)/3600 : null;
-    const rate = (horas && r.quantidade!==null) ? r.quantidade/horas : null;
-    return Object.assign({}, r, { rate });
+    let rate = (horas && r.quantidade!==null) ? r.quantidade/horas : null;
+    let rateEstimada = false;
+    // Sem Início/Fim registrado: estima a taxa a partir do Tempo Médio por
+    // unidade (rolo/bloco), que já é coletado independente do horário.
+    if(rate === null && r.tempoMedio !== null && r.tempoMedio > 0){
+      rate = 3600 / r.tempoMedio;
+      rateEstimada = true;
+    }
+    return Object.assign({}, r, { rate, rateEstimada });
   });
   const rolosRows = comTaxa.filter(r=> (r.produto||'').toLowerCase().includes('rolo'));
   const blocosRows = comTaxa.filter(r=> (r.produto||'').toLowerCase().includes('bloco'));
   const rolosHora = rolosRows.length ? PR_avg(rolosRows.map(r=>r.rate)) : null;
   const blocosHora = blocosRows.length ? PR_avg(blocosRows.map(r=>r.rate)) : null;
+  const rolosHoraEstimada = rolosRows.length > 0 && rolosRows.every(r=>r.rateEstimada);
+  const blocosHoraEstimada = blocosRows.length > 0 && blocosRows.every(r=>r.rateEstimada);
   const rolosTempoMedio = rolosRows.length ? PR_avg(rolosRows.map(r=>r.tempoMedio)) : null;
   const blocosTempoMedio = blocosRows.length ? PR_avg(blocosRows.map(r=>r.tempoMedio)) : null;
   let paradaTotal = 0, nParadas = 0;
@@ -3551,12 +3560,12 @@ function PR_renderKPIsInsumo(rows, producaoRows){
     <div class="kpi-card">
       <div class="label">Blocos de Massa/Hora</div>
       <div class="value">${blocosHora !== null ? PR_fmtNum(blocosHora, 1) : '—'}</div>
-      ${blocosTempoMedio !== null ? `<div class="trend-foot" style="margin-top:4px;">Tempo médio: ${TP_fmtDuration(blocosTempoMedio)}/bloco</div>` : ''}
+      ${blocosTempoMedio !== null ? `<div class="trend-foot" style="margin-top:4px;">${blocosHoraEstimada ? 'Estimado a partir do tempo médio: ' : 'Tempo médio: '}${TP_fmtDuration(blocosTempoMedio)}/bloco</div>` : ''}
     </div>
     <div class="kpi-card">
       <div class="label">Rolos Laminados/Hora</div>
       <div class="value">${rolosHora !== null ? PR_fmtNum(rolosHora, 1) : '—'}</div>
-      ${rolosTempoMedio !== null ? `<div class="trend-foot" style="margin-top:4px;">Tempo médio: ${TP_fmtDuration(rolosTempoMedio)}/rolo</div>` : ''}
+      ${rolosTempoMedio !== null ? `<div class="trend-foot" style="margin-top:4px;">${rolosHoraEstimada ? 'Estimado a partir do tempo médio: ' : 'Tempo médio: '}${TP_fmtDuration(rolosTempoMedio)}/rolo</div>` : ''}
     </div>
     <div class="kpi-card">
       <div class="label">Consumo de Rolos/Hora</div>
