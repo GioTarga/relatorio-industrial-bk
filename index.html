@@ -385,7 +385,7 @@
   .empty-state .empty-sub{ font-size:11.5px; color:var(--ink-faint, #9c8d8d); margin-top:4px; }
 
   @media (max-width: 900px){
-    .kpi-grid{ grid-template-columns:repeat(2,1fr); }
+    .kpi-grid{ grid-template-columns:repeat(2,1fr) !important; }
   }
 
   /* ============================================================
@@ -406,7 +406,7 @@
     .period-bar .sep{ display:none; }
     .period-bar .period-info{ margin-left:0; text-align:center; }
 
-    .kpi-grid{ grid-template-columns:repeat(2,1fr); gap:10px; }
+    .kpi-grid{ grid-template-columns:repeat(2,1fr) !important; gap:10px; }
     #tpKpiGrid{ grid-template-columns:repeat(1,1fr); }
     .kpi-card{ padding:14px 12px 12px; }
     .kpi-card .value{ font-size:24px; }
@@ -1527,6 +1527,8 @@ function getDayRows(dayKey){
    período atual quanto para o período anterior, na comparação de tendência) */
 function aggregateMetrics(dates){
   let belowCount = 0, aboveCount = 0, stopCount = 0, difSum = 0, difN = 0;
+  let scheduledMin = 0, stoppedMin = 0, hasScheduleData = false;
+  const TURNO_PROGRAMADO_MIN = 8*60; // turno fixo de 8h de produção
   dates.forEach(d=>{
     getDayRows(d).forEach(r=>{
       if(r.dif !== null){
@@ -1535,13 +1537,28 @@ function aggregateMetrics(dates){
         difSum += r.dif; difN++;
       }
       if(r.obs && r.obs.length>0) stopCount++;
+
+      // Disponibilidade = Tempo Operando ÷ Tempo Programado. O Tempo
+      // Programado é sempre um turno fixo de 8h por linha/produto que teve
+      // Início/Fim registrado naquele dia (a partir de 10/07/2026) — Início/
+      // Fim servem só de indicador de que a linha rodou, não pra medir a
+      // duração do turno.
+      const ini = timeToMinutes(r.inicio), fim = timeToMinutes(r.fim);
+      if(ini !== null && fim !== null && fim > ini){
+        scheduledMin += TURNO_PROGRAMADO_MIN;
+        hasScheduleData = true;
+        const paradaMin = timeToMinutes(r.duracaoParada);
+        if(paradaMin !== null) stoppedMin += paradaMin;
+      }
     });
   });
+  const disponibilidade = hasScheduleData ? Math.max(0, ((scheduledMin - stoppedMin) / scheduledMin) * 100) : null;
   return {
     belowCount, aboveCount, stopCount,
     avgDif: difN ? difSum/difN : null,
     totalWithPlan: belowCount+aboveCount,
     totalItems: difN + dates.reduce((a,d)=>a + getDayRows(d).filter(r=>r.dif===null).length, 0),
+    disponibilidade,
   };
 }
 
@@ -1579,6 +1596,10 @@ function renderKPIs(filteredDates){
 
   const accClass = avgDif >= 0 ? 'sem-good' : avgDif >= -15 ? 'sem-warn' : 'sem-bad';
 
+  const disp = curr.disponibilidade;
+  const dispClass = disp === null ? '' : disp >= 85 ? 'sem-good' : disp >= 70 ? 'sem-warn' : 'sem-bad';
+
+  document.getElementById('kpiGrid').style.gridTemplateColumns = 'repeat(5,1fr)';
   document.getElementById('kpiGrid').innerHTML = `
     <div class="kpi-card ${belowClass}">
       <div class="label">Abaixo do Planejado</div>
@@ -1595,6 +1616,11 @@ function renderKPIs(filteredDates){
     <div class="kpi-card ${accClass}">
       <div class="label">Acurácia de Produção</div>
       <div class="value">${avgDif>0?'+':''}${avgDif.toFixed(1)}%</div>
+    </div>
+    <div class="kpi-card ${dispClass}">
+      <div class="label">Disponibilidade</div>
+      <div class="value">${disp !== null ? disp.toFixed(1)+'%' : '—'}</div>
+      ${disp === null ? `<div class="trend-foot" style="margin-top:4px;">sem Início/Fim de turno no período</div>` : ''}
     </div>
   `;
 }
@@ -2136,6 +2162,20 @@ async function buildDocHtml(dayKey){
   const avgDif = withDif.length ? withDif.reduce((a,r)=>a+r.dif,0)/withDif.length : 0;
   const stopTxt = day.stopMinutes !== null ? toMinutesStr(day.stopMinutes) : 's/ registro';
 
+  let scheduledMin = 0, stoppedMin = 0, hasScheduleData = false;
+  const TURNO_PROGRAMADO_MIN = 8*60;
+  rows.forEach(r=>{
+    const ini = timeToMinutes(r.inicio), fim = timeToMinutes(r.fim);
+    if(ini !== null && fim !== null && fim > ini){
+      scheduledMin += TURNO_PROGRAMADO_MIN;
+      hasScheduleData = true;
+      const paradaMin = timeToMinutes(r.duracaoParada);
+      if(paradaMin !== null) stoppedMin += paradaMin;
+    }
+  });
+  const disponibilidade = hasScheduleData ? Math.max(0, ((scheduledMin - stoppedMin) / scheduledMin) * 100) : null;
+  const dispTxt = disponibilidade !== null ? disponibilidade.toFixed(1)+'%' : 's/ registro';
+
   // Rasteriza os gráficos para embutir como imagens no Word
   const dayChartSvg = buildDaySvgElement(dayKey);
   const dayChartPng = await svgToPngDataUrl(dayChartSvg, 1400);
@@ -2166,6 +2206,7 @@ async function buildDocHtml(dayKey){
         <td style="text-align:center;border:1px solid #F0DDC0;padding:10px;"><div style="font-size:9px;color:#6B5C5C;font-weight:bold;text-transform:uppercase;">Atrasos de Processo</div><div style="font-size:20px;color:#A10101;font-weight:bold;">${stopCount}</div></td>
         <td style="text-align:center;border:1px solid #F0DDC0;padding:10px;"><div style="font-size:9px;color:#6B5C5C;font-weight:bold;text-transform:uppercase;">Acurácia de Produção</div><div style="font-size:20px;color:${avgDif<0?'#A10101':'#2F7D52'};font-weight:bold;">${avgDif>0?'+':''}${avgDif.toFixed(1)}%</div></td>
         <td style="text-align:center;border:1px solid #F0DDC0;padding:10px;"><div style="font-size:9px;color:#6B5C5C;font-weight:bold;text-transform:uppercase;">Tempo Total Parado</div><div style="font-size:20px;color:#A10101;font-weight:bold;">${stopTxt}</div></td>
+        <td style="text-align:center;border:1px solid #F0DDC0;padding:10px;"><div style="font-size:9px;color:#6B5C5C;font-weight:bold;text-transform:uppercase;">Disponibilidade</div><div style="font-size:20px;color:${disponibilidade===null?'#6B5C5C':(disponibilidade>=85?'#2F7D52':'#A10101')};font-weight:bold;">${dispTxt}</div></td>
       </tr>
     </table>
 
