@@ -1970,22 +1970,30 @@ function renderProductivity(filteredDates){
   const chartW = 820;
   const chartH = top.length*(barH+gap) + topPad;
   const maxTaxa = Math.max(...top.map(i=>i.taxa), 1);
+  // Escala logarítmica: usa log(taxa+1) normalizado pelo maior valor, pra
+  // não deixar as taxas menores viradas em traços invisíveis ao lado de
+  // produtos com taxa muito mais alta.
+  const logMax = Math.log(maxTaxa + 1) || 1;
 
   let bars = '';
   top.forEach((item, i)=>{
     const barWmax = chartW - leftPad - rightPad;
-    const w = (item.taxa/maxTaxa) * barWmax;
+    const w = (Math.log(item.taxa + 1) / logMax) * barWmax;
     const y = topPad + i*(barH+gap);
     const label = truncateProdLabel(item.produto, 28);
     bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${label}<title>${item.produto}</title></text>`;
-    bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="#2f7d52" rx="5"/>`;
-    bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="11.5" fill="#2f7d52" font-weight="700">${item.taxa.toLocaleString('pt-BR',{maximumFractionDigits:1})} ${item.uni}/h</text>`;
+    bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="#B5640B" rx="5"/>`;
+    bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="11.5" fill="#8a4c08" font-weight="700">${item.taxa.toLocaleString('pt-BR',{maximumFractionDigits:1})} ${item.uni}/h</text>`;
   });
 
+  const visibleRows = 7;
+  const containerH = visibleRows*(barH+gap) + topPad + 10;
   wrap.innerHTML = `
-    <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
-      ${bars}
-    </svg>`;
+    <div style="max-height:${containerH}px; overflow-y:auto; overflow-x:hidden;">
+      <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="font-family:Arial;display:block;">
+        ${bars}
+      </svg>
+    </div>`;
 }
 
 function renderTrend(filteredDates){
