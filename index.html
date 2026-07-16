@@ -4831,6 +4831,7 @@ function MN_renderKPIs(){
   const reativas = rows.filter(r=> (r.tipoIntervencao||'').toLowerCase().includes('parada para manutenção')).length;
   const pctReativa = total > 0 ? (reativas/total*100) : null;
 
+  document.getElementById('mnKpiGrid').style.gridTemplateColumns = 'repeat(5,1fr)';
   document.getElementById('mnKpiGrid').innerHTML = `
     <div class="kpi-card">
       <div class="label">Total de Intervenções</div>
@@ -4855,6 +4856,46 @@ function MN_renderKPIs(){
       <div class="trend-foot" style="margin-top:4px;">"Parada para Manutenção" (não planejada)</div>
     </div>
   `;
+}
+
+/* Gráfico de "Intervenções por Máquina": ordenado pelo tempo total parado
+   em manutenção (não pela contagem), já que uma máquina com poucas
+   intervenções mas muito demoradas é tão ou mais crítica quanto uma com
+   muitas intervenções rápidas. */
+function MN_renderMaquinaChart(rows){
+  const el = document.getElementById('mnChartMaquina');
+  const map = {};
+  rows.forEach(r=>{
+    if(!r.maquina) return;
+    if(!map[r.maquina]) map[r.maquina] = { count: 0, tempoMin: 0, semDuracao: 0 };
+    map[r.maquina].count++;
+    if(r.duracaoMin !== null) map[r.maquina].tempoMin += r.duracaoMin;
+    else map[r.maquina].semDuracao++;
+  });
+  const entries = Object.entries(map).sort((a,b)=> b[1].tempoMin - a[1].tempoMin);
+  if(entries.length === 0){
+    el.innerHTML = `<div class="empty-state"><span class="empty-icon">🔧</span>Nenhum registro no período selecionado.</div>`;
+    return;
+  }
+  const barH = 26, gap = 11, leftPad = 210, rightPad = 150, topPad = 10;
+  const chartW = 820;
+  const chartH = entries.length*(barH+gap) + topPad;
+  const maxTempo = Math.max(...entries.map(([,v])=>v.tempoMin), 1);
+  let bars = '';
+  entries.forEach(([maquina,info], i)=>{
+    const barWmax = chartW - leftPad - rightPad;
+    const w = (info.tempoMin/maxTempo) * barWmax;
+    const y = topPad + i*(barH+gap);
+    const lbl = truncateProdLabel(maquina, 26);
+    const tempoTxt = info.tempoMin > 0 ? TP_fmtDuration(info.tempoMin*60) : 'sem duração registrada';
+    bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${lbl}<title>${maquina}</title></text>`;
+    bars += `<rect x="${leftPad}" y="${y}" width="${w||3}" height="${barH}" fill="#A10101" rx="5"/>`;
+    bars += `<text x="${leftPad+Math.max(w,3)+8}" y="${y+barH/2+4}" font-size="11.5" fill="#A10101" font-weight="700">${tempoTxt} (${info.count} interv.)</text>`;
+  });
+  el.innerHTML = `
+    <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+      ${bars}
+    </svg>`;
 }
 
 function MN_renderRanking(rows, keyFn, elId, color, textColor){
@@ -4917,7 +4958,7 @@ function MN_refreshAll(){
       MN_FILTERED.length + ' intervenção(ões) no período' + (ds && de ? ` (${ds.split('-').reverse().join('/')} a ${de.split('-').reverse().join('/')})` : '');
   }
   MN_renderKPIs();
-  MN_renderRanking(MN_FILTERED, r=>r.maquina, 'mnChartMaquina', '#A10101', '#A10101');
+  MN_renderMaquinaChart(MN_FILTERED);
   MN_renderRanking(MN_FILTERED, r=>r.especialidade, 'mnChartEspecialidade', '#B5640B', '#8a4c08');
   MN_renderRanking(MN_FILTERED, r=>r.tipoIntervencao, 'mnChartTipo', '#2f7d52', '#2f7d52');
   MN_renderTable();
