@@ -293,15 +293,16 @@
 
   /* Larguras proporcionais às 10 colunas da tabela de Detalhamento (página 1),
      para caber sem rolagem lateral */
-  #tableWrap table.detail th:nth-child(1), #tableWrap table.detail td:nth-child(1){ width:7%; }
-  #tableWrap table.detail th:nth-child(2), #tableWrap table.detail td:nth-child(2){ width:25%; }
-  #tableWrap table.detail th:nth-child(3), #tableWrap table.detail td:nth-child(3){ width:6%; }
-  #tableWrap table.detail th:nth-child(4), #tableWrap table.detail td:nth-child(4){ width:8%; }
-  #tableWrap table.detail th:nth-child(5), #tableWrap table.detail td:nth-child(5){ width:8%; }
-  #tableWrap table.detail th:nth-child(6), #tableWrap table.detail td:nth-child(6){ width:6%; }
-  #tableWrap table.detail th:nth-child(7), #tableWrap table.detail td:nth-child(7){ width:7%; }
-  #tableWrap table.detail th:nth-child(8), #tableWrap table.detail td:nth-child(8){ width:27%; }
-  #tableWrap table.detail th:nth-child(9), #tableWrap table.detail td:nth-child(9){ width:6%; }
+  #tableWrap table.detail th:nth-child(1), #tableWrap table.detail td:nth-child(1){ width:6%; }
+  #tableWrap table.detail th:nth-child(2), #tableWrap table.detail td:nth-child(2){ width:20%; }
+  #tableWrap table.detail th:nth-child(3), #tableWrap table.detail td:nth-child(3){ width:5%; }
+  #tableWrap table.detail th:nth-child(4), #tableWrap table.detail td:nth-child(4){ width:10%; }
+  #tableWrap table.detail th:nth-child(5), #tableWrap table.detail td:nth-child(5){ width:7%; }
+  #tableWrap table.detail th:nth-child(6), #tableWrap table.detail td:nth-child(6){ width:7%; }
+  #tableWrap table.detail th:nth-child(7), #tableWrap table.detail td:nth-child(7){ width:5%; }
+  #tableWrap table.detail th:nth-child(8), #tableWrap table.detail td:nth-child(8){ width:6%; }
+  #tableWrap table.detail th:nth-child(9), #tableWrap table.detail td:nth-child(9){ width:27%; }
+  #tableWrap table.detail th:nth-child(10), #tableWrap table.detail td:nth-child(10){ width:7%; }
 
   /* Tabela de Registros Detalhados (página 2) — largura mais compacta, com
      mais colunas; reduz fonte/padding e deixa as 3 primeiras colunas com
@@ -551,6 +552,7 @@
             <th>Setor</th>
             <th>Produto</th>
             <th class="center">Equipe</th>
+            <th>Máquina</th>
             <th class="center">Prod. Prevista</th>
             <th class="center">Prod. Real</th>
             <th class="center">Uni.</th>
@@ -1354,21 +1356,22 @@ function transformCsvToData(csvText){
 
     const setor = normalizeSector(r[1]);
     const equipe = (r[2]||'').trim();
-    const produto = (r[3]||'').trim();
+    const maquina = (r[3]||'').trim(); // vazio = não usa máquina / ainda não mapeada
+    const produto = (r[4]||'').trim();
     if(!produto) return;
 
-    const planRaw = (r[4]||'').trim();
+    const planRaw = (r[5]||'').trim();
     const prev = parseNumOrNull(planRaw); // null cobre "S/ Quantidade Planejada" e "Fora do plano de produção"
-    const real = parseNumOrNull(r[5]) ?? 0;
-    const dif = parsePctOrNull(r[6]);
-    const uni = normalizeUnitDisplay(r[7]);
-    const inicio = (r[8]||'').trim();   // início do turno (não da parada)
-    const fim = (r[9]||'').trim();      // fim do turno (não da parada)
-    const obs = (r[10]||'').trim();     // Paradas, Ausências e Desvios de Produção
-    const duracaoParada = (r[15]||'').trim(); // coluna P — duração da parada (colunas K-O são um espaçador em branco após "Paradas...")
+    const real = parseNumOrNull(r[6]) ?? 0;
+    const dif = parsePctOrNull(r[7]);
+    const uni = normalizeUnitDisplay(r[8]);
+    const inicio = (r[9]||'').trim();   // início da produção
+    const fim = (r[10]||'').trim();     // fim da produção
+    const obs = (r[11]||'').trim();     // Paradas, Ausências e Desvios de Produção
+    const duracaoParada = (r[16]||'').trim(); // coluna Q — duração da parada (colunas M-P são um espaçador em branco após "Paradas...")
 
     if(!byDate[dateISO]) byDate[dateISO] = [];
-    byDate[dateISO].push({ setor, equipe, produto, prev, real, uni, dif, obs, inicio, fim, duracaoParada });
+    byDate[dateISO].push({ setor, equipe, maquina, produto, prev, real, uni, dif, obs, inicio, fim, duracaoParada });
   });
 
   const result = {};
@@ -1391,7 +1394,7 @@ function transformCsvToData(csvText){
       label: buildLabelFromISO(iso),
       setores: setoresUnicos.length ? setoresUnicos.join(' · ') : '—',
       stopMinutes,
-      rows: rows.map(({setor,equipe,produto,prev,real,uni,dif,obs,inicio,fim,duracaoParada})=>({setor,equipe,produto,prev,real,uni,dif,obs,inicio,fim,duracaoParada}))
+      rows: rows.map(({setor,equipe,maquina,produto,prev,real,uni,dif,obs,inicio,fim,duracaoParada})=>({setor,equipe,maquina,produto,prev,real,uni,dif,obs,inicio,fim,duracaoParada}))
     };
   });
   return result;
@@ -1806,6 +1809,7 @@ function renderTable(dayKey){
       <td><span class="sector-tag">${r.setor}</span></td>
       <td class="prod-name">${r.produto}</td>
       <td class="center">${r.equipe||'—'}</td>
+      <td>${r.maquina||'—'}</td>
       <td class="center">${prevTxt}</td>
       <td class="center">${r.real.toLocaleString('pt-BR')}</td>
       <td class="center">${r.uni}</td>
@@ -1816,7 +1820,7 @@ function renderTable(dayKey){
     tbody.appendChild(tr);
   });
   if(tbody.children.length === 0){
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro para o setor selecionado neste dia.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro para o setor selecionado neste dia.</td></tr>`;
   }
 }
 
@@ -2182,6 +2186,7 @@ async function buildDocHtml(dayKey){
       <td style="padding:6px 8px;border:1px solid #F0DDC0;font-weight:700;">${r.setor}</td>
       <td style="padding:6px 8px;border:1px solid #F0DDC0;">${r.produto}</td>
       <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;">${r.equipe || '—'}</td>
+      <td style="padding:6px 8px;border:1px solid #F0DDC0;">${r.maquina || '—'}</td>
       <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;color:${isNoPlan?'#6B5C5C':'#2A1A1A'};">${prevTxt}</td>
       <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;">${realTxt}</td>
       <td style="padding:6px 8px;border:1px solid #F0DDC0;text-align:center;">${r.uni}</td>
@@ -2243,7 +2248,7 @@ async function buildDocHtml(dayKey){
     <table>
       <thead>
         <tr>
-          <th>Setor</th><th>Produto</th><th style="text-align:center;">Equipe</th><th style="text-align:center;">Prod. Prevista</th><th style="text-align:center;">Prod. Real</th><th style="text-align:center;">Uni.</th><th style="text-align:center;">Dif. %</th><th>Observações e Causa</th><th style="text-align:center;">Duração da Parada</th>
+          <th>Setor</th><th>Produto</th><th style="text-align:center;">Equipe</th><th>Máquina</th><th style="text-align:center;">Prod. Prevista</th><th style="text-align:center;">Prod. Real</th><th style="text-align:center;">Uni.</th><th style="text-align:center;">Dif. %</th><th>Observações e Causa</th><th style="text-align:center;">Duração da Parada</th>
         </tr>
       </thead>
       <tbody>${rowsHtml}</tbody>
