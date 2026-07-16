@@ -736,6 +736,11 @@
         <div class="chart-wrap" id="prChartEtapas"></div>
       </div>
 
+      <div class="panel" id="prPanelParadasTempos" style="display:none;">
+        <div class="panel-title">Paradas por Motivo</div>
+        <div class="chart-wrap" id="prChartParadasTempos"></div>
+      </div>
+
       <div class="panel" id="prPanelParadasRolos" style="display:none;">
         <div class="panel-title">Paradas na Produção de Rolos Laminados e Blocos de Massa</div>
         <div class="chart-wrap" id="prChartParadasRolos"></div>
@@ -3099,13 +3104,14 @@ const PR_FALLBACK_DATA = {
       paradas:[{motivo:"Falta de massa", duracaoSec:120},{motivo:"Falta de massa", duracaoSec:240},{motivo:"Abastecimento do recheio", duracaoSec:180},{motivo:"Falta de massa", duracaoSec:480},{motivo:"Falta de massa", duracaoSec:120},{motivo:"Falta de massa", duracaoSec:120},{motivo:"Ajuste do recheio", duracaoSec:540},{motivo:"Abastecimento de recheio", duracaoSec:360},{motivo:"Ajuste nos bicos injetores", duracaoSec:360},{motivo:"Falta de massa", duracaoSec:180},{motivo:"Falta de massa", duracaoSec:120},{motivo:"Abastecimento do recheio", duracaoSec:120},{motivo:"Falta de massa", duracaoSec:240},{motivo:"Falta de massa", duracaoSec:240},{motivo:"Falta de massa", duracaoSec:180},{motivo:"Falta de massa", duracaoSec:120},{motivo:"Falta de massa", duracaoSec:120}]},
   ],
   pao_de_lo: [
-    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Pão de Ló", pesar:164, bater:600, raspar:126, encher:64, transportar:127, buscar:137, desenformar:131, carrinhoSec:null, carrinhoRaw:""},
-    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Pão de Ló", pesar:null, bater:600, raspar:76, encher:67, transportar:null, buscar:null, desenformar:137, carrinhoSec:null, carrinhoRaw:""},
-    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Pão de Ló", pesar:null, bater:600, raspar:142, encher:51, transportar:null, buscar:null, desenformar:108, carrinhoSec:null, carrinhoRaw:""},
-    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Bolo Seco", pesar:633, bater:810, raspar:46, encher:75, transportar:null, buscar:null, desenformar:67, carrinhoSec:50040, carrinhoRaw:"13:54"},
-    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Bolo Seco", pesar:840, bater:810, raspar:59, encher:74, transportar:null, buscar:null, desenformar:null, carrinhoSec:52440, carrinhoRaw:"14:34"},
-    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Bolo Seco", pesar:null, bater:810, raspar:61, encher:null, transportar:null, buscar:null, desenformar:null, carrinhoSec:null, carrinhoRaw:""},
-    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Bolo Seco", pesar:null, bater:null, raspar:57, encher:null, transportar:null, buscar:null, desenformar:null, carrinhoSec:null, carrinhoRaw:""},
+    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Pão de Ló", pesar:164, bater:600, raspar:126, encher:64, transportar:127, buscar:137, desenformar:131, carrinhoSec:null, carrinhoRaw:"", paradaSec:0, motivoParada:""},
+    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Pão de Ló", pesar:null, bater:600, raspar:76, encher:67, transportar:null, buscar:null, desenformar:137, carrinhoSec:null, carrinhoRaw:"", paradaSec:null, motivoParada:""},
+    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Pão de Ló", pesar:null, bater:600, raspar:142, encher:51, transportar:null, buscar:null, desenformar:108, carrinhoSec:null, carrinhoRaw:"", paradaSec:null, motivoParada:""},
+    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Bolo Seco", pesar:633, bater:810, raspar:46, encher:75, transportar:null, buscar:null, desenformar:67, carrinhoSec:50040, carrinhoRaw:"13:54", paradaSec:null, motivoParada:""},
+    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Bolo Seco", pesar:840, bater:810, raspar:59, encher:74, transportar:null, buscar:null, desenformar:null, carrinhoSec:52440, carrinhoRaw:"14:34", paradaSec:null, motivoParada:""},
+    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Bolo Seco", pesar:null, bater:810, raspar:61, encher:null, transportar:null, buscar:null, desenformar:null, carrinhoSec:null, carrinhoRaw:"", paradaSec:null, motivoParada:""},
+    {dateISO:"2026-06-13", dateRaw:"13/06/2026", produto:"Bolo Seco", pesar:null, bater:null, raspar:57, encher:null, transportar:null, buscar:null, desenformar:null, carrinhoSec:null, carrinhoRaw:"", paradaSec:null, motivoParada:""},
+    {dateISO:"2026-07-16", dateRaw:"16/07/2026", produto:"Bolo Cenoura", pesar:876, bater:810, raspar:53, encher:65, transportar:92, buscar:119, desenformar:48, carrinhoSec:null, carrinhoRaw:"", paradaSec:28, motivoParada:"Lavar e Montar peças"},
   ],
 };
 
@@ -3356,11 +3362,13 @@ function PR_transformCsvTempos(csvText){
     const desenformar = TP_timeToSeconds((r[8]||'').trim());
     const carrinhoRaw = (r[9]||'').trim();
     const carrinhoSec = carrinhoRaw ? TP_clockToSeconds(carrinhoRaw) : null;
+    const paradaSec = TP_timeToSeconds((r[10]||'').trim());
+    const motivoParada = (r[11]||'').trim();
 
     records.push({
       dateISO: iso, dateRaw: dataRaw, produto,
       pesar, bater, raspar, encher, transportar, buscar, desenformar,
-      carrinhoSec, carrinhoRaw,
+      carrinhoSec, carrinhoRaw, paradaSec, motivoParada,
     });
   });
   return records;
@@ -3859,7 +3867,11 @@ function PR_renderKPIsTempos(rows){
   const unidadesPorHora800g = telasPorHora !== null ? telasPorHora * PR_UNIDADES_POR_TELA_800G : null;
   const unidadesPorHora120kg = telasPorHora !== null ? telasPorHora * PR_UNIDADES_POR_TELA_120KG : null;
 
-  document.getElementById('prKpiGrid').style.gridTemplateColumns = 'repeat(5,1fr)';
+  const paradaRows = rows.filter(r=> r.paradaSec !== null && r.paradaSec !== undefined && r.motivoParada);
+  const paradaTotal = PR_sum(paradaRows.map(r=>r.paradaSec));
+  const nParadas = paradaRows.length;
+
+  document.getElementById('prKpiGrid').style.gridTemplateColumns = 'repeat(6,1fr)';
   document.getElementById('prKpiGrid').innerHTML = `
     <div class="kpi-card">
       <div class="label">Carrinho/Hora</div>
@@ -3885,6 +3897,11 @@ function PR_renderKPIsTempos(rows){
       <div class="label">Etapa Mais Lenta</div>
       <div class="value" style="font-size:17px;">${etapaLenta ? etapaLenta.label : '—'}</div>
       ${etapaLenta ? `<div class="trend-foot" style="margin-top:4px;">${TP_fmtDuration(etapaLenta.avgSec)} em média</div>` : ''}
+    </div>
+    <div class="kpi-card warn">
+      <div class="label">Tempo Total de Parada</div>
+      <div class="value" style="font-size:22px;">${TP_fmtDuration(paradaTotal)}</div>
+      <div class="trend-foot" style="margin-top:4px;">${nParadas} parada(s) registrada(s)</div>
     </div>
   `;
 }
@@ -3913,6 +3930,34 @@ function PR_renderChartEtapas(rows){
     </svg>
     <div style="margin-top:10px;font-size:11px;color:var(--ink-soft);">Ordenado da etapa mais lenta pra mais rápida — a primeira é o gargalo do processo.</div>
   `;
+}
+
+/* ---------- Gráfico: paradas por motivo (Pão de Ló e Bolos) ---------- */
+function PR_renderChartParadasTempos(rows){
+  const el = document.getElementById('prChartParadasTempos');
+  const comMotivo = rows.filter(r=> r.paradaSec !== null && r.paradaSec !== undefined && r.motivoParada);
+  if(comMotivo.length === 0){
+    el.innerHTML = `<div class="empty-state"><span class="empty-icon">✓</span>Nenhuma parada registrada no período selecionado.</div>`;
+    return;
+  }
+  const byMotivo = {};
+  comMotivo.forEach(r=>{ (byMotivo[r.motivoParada] = byMotivo[r.motivoParada] || []).push(r.paradaSec); });
+  const items = Object.keys(byMotivo).map(m=>({ label:m, value: PR_sum(byMotivo[m]) })).sort((a,b)=>b.value-a.value);
+  const maxVal = Math.max(...items.map(i=>i.value), 1);
+  const rowH=28, gap=10, leftLabelW=230, chartW=330;
+  const h = items.length*(rowH+gap);
+  let bars='';
+  items.forEach((item,i)=>{
+    const y = i*(rowH+gap);
+    const w = (item.value/maxVal)*chartW;
+    bars += `<text x="${leftLabelW-10}" y="${y+rowH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${item.label}</text>`;
+    bars += `<rect x="${leftLabelW}" y="${y}" width="${w}" height="${rowH}" rx="6" fill="#B5640B"/>`;
+    bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="11.5" fill="#B5640B" font-weight="700">${TP_fmtDuration(item.value)}</text>`;
+  });
+  el.innerHTML = `
+    <svg viewBox="0 0 ${leftLabelW+chartW+100} ${h+10}" width="${leftLabelW+chartW+100}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+      ${bars}
+    </svg>`;
 }
 
 function PR_renderTableTempos(rows){
@@ -4243,6 +4288,7 @@ function PR_refreshAll(){
 
   const panelChart1 = document.getElementById('prPanelChart1');
   const panelEtapas = document.getElementById('prPanelEtapas');
+  const panelParadasTempos = document.getElementById('prPanelParadasTempos');
   const panelEstimativa = document.getElementById('prPanelEstimativa');
   const panelRodadoParado = document.getElementById('prPanelRodadoParado');
   const panelInsumo = document.getElementById('prPanelInsumo');
@@ -4265,13 +4311,16 @@ function PR_refreshAll(){
   if(isTempos){
     panelChart1.style.display = 'none';
     panelEtapas.style.display = 'block';
+    panelParadasTempos.style.display = 'block';
     panelEstimativa.style.display = 'none';
     panelRodadoParado.style.display = 'none';
     if(panelParadas) panelParadas.style.display = 'none';
     PR_renderKPIsTempos(PR_FILTERED);
     PR_renderChartEtapas(PR_FILTERED);
+    PR_renderChartParadasTempos(PR_FILTERED);
     PR_renderTableTempos(PR_FILTERED);
   } else if(isProducao){
+    panelParadasTempos.style.display = 'none';
     panelChart1.style.display = 'block';
     panelEtapas.style.display = 'none';
     panelEstimativa.style.display = 'block';
@@ -4288,6 +4337,7 @@ function PR_refreshAll(){
   } else {
     panelChart1.style.display = 'block';
     panelEtapas.style.display = 'none';
+    panelParadasTempos.style.display = 'none';
     panelEstimativa.style.display = 'none';
     panelRodadoParado.style.display = 'none';
     if(panelParadas) panelParadas.style.display = 'block';
