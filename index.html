@@ -4681,9 +4681,9 @@ document.getElementById('rcBtnRefresh').addEventListener('click', ()=> RC_loadDa
 const MN_CSV_URL = "https://docs.google.com/spreadsheets/d/1OfZKpJKK3XNrYTF5cVMpUoDF6A6gFgAnb6qV69cJ4IM/export?format=csv&gid=0";
 
 const MN_FALLBACK_DATA = [
-  {dateISO:"2026-07-13", dateRaw:"13/07/2026", requisitante:"Paulo", executante:"Romário", setor:"FORNEARIA", horaComunicacao:"18:00", maquina:"Climatica 2", problema:"Não estava esquentando", especialidade:"Mecânica", tipoIntervencao:"Aproveitamento Parada da Produção", inicioReal:"23:10", fimReal:"23:45", observacao:"Reservatório de água seco, consequentimente derreteu a mangueira. Após substituir mangueira, foi realizado um teste e o equipamento funcionou normalmente.", duracaoMin:35},
-  {dateISO:"2026-07-13", dateRaw:"13/07/2026", requisitante:"Leonir", executante:"Romário", setor:"MECATHERM NOTURNO", horaComunicacao:"21:30", maquina:"Mecatherm", problema:"Fira separado estava travando", especialidade:"Mecânica", tipoIntervencao:"Parada para Manutenção", inicioReal:"22:40", fimReal:"22:45", observacao:"Fita substituída", duracaoMin:5},
-  {dateISO:"2026-07-10", dateRaw:"10/07/2026", requisitante:"Paulo", executante:"Romário", setor:"FORNEARIA", horaComunicacao:"18:00", maquina:"Forno 1", problema:"Base giratória com folga", especialidade:"Mecânica", tipoIntervencao:"Aproveitamento Parada da Produção", inicioReal:"00:05", fimReal:"02:20", observacao:"Desmontado base giratória, realizado limpeza, lubrificação e a base do rolamento estava desencontrado, travou da posição deixando a base giratória com folga. Após encontrar e finalizar a montagem, base ficou sem folga, liberado para uso.", duracaoMin:135},
+  {dateISO:"2026-07-13", dateRaw:"13/07/2026", requisitante:"Paulo", executante:"Romário", setor:"FORNEARIA", horaComunicacao:"18:00", maquina:"Climatica 2", problema:"Não estava esquentando", especialidade:"Mecânica", tipoIntervencao:"Aproveitamento Parada da Produção", inicioReal:"23:10", fimReal:"23:45", observacao:"Reservatório de água seco, consequentimente derreteu a mangueira. Após substituir mangueira, foi realizado um teste e o equipamento funcionou normalmente.", duracaoMin:35, esperaMin:310},
+  {dateISO:"2026-07-13", dateRaw:"13/07/2026", requisitante:"Leonir", executante:"Romário", setor:"MECATHERM NOTURNO", horaComunicacao:"21:30", maquina:"Mecatherm", problema:"Fira separado estava travando", especialidade:"Mecânica", tipoIntervencao:"Parada para Manutenção", inicioReal:"22:40", fimReal:"22:45", observacao:"Fita substituída", duracaoMin:5, esperaMin:70},
+  {dateISO:"2026-07-10", dateRaw:"10/07/2026", requisitante:"Paulo", executante:"Romário", setor:"FORNEARIA", horaComunicacao:"18:00", maquina:"Forno 1", problema:"Base giratória com folga", especialidade:"Mecânica", tipoIntervencao:"Aproveitamento Parada da Produção", inicioReal:"00:05", fimReal:"02:20", observacao:"Desmontado base giratória, realizado limpeza, lubrificação e a base do rolamento estava desencontrado, travou da posição deixando a base giratória com folga. Após encontrar e finalizar a montagem, base ficou sem folga, liberado para uso.", duracaoMin:135, esperaMin:365},
 ];
 
 let MN_DATA = [];
@@ -4719,10 +4719,20 @@ function MN_transformCsv(csvText){
       duracaoMin = diff/60;
     }
 
+    // Tempo de Resposta: da hora que o problema foi comunicado até o início
+    // real do atendimento.
+    let esperaMin = null;
+    const comSec = TP_clockToSeconds(horaComunicacao);
+    if(comSec !== null && iniSec !== null){
+      let diffEspera = iniSec - comSec;
+      if(diffEspera < 0) diffEspera += 24*3600; // cruzou meia-noite
+      esperaMin = diffEspera/60;
+    }
+
     records.push({
       dateISO: iso, dateRaw, requisitante, executante, setor, horaComunicacao,
       maquina, problema, especialidade, tipoIntervencao, inicioReal, fimReal,
-      observacao, duracaoMin,
+      observacao, duracaoMin, esperaMin,
     });
   });
   return records;
@@ -4824,6 +4834,9 @@ function MN_renderKPIs(){
   const mttr = comDuracao.length ? PR_avg(comDuracao.map(r=>r.duracaoMin)) : null;
   const tempoTotal = comDuracao.length ? PR_sum(comDuracao.map(r=>r.duracaoMin)) : 0;
 
+  const comEspera = rows.filter(r=>r.esperaMin !== null);
+  const tempoResposta = comEspera.length ? PR_avg(comEspera.map(r=>r.esperaMin)) : null;
+
   const porMaquina = {};
   rows.forEach(r=>{ if(r.maquina) porMaquina[r.maquina] = (porMaquina[r.maquina]||0)+1; });
   const maquinaTop = Object.entries(porMaquina).sort((a,b)=>b[1]-a[1])[0];
@@ -4831,11 +4844,15 @@ function MN_renderKPIs(){
   const reativas = rows.filter(r=> (r.tipoIntervencao||'').toLowerCase().includes('parada para manutenção')).length;
   const pctReativa = total > 0 ? (reativas/total*100) : null;
 
-  document.getElementById('mnKpiGrid').style.gridTemplateColumns = 'repeat(5,1fr)';
+  document.getElementById('mnKpiGrid').style.gridTemplateColumns = 'repeat(6,1fr)';
   document.getElementById('mnKpiGrid').innerHTML = `
     <div class="kpi-card">
       <div class="label">Total de Intervenções</div>
       <div class="value">${total}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Tempo de Resposta</div>
+      <div class="value" style="font-size:22px;">${tempoResposta !== null ? TP_fmtDuration(tempoResposta*60) : '—'}</div>
     </div>
     <div class="kpi-card">
       <div class="label">Tempo Médio de Reparo</div>
