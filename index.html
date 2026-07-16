@@ -533,6 +533,12 @@
   </div>
 
   <div class="panel">
+    <div class="panel-title">Ranking de Produtividade dos Produtos</div>
+    <div class="chart-wrap" id="prodRateWrap"></div>
+    <div class="trend-foot" id="prodRateFoot">Produtividade = Produção Real ÷ (Fim − Início da Produção), somada no período e setor selecionados. Só entram produtos com Início e Fim da Produção registrados.</div>
+  </div>
+
+  <div class="panel">
     <div class="panel-title">Produtos Produzidos Fora do Plano de Produção</div>
     <div class="chart-wrap" id="trendWrap"></div>
     <div class="trend-foot" id="trendFoot">Quantidade de itens produzidos sem planejamento prévio, por dia, dentro do período selecionado.</div>
@@ -1878,6 +1884,73 @@ function renderLostProduction(filteredDates){
     </svg>`;
 }
 
+/* ---------- Ranking de produtividade dos produtos (Real ÷ tempo de produção, somado por produto) ---------- */
+function computeProductivity(filteredDates){
+  const map = {};
+  let semHorario = 0, comHorario = 0;
+  filteredDates.forEach(d=>{
+    getDayRows(d).forEach(r=>{
+      const iniMin = timeToMinutes(r.inicio), fimMin = timeToMinutes(r.fim);
+      if(iniMin === null || fimMin === null || fimMin <= iniMin){
+        semHorario++;
+        return;
+      }
+      comHorario++;
+      const horas = (fimMin - iniMin) / 60;
+      const key = r.produto + '|' + r.uni;
+      if(!map[key]) map[key] = { produto: r.produto, uni: r.uni, real: 0, horas: 0 };
+      map[key].real += r.real;
+      map[key].horas += horas;
+    });
+  });
+  const items = Object.values(map)
+    .map(i => Object.assign({}, i, { taxa: i.horas > 0 ? i.real/i.horas : 0 }))
+    .sort((a,b)=> b.taxa - a.taxa);
+  return { items, semHorario, comHorario };
+}
+
+function renderProductivity(filteredDates){
+  const wrap = document.getElementById('prodRateWrap');
+  const foot = document.getElementById('prodRateFoot');
+  const { items, semHorario, comHorario } = computeProductivity(filteredDates);
+  const top = items.slice(0, 15);
+
+  const baseFootTxt = 'Produtividade = Produção Real ÷ (Fim − Início da Produção), somada no período e setor selecionados. Só entram produtos com Início e Fim da Produção registrados.';
+  foot.textContent = semHorario > 0
+    ? baseFootTxt + ` ${semHorario} registro(s) ficaram de fora por falta desse horário.`
+    : baseFootTxt;
+
+  if(top.length === 0){
+    wrap.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">⏱</span>
+        Nenhum produto com Início e Fim da Produção registrados no período selecionado.
+      </div>`;
+    return;
+  }
+
+  const barH = 28, gap = 12, leftPad = 230, rightPad = 140, topPad = 10;
+  const chartW = 820;
+  const chartH = top.length*(barH+gap) + topPad;
+  const maxTaxa = Math.max(...top.map(i=>i.taxa), 1);
+
+  let bars = '';
+  top.forEach((item, i)=>{
+    const barWmax = chartW - leftPad - rightPad;
+    const w = (item.taxa/maxTaxa) * barWmax;
+    const y = topPad + i*(barH+gap);
+    const label = truncateProdLabel(item.produto, 28);
+    bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${label}<title>${item.produto}</title></text>`;
+    bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="#2f7d52" rx="5"/>`;
+    bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="11.5" fill="#2f7d52" font-weight="700">${item.taxa.toLocaleString('pt-BR',{maximumFractionDigits:1})} ${item.uni}/h</text>`;
+  });
+
+  wrap.innerHTML = `
+    <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+      ${bars}
+    </svg>`;
+}
+
 function renderTrend(filteredDates){
   const points = filteredDates.map(d=>{
     const day = DATA[d];
@@ -2006,6 +2079,7 @@ function refreshAll(){
   renderKPIs(filteredDates);
   renderCauses(filteredDates);
   renderLostProduction(filteredDates);
+  renderProductivity(filteredDates);
   renderTrend(filteredDates);
   refreshDaySelectOptions(filteredDates);
   if(filteredDates.length > 0){
