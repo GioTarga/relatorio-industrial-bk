@@ -1831,21 +1831,55 @@ function renderTable(dayKey){
 }
 
 /* ---------- Painel de produtos fora do plano ---------- */
+
+/* Agrupa itens por produto+unidade, mas usando correspondência aproximada de
+   nome (reaproveita RC_nameSimilarity, já usada na Produtividade pra casar
+   "Hamburgão" com "Hamburguinho"). Evita que pequenas variações de escrita
+   na planilha (ex: "PASTEL BELEM" vs "PASTEL BELEM VAREJO") virem entradas
+   separadas nos rankings. Limiar mais conservador (0.65) que o usado na
+   capacidade nominal, já que aqui não há o filtro de "mesma máquina" pra
+   reduzir o risco de juntar produtos realmente diferentes. */
+function fuzzyGroupBy(items, uniFn, produtoFn, initFn, mergeFn){
+  const groups = [];
+  items.forEach(item=>{
+    const uni = uniFn(item);
+    const produto = produtoFn(item);
+    let best = null, bestScore = 0;
+    groups.forEach(g=>{
+      if(g.uni !== uni) return;
+      const score = RC_nameSimilarity(g.produto, produto);
+      if(score > bestScore){ bestScore = score; best = g; }
+    });
+    if(best && bestScore >= 0.65){
+      mergeFn(best, item);
+      if(produto.length < best.produto.length) best.produto = produto; // nome mais curto como representante
+    } else {
+      const g = initFn(item);
+      g.uni = uni;
+      g.produto = produto;
+      groups.push(g);
+    }
+  });
+  return groups;
+}
+
 /* ---------- Ranking de produção perdida (Planejado - Real, somado por produto) ---------- */
 function computeLostProduction(filteredDates){
-  const map = {};
+  const source = [];
   filteredDates.forEach(d=>{
     getDayRows(d).forEach(r=>{
       if(r.prev !== null && r.prev > r.real){
-        const key = r.produto + '|' + r.uni;
-        if(!map[key]) map[key] = { produto: r.produto, uni: r.uni, planejado: 0, real: 0, perdido: 0 };
-        map[key].planejado += r.prev;
-        map[key].real += r.real;
-        map[key].perdido += (r.prev - r.real);
+        source.push(r);
       }
     });
   });
-  return Object.values(map).sort((a,b)=> b.perdido - a.perdido);
+  const groups = fuzzyGroupBy(source,
+    r=>r.uni,
+    r=>r.produto,
+    r=>({ planejado: r.prev, real: r.real, perdido: r.prev - r.real }),
+    (g, r)=>{ g.planejado += r.prev; g.real += r.real; g.perdido += (r.prev - r.real); }
+  );
+  return groups.sort((a,b)=> b.perdido - a.perdido);
 }
 
 function renderLostProduction(filteredDates){
@@ -1886,7 +1920,7 @@ function renderLostProduction(filteredDates){
 
 /* ---------- Ranking de produtividade dos produtos (Real ÷ tempo de produção, somado por produto) ---------- */
 function computeProductivity(filteredDates){
-  const map = {};
+  const source = [];
   let semHorario = 0, comHorario = 0;
   filteredDates.forEach(d=>{
     getDayRows(d).forEach(r=>{
@@ -1897,13 +1931,16 @@ function computeProductivity(filteredDates){
       }
       comHorario++;
       const horas = (fimMin - iniMin) / 60;
-      const key = r.produto + '|' + r.uni;
-      if(!map[key]) map[key] = { produto: r.produto, uni: r.uni, real: 0, horas: 0 };
-      map[key].real += r.real;
-      map[key].horas += horas;
+      source.push({ produto: r.produto, uni: r.uni, real: r.real, horas });
     });
   });
-  const items = Object.values(map)
+  const groups = fuzzyGroupBy(source,
+    r=>r.uni,
+    r=>r.produto,
+    r=>({ real: r.real, horas: r.horas }),
+    (g, r)=>{ g.real += r.real; g.horas += r.horas; }
+  );
+  const items = groups
     .map(i => Object.assign({}, i, { taxa: i.horas > 0 ? i.real/i.horas : 0 }))
     .sort((a,b)=> b.taxa - a.taxa);
   return { items, semHorario, comHorario };
@@ -1913,7 +1950,7 @@ function renderProductivity(filteredDates){
   const wrap = document.getElementById('prodRateWrap');
   const foot = document.getElementById('prodRateFoot');
   const { items, semHorario, comHorario } = computeProductivity(filteredDates);
-  const top = items.slice(0, 15);
+  const top = items; // mostra todos os produtos com Início/Fim + quantidade preenchidos
 
   const baseFootTxt = 'Produtividade = Produção Real ÷ (Fim − Início da Produção), somada no período e setor selecionados. Só entram produtos com Início e Fim da Produção registrados.';
   foot.textContent = semHorario > 0
