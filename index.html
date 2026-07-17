@@ -288,6 +288,18 @@
     word-break:break-word; white-space:normal;
   }
   table.detail tbody td.center{ text-align:center; }
+  .kg-equiv{ display:inline-block; margin-top:2px; font-size:10.5px; color:var(--gold); font-style:italic; font-weight:600; }
+  table.detail tbody tr.total-row{
+    background:#fbf1da !important; border-top:2px solid var(--red);
+  }
+  table.detail tbody tr.total-row td{
+    padding:10px 14px; font-weight:800; color:var(--red-dark);
+    text-transform:uppercase; font-size:12px; letter-spacing:0.2px;
+  }
+  table.detail tbody tr.total-row td:first-child{ text-align:right; }
+  table.detail tbody tr.total-row td:last-child{
+    text-transform:none; font-weight:600; font-size:11px; color:var(--ink-soft); text-align:left;
+  }
   table.detail tbody tr:nth-child(even){ background:#fffaf0; }
   table.detail tbody tr:hover{ background:#fff1de; }
 
@@ -1433,6 +1445,47 @@ function normalizeUnitDisplay(u){
   return u.trim();
 }
 
+/* Extrai o peso por unidade (em gramas) do nome do produto, ex:
+   "Coxinha Frango e Req Frita 2X130 G" -> 130, "Enrolado Salsicha 130g" -> 130.
+   Multiplicadores de embalagem ("2X", "4X" etc.) são ignorados — cada Unid
+   contada corresponde a 1 peça, e é o peso dessa peça que interessa aqui. */
+function extractGramsFromName(produto){
+  if(!produto) return null;
+  const m = produto.match(/(\d+(?:[.,]\d+)?)\s*g(?![a-wy-zA-WY-Z])/i);
+  if(!m) return null;
+  const val = parseFloat(m[1].replace(',', '.'));
+  return isNaN(val) || val <= 0 ? null : val;
+}
+
+/* Formata a quantidade "Real" de produtos contados em Unid trazendo também
+   o equivalente em Kg (quando o nome do produto informa o peso por peça).
+   Ex: "96" vira "96" + linha pequena "≈ 12,48 Kg" abaixo. */
+/* Retorna o valor em Kg de uma linha, quando ela traz essa informação:
+   - uni "Kg" -> usa o valor real diretamente
+   - uni "Unid" com peso no nome do produto -> converte via extractGramsFromName
+   - qualquer outro caso (Massa, Blocos, Caixas, Pacotes, Unid sem peso no nome) -> null (não entra no total) */
+function getKgForRow(r){
+  if(r.uni === 'Kg') return r.real;
+  if(r.uni === 'Unid'){
+    const g = extractGramsFromName(r.produto);
+    if(g) return r.real * g / 1000;
+  }
+  return null;
+}
+
+function formatRealWithKgEquiv(real, uni, produto){
+  const realTxt = real.toLocaleString('pt-BR');
+  if(uni === 'Unid'){
+    const g = extractGramsFromName(produto);
+    if(g){
+      const kg = real * g / 1000;
+      const kgTxt = kg.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+      return `${realTxt}<br><span class="kg-equiv">≈ ${kgTxt} Kg</span>`;
+    }
+  }
+  return realTxt;
+}
+
 /* Converte "HH:MM" ou "HH:MM:SS" em minutos totais desde 00:00 */
 function timeToMinutes(s){
   if(!s) return null;
@@ -1935,12 +1988,16 @@ function renderTable(filteredDates){
   }
 
   let totalRows = 0;
+  let totalKg = 0;
+  let rowsComPeso = 0;
   // Mais recente primeiro
   filteredDates.slice().reverse().forEach(dayKey=>{
     const day = DATA[dayKey];
     getDayRows(dayKey).forEach(r=>{
       if(produtoFiltro && r.produto !== produtoFiltro) return;
       totalRows++;
+      const kgRow = getKgForRow(r);
+      if(kgRow !== null){ totalKg += kgRow; rowsComPeso++; }
       const isNoPlan = typeof r.prev !== 'number';
       const prevTxt = isNoPlan ? `<span class="no-plan">S/ Quantidade Planejada</span>` : r.prev.toLocaleString('pt-BR');
       let difHtml = '<span class="diff-cell diff-neutral">—</span>';
@@ -1960,7 +2017,7 @@ function renderTable(filteredDates){
         <td class="center">${r.equipe||'—'}</td>
         <td>${r.maquina||'—'}</td>
         <td class="center">${prevTxt}</td>
-        <td class="center">${r.real.toLocaleString('pt-BR')}</td>
+        <td class="center">${formatRealWithKgEquiv(r.real, r.uni, r.produto)}</td>
         <td class="center">${r.uni}</td>
         <td class="center">${difHtml}</td>
         <td>${obsHtml}</td>
@@ -1971,6 +2028,17 @@ function renderTable(filteredDates){
   });
   if(totalRows === 0){
     tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro para o setor/produto selecionado neste período.</td></tr>`;
+  } else if(rowsComPeso > 0){
+    const totalKgTxt = totalKg.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+    const totalTr = document.createElement('tr');
+    totalTr.className = 'total-row';
+    totalTr.innerHTML = `
+      <td colspan="6">Total em Kg (produtos com peso informado)</td>
+      <td class="center">${totalKgTxt} Kg</td>
+      <td class="center">—</td>
+      <td colspan="3">${rowsComPeso} de ${totalRows} linha(s) do período entram nesse total</td>
+    `;
+    tbody.appendChild(totalTr);
   }
 }
 
@@ -2439,7 +2507,7 @@ async function buildDocHtml(dayKey){
     const fill = i % 2 === 0 ? '#FFFFFF' : '#FFF8E7';
     const isNoPlan = typeof r.prev !== 'number';
     const prevTxt = isNoPlan ? 'S/ Quantidade Planejada' : r.prev.toLocaleString('pt-BR');
-    const realTxt = r.real.toLocaleString('pt-BR');
+    const realTxt = formatRealWithKgEquiv(r.real, r.uni, r.produto);
     let difTxt = '—', difColor = '#6B5C5C';
     if(r.dif !== null){
       const sign = r.dif > 0 ? '+' : '';
