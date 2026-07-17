@@ -293,16 +293,17 @@
 
   /* Larguras proporcionais às 10 colunas da tabela de Detalhamento (página 1),
      para caber sem rolagem lateral */
-  #tableWrap table.detail th:nth-child(1), #tableWrap table.detail td:nth-child(1){ width:6%; }
-  #tableWrap table.detail th:nth-child(2), #tableWrap table.detail td:nth-child(2){ width:20%; }
-  #tableWrap table.detail th:nth-child(3), #tableWrap table.detail td:nth-child(3){ width:5%; }
-  #tableWrap table.detail th:nth-child(4), #tableWrap table.detail td:nth-child(4){ width:10%; }
-  #tableWrap table.detail th:nth-child(5), #tableWrap table.detail td:nth-child(5){ width:7%; }
-  #tableWrap table.detail th:nth-child(6), #tableWrap table.detail td:nth-child(6){ width:7%; }
-  #tableWrap table.detail th:nth-child(7), #tableWrap table.detail td:nth-child(7){ width:5%; }
-  #tableWrap table.detail th:nth-child(8), #tableWrap table.detail td:nth-child(8){ width:6%; }
-  #tableWrap table.detail th:nth-child(9), #tableWrap table.detail td:nth-child(9){ width:27%; }
-  #tableWrap table.detail th:nth-child(10), #tableWrap table.detail td:nth-child(10){ width:7%; }
+  #tableWrap table.detail th:nth-child(1), #tableWrap table.detail td:nth-child(1){ width:8%; }
+  #tableWrap table.detail th:nth-child(2), #tableWrap table.detail td:nth-child(2){ width:5%; }
+  #tableWrap table.detail th:nth-child(3), #tableWrap table.detail td:nth-child(3){ width:16%; }
+  #tableWrap table.detail th:nth-child(4), #tableWrap table.detail td:nth-child(4){ width:5%; }
+  #tableWrap table.detail th:nth-child(5), #tableWrap table.detail td:nth-child(5){ width:8%; }
+  #tableWrap table.detail th:nth-child(6), #tableWrap table.detail td:nth-child(6){ width:6%; }
+  #tableWrap table.detail th:nth-child(7), #tableWrap table.detail td:nth-child(7){ width:6%; }
+  #tableWrap table.detail th:nth-child(8), #tableWrap table.detail td:nth-child(8){ width:5%; }
+  #tableWrap table.detail th:nth-child(9), #tableWrap table.detail td:nth-child(9){ width:6%; }
+  #tableWrap table.detail th:nth-child(10), #tableWrap table.detail td:nth-child(10){ width:27%; }
+  #tableWrap table.detail th:nth-child(11), #tableWrap table.detail td:nth-child(11){ width:8%; }
 
   /* Tabela de Registros Detalhados (página 2) — largura mais compacta, com
      mais colunas; reduz fonte/padding e deixa as 3 primeiras colunas com
@@ -554,11 +555,16 @@
       <span><i class="dot" style="background:var(--bad-bg);border:1px solid var(--red)"></i>Abaixo do previsto</span>
       <span><i class="dot" style="background:var(--good-bg);border:1px solid var(--good)"></i>Acima / dentro do previsto</span>
       <span><i class="dot" style="background:#fbf6ea;border:1px solid var(--gold)"></i>Sem planejamento / registro</span>
+      <span style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;">
+        <label for="fProdutoDetalhe" style="font-size:11.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.3px;">Produto</label>
+        <select id="fProdutoDetalhe" style="padding:6px 10px;border:1px solid #e8d3a3;border-radius:8px;font-size:12.5px;background:#fff8e7;"><option value="">Todos os produtos</option></select>
+      </span>
     </div>
     <div class="table-wrap" id="tableWrap">
       <table class="detail">
         <thead>
           <tr>
+            <th>Data</th>
             <th>Setor</th>
             <th>Produto</th>
             <th class="center">Equipe</th>
@@ -1902,39 +1908,69 @@ function renderDayChart(dayKey){
 
 }
 
-function renderTable(dayKey){
-  const day = DATA[dayKey];
+/* Lista de produtos disponíveis pro filtro da tabela de detalhamento —
+   só os que aparecem dentro do período/setor atualmente filtrados. */
+function populateProdutoDetalheFilter(filteredDates){
+  const el = document.getElementById('fProdutoDetalhe');
+  const produtos = new Set();
+  filteredDates.forEach(d=> getDayRows(d).forEach(r=> produtos.add(r.produto)));
+  const sorted = [...produtos].sort((a,b)=>a.localeCompare(b));
+  const prevValue = el.value;
+  el.innerHTML = '<option value="">Todos os produtos</option>';
+  sorted.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; el.appendChild(o); });
+  if(sorted.includes(prevValue)) el.value = prevValue;
+}
+
+function renderTable(filteredDates){
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = '';
-  getDayRows(dayKey).forEach(r=>{
-    const isNoPlan = typeof r.prev !== 'number';
-    const prevTxt = isNoPlan ? `<span class="no-plan">S/ Quantidade Planejada</span>` : r.prev.toLocaleString('pt-BR');
-    let difHtml = '<span class="diff-cell diff-neutral">—</span>';
-    if(r.dif !== null){
-      const cls = r.dif < 0 ? 'diff-bad' : 'diff-good';
-      const sign = r.dif > 0 ? '+' : '';
-      difHtml = `<span class="diff-cell ${cls}">${sign}${r.dif.toFixed(r.dif % 1 === 0 ? 0 : 2)}%</span>`;
-    }
-    const hasObs = r.obs && r.obs.length > 0;
-    const obsHtml = hasObs ? `<span class="obs-text has-obs">${r.obs}</span>` : `<span class="obs-text">—</span>`;
-    const tr = document.createElement('tr');
-    if(isNoPlan) tr.className = 'row-noplan';
-    tr.innerHTML = `
-      <td><span class="sector-tag">${r.setor}</span></td>
-      <td class="prod-name">${r.produto}</td>
-      <td class="center">${r.equipe||'—'}</td>
-      <td>${r.maquina||'—'}</td>
-      <td class="center">${prevTxt}</td>
-      <td class="center">${r.real.toLocaleString('pt-BR')}</td>
-      <td class="center">${r.uni}</td>
-      <td class="center">${difHtml}</td>
-      <td>${obsHtml}</td>
-      <td class="center">${fmtDuracaoParada(r.duracaoParada)}</td>
-    `;
-    tbody.appendChild(tr);
+  const produtoFiltro = document.getElementById('fProdutoDetalhe').value;
+
+  if(filteredDates.length === 1){
+    document.getElementById('tableTitle').textContent = `Detalhamento por Produto — ${DATA[filteredDates[0]].label}`;
+  } else if(filteredDates.length > 1){
+    document.getElementById('tableTitle').textContent = `Detalhamento por Produto — ${DATA[filteredDates[0]].label} a ${DATA[filteredDates[filteredDates.length-1]].label}`;
+  } else {
+    document.getElementById('tableTitle').textContent = 'Detalhamento por Produto';
+  }
+
+  let totalRows = 0;
+  // Mais recente primeiro
+  filteredDates.slice().reverse().forEach(dayKey=>{
+    const day = DATA[dayKey];
+    getDayRows(dayKey).forEach(r=>{
+      if(produtoFiltro && r.produto !== produtoFiltro) return;
+      totalRows++;
+      const isNoPlan = typeof r.prev !== 'number';
+      const prevTxt = isNoPlan ? `<span class="no-plan">S/ Quantidade Planejada</span>` : r.prev.toLocaleString('pt-BR');
+      let difHtml = '<span class="diff-cell diff-neutral">—</span>';
+      if(r.dif !== null){
+        const cls = r.dif < 0 ? 'diff-bad' : 'diff-good';
+        const sign = r.dif > 0 ? '+' : '';
+        difHtml = `<span class="diff-cell ${cls}">${sign}${r.dif.toFixed(r.dif % 1 === 0 ? 0 : 2)}%</span>`;
+      }
+      const hasObs = r.obs && r.obs.length > 0;
+      const obsHtml = hasObs ? `<span class="obs-text has-obs">${r.obs}</span>` : `<span class="obs-text">—</span>`;
+      const tr = document.createElement('tr');
+      if(isNoPlan) tr.className = 'row-noplan';
+      tr.innerHTML = `
+      <td>${dayKey.split('-').reverse().join('/')}</td>
+        <td><span class="sector-tag">${r.setor}</span></td>
+        <td class="prod-name">${r.produto}</td>
+        <td class="center">${r.equipe||'—'}</td>
+        <td>${r.maquina||'—'}</td>
+        <td class="center">${prevTxt}</td>
+        <td class="center">${r.real.toLocaleString('pt-BR')}</td>
+        <td class="center">${r.uni}</td>
+        <td class="center">${difHtml}</td>
+        <td>${obsHtml}</td>
+        <td class="center">${fmtDuracaoParada(r.duracaoParada)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
   });
-  if(tbody.children.length === 0){
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro para o setor selecionado neste dia.</td></tr>`;
+  if(totalRows === 0){
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro para o setor/produto selecionado neste período.</td></tr>`;
   }
 }
 
@@ -2193,13 +2229,11 @@ function renderTrendLine(points){
   `;
 }
 
-/* ---------- Detalhamento de um dia específico dentro do período ---------- */
+/* ---------- Detalhamento de um dia específico dentro do período (só o gráfico "Comparativo") ---------- */
 function renderDayDetail(dayKey){
   const day = DATA[dayKey];
   document.getElementById('chartTitle').textContent = `Comparativo: Produção Prevista × Produção Real — ${day.label}`;
-  document.getElementById('tableTitle').textContent = `Detalhamento por Produto — ${day.label}`;
   renderDayChart(dayKey);
-  renderTable(dayKey);
 }
 
 /* ---------- Atualiza tudo a partir do período selecionado ---------- */
@@ -2235,10 +2269,14 @@ function refreshAll(){
   renderProductivity(filteredDates);
   renderTrend(filteredDates);
   refreshDaySelectOptions(filteredDates);
+  populateProdutoDetalheFilter(filteredDates);
+  renderTable(filteredDates);
   if(filteredDates.length > 0){
     renderDayDetail(daySelect.value);
   }
 }
+
+document.getElementById('fProdutoDetalhe').addEventListener('change', () => renderTable(getFilteredDates()));
 
 dateStartInput.addEventListener('change', () => {
   if(dateStartInput.value > dateEndInput.value) dateEndInput.value = dateStartInput.value;
