@@ -125,7 +125,7 @@
   .btn-refresh:disabled{ opacity:0.6; cursor:default; }
   .period-bar .period-info{ font-size:12px; color:var(--ink-soft); margin-left:6px; }
 
-  .setor-tabs{ display:flex; gap:8px; padding:16px 32px 0; flex-wrap:wrap; }
+  .setor-tabs{ display:flex; gap:8px; padding:16px 32px 0; flex-wrap:wrap; max-width:1600px; margin:0 auto; }
   .setor-tab-btn{
     padding:9px 20px; border-radius:9px 9px 0 0; border:1px solid var(--line); border-bottom:none;
     background:#fbeed0; font-weight:800; font-size:12.5px; letter-spacing:0.6px; text-transform:uppercase;
@@ -407,6 +407,7 @@
      ============================================================ */
   @media (max-width: 640px){
     .container{ padding:16px 14px 40px; }
+    .setor-tabs{ padding:12px 14px 0; }
     .topbar{ padding:24px 18px 22px; }
     .brand{ flex-direction:column; gap:12px; }
     .brand .logo-wrap{ padding-right:0; border-right:none; }
@@ -2401,9 +2402,14 @@ initDateRangePicker('main', dateStartInput, dateEndInput);
    de KPI específicos por setor no futuro. ---------- */
 const mainSetorTabsEl = document.getElementById('mainSetorTabs');
 function renderMainSetorTabs(){
-  const setores = new Set();
-  allDates.forEach(d => DATA[d].rows.forEach(r => { if(r.setor) setores.add(r.setor); }));
-  const sorted = [...setores].sort();
+  // Conta registros por setor em todo o histórico carregado (não só no período
+  // filtrado), pra ordenar as abas por atividade e manter essa ordem fixa
+  // independente do filtro de data escolhido.
+  const counts = {};
+  allDates.forEach(d => DATA[d].rows.forEach(r => {
+    if(r.setor) counts[r.setor] = (counts[r.setor] || 0) + 1;
+  }));
+  const sorted = Object.keys(counts).sort((a,b) => counts[b] - counts[a]);
   // Mantém o setor atualmente selecionado se ele ainda existir nos dados;
   // senão (primeira carga, ou setor que sumiu da planilha) cai no primeiro da lista.
   if(!sorted.includes(selectedSector)) selectedSector = sorted[0] || '';
