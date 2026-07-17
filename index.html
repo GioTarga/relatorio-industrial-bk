@@ -1712,6 +1712,20 @@ function getDayRows(dayKey){
   return selectedSector ? rows.filter(r => r.setor === selectedSector) : rows;
 }
 
+/* Soma o total em Kg (Kg direto + Unid com peso no nome, via getKgForRow)
+   de todas as linhas do período/setor atualmente filtrados. Usado no card
+   "Kg Fritura" da aba Fritador. */
+function computeTotalKgForPeriod(filteredDates){
+  let totalKg = 0;
+  filteredDates.forEach(d=>{
+    getDayRows(d).forEach(r=>{
+      const kg = getKgForRow(r);
+      if(kg !== null) totalKg += kg;
+    });
+  });
+  return totalKg;
+}
+
 /* Agrega as métricas básicas de um conjunto de dias (usado tanto para o
    período atual quanto para o período anterior, na comparação de tendência) */
 function aggregateMetrics(dates){
@@ -1768,7 +1782,18 @@ function renderKPIs(filteredDates){
 
   const accClass = avgDif >= 0 ? 'sem-good' : avgDif >= -15 ? 'sem-warn' : 'sem-bad';
 
-  document.getElementById('kpiGrid').style.gridTemplateColumns = 'repeat(4,1fr)';
+  // Card específico do setor Fritador: total em Kg do período (mesmo total
+  // que já aparece no fim da tabela de detalhamento). Preparado como o
+  // primeiro de possíveis cards específicos por setor.
+  const showKgFrituraCard = selectedSector === 'FRITADOR';
+  const kgFrituraCardHtml = showKgFrituraCard ? `
+    <div class="kpi-card">
+      <div class="label">Kg Fritura</div>
+      <div class="value">${computeTotalKgForPeriod(filteredDates).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} Kg</div>
+    </div>
+  ` : '';
+
+  document.getElementById('kpiGrid').style.gridTemplateColumns = showKgFrituraCard ? 'repeat(5,1fr)' : 'repeat(4,1fr)';
   document.getElementById('kpiGrid').innerHTML = `
     <div class="kpi-card ${belowClass}">
       <div class="label">Abaixo do Planejado</div>
@@ -1786,6 +1811,7 @@ function renderKPIs(filteredDates){
       <div class="label">Acurácia de Produção</div>
       <div class="value">${avgDif>0?'+':''}${avgDif.toFixed(1)}%</div>
     </div>
+    ${kgFrituraCardHtml}
   `;
 }
 
