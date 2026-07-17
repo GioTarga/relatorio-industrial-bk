@@ -1647,6 +1647,7 @@ const daySelect = document.getElementById('daySelect');
 const periodInfo = document.getElementById('periodInfo');
 
 let allDates = []; // populado dinamicamente após o carregamento da planilha (ver applyDateBoundsAndRefresh)
+let currentChartFilteredDates = []; // período atualmente exibido no gráfico "Comparativo" (usado ao redesenhar por zoom/escala)
 
 /* ---------- Zoom e escala logarítmica do gráfico comparativo ---------- */
 let zoomLevel = 1;
@@ -1659,21 +1660,21 @@ function updateZoomLabel(){
 document.getElementById('zoomIn').addEventListener('click', ()=>{
   zoomLevel = Math.min(ZOOM_MAX, +(zoomLevel+ZOOM_STEP).toFixed(2));
   updateZoomLabel();
-  renderDayChart(daySelect.value);
+  renderDayChart(computeChartRows(currentChartFilteredDates));
 });
 document.getElementById('zoomOut').addEventListener('click', ()=>{
   zoomLevel = Math.max(ZOOM_MIN, +(zoomLevel-ZOOM_STEP).toFixed(2));
   updateZoomLabel();
-  renderDayChart(daySelect.value);
+  renderDayChart(computeChartRows(currentChartFilteredDates));
 });
 document.getElementById('zoomReset').addEventListener('click', ()=>{
   zoomLevel = 1;
   updateZoomLabel();
-  renderDayChart(daySelect.value);
+  renderDayChart(computeChartRows(currentChartFilteredDates));
 });
 document.getElementById('logScaleToggle').addEventListener('change', (e)=>{
   logScaleOn = e.target.checked;
-  renderDayChart(daySelect.value);
+  renderDayChart(computeChartRows(currentChartFilteredDates));
 });
 
 function getFilteredDates(){
@@ -1896,15 +1897,14 @@ function renderCauses(filteredDates){
   `;
 }
 
-/* ---------- Gráfico comparativo do dia selecionado ---------- */
-function renderDayChart(dayKey){
-  const day = DATA[dayKey];
-  const rows = getDayRows(dayKey).filter(r => typeof r.prev === 'number');
+/* ---------- Gráfico comparativo: recebe as linhas já prontas (1 dia, ou
+   somadas do período inteiro — ver computeChartRows) ---------- */
+function renderDayChart(rows){
   if(rows.length === 0){
     document.getElementById('dayChartWrap').innerHTML = `
       <div class="empty-state">
         <span class="empty-icon">📦</span>
-        Nenhum produto com planejamento para o setor selecionado neste dia.
+        Nenhum produto com planejamento para o setor selecionado neste período.
       </div>`;
     return;
   }
@@ -2297,11 +2297,41 @@ function renderTrendLine(points){
   `;
 }
 
-/* ---------- Detalhamento de um dia específico dentro do período (só o gráfico "Comparativo") ---------- */
-function renderDayDetail(dayKey){
-  const day = DATA[dayKey];
-  document.getElementById('chartTitle').textContent = `Comparativo: Produção Prevista × Produção Real — ${day.label}`;
-  renderDayChart(dayKey);
+/* ---------- Detalhamento do gráfico "Comparativo": 1 dia mostra as linhas
+   daquele dia; mais de 1 dia soma Previsto e Real por produto no período
+   inteiro (mesma correspondência aproximada de nome usada no ranking de
+   produção perdida, pra não duplicar "Pastel Belem" / "Pastel Belem Varejo"
+   como barras separadas). Definida antes do uso — funções são hoisted. */
+function computeChartRows(filteredDates){
+  const source = [];
+  filteredDates.forEach(d=>{
+    getDayRows(d).forEach(r=>{
+      if(typeof r.prev === 'number') source.push(r);
+    });
+  });
+  if(filteredDates.length <= 1) return source;
+  const groups = fuzzyGroupBy(source,
+    r=>r.uni,
+    r=>r.produto,
+    r=>({ prev: r.prev, real: r.real }),
+    (g, r)=>{ g.prev += r.prev; g.real += r.real; }
+  );
+  return groups.sort((a,b)=> b.real - a.real);
+}
+
+function renderDayDetail(filteredDates){
+  const rows = computeChartRows(filteredDates);
+  const titleEl = document.getElementById('chartTitle');
+  if(filteredDates.length === 1){
+    titleEl.textContent = `Comparativo: Produção Prevista × Produção Real — ${DATA[filteredDates[0]].label}`;
+  } else if(filteredDates.length > 1){
+    const first = DATA[filteredDates[0]].label;
+    const last = DATA[filteredDates[filteredDates.length-1]].label;
+    titleEl.textContent = `Comparativo: Produção Prevista × Produção Real — ${first} a ${last} (somado no período, ${filteredDates.length} dias)`;
+  } else {
+    titleEl.textContent = 'Comparativo: Produção Prevista × Produção Real';
+  }
+  renderDayChart(rows);
 }
 
 /* ---------- Atualiza tudo a partir do período selecionado ---------- */
@@ -2339,8 +2369,9 @@ function refreshAll(){
   refreshDaySelectOptions(filteredDates);
   populateProdutoDetalheFilter(filteredDates);
   renderTable(filteredDates);
+  currentChartFilteredDates = filteredDates;
   if(filteredDates.length > 0){
-    renderDayDetail(daySelect.value);
+    renderDayDetail(filteredDates);
   }
 }
 
@@ -2355,7 +2386,9 @@ dateEndInput.addEventListener('change', () => {
   refreshAll();
 });
 initDateRangePicker('main', dateStartInput, dateEndInput);
-daySelect.addEventListener('change', () => renderDayDetail(daySelect.value));
+/* Nota: o seletor de dia (daySelect) fica oculto e hoje só é usado internamente
+   pelo botão de download do relatório do dia em Word (mais abaixo) — o gráfico
+   "Comparativo" na tela agora soma o período inteiro automaticamente. */
 
 /* ---------- Filtro por setor ---------- */
 const fSetorEl = document.getElementById('fSetor');
