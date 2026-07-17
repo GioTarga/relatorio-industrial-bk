@@ -510,11 +510,11 @@
   </div>
   <input type="date" id="dateStart" style="display:none;">
   <input type="date" id="dateEnd" style="display:none;">
-  <label for="fSetor">Setor</label>
-  <select id="fSetor"><option value="">Todos os setores</option></select>
   <button class="btn-refresh" id="btnRefreshData" title="Verificar dados novos">⟳ Atualizar</button>
   <span class="period-info" id="periodInfo"></span>
 </div>
+
+<div class="setor-tabs" id="mainSetorTabs"></div>
 
 <div class="container">
 
@@ -1017,185 +1017,185 @@ const CSV_URL = "https://docs.google.com/spreadsheets/d/1dPOqVznVZ3Z1AueP8o2H8nl
 const FALLBACK_DATA = {
   "2026-06-22": {
     label: "22 de junho de 2026",
-    setores: "Padaria · Salgados · Fritura · Mecatherm",
+    setores: "Padaria · Salgado · Fritador · Mecatherm",
     stopMinutes: null, // não há Início/Fim registrados nesse dia
     rows: [
-      {setor:"PAD", produto:"Pão Francês Sesi 50g", prev:25, real:22, uni:"Massa", dif:-12, obs:"Produção afetada por pedidos de produtos que não estavam no planejamento de produção inicial"},
-      {setor:"PAD", produto:"Pão Sovado 30g", prev:35, real:18, uni:"Massa", dif:-49, obs:"Produção afetada por pedidos de produtos que não estavam no planejamento de produção inicial"},
-      {setor:"PAD", produto:"Baguete 240g", prev:null, real:6, uni:"Massa", dif:null, obs:""},
-      {setor:"PAD", produto:"Baguete 150g", prev:null, real:4, uni:"Massa", dif:null, obs:""},
-      {setor:"PAD", produto:"Hotdog", prev:null, real:5, uni:"Massa", dif:null, obs:""},
-      {setor:"PAD", produto:"Pão Preto", prev:null, real:1, uni:"Massa", dif:null, obs:""},
-      {setor:"PAD", produto:"Ultra", prev:null, real:2, uni:"Massa", dif:null, obs:""},
-      {setor:"PAD", produto:"Mini Pão Batata", prev:8550, real:4320, uni:"Un", dif:-49.47, obs:"Falta de Colaborador no setor"},
-      {setor:"PAD", produto:"Ciabata", prev:4, real:4, uni:"Massa", dif:0, obs:""},
-      {setor:"PAD", produto:"Baguete Trad.", prev:2, real:2, uni:"Massa", dif:0, obs:""},
-      {setor:"PAD", produto:"Baguete Calab.", prev:17, real:17, uni:"Blocos", dif:0, obs:""},
-      {setor:"PAD", produto:"Baguete 12 grãos", prev:1, real:1, uni:"Massa", dif:0, obs:""},
-      {setor:"PAD", produto:"Baguete Australiana", prev:3, real:3, uni:"Massa", dif:0, obs:""},
-      {setor:"PAD", produto:"Pão Caseiro Bk", prev:null, real:1224, uni:"Un", dif:null, obs:""},
-      {setor:"PAD", produto:"Pão Artesanal Rústico", prev:2, real:0, uni:"Massa", dif:-100, obs:"Houve mudança no pedido de produção"},
-      {setor:"PAD", produto:"Cuca Pão Choc.", prev:3, real:0, uni:"Massa", dif:-100, obs:"Falta de Insumos (Cravo e Canela)"},
-      {setor:"PAD", produto:"Cuca Pão Doce de Leite", prev:3, real:0, uni:"Massa", dif:-100, obs:"Falta de Insumos (Cravo e Canela)"},
-      {setor:"PAD", produto:"Cuca Pão s/ recheio", prev:1, real:0, uni:"Massa", dif:-100, obs:"Falta de Insumos (Cravo e Canela)"},
-      {setor:"SGD", produto:"Esfira de Carne", prev:4500, real:2837, uni:"Un", dif:-37, obs:"Produção acontece apenas em meio período"},
-      {setor:"SGD", produto:"Hambúrguer", prev:1500, real:1900, uni:"Un", dif:27, obs:""},
-      {setor:"SGD", produto:"Doguinho", prev:2500, real:2280, uni:"Un", dif:-9, obs:""},
-      {setor:"SGD", produto:"Mini Nata Frango", prev:600, real:442, uni:"Un", dif:-26, obs:"Falta de Colaborador"},
-      {setor:"SGD", produto:"Pastel Nata Carne", prev:5000, real:4225, uni:"Un", dif:-16, obs:"Faltou Caixas e faltou Carne para recheio"},
-      {setor:"SGD", produto:"Empada de Frango", prev:4200, real:3278, uni:"Un", dif:-22, obs:"PQ não foi feito a produção total?"},
-      {setor:"SGD", produto:"Bolha came com ovo", prev:null, real:161, uni:"Cx", dif:null, obs:""},
-      {setor:"SGD", produto:"Bolha Queijo", prev:400, real:96, uni:"Cx", dif:-76, obs:"Houve mudança no pedido de produção para bolha de carne"},
-      {setor:"SGD", produto:"Belém", prev:1500, real:0, uni:"Un", dif:-100, obs:"Falta de Insumo (ovos)"},
-      {setor:"SGD", produto:"Strudel Folhado Maçã", prev:null, real:674, uni:"Massas", dif:null, obs:""},
-      {setor:"FTR", produto:"Massa para churros", prev:3, real:2, uni:"Massas", dif:-33, obs:"Falta de Colaborador"},
-      {setor:"FTR", produto:"Mini Salsicha", prev:250, real:240, uni:"Un", dif:-4, obs:""},
-      {setor:"FTR", produto:"Coxinha de Carne Frita", prev:3000, real:1710, uni:"Un", dif:-43, obs:""},
-      {setor:"FTR", produto:"Risois de Carne Frito", prev:3000, real:800, uni:"Un", dif:-73, obs:""},
-      {setor:"Mecatherm", produto:"Pão Francês Ultra 6h", prev:11384.8, real:8616, uni:"Pacotes", dif:-24.32, obs:"A capacidade de produção da Mecatherm varia de acordo com a configuração aplicada, essa variação impacta diretamente a produtividade do turno."},
+      {setor:"PADARIA", produto:"Pão Francês Sesi 50g", prev:25, real:22, uni:"Massa", dif:-12, obs:"Produção afetada por pedidos de produtos que não estavam no planejamento de produção inicial"},
+      {setor:"PADARIA", produto:"Pão Sovado 30g", prev:35, real:18, uni:"Massa", dif:-49, obs:"Produção afetada por pedidos de produtos que não estavam no planejamento de produção inicial"},
+      {setor:"PADARIA", produto:"Baguete 240g", prev:null, real:6, uni:"Massa", dif:null, obs:""},
+      {setor:"PADARIA", produto:"Baguete 150g", prev:null, real:4, uni:"Massa", dif:null, obs:""},
+      {setor:"PADARIA", produto:"Hotdog", prev:null, real:5, uni:"Massa", dif:null, obs:""},
+      {setor:"PADARIA", produto:"Pão Preto", prev:null, real:1, uni:"Massa", dif:null, obs:""},
+      {setor:"PADARIA", produto:"Ultra", prev:null, real:2, uni:"Massa", dif:null, obs:""},
+      {setor:"PADARIA", produto:"Mini Pão Batata", prev:8550, real:4320, uni:"Un", dif:-49.47, obs:"Falta de Colaborador no setor"},
+      {setor:"PADARIA", produto:"Ciabata", prev:4, real:4, uni:"Massa", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Baguete Trad.", prev:2, real:2, uni:"Massa", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Baguete Calab.", prev:17, real:17, uni:"Blocos", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Baguete 12 grãos", prev:1, real:1, uni:"Massa", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Baguete Australiana", prev:3, real:3, uni:"Massa", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Pão Caseiro Bk", prev:null, real:1224, uni:"Un", dif:null, obs:""},
+      {setor:"PADARIA", produto:"Pão Artesanal Rústico", prev:2, real:0, uni:"Massa", dif:-100, obs:"Houve mudança no pedido de produção"},
+      {setor:"PADARIA", produto:"Cuca Pão Choc.", prev:3, real:0, uni:"Massa", dif:-100, obs:"Falta de Insumos (Cravo e Canela)"},
+      {setor:"PADARIA", produto:"Cuca Pão Doce de Leite", prev:3, real:0, uni:"Massa", dif:-100, obs:"Falta de Insumos (Cravo e Canela)"},
+      {setor:"PADARIA", produto:"Cuca Pão s/ recheio", prev:1, real:0, uni:"Massa", dif:-100, obs:"Falta de Insumos (Cravo e Canela)"},
+      {setor:"SALGADO", produto:"Esfira de Carne", prev:4500, real:2837, uni:"Un", dif:-37, obs:"Produção acontece apenas em meio período"},
+      {setor:"SALGADO", produto:"Hambúrguer", prev:1500, real:1900, uni:"Un", dif:27, obs:""},
+      {setor:"SALGADO", produto:"Doguinho", prev:2500, real:2280, uni:"Un", dif:-9, obs:""},
+      {setor:"SALGADO", produto:"Mini Nata Frango", prev:600, real:442, uni:"Un", dif:-26, obs:"Falta de Colaborador"},
+      {setor:"SALGADO", produto:"Pastel Nata Carne", prev:5000, real:4225, uni:"Un", dif:-16, obs:"Faltou Caixas e faltou Carne para recheio"},
+      {setor:"SALGADO", produto:"Empada de Frango", prev:4200, real:3278, uni:"Un", dif:-22, obs:"PQ não foi feito a produção total?"},
+      {setor:"SALGADO", produto:"Bolha came com ovo", prev:null, real:161, uni:"Cx", dif:null, obs:""},
+      {setor:"SALGADO", produto:"Bolha Queijo", prev:400, real:96, uni:"Cx", dif:-76, obs:"Houve mudança no pedido de produção para bolha de carne"},
+      {setor:"SALGADO", produto:"Belém", prev:1500, real:0, uni:"Un", dif:-100, obs:"Falta de Insumo (ovos)"},
+      {setor:"SALGADO", produto:"Strudel Folhado Maçã", prev:null, real:674, uni:"Massas", dif:null, obs:""},
+      {setor:"FRITADOR", produto:"Massa para churros", prev:3, real:2, uni:"Massas", dif:-33, obs:"Falta de Colaborador"},
+      {setor:"FRITADOR", produto:"Mini Salsicha", prev:250, real:240, uni:"Un", dif:-4, obs:""},
+      {setor:"FRITADOR", produto:"Coxinha de Carne Frita", prev:3000, real:1710, uni:"Un", dif:-43, obs:""},
+      {setor:"FRITADOR", produto:"Risois de Carne Frito", prev:3000, real:800, uni:"Un", dif:-73, obs:""},
+      {setor:"MECATHERM", produto:"Pão Francês Ultra 6h", prev:11384.8, real:8616, uni:"Pacotes", dif:-24.32, obs:"A capacidade de produção da Mecatherm varia de acordo com a configuração aplicada, essa variação impacta diretamente a produtividade do turno."},
     ]
   },
   "2026-06-23": {
     label: "23 de junho de 2026",
-    setores: "Padaria · Salgados · Croissant · Fritura",
+    setores: "Padaria · Salgado · Croissanti · Fritador",
     stopMinutes: 234, // 3h54min — soma dos intervalos Início/Fim registrados
     rows: [
-      {setor:"PAD", produto:"Pão Ciabatta Bread King 120g", prev:4, real:4, uni:"massas", dif:0, obs:""},
-      {setor:"PAD", produto:"Baguete Rústica c/ Calabresa BK 2x160g", prev:17, real:17, uni:"blocos", dif:0, obs:""},
-      {setor:"PAD", produto:"Cuca Creme de Vinho Assada Cong BK 420g", prev:1, real:1, uni:"massa", dif:0, obs:""},
-      {setor:"PAD", produto:"Pão Artesanal Rústico Multigrãos BK 350g", prev:2, real:2, uni:"massas", dif:0, obs:""},
-      {setor:"PAD", produto:"Massa P/ Pão Doce Cuca c/Doce Leite BK 600g", prev:3, real:2, uni:"massas", dif:-33, obs:"Capacidade de produção abaixo do pedido"},
-      {setor:"PAD", produto:"Massa P/ Pão Doce Cuca sem Recheio BK 500g", prev:3, real:3, uni:"massas", dif:0, obs:""},
-      {setor:"PAD", produto:"Massa P/ Pão Doce Cuca c/Chocolate BK 600g", prev:3, real:2, uni:"massas", dif:-33, obs:"Capacidade de produção abaixo do pedido"},
-      {setor:"PAD", produto:"Pão Batata Requeijão 160g", prev:null, real:1368, uni:"unid", dif:null, obs:"Produção trocada para Pão batata Requeijão"},
-      {setor:"PAD", produto:"Pão Batata Calabresa c/ Req. BK 4x150g", prev:1368, real:0, uni:"unid", dif:-100, obs:"Produção trocada para Pão batata Requeijão"},
-      {setor:"PAD", produto:"Mini Pão Batata Calabresa c/ Req. BK 50g", prev:5700, real:6600, uni:"unid", dif:16, obs:""},
-      {setor:"PAD", produto:"Mini Baguete Rústica 12 Grãos BK 50g", prev:1, real:1, uni:"massa", dif:0, obs:""},
-      {setor:"PAD", produto:"Baguete Rústica 12 Grãos BK 145gx2", prev:1, real:1, uni:"massa", dif:0, obs:""},
-      {setor:"PAD", produto:"Mini Baguete Rústica Trad BK 50g", prev:1, real:1, uni:"massa", dif:0, obs:""},
-      {setor:"PAD", produto:"Baguete Rústica Trad BK 145gx2", prev:1, real:1, uni:"massa", dif:0, obs:""},
-      {setor:"PAD", produto:"Pão Francês Pré Assado Ultracongelado 4x70g", prev:3, real:3, uni:"massas", dif:0, obs:""},
-      {setor:"PAD", produto:"Massa P/ Pão de Queijo Trad BK 50g", prev:15, real:16, uni:"massas", dif:7, obs:""},
-      {setor:"PAD", produto:"Massa P/ Pão Queijo c/ Bacon 30g", prev:1, real:1, uni:"massa", dif:0, obs:""},
-      {setor:"PAD", produto:"Massa P/ Pão Massinha Doce s/Farofa BK 70g", prev:20, real:17, uni:"massas", dif:-15, obs:"Produção atrasada por falta de insumo (canela)"},
-      {setor:"PAD", produto:"Massa P/ Pãozinho Doce BK 70g", prev:20, real:17, uni:"massas", dif:-15, obs:""},
-      {setor:"PAD", produto:"Massa P/ Pão Francês Mini Sesi 30g", prev:12, real:8, uni:"massas", dif:-33, obs:""},
-      {setor:"PAD", produto:"Massa P/ Pão Francês ou de Sal 6H Nutri BK 65g", prev:25, real:10, uni:"massas", dif:-60, obs:"Afetada por atraso de produção anterior"},
-      {setor:"SGD", produto:"Hamburgão Carne c/ Cheddar BK 170g", prev:1500, real:1320, uni:"massas", dif:-12, obs:"Falha mecânica (mangueira estourada)"},
-      {setor:"SGD", produto:"Doguinho Salsicha e Requeijão BK 4x170g", prev:2500, real:2280, uni:"massas", dif:-9, obs:""},
-      {setor:"SGD", produto:"Empada Frango c/ Req. BK 4x130g", prev:null, real:1918, uni:"unid", dif:null, obs:""},
-      {setor:"SGD", produto:"Empada Palmito BK 4x130g", prev:3500, real:1792, uni:"unid", dif:-49, obs:"Acabou o recheio"},
-      {setor:"SGD", produto:"Bauru Sabor Pizza BK 4x165g", prev:4500, real:2128, uni:"unid", dif:-53, obs:"Acabou o recheio"},
-      {setor:"SGD", produto:"Mini Pastel Bolha Queijo Frito BK 30g", prev:400, real:206, uni:"unid", dif:-49, obs:"Acabou o recheio"},
-      {setor:"SGD", produto:"Mini Pastel Nata Calabresa BK 35g (1)", prev:300, real:626, uni:"caixas", dif:109, obs:""},
-      {setor:"SGD", produto:"Mini Pastel Nata Calabresa BK 35g (2)", prev:600, real:0, uni:"caixas", dif:-100, obs:"Troca de produção - Mini Bolha Carne c/ Ovo"},
-      {setor:"SGD", produto:"Mini Salsichinha Frita Cong BK", prev:250, real:135, uni:"caixas", dif:-46, obs:"Falta de colaborador"},
-      {setor:"SGD", produto:"Enrolado Salsicha Frito Cong 130g", prev:null, real:309, uni:"kg", dif:null, obs:"Produzido fora do planejamento"},
-      {setor:"CRSS", produto:"Croissant Assado s/ Recheio BK 80g (Café)", prev:null, real:646, uni:"unid", dif:null, obs:""},
-      {setor:"CRSS", produto:"Croissant Chocolate BK 100g", prev:null, real:3810, uni:"unid", dif:null, obs:""},
-      {setor:"CRSS", produto:"Croissant Frango BK 100g", prev:null, real:7260, uni:"unid", dif:null, obs:""},
-      {setor:"PAD", produto:"Pão com Linguiça Swift", prev:25, real:25, uni:"unid", dif:0, obs:""},
-      {setor:"PAD", produto:"Sanduíche Baguete Art. Salame e Queijo 220g", prev:null, real:7, uni:"caixas", dif:null, obs:""},
-      {setor:"FTR", produto:"Mini Bolinha Queijo Frito BK", prev:null, real:525, uni:"kg", dif:null, obs:"Produção afetada por Defeito na Máquina"},
-      {setor:"FTR", produto:"Mini Risoles Carne Frito Cong BK", prev:null, real:216, uni:"kg", dif:null, obs:"Produzido fora do planejamento"},
-      {setor:"SGD", produto:"Esfirra Carne", prev:null, real:2128, uni:"unid", dif:null, obs:"Troca de Recheios + Lavagem de peças"},
-      {setor:"SGD", produto:"Mini Pastel Nata Carne BK 35g", prev:null, real:84, uni:"caixas", dif:null, obs:"Faltou recheio e caixas"},
-      {setor:"SGD", produto:"Mini Pastel Bolha c/ Ovo BK 30g", prev:null, real:17, uni:"caixas", dif:null, obs:"Produzido fora do planejamento"},
-      {setor:"CRSS", produto:"Strudel Folhado Maçã BK 130g", prev:null, real:397, uni:"unid", dif:null, obs:"Produzido fora do planejamento"},
+      {setor:"PADARIA", produto:"Pão Ciabatta Bread King 120g", prev:4, real:4, uni:"massas", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Baguete Rústica c/ Calabresa BK 2x160g", prev:17, real:17, uni:"blocos", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Cuca Creme de Vinho Assada Cong BK 420g", prev:1, real:1, uni:"massa", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Pão Artesanal Rústico Multigrãos BK 350g", prev:2, real:2, uni:"massas", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Massa P/ Pão Doce Cuca c/Doce Leite BK 600g", prev:3, real:2, uni:"massas", dif:-33, obs:"Capacidade de produção abaixo do pedido"},
+      {setor:"PADARIA", produto:"Massa P/ Pão Doce Cuca sem Recheio BK 500g", prev:3, real:3, uni:"massas", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Massa P/ Pão Doce Cuca c/Chocolate BK 600g", prev:3, real:2, uni:"massas", dif:-33, obs:"Capacidade de produção abaixo do pedido"},
+      {setor:"PADARIA", produto:"Pão Batata Requeijão 160g", prev:null, real:1368, uni:"unid", dif:null, obs:"Produção trocada para Pão batata Requeijão"},
+      {setor:"PADARIA", produto:"Pão Batata Calabresa c/ Req. BK 4x150g", prev:1368, real:0, uni:"unid", dif:-100, obs:"Produção trocada para Pão batata Requeijão"},
+      {setor:"PADARIA", produto:"Mini Pão Batata Calabresa c/ Req. BK 50g", prev:5700, real:6600, uni:"unid", dif:16, obs:""},
+      {setor:"PADARIA", produto:"Mini Baguete Rústica 12 Grãos BK 50g", prev:1, real:1, uni:"massa", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Baguete Rústica 12 Grãos BK 145gx2", prev:1, real:1, uni:"massa", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Mini Baguete Rústica Trad BK 50g", prev:1, real:1, uni:"massa", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Baguete Rústica Trad BK 145gx2", prev:1, real:1, uni:"massa", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Pão Francês Pré Assado Ultracongelado 4x70g", prev:3, real:3, uni:"massas", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Massa P/ Pão de Queijo Trad BK 50g", prev:15, real:16, uni:"massas", dif:7, obs:""},
+      {setor:"PADARIA", produto:"Massa P/ Pão Queijo c/ Bacon 30g", prev:1, real:1, uni:"massa", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Massa P/ Pão Massinha Doce s/Farofa BK 70g", prev:20, real:17, uni:"massas", dif:-15, obs:"Produção atrasada por falta de insumo (canela)"},
+      {setor:"PADARIA", produto:"Massa P/ Pãozinho Doce BK 70g", prev:20, real:17, uni:"massas", dif:-15, obs:""},
+      {setor:"PADARIA", produto:"Massa P/ Pão Francês Mini Sesi 30g", prev:12, real:8, uni:"massas", dif:-33, obs:""},
+      {setor:"PADARIA", produto:"Massa P/ Pão Francês ou de Sal 6H Nutri BK 65g", prev:25, real:10, uni:"massas", dif:-60, obs:"Afetada por atraso de produção anterior"},
+      {setor:"SALGADO", produto:"Hamburgão Carne c/ Cheddar BK 170g", prev:1500, real:1320, uni:"massas", dif:-12, obs:"Falha mecânica (mangueira estourada)"},
+      {setor:"SALGADO", produto:"Doguinho Salsicha e Requeijão BK 4x170g", prev:2500, real:2280, uni:"massas", dif:-9, obs:""},
+      {setor:"SALGADO", produto:"Empada Frango c/ Req. BK 4x130g", prev:null, real:1918, uni:"unid", dif:null, obs:""},
+      {setor:"SALGADO", produto:"Empada Palmito BK 4x130g", prev:3500, real:1792, uni:"unid", dif:-49, obs:"Acabou o recheio"},
+      {setor:"SALGADO", produto:"Bauru Sabor Pizza BK 4x165g", prev:4500, real:2128, uni:"unid", dif:-53, obs:"Acabou o recheio"},
+      {setor:"SALGADO", produto:"Mini Pastel Bolha Queijo Frito BK 30g", prev:400, real:206, uni:"unid", dif:-49, obs:"Acabou o recheio"},
+      {setor:"SALGADO", produto:"Mini Pastel Nata Calabresa BK 35g (1)", prev:300, real:626, uni:"caixas", dif:109, obs:""},
+      {setor:"SALGADO", produto:"Mini Pastel Nata Calabresa BK 35g (2)", prev:600, real:0, uni:"caixas", dif:-100, obs:"Troca de produção - Mini Bolha Carne c/ Ovo"},
+      {setor:"SALGADO", produto:"Mini Salsichinha Frita Cong BK", prev:250, real:135, uni:"caixas", dif:-46, obs:"Falta de colaborador"},
+      {setor:"SALGADO", produto:"Enrolado Salsicha Frito Cong 130g", prev:null, real:309, uni:"kg", dif:null, obs:"Produzido fora do planejamento"},
+      {setor:"CROISSANTI", produto:"Croissant Assado s/ Recheio BK 80g (Café)", prev:null, real:646, uni:"unid", dif:null, obs:""},
+      {setor:"CROISSANTI", produto:"Croissant Chocolate BK 100g", prev:null, real:3810, uni:"unid", dif:null, obs:""},
+      {setor:"CROISSANTI", produto:"Croissant Frango BK 100g", prev:null, real:7260, uni:"unid", dif:null, obs:""},
+      {setor:"PADARIA", produto:"Pão com Linguiça Swift", prev:25, real:25, uni:"unid", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Sanduíche Baguete Art. Salame e Queijo 220g", prev:null, real:7, uni:"caixas", dif:null, obs:""},
+      {setor:"FRITADOR", produto:"Mini Bolinha Queijo Frito BK", prev:null, real:525, uni:"kg", dif:null, obs:"Produção afetada por Defeito na Máquina"},
+      {setor:"FRITADOR", produto:"Mini Risoles Carne Frito Cong BK", prev:null, real:216, uni:"kg", dif:null, obs:"Produzido fora do planejamento"},
+      {setor:"SALGADO", produto:"Esfirra Carne", prev:null, real:2128, uni:"unid", dif:null, obs:"Troca de Recheios + Lavagem de peças"},
+      {setor:"SALGADO", produto:"Mini Pastel Nata Carne BK 35g", prev:null, real:84, uni:"caixas", dif:null, obs:"Faltou recheio e caixas"},
+      {setor:"SALGADO", produto:"Mini Pastel Bolha c/ Ovo BK 30g", prev:null, real:17, uni:"caixas", dif:null, obs:"Produzido fora do planejamento"},
+      {setor:"CROISSANTI", produto:"Strudel Folhado Maçã BK 130g", prev:null, real:397, uni:"unid", dif:null, obs:"Produzido fora do planejamento"},
     ]
   },
   "2026-06-24": {
     label: "24 de junho de 2026",
-    setores: "Padaria · Salgados · Croissant · Fritura · Mecatherm",
+    setores: "Padaria · Salgado · Croissanti · Fritador · Mecatherm",
     stopMinutes: null, // não há Início/Fim registrados nesse dia
     rows: [
-      {setor:"PAD", produto:"Pão Ciabatta Bread King 120g - C/4 UM", prev:4, real:4, uni:"Massas", dif:0, obs:""},
-      {setor:"PAD", produto:"Baguete Rústica c/ Calabresa BK 2x160g", prev:17, real:17, uni:"Blocos", dif:0, obs:""},
-      {setor:"PAD", produto:"Massa P/ Pão de Cereais Integral BK 500g", prev:6, real:6, uni:"Massas", dif:0, obs:""},
-      {setor:"CRSS", produto:"Mini Croissant s/ Recheio BK 50g", prev:2, real:2, uni:"Massas", dif:0, obs:""},
-      {setor:"PAD", produto:"Massa P/ Pão Caseirinho/Sovadinho 65g", prev:30, real:30, uni:"Massas", dif:0, obs:""},
-      {setor:"PAD", produto:"Mini Baguete Rústica Trad BK 50g", prev:2, real:2, uni:"Massas", dif:0, obs:""},
-      {setor:"PAD", produto:"Baguete Rústica Trad BK 145gx2", prev:2, real:2, uni:"Massas", dif:0, obs:""},
-      {setor:"PAD", produto:"Pão Francês Pré Assado Ultracongelado 4x70g", prev:3, real:2, uni:"Massas", dif:-33, obs:"Produção reduzida para priorizar Produção fora do plano (Pão de queijo)"},
-      {setor:"PAD", produto:"Pão Mini Francês Pré Assado BK 40g", prev:4, real:4, uni:"Massas", dif:0, obs:""},
-      {setor:"PAD", produto:"Pão Mini Sovadinho Pré Assado BK 40g", prev:3, real:2, uni:"Massas", dif:-33, obs:""},
-      {setor:"PAD", produto:"Pão Mini Massinha Doce Pré Assada BK 45g", prev:1, real:0, uni:"Massa", dif:-100, obs:"Sem Carrinho"},
-      {setor:"PAD", produto:"Massa P/ Chipa c/ Gotas de Chocolate 400g", prev:1, real:0, uni:"Massa", dif:-100, obs:"Sem Carrinho"},
-      {setor:"PAD", produto:"Massa P/ Pão de Queijo Mini Tradicional BK 15g", prev:4, real:0, uni:"Massas", dif:-100, obs:"Sem Carrinho"},
-      {setor:"PAD", produto:"Massa P/ Pão de Queijo Trad BK 75g", prev:2, real:0, uni:"Massas", dif:-100, obs:"Sem Carrinho"},
-      {setor:"PAD", produto:"Massa P/ Pão Superfofo BK 50g", prev:10, real:8, uni:"Massas", dif:-20, obs:""},
-      {setor:"PAD", produto:"Massa P/ Sonho Americano BK 55g", prev:10, real:8, uni:"Massas", dif:-20, obs:""},
-      {setor:"PAD", produto:"Massa P/ Pão Hambúrguer BK 80g", prev:5, real:4, uni:"Massas", dif:-20, obs:""},
-      {setor:"PAD", produto:"Massa P/ Pão Francês ou de Sal 6H Nutri BK 65g", prev:40, real:10, uni:"Massas", dif:-75, obs:"Produção reduzida para priorizar Produção fora do plano (Pão de queijo)"},
-      {setor:"SGD", produto:"Hambúrgão Carne c/ Cheddar BK 170g", prev:1500, real:880, uni:"Unid", dif:-41, obs:"4 Colab."},
-      {setor:"SGD", produto:"Doguinho Salsicha e Requeijão BK 4x170g", prev:2500, real:0, uni:"Unid", dif:-100, obs:"Não produzido para priorizar Produção fora do plano (croquetes de requeijão)"},
-      {setor:"SGD", produto:"Pastel p/ Fritar Queijo BK 130g", prev:3000, real:1553, uni:"Unid", dif:-48, obs:"2 Colab."},
-      {setor:"SGD", produto:"Empada Palmito BK 4x130g", prev:4200, real:2436, uni:"Unid", dif:-42, obs:"4 Colab."},
-      {setor:"SGD", produto:"Bauru Frango c/ Requeijão BK 4x165g", prev:4500, real:2056, uni:"Unid", dif:-54, obs:"3 Colab."},
-      {setor:"SGD", produto:"Mini Pastel Bolha Queijo Frito BK 30g", prev:400, real:288, uni:"Caixas", dif:-28, obs:"4 Colab."},
-      {setor:"SGD", produto:"Mini Pastel Nata Carne BK 35g", prev:600, real:348, uni:"Caixas", dif:-42, obs:"Falta de Recheio | Falta de Massa | 4 colab."},
-      {setor:"SGD", produto:"Pastel Nata Calabresa c/Req Cong BK 130g", prev:5000, real:3905, uni:"Unid", dif:-22, obs:"Falta de Massa | Falta de Caixas | 3 Colab."},
-      {setor:"SGD", produto:"Mini Salsichinha Frita Cong BK", prev:250, real:18, uni:"Kg", dif:-93, obs:"Reduzido para priorizar Produção fora do plano (croquetes de requeijão)"},
-      {setor:"SGD", produto:"Coxinha Frango e Req Frita Cong BK 130g", prev:8000, real:0, uni:"Unid", dif:-100, obs:"Não produzido para priorizar Produção fora do plano (croquetes de requeijão)"},
-      {setor:"FTR", produto:"Mini Croquete Carne c/ Req Frito Cong BK", prev:6, real:6, uni:"Massas", dif:0, obs:""},
-      {setor:"FTR", produto:"Massa para Churros", prev:3, real:3, uni:"Massas", dif:0, obs:""},
-      {setor:"CRSS", produto:"Mini Croissant Frango BK 50g", prev:null, real:1, uni:"Massas", dif:null, obs:""},
-      {setor:"CRSS", produto:"Mini Croissant Goiabada BK 50g", prev:null, real:1, uni:"Massas", dif:null, obs:""},
-      {setor:"PAD", produto:"Massa P/ Pão de Queijo Trad Mini BK 15g", prev:null, real:8, uni:"Massas", dif:null, obs:""},
-      {setor:"SGD", produto:"Mini Pastel Nata Chocolate Pto BK 35g", prev:null, real:179, uni:"Caixas", dif:null, obs:"3 Colab."},
-      {setor:"SGD", produto:"Pastel Fritar Queijo BK 130g", prev:null, real:1553, uni:"Caixas", dif:null, obs:"Falta de Caixas | Falta de Carrinhos | 3 Colab."},
-      {setor:"SGD", produto:"Pastel de Nata (Belém) BK 60g", prev:null, real:1543, uni:"Unid", dif:null, obs:"2 Colab."},
-      {setor:"SGD", produto:"Empada Frango BK 4x130g", prev:null, real:280, uni:"Unid", dif:null, obs:"4 Colab."},
-      {setor:"Mecatherm", produto:"Mecatherm - Pão 6h - 37611 p/h - 16h de Produção", prev:7673, real:9121, uni:"Pacotes", dif:19, obs:""},
-      {setor:"PAD", produto:"Pão com Linguiça Swift", prev:25, real:17, uni:"Caixas", dif:-32, obs:"Retirada de colab. da linha ao longo da produção | 8 Colab"},
-      {setor:"PAD", produto:"Misto Pão Francês Presunto e Queijo 120g BK Café", prev:null, real:4, uni:"Caixas", dif:null, obs:""},
-      {setor:"PAD", produto:"Misto Pão Francês Queijo 120g BK Café", prev:null, real:3, uni:"Caixas", dif:null, obs:""},
-      {setor:"PAD", produto:"Misto Pão Francês Salame e Queijo 120g BK Café (1)", prev:null, real:1, uni:"Caixas", dif:null, obs:""},
-      {setor:"PAD", produto:"Misto Pão Francês Salame e Queijo 120g BK Café (2)", prev:null, real:3, uni:"Caixas", dif:null, obs:""},
-      {setor:"PAD", produto:"Sanduíche Baguete Art. Salame e Queijo 220g BK Café", prev:null, real:1, uni:"Caixas", dif:null, obs:""},
-      {setor:"PAD", produto:"Baguete Rústica 12 Grãos BK 145g", prev:null, real:2, uni:"Massas", dif:null, obs:""},
+      {setor:"PADARIA", produto:"Pão Ciabatta Bread King 120g - C/4 UM", prev:4, real:4, uni:"Massas", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Baguete Rústica c/ Calabresa BK 2x160g", prev:17, real:17, uni:"Blocos", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Massa P/ Pão de Cereais Integral BK 500g", prev:6, real:6, uni:"Massas", dif:0, obs:""},
+      {setor:"CROISSANTI", produto:"Mini Croissant s/ Recheio BK 50g", prev:2, real:2, uni:"Massas", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Massa P/ Pão Caseirinho/Sovadinho 65g", prev:30, real:30, uni:"Massas", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Mini Baguete Rústica Trad BK 50g", prev:2, real:2, uni:"Massas", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Baguete Rústica Trad BK 145gx2", prev:2, real:2, uni:"Massas", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Pão Francês Pré Assado Ultracongelado 4x70g", prev:3, real:2, uni:"Massas", dif:-33, obs:"Produção reduzida para priorizar Produção fora do plano (Pão de queijo)"},
+      {setor:"PADARIA", produto:"Pão Mini Francês Pré Assado BK 40g", prev:4, real:4, uni:"Massas", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Pão Mini Sovadinho Pré Assado BK 40g", prev:3, real:2, uni:"Massas", dif:-33, obs:""},
+      {setor:"PADARIA", produto:"Pão Mini Massinha Doce Pré Assada BK 45g", prev:1, real:0, uni:"Massa", dif:-100, obs:"Sem Carrinho"},
+      {setor:"PADARIA", produto:"Massa P/ Chipa c/ Gotas de Chocolate 400g", prev:1, real:0, uni:"Massa", dif:-100, obs:"Sem Carrinho"},
+      {setor:"PADARIA", produto:"Massa P/ Pão de Queijo Mini Tradicional BK 15g", prev:4, real:0, uni:"Massas", dif:-100, obs:"Sem Carrinho"},
+      {setor:"PADARIA", produto:"Massa P/ Pão de Queijo Trad BK 75g", prev:2, real:0, uni:"Massas", dif:-100, obs:"Sem Carrinho"},
+      {setor:"PADARIA", produto:"Massa P/ Pão Superfofo BK 50g", prev:10, real:8, uni:"Massas", dif:-20, obs:""},
+      {setor:"PADARIA", produto:"Massa P/ Sonho Americano BK 55g", prev:10, real:8, uni:"Massas", dif:-20, obs:""},
+      {setor:"PADARIA", produto:"Massa P/ Pão Hambúrguer BK 80g", prev:5, real:4, uni:"Massas", dif:-20, obs:""},
+      {setor:"PADARIA", produto:"Massa P/ Pão Francês ou de Sal 6H Nutri BK 65g", prev:40, real:10, uni:"Massas", dif:-75, obs:"Produção reduzida para priorizar Produção fora do plano (Pão de queijo)"},
+      {setor:"SALGADO", produto:"Hambúrgão Carne c/ Cheddar BK 170g", prev:1500, real:880, uni:"Unid", dif:-41, obs:"4 Colab."},
+      {setor:"SALGADO", produto:"Doguinho Salsicha e Requeijão BK 4x170g", prev:2500, real:0, uni:"Unid", dif:-100, obs:"Não produzido para priorizar Produção fora do plano (croquetes de requeijão)"},
+      {setor:"SALGADO", produto:"Pastel p/ Fritar Queijo BK 130g", prev:3000, real:1553, uni:"Unid", dif:-48, obs:"2 Colab."},
+      {setor:"SALGADO", produto:"Empada Palmito BK 4x130g", prev:4200, real:2436, uni:"Unid", dif:-42, obs:"4 Colab."},
+      {setor:"SALGADO", produto:"Bauru Frango c/ Requeijão BK 4x165g", prev:4500, real:2056, uni:"Unid", dif:-54, obs:"3 Colab."},
+      {setor:"SALGADO", produto:"Mini Pastel Bolha Queijo Frito BK 30g", prev:400, real:288, uni:"Caixas", dif:-28, obs:"4 Colab."},
+      {setor:"SALGADO", produto:"Mini Pastel Nata Carne BK 35g", prev:600, real:348, uni:"Caixas", dif:-42, obs:"Falta de Recheio | Falta de Massa | 4 colab."},
+      {setor:"SALGADO", produto:"Pastel Nata Calabresa c/Req Cong BK 130g", prev:5000, real:3905, uni:"Unid", dif:-22, obs:"Falta de Massa | Falta de Caixas | 3 Colab."},
+      {setor:"SALGADO", produto:"Mini Salsichinha Frita Cong BK", prev:250, real:18, uni:"Kg", dif:-93, obs:"Reduzido para priorizar Produção fora do plano (croquetes de requeijão)"},
+      {setor:"SALGADO", produto:"Coxinha Frango e Req Frita Cong BK 130g", prev:8000, real:0, uni:"Unid", dif:-100, obs:"Não produzido para priorizar Produção fora do plano (croquetes de requeijão)"},
+      {setor:"FRITADOR", produto:"Mini Croquete Carne c/ Req Frito Cong BK", prev:6, real:6, uni:"Massas", dif:0, obs:""},
+      {setor:"FRITADOR", produto:"Massa para Churros", prev:3, real:3, uni:"Massas", dif:0, obs:""},
+      {setor:"CROISSANTI", produto:"Mini Croissant Frango BK 50g", prev:null, real:1, uni:"Massas", dif:null, obs:""},
+      {setor:"CROISSANTI", produto:"Mini Croissant Goiabada BK 50g", prev:null, real:1, uni:"Massas", dif:null, obs:""},
+      {setor:"PADARIA", produto:"Massa P/ Pão de Queijo Trad Mini BK 15g", prev:null, real:8, uni:"Massas", dif:null, obs:""},
+      {setor:"SALGADO", produto:"Mini Pastel Nata Chocolate Pto BK 35g", prev:null, real:179, uni:"Caixas", dif:null, obs:"3 Colab."},
+      {setor:"SALGADO", produto:"Pastel Fritar Queijo BK 130g", prev:null, real:1553, uni:"Caixas", dif:null, obs:"Falta de Caixas | Falta de Carrinhos | 3 Colab."},
+      {setor:"SALGADO", produto:"Pastel de Nata (Belém) BK 60g", prev:null, real:1543, uni:"Unid", dif:null, obs:"2 Colab."},
+      {setor:"SALGADO", produto:"Empada Frango BK 4x130g", prev:null, real:280, uni:"Unid", dif:null, obs:"4 Colab."},
+      {setor:"MECATHERM", produto:"Mecatherm - Pão 6h - 37611 p/h - 16h de Produção", prev:7673, real:9121, uni:"Pacotes", dif:19, obs:""},
+      {setor:"PADARIA", produto:"Pão com Linguiça Swift", prev:25, real:17, uni:"Caixas", dif:-32, obs:"Retirada de colab. da linha ao longo da produção | 8 Colab"},
+      {setor:"PADARIA", produto:"Misto Pão Francês Presunto e Queijo 120g BK Café", prev:null, real:4, uni:"Caixas", dif:null, obs:""},
+      {setor:"PADARIA", produto:"Misto Pão Francês Queijo 120g BK Café", prev:null, real:3, uni:"Caixas", dif:null, obs:""},
+      {setor:"PADARIA", produto:"Misto Pão Francês Salame e Queijo 120g BK Café (1)", prev:null, real:1, uni:"Caixas", dif:null, obs:""},
+      {setor:"PADARIA", produto:"Misto Pão Francês Salame e Queijo 120g BK Café (2)", prev:null, real:3, uni:"Caixas", dif:null, obs:""},
+      {setor:"PADARIA", produto:"Sanduíche Baguete Art. Salame e Queijo 220g BK Café", prev:null, real:1, uni:"Caixas", dif:null, obs:""},
+      {setor:"PADARIA", produto:"Baguete Rústica 12 Grãos BK 145g", prev:null, real:2, uni:"Massas", dif:null, obs:""},
     ]
   },
   "2026-06-25": {
     label: "25 de junho de 2026",
-    setores: "Padaria 2 · Giro Meio · Salgado · Fritura · Cozinha",
+    setores: "Padaria · Giro-Dia · Salgado · Fritador · Cozinha",
     stopMinutes: null, // não há Início/Fim registrados nesse dia
     rows: [
-      {setor:"PAD", produto:"Pão Ciabatta Bread King 120g - C/4 UM", prev:4, real:4, uni:"Massas", dif:0, obs:""},
-      {setor:"PAD", produto:"Baguete Rústica c/ Calabresa BK 2x160g", prev:17, real:17, uni:"Blocos", dif:0, obs:""},
-      {setor:"PAD", produto:"Pão Artesanal Rústico BK 350g", prev:2, real:2, uni:"Massas", dif:0, obs:""},
-      {setor:"PAD", produto:"Massa P/ Pão Caseiro BK 500g", prev:8, real:5, uni:"Massas", dif:-38, obs:""},
-      {setor:"PAD", produto:"Mini Pão Batata Frango c/ Req BK 50g", prev:8850, real:2700, uni:"Unid", dif:-69, obs:"Falta de colaborador"},
-      {setor:"PAD", produto:"Mini Baguete Rústica Trad BK 50g", prev:2, real:1, uni:"Massas", dif:-50, obs:""},
-      {setor:"PAD", produto:"Baguete Rústica Trad BK 145gx2", prev:2, real:1, uni:"Massas", dif:-50, obs:""},
-      {setor:"GIRO", produto:"Pão Francês Pré Assado Ultracongelado 4x70g", prev:3, real:3, uni:"Massas", dif:0, obs:""},
-      {setor:"GIRO", produto:"Pão Mini Francês Pré Assado BK 40g", prev:4, real:4, uni:"Massas", dif:0, obs:""},
-      {setor:"GIRO", produto:"Pão Mini Sovadinho Pré Assado BK 40g", prev:3, real:3, uni:"Massas", dif:0, obs:""},
-      {setor:"GIRO", produto:"Pão Mini Massinha Doce Pré Assada BK 45g", prev:1, real:1, uni:"Massa", dif:0, obs:""},
-      {setor:"GIRO", produto:"Massa P/ Pão de Queijo Trad BK 75g", prev:15, real:11, uni:"Massas", dif:-27, obs:""},
-      {setor:"GIRO", produto:"Massa P/ Chipa Tradicional BK 40g", prev:6, real:3, uni:"Massas", dif:-50, obs:""},
-      {setor:"GIRO", produto:"Massa P/ Pão de Queijo Trad BK 30g", prev:10, real:6, uni:"Massas", dif:-40, obs:"Mudança de Prioridade - P. Queijo 50g"},
-      {setor:"GIRO", produto:"Massa P/ Pão de Queijo Trad BK 50g", prev:5, real:10, uni:"Massas", dif:100, obs:""},
-      {setor:"GIRO", produto:"Massa P/ Pão de Queijo Mini Tradicional BK 15g", prev:6, real:4, uni:"Massas", dif:-33, obs:"Mudança de Prioridade - P. Queijo 50g"},
-      {setor:"SGD", produto:"Hambúrgão Carne c/ Cheddar BK 170g", prev:1500, real:1820, uni:"Unid", dif:21, obs:""},
-      {setor:"SGD", produto:"Doguinho Salsicha e Requeijão BK 4x170g", prev:2500, real:1700, uni:"Unid", dif:-32, obs:"Atraso na produção da Massa"},
-      {setor:"SGD", produto:"Pastel p/ Fritar Frango e Req BK 130g", prev:3000, real:0, uni:"Unid", dif:-100, obs:""},
-      {setor:"SGD", produto:"Empada Frango c/ Req BK 4x130g", prev:4200, real:2044, uni:"Unid", dif:-51, obs:"Reduzido para produzir Empada de Palmito"},
-      {setor:"SGD", produto:"Bauru Sabor Pizza BK 4x165g", prev:4500, real:2879, uni:"Unid", dif:-36, obs:"Falta de Colaborador"},
-      {setor:"SGD", produto:"Mini Pastel Bolha Queijo Frito BK 30g", prev:400, real:190, uni:"Caixas", dif:-53, obs:"Falta de Recheio"},
-      {setor:"SGD", produto:"Mini Pastel Nata Frango BK 35g", prev:600, real:377, uni:"Caixas", dif:-37, obs:"Falta de Massa frequente | Falta de Caixas"},
-      {setor:"SGD", produto:"Pastel Nata Frango c/Req Cong BK 130g", prev:5000, real:3168, uni:"Unid", dif:-37, obs:"Falta de Massa frequente | Falta de Caixas"},
-      {setor:"FTR", produto:"Mini Bolinha Pres/Queijo Frito BK 22g", prev:300, real:354, uni:"Kg", dif:18, obs:""},
-      {setor:"FTR", produto:"Mini Risolis Carne Frito Cong BK", prev:1000, real:96, uni:"Kg", dif:-90, obs:"Sinalizado no quadro de produção apenas no fim do dia"},
-      {setor:"FTR", produto:"Coxinha Frango e Req Frita Cong BK 130g", prev:5000, real:0, uni:"Unid", dif:-100, obs:"Falta de Colaborador"},
-      {setor:"FTR", produto:"Coxinha Frango c/ Req BK 80g", prev:3000, real:2230, uni:"Unid", dif:-26, obs:"Atraso de entrega de Insumo - Requeijão"},
-      {setor:"FTR", produto:"Enrolado Salsicha Frito Cong 130g", prev:4000, real:2256, uni:"Unid", dif:-44, obs:"Produção reduzida | Priorizado a coxinha 80g"},
-      {setor:"CZN", produto:"Massa para Churros", prev:3, real:3, uni:"Massas", dif:0, obs:""},
-      {setor:"PAD", produto:"Baguete p/ Rechear Pão com Linguiça", prev:40, real:40, uni:"Blocos", dif:0, obs:""},
-      {setor:"PAD", produto:"Massa P/ Chipa c/ Gotas de Chocolate 400g", prev:null, real:1, uni:"Massa", dif:null, obs:""},
-      {setor:"SGD", produto:"Pastel de Nata (Belém) BK 60g", prev:null, real:1552, uni:"Unid", dif:null, obs:""},
-      {setor:"SGD", produto:"Empada Palmito BK 4x130g", prev:null, real:1204, uni:"Unid", dif:null, obs:"Atraso na produção da Massa"},
-      {setor:"FTR", produto:"Mini Risoles Carne Cru", prev:null, real:369, uni:"Kg", dif:null, obs:"Colocado por engano no quadro no início do turno"},
+      {setor:"PADARIA", produto:"Pão Ciabatta Bread King 120g - C/4 UM", prev:4, real:4, uni:"Massas", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Baguete Rústica c/ Calabresa BK 2x160g", prev:17, real:17, uni:"Blocos", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Pão Artesanal Rústico BK 350g", prev:2, real:2, uni:"Massas", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Massa P/ Pão Caseiro BK 500g", prev:8, real:5, uni:"Massas", dif:-38, obs:""},
+      {setor:"PADARIA", produto:"Mini Pão Batata Frango c/ Req BK 50g", prev:8850, real:2700, uni:"Unid", dif:-69, obs:"Falta de colaborador"},
+      {setor:"PADARIA", produto:"Mini Baguete Rústica Trad BK 50g", prev:2, real:1, uni:"Massas", dif:-50, obs:""},
+      {setor:"PADARIA", produto:"Baguete Rústica Trad BK 145gx2", prev:2, real:1, uni:"Massas", dif:-50, obs:""},
+      {setor:"GIRO-DIA", produto:"Pão Francês Pré Assado Ultracongelado 4x70g", prev:3, real:3, uni:"Massas", dif:0, obs:""},
+      {setor:"GIRO-DIA", produto:"Pão Mini Francês Pré Assado BK 40g", prev:4, real:4, uni:"Massas", dif:0, obs:""},
+      {setor:"GIRO-DIA", produto:"Pão Mini Sovadinho Pré Assado BK 40g", prev:3, real:3, uni:"Massas", dif:0, obs:""},
+      {setor:"GIRO-DIA", produto:"Pão Mini Massinha Doce Pré Assada BK 45g", prev:1, real:1, uni:"Massa", dif:0, obs:""},
+      {setor:"GIRO-DIA", produto:"Massa P/ Pão de Queijo Trad BK 75g", prev:15, real:11, uni:"Massas", dif:-27, obs:""},
+      {setor:"GIRO-DIA", produto:"Massa P/ Chipa Tradicional BK 40g", prev:6, real:3, uni:"Massas", dif:-50, obs:""},
+      {setor:"GIRO-DIA", produto:"Massa P/ Pão de Queijo Trad BK 30g", prev:10, real:6, uni:"Massas", dif:-40, obs:"Mudança de Prioridade - P. Queijo 50g"},
+      {setor:"GIRO-DIA", produto:"Massa P/ Pão de Queijo Trad BK 50g", prev:5, real:10, uni:"Massas", dif:100, obs:""},
+      {setor:"GIRO-DIA", produto:"Massa P/ Pão de Queijo Mini Tradicional BK 15g", prev:6, real:4, uni:"Massas", dif:-33, obs:"Mudança de Prioridade - P. Queijo 50g"},
+      {setor:"SALGADO", produto:"Hambúrgão Carne c/ Cheddar BK 170g", prev:1500, real:1820, uni:"Unid", dif:21, obs:""},
+      {setor:"SALGADO", produto:"Doguinho Salsicha e Requeijão BK 4x170g", prev:2500, real:1700, uni:"Unid", dif:-32, obs:"Atraso na produção da Massa"},
+      {setor:"SALGADO", produto:"Pastel p/ Fritar Frango e Req BK 130g", prev:3000, real:0, uni:"Unid", dif:-100, obs:""},
+      {setor:"SALGADO", produto:"Empada Frango c/ Req BK 4x130g", prev:4200, real:2044, uni:"Unid", dif:-51, obs:"Reduzido para produzir Empada de Palmito"},
+      {setor:"SALGADO", produto:"Bauru Sabor Pizza BK 4x165g", prev:4500, real:2879, uni:"Unid", dif:-36, obs:"Falta de Colaborador"},
+      {setor:"SALGADO", produto:"Mini Pastel Bolha Queijo Frito BK 30g", prev:400, real:190, uni:"Caixas", dif:-53, obs:"Falta de Recheio"},
+      {setor:"SALGADO", produto:"Mini Pastel Nata Frango BK 35g", prev:600, real:377, uni:"Caixas", dif:-37, obs:"Falta de Massa frequente | Falta de Caixas"},
+      {setor:"SALGADO", produto:"Pastel Nata Frango c/Req Cong BK 130g", prev:5000, real:3168, uni:"Unid", dif:-37, obs:"Falta de Massa frequente | Falta de Caixas"},
+      {setor:"FRITADOR", produto:"Mini Bolinha Pres/Queijo Frito BK 22g", prev:300, real:354, uni:"Kg", dif:18, obs:""},
+      {setor:"FRITADOR", produto:"Mini Risolis Carne Frito Cong BK", prev:1000, real:96, uni:"Kg", dif:-90, obs:"Sinalizado no quadro de produção apenas no fim do dia"},
+      {setor:"FRITADOR", produto:"Coxinha Frango e Req Frita Cong BK 130g", prev:5000, real:0, uni:"Unid", dif:-100, obs:"Falta de Colaborador"},
+      {setor:"FRITADOR", produto:"Coxinha Frango c/ Req BK 80g", prev:3000, real:2230, uni:"Unid", dif:-26, obs:"Atraso de entrega de Insumo - Requeijão"},
+      {setor:"FRITADOR", produto:"Enrolado Salsicha Frito Cong 130g", prev:4000, real:2256, uni:"Unid", dif:-44, obs:"Produção reduzida | Priorizado a coxinha 80g"},
+      {setor:"COZINHA", produto:"Massa para Churros", prev:3, real:3, uni:"Massas", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Baguete p/ Rechear Pão com Linguiça", prev:40, real:40, uni:"Blocos", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Massa P/ Chipa c/ Gotas de Chocolate 400g", prev:null, real:1, uni:"Massa", dif:null, obs:""},
+      {setor:"SALGADO", produto:"Pastel de Nata (Belém) BK 60g", prev:null, real:1552, uni:"Unid", dif:null, obs:""},
+      {setor:"SALGADO", produto:"Empada Palmito BK 4x130g", prev:null, real:1204, uni:"Unid", dif:null, obs:"Atraso na produção da Massa"},
+      {setor:"FRITADOR", produto:"Mini Risoles Carne Cru", prev:null, real:369, uni:"Kg", dif:null, obs:"Colocado por engano no quadro no início do turno"},
     ]
   }
 };
@@ -1422,14 +1422,18 @@ function parsePctOrNull(s){
 function normalizeSector(s){
   const t = (s||'').trim();
   if(!t) return '';
-  const u = t.toUpperCase();
-  if(u === 'PADARIA' || u === 'PADARIA 2' || u === 'PADARIA2') return 'PAD';
-  if(u === 'SALGADO' || u === 'SALGADOS') return 'SGD';
-  if(u === 'GIRO MEIO' || u === 'GIRO') return 'GIRO';
-  if(u === 'FRITURA') return 'FTR';
-  if(u === 'COZINHA') return 'CZN';
-  if(u === 'CROISSANT') return 'CRSS';
-  return t; // qualquer outro valor (ex: Mecatherm) é mantido como está
+  // Maiúsculo e sem acento, só pra comparar com folga (grafias variam na planilha)
+  const u = t.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if(u === 'PADARIA' || u === 'PADARIA 2' || u === 'PADARIA2') return 'PADARIA';
+  if(u === 'SALGADO' || u === 'SALGADOS') return 'SALGADO';
+  if(u === 'GIRO MEIO' || u === 'GIRO') return 'GIRO-DIA';
+  if(u === 'GIRO NOTURNO' || u === 'GIRO NOITE') return 'GIRO - NOITE';
+  if(u === 'FRITURA') return 'FRITADOR';
+  if(u === 'COZINHA') return 'COZINHA';
+  if(u === 'CROISSANT') return 'CROISSANTI';
+  if(u === 'MECATHERM') return 'MECATHERM';
+  if(u === 'PAO COM LINGUICA') return 'PÃO COM LINGUIÇA';
+  return t; // qualquer outro valor (setor novo/não mapeado) mantido com a grafia original da planilha
 }
 
 /* Normaliza a grafia da unidade de medida para exibição consistente */
@@ -1632,7 +1636,7 @@ function applyDateBoundsAndRefresh(){
   dateStartInput.max = allDates[allDates.length-1];
   dateEndInput.min = allDates[0];
   dateEndInput.max = allDates[allDates.length-1];
-  populateSectorOptions();
+  renderMainSetorTabs();
   refreshAll();
 }
 
@@ -2390,25 +2394,35 @@ initDateRangePicker('main', dateStartInput, dateEndInput);
    pelo botão de download do relatório do dia em Word (mais abaixo) — o gráfico
    "Comparativo" na tela agora soma o período inteiro automaticamente. */
 
-/* ---------- Filtro por setor ---------- */
-const fSetorEl = document.getElementById('fSetor');
-function populateSectorOptions(){
+/* ---------- Abas por Setor (mesma lógica da Produtividade: uma aba por
+   setor, dinâmica a partir do que aparece na planilha). Substitui o antigo
+   dropdown "Todos os setores" — não existe mais visão agregada de todos os
+   setores juntos, sempre há um setor ativo. Preparado pra receber painéis
+   de KPI específicos por setor no futuro. ---------- */
+const mainSetorTabsEl = document.getElementById('mainSetorTabs');
+function renderMainSetorTabs(){
   const setores = new Set();
   allDates.forEach(d => DATA[d].rows.forEach(r => { if(r.setor) setores.add(r.setor); }));
   const sorted = [...setores].sort();
-  const current = fSetorEl.value;
-  fSetorEl.innerHTML = '<option value="">Todos os setores</option>';
+  // Mantém o setor atualmente selecionado se ele ainda existir nos dados;
+  // senão (primeira carga, ou setor que sumiu da planilha) cai no primeiro da lista.
+  if(!sorted.includes(selectedSector)) selectedSector = sorted[0] || '';
+
+  mainSetorTabsEl.innerHTML = '';
   sorted.forEach(s=>{
-    const opt = document.createElement('option');
-    opt.value = s; opt.textContent = s;
-    fSetorEl.appendChild(opt);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'setor-tab-btn' + (s === selectedSector ? ' active' : '');
+    btn.textContent = s;
+    btn.addEventListener('click', ()=>{
+      if(s === selectedSector) return;
+      selectedSector = s;
+      renderMainSetorTabs();
+      refreshAll();
+    });
+    mainSetorTabsEl.appendChild(btn);
   });
-  if(sorted.includes(current)) fSetorEl.value = current;
 }
-fSetorEl.addEventListener('change', () => {
-  selectedSector = fSetorEl.value;
-  refreshAll();
-});
 
 /* ---------- Botão "Atualizar": busca a planilha publicada novamente e
    verifica se há dados novos. Se houver, o relatório é atualizado
