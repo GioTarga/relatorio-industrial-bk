@@ -207,6 +207,13 @@
   }
   #tpKpiGrid{ grid-template-columns:repeat(3,1fr); }
   #prKpiGridInsumo{ grid-template-columns:repeat(4,1fr); }
+  /* Segunda linha de KPIs (cards específicos por setor): centralizada, mas
+     cada card mantém a mesma largura que teria numa grade de 4 colunas
+     igual à primeira linha (100% - 3 gaps, dividido por 4). */
+  #kpiGridExtra{ display:flex; justify-content:center; flex-wrap:wrap; }
+  #kpiGridExtra .kpi-card{ flex:0 1 calc((100% - 3*14px)/4); }
+  #kpiGridExtra .kpi-card .value{ font-size:22px; white-space:nowrap; }
+  #kpiGridExtra .kpi-card .label{ font-size:10px; white-space:nowrap; }
   .kpi-card{
     background:var(--paper);
     border:1px solid var(--line);
@@ -386,6 +393,11 @@
   }
   .scale-toggle input{ accent-color:var(--red); cursor:pointer; }
 
+  /* ============ LEGENDA DO GRÁFICO "FRITURA × CONSUMO DE ÓLEO" ============ */
+  .oleo-legend{ display:flex; gap:20px; flex-wrap:wrap; margin-bottom:10px; }
+  .oleo-legend-item{ display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700; color:var(--ink-soft); }
+  .oleo-legend-item .dot{ width:10px; height:10px; border-radius:50%; display:inline-block; }
+
   /* ============ CAUSAS CRÍTICAS (destaque visual) ============ */
   .cause-row{ display:flex; align-items:center; gap:8px; }
   .cause-flag{ font-size:13px; flex-shrink:0; }
@@ -400,6 +412,7 @@
 
   @media (max-width: 900px){
     .kpi-grid{ grid-template-columns:repeat(2,1fr) !important; }
+    #kpiGridExtra .kpi-card{ flex:0 1 calc((100% - 14px)/2); }
   }
 
   /* ============================================================
@@ -422,6 +435,7 @@
     .period-bar .period-info{ margin-left:0; text-align:center; }
 
     .kpi-grid{ grid-template-columns:repeat(2,1fr) !important; gap:10px; }
+    #kpiGridExtra .kpi-card{ flex:0 1 calc((100% - 10px)/2); }
     #tpKpiGrid{ grid-template-columns:repeat(1,1fr); }
     .kpi-card{ padding:14px 12px 12px; }
     .kpi-card .value{ font-size:24px; }
@@ -520,6 +534,12 @@
 <div class="container">
 
   <div class="kpi-grid" id="kpiGrid"></div>
+  <div class="kpi-grid" id="kpiGridExtra"></div>
+
+  <div class="panel" id="oleoChartPanel" style="display:none;">
+    <div class="panel-title">Fritura × Consumo de Óleo — por dia</div>
+    <div class="chart-wrap" id="oleoChartWrap"></div>
+  </div>
 
   <div class="panel">
     <select id="daySelect" style="display:none;"></select>
@@ -1808,7 +1828,7 @@ function renderKPIs(filteredDates){
     `;
   }
 
-  document.getElementById('kpiGrid').style.gridTemplateColumns = showFrituraCards ? 'repeat(auto-fit, minmax(200px, 1fr))' : 'repeat(4,1fr)';
+  document.getElementById('kpiGrid').style.gridTemplateColumns = 'repeat(4,1fr)';
   document.getElementById('kpiGrid').innerHTML = `
     <div class="kpi-card ${belowClass}">
       <div class="label">Abaixo do Planejado</div>
@@ -1826,8 +1846,10 @@ function renderKPIs(filteredDates){
       <div class="label">Acurácia de Produção</div>
       <div class="value">${avgDif>0?'+':''}${avgDif.toFixed(1)}%</div>
     </div>
-    ${frituraCardsHtml}
   `;
+
+  const extraGridEl = document.getElementById('kpiGridExtra');
+  extraGridEl.innerHTML = frituraCardsHtml;
 }
 
 /* Categoriza o texto de observação em uma causa-raiz padronizada */
@@ -2312,6 +2334,102 @@ function renderNoPlanList(point){
 }
 
 /* Mais de 1 dia selecionado: gráfico de linha */
+/* ---------- Gráfico "Fritura × Consumo de Óleo" (só na aba Fritador) ----------
+   3 linhas por dia: Consumo de Óleo (L), Kg de Fritura realizado e o
+   indicador Kg/Litro. Como as 3 têm escalas bem diferentes (Kg costuma ser
+   bem maior que Litros, que por sua vez é maior que o indicador ~100-150),
+   cada linha é normalizada pelo seu próprio máximo — a posição vertical de
+   cada uma não é comparável entre si, só a forma/tendência; os valores reais
+   ficam escritos ao lado de cada ponto. */
+function shortDayLabel(iso){
+  const [y,mo,d] = iso.split('-');
+  return `${d}/${mo}`;
+}
+
+function renderOleoChart(filteredDates){
+  const panel = document.getElementById('oleoChartPanel');
+  if(selectedSector !== 'FRITADOR'){
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = '';
+
+  const points = filteredDates.map(d=>{
+    const kg = computeTotalKgForPeriod([d]);
+    const litros = OL_DATA[d] ? OL_DATA[d].consumo : null;
+    const indicador = (litros !== null && litros > 0) ? kg / litros : null;
+    return { date: d, label: shortDayLabel(d), kg, litros, indicador };
+  });
+
+  const wrap = document.getElementById('oleoChartWrap');
+  if(points.length === 0){
+    wrap.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">📈</span>
+        Nenhum dia no período selecionado.
+      </div>`;
+    return;
+  }
+
+  const w = Math.max(560, points.length*120);
+  const h = 280, padTop = 40, padBottom = 40, padLeft = 20, padRight = 20;
+  const xStep = (w - padLeft - padRight) / Math.max(points.length-1, 1);
+
+  const maxKg = Math.max(...points.map(p=>p.kg), 1);
+  const maxLitros = Math.max(...points.map(p=>p.litros||0), 1);
+  const indicadorVals = points.map(p=>p.indicador).filter(v=>v!==null);
+  const maxIndicador = Math.max(...indicadorVals, 1);
+
+  function xOf(i){ return padLeft + i*xStep; }
+  function yOf(val, maxVal){ return h - padBottom - (val/maxVal)*(h-padTop-padBottom); }
+
+  function buildSeries(getVal, maxVal, color, fmt){
+    let path = '', dots = '', labels = '';
+    let started = false;
+    points.forEach((p,i)=>{
+      const val = getVal(p);
+      if(val === null || val === undefined){ started = false; return; } // buraco na linha (ex: dia sem lançamento de óleo)
+      const x = xOf(i), y = yOf(val, maxVal);
+      path += (!started ? 'M' : 'L') + x + ' ' + y + ' ';
+      started = true;
+      dots += `<circle cx="${x}" cy="${y}" r="4" fill="${color}"/>`;
+      labels += `<text x="${x}" y="${y-10}" font-size="10.5" font-weight="700" fill="${color}" text-anchor="middle">${fmt(val)}</text>`;
+    });
+    return { path, dots, labels };
+  }
+
+  const fmtLitros = v => v.toLocaleString('pt-BR',{maximumFractionDigits:0}) + 'L';
+  const fmtKg = v => v.toLocaleString('pt-BR',{maximumFractionDigits:0}) + 'Kg';
+  const fmtIndicador = v => v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
+
+  const COR_LITROS = '#B5640B', COR_KG = '#A10101', COR_INDICADOR = '#2f7d52';
+  const sLitros = buildSeries(p=>p.litros, maxLitros, COR_LITROS, fmtLitros);
+  const sKg = buildSeries(p=>p.kg, maxKg, COR_KG, fmtKg);
+  const sIndicador = buildSeries(p=>p.indicador, maxIndicador, COR_INDICADOR, fmtIndicador);
+
+  let xLabels = '';
+  points.forEach((p,i)=>{
+    xLabels += `<text x="${xOf(i)}" y="${h-14}" font-size="12" fill="#4a3a3a" text-anchor="middle">${p.label}</text>`;
+  });
+
+  wrap.innerHTML = `
+    <div class="oleo-legend">
+      <span class="oleo-legend-item"><span class="dot" style="background:${COR_LITROS}"></span>Consumo de Óleo (L)</span>
+      <span class="oleo-legend-item"><span class="dot" style="background:${COR_KG}"></span>Kg Fritura</span>
+      <span class="oleo-legend-item"><span class="dot" style="background:${COR_INDICADOR}"></span>Indicador Kg/Litro</span>
+    </div>
+    <svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" style="overflow:visible;font-family:Arial;display:inline-block;">
+      <line x1="${padLeft}" y1="${h-padBottom}" x2="${w-padRight}" y2="${h-padBottom}" stroke="#f0ddc0" stroke-width="1"/>
+      <path d="${sLitros.path}" fill="none" stroke="${COR_LITROS}" stroke-width="2.5"/>
+      <path d="${sKg.path}" fill="none" stroke="${COR_KG}" stroke-width="2.5"/>
+      <path d="${sIndicador.path}" fill="none" stroke="${COR_INDICADOR}" stroke-width="2.5" stroke-dasharray="5 4"/>
+      ${sLitros.dots}${sKg.dots}${sIndicador.dots}
+      ${sLitros.labels}${sKg.labels}${sIndicador.labels}
+      ${xLabels}
+    </svg>
+  `;
+}
+
 function renderTrendLine(points){
   const w = Math.max(500, points.length*140);
   const h = 240, padTop = 36, padBottom = 40, padLeft = 50, padRight = 50;
@@ -2412,6 +2530,7 @@ function refreshAll(){
   renderLostProduction(filteredDates);
   renderProductivity(filteredDates);
   renderTrend(filteredDates);
+  renderOleoChart(filteredDates);
   refreshDaySelectOptions(filteredDates);
   populateProdutoDetalheFilter(filteredDates);
   renderTable(filteredDates);
