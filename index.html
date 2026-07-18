@@ -1782,18 +1782,33 @@ function renderKPIs(filteredDates){
 
   const accClass = avgDif >= 0 ? 'sem-good' : avgDif >= -15 ? 'sem-warn' : 'sem-bad';
 
-  // Card específico do setor Fritador: total em Kg do período (mesmo total
-  // que já aparece no fim da tabela de detalhamento). Preparado como o
-  // primeiro de possíveis cards específicos por setor.
-  const showKgFrituraCard = selectedSector === 'FRITADOR';
-  const kgFrituraCardHtml = showKgFrituraCard ? `
-    <div class="kpi-card">
-      <div class="label">Kg Fritura</div>
-      <div class="value">${computeTotalKgForPeriod(filteredDates).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} Kg</div>
-    </div>
-  ` : '';
+  // Cards específicos do setor Fritador: total em Kg (mesmo total que já
+  // aparece no fim da tabela de detalhamento), consumo de óleo de algodão no
+  // período (aba própria na planilha) e o indicador de eficiência entre os
+  // dois (quanto de fritura sai por litro de óleo consumido).
+  const showFrituraCards = selectedSector === 'FRITADOR';
+  let frituraCardsHtml = '';
+  if(showFrituraCards){
+    const totalKg = computeTotalKgForPeriod(filteredDates);
+    const totalOleoL = OL_getConsumoForPeriod(filteredDates);
+    const indicador = totalOleoL > 0 ? totalKg / totalOleoL : null;
+    frituraCardsHtml = `
+      <div class="kpi-card">
+        <div class="label">Kg Fritura</div>
+        <div class="value">${totalKg.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} Kg</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">Consumo de Óleo (L)</div>
+        <div class="value">${totalOleoL.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} L</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">Fritura (Kg) / Litro de Óleo</div>
+        <div class="value">${indicador === null ? '—' : indicador.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+      </div>
+    `;
+  }
 
-  document.getElementById('kpiGrid').style.gridTemplateColumns = showKgFrituraCard ? 'repeat(5,1fr)' : 'repeat(4,1fr)';
+  document.getElementById('kpiGrid').style.gridTemplateColumns = showFrituraCards ? 'repeat(auto-fit, minmax(200px, 1fr))' : 'repeat(4,1fr)';
   document.getElementById('kpiGrid').innerHTML = `
     <div class="kpi-card ${belowClass}">
       <div class="label">Abaixo do Planejado</div>
@@ -1811,7 +1826,7 @@ function renderKPIs(filteredDates){
       <div class="label">Acurácia de Produção</div>
       <div class="value">${avgDif>0?'+':''}${avgDif.toFixed(1)}%</div>
     </div>
-    ${kgFrituraCardHtml}
+    ${frituraCardsHtml}
   `;
 }
 
@@ -2461,6 +2476,7 @@ function renderMainSetorTabs(){
    automaticamente (ver função loadData). ---------- */
 document.getElementById('btnRefreshData').addEventListener('click', () => {
   loadData(true);
+  OL_loadData(true);
 });
 
 /* ---------- Download do relatório do dia em .doc (Word) ---------- */
@@ -2699,6 +2715,7 @@ if(btnDownloadDocEl){
 /* ---------- Inicializa página 1 (Relatório Industrial) ---------- */
 periodInfo.textContent = 'Carregando dados da planilha…';
 loadData(false);
+OL_loadData(false);
 
 /* ============================================================================
    PÁGINA 2 — TEMPO DE PROCESSO
@@ -4902,6 +4919,72 @@ rcSetorEl.addEventListener('change', ()=>{
 });
 rcBuscaEl.addEventListener('input', RC_refreshAll);
 document.getElementById('rcBtnRefresh').addEventListener('click', ()=> RC_loadData(true));
+
+/* ============================================================================
+   CONSUMO DE ÓLEO DE ALGODÃO — usado exclusivamente pelo setor Fritador.
+   Aba própria na mesma planilha (BD Produção). Formato: 1 linha por
+   lançamento (data não é padronizada — pode ter 0, 1 ou vários lançamentos
+   no mesmo dia; nesse caso somamos). Colunas: A é a marca/logo (em branco),
+   B Data, C Entrada de Óleo (kg=L), D Und, E Saída de Óleo (L), F Consumo
+   de Óleo (Litros) — a coluna F vem calculada na planilha, mas recalculamos
+   aqui como Entrada − Saída em vez de confiar nela (mais resiliente a
+   fórmula quebrada ou célula vazia).
+   ============================================================================ */
+
+const OL_CSV_URL = "https://docs.google.com/spreadsheets/d/1dPOqVznVZ3Z1AueP8o2H8nlu2AaWjIs1nqg47eUUYUg/export?format=csv&gid=238959934";
+
+const OL_FALLBACK_DATA = {
+  "2026-06-15": { entrada: 740, saida: 612, consumo: 128 },
+};
+
+let OL_DATA = {}; // { 'YYYY-MM-DD': {entrada, saida, consumo} }, somado por dia
+
+function OL_transformCsv(csvText){
+  const rows = parseCSV(csvText).filter(r => r.some(c => c && c.trim() !== ''));
+  const byDate = {};
+  rows.forEach(r=>{
+    // Não confia em número fixo de linhas de cabeçalho — só aceita a linha
+    // se a coluna B tiver uma data válida (assim pula cabeçalho/linha do logo
+    // automaticamente, mesmo que a planilha ganhe/perca uma linha no topo).
+    const iso = parseDataBR((r[1]||'').trim());
+    if(!iso) return;
+    const entrada = parseNumOrNull(r[2]) ?? 0; // coluna C
+    const saida = parseNumOrNull(r[4]) ?? 0;   // coluna E
+    if(!byDate[iso]) byDate[iso] = { entrada:0, saida:0 };
+    byDate[iso].entrada += entrada;
+    byDate[iso].saida += saida;
+  });
+  const result = {};
+  Object.keys(byDate).forEach(iso=>{
+    const { entrada, saida } = byDate[iso];
+    result[iso] = { entrada, saida, consumo: entrada - saida };
+  });
+  return result;
+}
+
+/* Soma o consumo de óleo (L) nas datas do período filtrado. */
+function OL_getConsumoForPeriod(filteredDates){
+  let total = 0;
+  filteredDates.forEach(d=>{ if(OL_DATA[d]) total += OL_DATA[d].consumo; });
+  return total;
+}
+
+async function OL_loadData(isManualRefresh){
+  try{
+    const bust = (OL_CSV_URL.includes('?') ? '&' : '?') + 'cb=' + Date.now();
+    const res = await fetch(OL_CSV_URL + bust, { cache:'no-store' });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const parsed = OL_transformCsv(text);
+    OL_DATA = parsed; // mesmo que vazio: planilha sem lançamentos ainda é um estado válido
+  }catch(err){
+    console.error('Erro ao carregar Consumo de Óleo:', err);
+    if(Object.keys(OL_DATA).length === 0) OL_DATA = OL_FALLBACK_DATA;
+  }
+  // Os cards de óleo vivem dentro do KPI grid do Relatório Industrial —
+  // só redesenha se essa página já tiver dados carregados.
+  if(Object.keys(DATA).length > 0) refreshAll();
+}
 
 /* ============================================================================
    PÁGINA MANUTENÇÕES — log de chamados/intervenções de manutenção
