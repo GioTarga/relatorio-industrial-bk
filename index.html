@@ -2927,6 +2927,20 @@ if(btnDownloadDocEl){
   });
 }
 
+/* OL_CSV_URL, OL_FALLBACK_DATA e OL_DATA precisam existir ANTES desta
+   chamada — por isso ficam declaradas aqui em cima, mesmo a lógica de Óleo
+   (OL_transformCsv, OL_loadData etc.) estando definida mais abaixo, junto
+   com o resto da seção "Consumo de Óleo". Funções são hoisted inteiras pelo
+   JS, então tanto faz onde ficam; "const"/"let" não são — ficam bloqueadas
+   ("temporal dead zone") até a linha da declaração rodar de fato. Sem isso,
+   dava ReferenceError: "Cannot access 'OL_CSV_URL' before initialization"
+   assim que a página carregava. */
+const OL_CSV_URL = "https://docs.google.com/spreadsheets/d/1dPOqVznVZ3Z1AueP8o2H8nlu2AaWjIs1nqg47eUUYUg/export?format=csv&gid=238959934";
+const OL_FALLBACK_DATA = {
+  "2026-06-15": { entrada: 740, saida: 612, consumo: 128 },
+};
+let OL_DATA = {}; // { 'YYYY-MM-DD': {entrada, saida, consumo} }, somado por dia
+
 /* ---------- Inicializa página 1 (Relatório Industrial) ---------- */
 periodInfo.textContent = 'Carregando dados da planilha…';
 loadData(false);
@@ -5111,13 +5125,9 @@ document.getElementById('rcBtnRefresh').addEventListener('click', ()=> RC_loadDa
    fórmula quebrada ou célula vazia).
    ============================================================================ */
 
-const OL_CSV_URL = "https://docs.google.com/spreadsheets/d/1dPOqVznVZ3Z1AueP8o2H8nlu2AaWjIs1nqg47eUUYUg/export?format=csv&gid=238959934";
-
-const OL_FALLBACK_DATA = {
-  "2026-06-15": { entrada: 740, saida: 612, consumo: 128 },
-};
-
-let OL_DATA = {}; // { 'YYYY-MM-DD': {entrada, saida, consumo} }, somado por dia
+/* OL_CSV_URL, OL_FALLBACK_DATA e OL_DATA foram declaradas lá em cima, perto
+   da chamada de inicialização "OL_loadData(false)" — ver comentário lá pra
+   entender por quê (evita ReferenceError de temporal dead zone). */
 
 function OL_transformCsv(csvText){
   const rows = parseCSV(csvText).filter(r => r.some(c => c && c.trim() !== ''));
