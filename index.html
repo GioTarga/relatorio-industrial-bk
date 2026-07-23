@@ -134,6 +134,15 @@
   .setor-tab-btn:hover{ background:#fff; color:var(--ink); }
   .setor-tab-btn.active{ background:var(--paper); color:var(--red-dark); border-color:var(--line); position:relative; top:1px; }
 
+  /* Segundo nível de abas (ex: escolher Pão Francês vs Pão de Queijo dentro
+     do setor Giro-Dia) — mais discreto que o nível principal de Setor. */
+  .setor-tabs.sub-tabs{ padding-top:10px; gap:6px; }
+  .setor-tabs.sub-tabs .setor-tab-btn{
+    padding:6px 14px; border-radius:7px; font-size:11px; border-bottom:1px solid var(--line);
+    background:#fff;
+  }
+  .setor-tabs.sub-tabs .setor-tab-btn.active{ background:#fbeed0; color:var(--red-dark); top:0; }
+
   .ms-wrap{ position:relative; display:inline-block; }
   .ms-btn{
     background:#fff8e7; border:1px solid #e8d3a3; border-radius:8px; padding:8px 14px;
@@ -634,6 +643,9 @@
       </div>
     </div>
 
+    <div class="setor-tabs" id="tpSetorTabs"></div>
+    <div class="setor-tabs sub-tabs" id="tpLineSubTabs" style="display:none;"></div>
+
     <div class="period-bar">
       <label>Período</label>
       <div class="dr-wrap" id="drWrap_tp">
@@ -655,12 +667,6 @@
       </div>
       <input type="date" id="tpDateStart" style="display:none;">
       <input type="date" id="tpDateEnd" style="display:none;">
-      <label for="tpLinha">Linha de Produto</label>
-      <select id="tpLinha">
-        <option value="frances">GIRO — Pão Francês</option>
-        <option value="queijo">GIRO — Pão de Queijo</option>
-        <option value="padaria">PADARIA</option>
-      </select>
       <label for="tpProduto">Produto</label>
       <select id="tpProduto"><option value="">Todos os produtos</option></select>
       <button class="btn-refresh" id="tpBtnRefresh" title="Verificar dados novos">⟳ Atualizar</button>
@@ -2954,18 +2960,18 @@ OL_loadData(false);
 
 const TP_LINE_CONFIGS = {
   frances: {
-    label: 'GIRO — Pão Francês',
+    label: 'Pão Francês',
     csvUrl: "https://docs.google.com/spreadsheets/d/1y53NRhc2GPiIEdAtCibX1oi31EG327uv9aEAJov7Owk/export?format=csv&gid=757040881",
-    hasMasseira: false,
-    // Data(0), Batelada(1), Produto(2),
-    // Início(3), Fim(4), Duração(5)   — Preparo
-    // Início(6), Fim(7), Duração(8)   — Mistura 1
-    // Início(9), Fim(10), Duração(11) — Mistura 2
-    // Início(12), Fim(13), Duração(14)— Transporte
-    // Início(15), Fim(16), Duração(17)— Modelagem GA
-    // Retenção(18)
-    cols: { data:0, batelada:1, masseira:null, produto:2, retencao:18, leadTime:null,
-            stageTriplets:[ [3,4,5], [6,7,8], [9,10,11], [12,13,14], [15,16,17] ] },
+    hasMasseira: true,
+    // Data(0), Batelada(1), Masseira(2), Produto(3),
+    // Início(4), Fim(5), Duração(6)   — Preparo
+    // Início(7), Fim(8), Duração(9)   — Mistura 1
+    // Início(10), Fim(11), Duração(12) — Mistura 2
+    // Início(13), Fim(14), Duração(15)— Transporte
+    // Início(16), Fim(17), Duração(18)— Modelagem GA
+    // Retenção(19)
+    cols: { data:0, batelada:1, masseira:2, produto:3, retencao:19, leadTime:null,
+            stageTriplets:[ [4,5,6], [7,8,9], [10,11,12], [13,14,15], [16,17,18] ] },
     stages: [
       { key:'s1', label:'Preparo',      color:'#A10101' },
       { key:'s2', label:'Mistura 1',    color:'#B5640B' },
@@ -2975,7 +2981,7 @@ const TP_LINE_CONFIGS = {
     ],
   },
   queijo: {
-    label: 'GIRO — Pão de Queijo',
+    label: 'Pão de Queijo',
     csvUrl: "https://docs.google.com/spreadsheets/d/1y53NRhc2GPiIEdAtCibX1oi31EG327uv9aEAJov7Owk/export?format=csv&gid=1924094362",
     hasMasseira: false,
     // Data(0), Batelada(1), Produto(2),
@@ -2994,7 +3000,7 @@ const TP_LINE_CONFIGS = {
     ],
   },
   padaria: {
-    label: 'Padaria',
+    label: 'PADARIA',
     csvUrl: "https://docs.google.com/spreadsheets/d/1y53NRhc2GPiIEdAtCibX1oi31EG327uv9aEAJov7Owk/export?format=csv&gid=2017595390",
     hasMasseira: false,
     // Data(0), Batelada(1), Produto(2),
@@ -3022,6 +3028,22 @@ const TP_LINE_CONFIGS = {
 // Retenção é sempre tratada como a última "etapa" de cada linha, com cor fixa
 const TP_RETENCAO_COLOR = '#7a5ca1';
 
+/* Agrupa as linhas de TP_LINE_CONFIGS por Setor (mesmos nomes de setor
+   usados no Relatório Industrial, ex: "GIRO-DIA"). Pão Francês e Pão de
+   Queijo são produtos do mesmo setor Giro-Dia, mas continuam vindo de
+   planilhas/colunas diferentes — por isso viram uma aba de setor só, com
+   um segundo nível de escolha de produto dentro dela (ver
+   TP_renderLineSubTabs). Setores com uma única linha (ex: Padaria) não
+   mostram esse segundo nível, pois não há o que escolher. */
+const TP_SECTOR_CONFIGS = {
+  giro: { label: 'GIRO-DIA', lines: ['frances', 'queijo'] },
+  padaria: { label: 'PADARIA', lines: ['padaria'] },
+};
+function TP_sectorOfLine(lineKey){
+  return Object.keys(TP_SECTOR_CONFIGS).find(s => TP_SECTOR_CONFIGS[s].lines.includes(lineKey));
+}
+
+let TP_currentSetor = 'giro';
 let TP_currentLine = 'frances';
 let TP_DATA = [];      // array de registros (um por batelada) da linha atualmente selecionada
 let TP_FILTERED = [];
@@ -3195,19 +3217,70 @@ async function TP_loadData(isManualRefresh){
   });
 }
 
-const tpLinhaEl = document.getElementById('tpLinha');
 const tpDateStartEl = document.getElementById('tpDateStart');
 const tpDateEndEl = document.getElementById('tpDateEnd');
 const tpProdutoEl = document.getElementById('tpProduto');
 let TP_allDates = [];
 
-tpLinhaEl.addEventListener('change', ()=>{
-  TP_currentLine = tpLinhaEl.value;
-  TP_DATA = [];
-  tpDateStartEl.value = ''; tpDateEndEl.value = '';
-  tpProdutoEl.value = '';
-  TP_loadData(false);
-});
+/* Abas de Setor da página Tempo de Processo (mesmo padrão de
+   PR_renderSetorTabs na Produtividade) — substituiu o antigo
+   <select id="tpLinha">. Nível 1: Setor (Giro-Dia, Padaria). */
+function TP_renderSetorTabs(){
+  const el = document.getElementById('tpSetorTabs');
+  el.innerHTML = '';
+  Object.keys(TP_SECTOR_CONFIGS).forEach(key=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'setor-tab-btn' + (key === TP_currentSetor ? ' active' : '');
+    btn.textContent = TP_SECTOR_CONFIGS[key].label;
+    btn.addEventListener('click', ()=>{
+      if(key === TP_currentSetor) return;
+      TP_currentSetor = key;
+      TP_currentLine = TP_SECTOR_CONFIGS[key].lines[0]; // primeira linha do setor por padrão
+      TP_DATA = [];
+      tpDateStartEl.value = ''; tpDateEndEl.value = '';
+      tpProdutoEl.value = '';
+      TP_renderSetorTabs();
+      TP_renderLineSubTabs();
+      TP_loadData(false);
+    });
+    el.appendChild(btn);
+  });
+}
+
+/* Nível 2: escolha de linha/produto dentro do setor selecionado (ex: Pão
+   Francês vs Pão de Queijo dentro de Giro-Dia). Só renderiza algo se o
+   setor atual tiver mais de uma linha — setores com uma linha só (ex:
+   Padaria) não mostram esse segundo nível. */
+function TP_renderLineSubTabs(){
+  const el = document.getElementById('tpLineSubTabs');
+  const lines = TP_SECTOR_CONFIGS[TP_currentSetor].lines;
+  if(lines.length <= 1){
+    el.innerHTML = '';
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = '';
+  el.innerHTML = '';
+  lines.forEach(key=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'setor-tab-btn' + (key === TP_currentLine ? ' active' : '');
+    btn.textContent = TP_LINE_CONFIGS[key].label;
+    btn.addEventListener('click', ()=>{
+      if(key === TP_currentLine) return;
+      TP_currentLine = key;
+      TP_DATA = [];
+      tpDateStartEl.value = ''; tpDateEndEl.value = '';
+      tpProdutoEl.value = '';
+      TP_renderLineSubTabs();
+      TP_loadData(false);
+    });
+    el.appendChild(btn);
+  });
+}
+TP_renderSetorTabs();
+TP_renderLineSubTabs();
 
 function TP_applyDateBoundsAndRefresh(){
   const prevMax = tpDateEndEl.max || null;
