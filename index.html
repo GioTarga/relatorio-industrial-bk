@@ -873,6 +873,8 @@
                 <th>Identificação</th>
                 <th class="center">Capacidade Nominal</th>
                 <th class="center">Equipe</th>
+                <th class="center">Parametrão Padrão Velocidade</th>
+                <th class="center">Parametrão Padrão Prensa</th>
                 <th>Modelo / Fabricante</th>
                 <th>Setor</th>
               </tr>
@@ -4696,7 +4698,8 @@ document.getElementById('prBtnRefresh').addEventListener('click', ()=> PR_loadDa
    produtos produzidos por máquina. Futuramente vai servir de base para
    configurar metas por produto de acordo com a capacidade de cada
    equipamento. Colunas: Setor(0) Identificação(1) Fabricante/Modelo(2)
-   Capacidade Nominal(3) Produtos Produzidos(4).
+   Capacidade Nominal(3) Equipe(4) Parametrão Padrão Velocidade(5)
+   Parametrão Padrão Prensa(6) Produtos Produzidos(7).
    ============================================================================ */
 
 const RC_CSV_URL = "https://docs.google.com/spreadsheets/d/1dPOqVznVZ3Z1AueP8o2H8nlu2AaWjIs1nqg47eUUYUg/export?format=csv&gid=600917311";
@@ -4806,13 +4809,15 @@ function RC_transformCsv(csvText){
     const modelo = (r[2]||'').trim();
     const capacidade = (r[3]||'').trim();
     const equipe = (r[4]||'').trim();
-    const produtos = RC_splitProdutos((r[5]||'').trim());
+    const paramVelocidade = (r[5]||'').trim();
+    const paramPrensa = (r[6]||'').trim();
+    const produtos = RC_splitProdutos((r[7]||'').trim());
 
     if(produtos.length === 0){
-      records.push({ produto: '—', identificacao, capacidade, equipe, modelo, setor });
+      records.push({ produto: '—', identificacao, capacidade, equipe, paramVelocidade, paramPrensa, modelo, setor });
     } else {
       produtos.forEach(produto=>{
-        records.push({ produto, identificacao, capacidade, equipe, modelo, setor });
+        records.push({ produto, identificacao, capacidade, equipe, paramVelocidade, paramPrensa, modelo, setor });
       });
     }
   });
@@ -4869,7 +4874,7 @@ function RC_transformCsvFromFallback(){
   RC_FALLBACK_DATA.forEach(eq=>{
     const produtos = RC_splitProdutos(eq.produtos);
     produtos.forEach(produto=>{
-      records.push({ produto, identificacao: eq.identificacao, capacidade: eq.capacidade, equipe: eq.equipe||'', modelo: eq.modelo, setor: eq.setor });
+      records.push({ produto, identificacao: eq.identificacao, capacidade: eq.capacidade, equipe: eq.equipe||'', paramVelocidade: eq.paramVelocidade||'', paramPrensa: eq.paramPrensa||'', modelo: eq.modelo, setor: eq.setor });
     });
   });
   return records;
@@ -5052,10 +5057,12 @@ function RC_renderTable(){
       <td>${r.identificacao}</td>
       <td class="center">${r.capacidade||'—'}</td>
       <td class="center">${r.equipe||'—'}</td>
+      <td class="center">${r.paramVelocidade||'—'}</td>
+      <td class="center">${r.paramPrensa||'—'}</td>
       <td>${r.modelo||'—'}</td>
       <td>${r.setor}</td>
     </tr>
-  `).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum produto encontrado.</td></tr>`;
+  `).join('') || `<tr><td colspan="8" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum produto encontrado.</td></tr>`;
 }
 
 function RC_refreshAll(){
