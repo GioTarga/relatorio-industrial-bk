@@ -1274,12 +1274,41 @@ function truncateProdLabel(s, max){
   return s.length > max ? s.slice(0, max-1).trimEnd() + '…' : s;
 }
 
+/* Linhas dos dados de exemplo (fallback, usados só se a planilha ao vivo
+   falhar) foram escritas à mão antes da distinção existir e não têm o campo
+   foraDoPlano — pra essas, mantém o comportamento antigo (prev null = fora
+   do plano). Linhas vindas da planilha real sempre têm foraDoPlano
+   (true/false) explícito, então usam o valor real. */
+function rowIsForaDoPlano(r){
+  return typeof r.foraDoPlano === 'boolean' ? r.foraDoPlano : (r.prev === null);
+}
+
+function planLabelText(r){
+  return rowIsForaDoPlano(r) ? 'Fora do plano de produção' : 'S/ Quantidade Planejada';
+}
+
 function parseNumOrNull(s){
   if(s === undefined || s === null) return null;
   const t = String(s).trim();
   if(t === '') return null;
   const n = parseFloat(t.replace(/\./g,'').replace(',','.'));
   return isNaN(n) ? null : n;
+}
+
+/* Classifica a coluna "Planejado" bruta da planilha em 3 casos:
+   1) valor numérico -> tem meta definida
+   2) texto contendo "não planejada" (ex: "Produção não planejada") -> item
+      está FORA do plano de produção (não estava previsto produzir)
+   3) qualquer outro texto não-numérico (ex: "S/ Quantidade Planejada") ->
+      está DENTRO do plano, só não tem quantidade-meta cadastrada
+   Não usar apenas "prev === null" pra identificar "fora do plano": isso
+   juntava incorretamente os casos 2 e 3. */
+function classifyPlan(planRaw){
+  const num = parseNumOrNull(planRaw);
+  if(num !== null) return { prev: num, foraDoPlano: false };
+  const norm = (planRaw||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const foraDoPlano = norm.includes('nao planejada');
+  return { prev: null, foraDoPlano };
 }
 
 /* ============================================================================
@@ -1563,7 +1592,7 @@ function transformCsvToData(csvText){
     if(!produto) return;
 
     const planRaw = (r[5]||'').trim();
-    const prev = parseNumOrNull(planRaw); // null cobre "S/ Quantidade Planejada" e "Fora do plano de produção"
+    const { prev, foraDoPlano } = classifyPlan(planRaw); // ver classifyPlan(): distingue "Fora do plano de produção" de "S/ Quantidade Planejada"
     const real = parseNumOrNull(r[6]) ?? 0;
     const dif = parsePctOrNull(r[7]);
     const uni = normalizeUnitDisplay(r[8]);
@@ -1573,7 +1602,7 @@ function transformCsvToData(csvText){
     const duracaoParada = (r[16]||'').trim(); // coluna Q — duração da parada (colunas M-P são um espaçador em branco após "Paradas...")
 
     if(!byDate[dateISO]) byDate[dateISO] = [];
-    byDate[dateISO].push({ setor, equipe, maquina, produto, prev, real, uni, dif, obs, inicio, fim, duracaoParada });
+    byDate[dateISO].push({ setor, equipe, maquina, produto, prev, foraDoPlano, real, uni, dif, obs, inicio, fim, duracaoParada });
   });
 
   const result = {};
@@ -1596,7 +1625,7 @@ function transformCsvToData(csvText){
       label: buildLabelFromISO(iso),
       setores: setoresUnicos.length ? setoresUnicos.join(' · ') : '—',
       stopMinutes,
-      rows: rows.map(({setor,equipe,maquina,produto,prev,real,uni,dif,obs,inicio,fim,duracaoParada})=>({setor,equipe,maquina,produto,prev,real,uni,dif,obs,inicio,fim,duracaoParada}))
+      rows: rows.map(({setor,equipe,maquina,produto,prev,foraDoPlano,real,uni,dif,obs,inicio,fim,duracaoParada})=>({setor,equipe,maquina,produto,prev,foraDoPlano,real,uni,dif,obs,inicio,fim,duracaoParada}))
     };
   });
   return result;
@@ -2071,7 +2100,8 @@ function renderTable(filteredDates){
       const kgRow = getKgForRow(r);
       if(kgRow !== null){ totalKg += kgRow; rowsComPeso++; }
       const isNoPlan = typeof r.prev !== 'number';
-      const prevTxt = isNoPlan ? `<span class="no-plan">S/ Quantidade Planejada</span>` : r.prev.toLocaleString('pt-BR');
+      const isForaDoPlano = rowIsForaDoPlano(r);
+      const prevTxt = isNoPlan ? `<span class="no-plan">${planLabelText(r)}</span>` : r.prev.toLocaleString('pt-BR');
       let difHtml = '<span class="diff-cell diff-neutral">—</span>';
       if(r.dif !== null){
         const cls = r.dif < 0 ? 'diff-bad' : 'diff-good';
@@ -2283,7 +2313,7 @@ function renderProductivity(filteredDates){
 function renderTrend(filteredDates){
   const points = filteredDates.map(d=>{
     const day = DATA[d];
-    const foraPlano = getDayRows(d).filter(r => r.prev === null).length;
+    const foraPlano = getDayRows(d).filter(rowIsForaDoPlano).length;
     return {
       date: d,
       label: DATA[d].label.replace(' de junho de 2026','/06').replace(' de ',' '),
@@ -2313,7 +2343,7 @@ function renderTrend(filteredDates){
 
 /* Apenas 1 dia selecionado: lista com o nome de cada produto fora do plano */
 function renderNoPlanList(point){
-  const rows = getDayRows(point.date).filter(r => r.prev === null);
+  const rows = getDayRows(point.date).filter(rowIsForaDoPlano);
   const wrap = document.getElementById('trendWrap');
   if(rows.length === 0){
     wrap.innerHTML = `
@@ -2730,7 +2760,7 @@ async function buildDocHtml(dayKey){
   const rowsHtml = rows.map((r,i)=>{
     const fill = i % 2 === 0 ? '#FFFFFF' : '#FFF8E7';
     const isNoPlan = typeof r.prev !== 'number';
-    const prevTxt = isNoPlan ? 'S/ Quantidade Planejada' : r.prev.toLocaleString('pt-BR');
+    const prevTxt = isNoPlan ? planLabelText(r) : r.prev.toLocaleString('pt-BR');
     const realTxt = formatRealWithKgEquiv(r.real, r.uni, r.produto);
     let difTxt = '—', difColor = '#6B5C5C';
     if(r.dif !== null){
