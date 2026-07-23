@@ -1226,9 +1226,91 @@ const FALLBACK_DATA = {
 };
 
 let DATA = {};
-let lastDataSignature = null; // usado para detectar se a planilha mudou
 
 const MONTH_NAMES_PT = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+/* ============================================================================
+   CARREGADOR GENÉRICO DE CSV (Google Sheets), COM FALLBACK
+   ============================================================================
+   Substitui os 7 padrões quase idênticos que existiam antes (um "loadData"
+   por página: Relatório Industrial, Tempo de Processo, Produtividade,
+   Máquinas, Óleo, Manutenções). Cada página continua com sua própria função
+   pública (loadData, TP_loadData, etc.) — só o miolo de fetch/cache-bust/
+   fallback/estado do botão foi centralizado aqui, pra não precisar manter
+   7 cópias em sincronia quando um bug aparecer nesse trecho.
+   ============================================================================ */
+const CSV_LOADER_SIGNATURES = {}; // assinatura por fonte, só pras que usam signatureKey
+
+/**
+ * @param {Object} cfg
+ * @param {string} cfg.url - URL do CSV (export?format=csv&gid=...)
+ * @param {boolean} [cfg.isManualRefresh] - se foi disparado pelo botão "Atualizar"
+ * @param {string} [cfg.signatureKey] - ativa o "✓ Sem dados novos" vs "✓ Dados atualizados"
+ * @param {(text:string)=>*} cfg.parse - transforma o texto CSV no formato interno da página
+ * @param {(parsed:*)=>boolean} [cfg.isEmpty] - quando o resultado do parse deve
+ *   ser tratado como "sem dado válido" (default: array/objeto vazio)
+ * @param {(parsed:*, ctx:{isManualRefresh:boolean, changed:boolean})=>void} cfg.onSuccess
+ * @param {()=>boolean} [cfg.hasExistingData] - já existe dado carregado nesta sessão?
+ * @param {(fallbackData:*)=>void} [cfg.onFallback] - aplica os dados de exemplo
+ * @param {*} [cfg.fallbackData]
+ * @param {string} [cfg.btnId] - id do botão "Atualizar"
+ * @param {string} [cfg.infoElId] - id do elemento de texto de status/erro
+ * @param {string} [cfg.errorLabel] - nome da fonte pro console.error/mensagem de erro
+ */
+async function loadCsvWithFallback(cfg){
+  const btn = cfg.btnId ? document.getElementById(cfg.btnId) : null;
+  const original = btn ? btn.textContent : null;
+  if(btn){ btn.disabled = true; btn.textContent = '⟳ Verificando...'; }
+  const isManualRefresh = !!cfg.isManualRefresh;
+
+  try{
+    const bust = (cfg.url.includes('?') ? '&' : '?') + 'cb=' + Date.now();
+    const res = await fetch(cfg.url + bust, { cache: 'no-store' });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+
+    let changed = true;
+    if(cfg.signatureKey){
+      const signature = text.length + ':' + text.slice(0, 500);
+      changed = signature !== CSV_LOADER_SIGNATURES[cfg.signatureKey];
+      CSV_LOADER_SIGNATURES[cfg.signatureKey] = signature;
+    }
+
+    const parsed = cfg.parse(text);
+    const isEmpty = cfg.isEmpty
+      ? cfg.isEmpty(parsed)
+      : (Array.isArray(parsed) ? parsed.length === 0 : Object.keys(parsed || {}).length === 0);
+    if(isEmpty) throw new Error('Nenhum dado válido encontrado na planilha.');
+
+    cfg.onSuccess(parsed, { isManualRefresh, changed });
+
+    if(btn){
+      btn.textContent = isManualRefresh ? (changed ? '✓ Dados atualizados' : '✓ Sem dados novos') : original;
+      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 1600);
+    }
+  }catch(err){
+    console.error('Erro ao carregar ' + (cfg.errorLabel || 'dados') + ':', err);
+    if(cfg.onError) cfg.onError(err);
+    if(btn){
+      btn.textContent = '⚠ Erro ao atualizar';
+      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 2200);
+    }
+    const hasExisting = cfg.hasExistingData ? cfg.hasExistingData() : false;
+    if(!hasExisting && cfg.onFallback){
+      cfg.onFallback(cfg.fallbackData);
+      if(cfg.infoElId){
+        const hint = location.protocol === 'file:'
+          ? ' Abra este arquivo por um servidor local (http://) — Google Sheets bloqueia requisições de arquivos locais (file://).'
+          : '';
+        const el = document.getElementById(cfg.infoElId);
+        const msg = cfg.fallbackMessage
+          ? cfg.fallbackMessage(err, hint)
+          : '⚠ Não foi possível conectar à planilha (' + (err.message||err) + '). Mostrando dados de exemplo.' + hint;
+        if(el) el.textContent = msg;
+      }
+    }
+  }
+}
 
 /* ---------- Parser de CSV (RFC4180 simplificado: suporta aspas e vírgulas dentro de campos) ---------- */
 function parseCSV(text){
@@ -1633,47 +1715,21 @@ function transformCsvToData(csvText){
 
 /* ---------- Busca os dados na planilha (sem cache) e atualiza o relatório ---------- */
 async function loadData(isManualRefresh){
-  const btn = document.getElementById('btnRefreshData');
-  const originalBtnText = btn ? btn.textContent : null;
-  if(btn){ btn.disabled = true; btn.textContent = '⟳ Verificando...'; }
-
-  try{
-    const bust = (CSV_URL.includes('?') ? '&' : '?') + 'cb=' + Date.now();
-    const res = await fetch(CSV_URL + bust, { cache: 'no-store' });
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-
-    const signature = text.length + ':' + text.slice(0,500);
-    const hasChanged = signature !== lastDataSignature;
-    lastDataSignature = signature;
-
-    const newData = transformCsvToData(text);
-    if(Object.keys(newData).length === 0) throw new Error('Nenhum dado válido encontrado na planilha.');
-
-    DATA = newData;
-    applyDateBoundsAndRefresh();
-
-    if(btn){
-      btn.textContent = isManualRefresh ? (hasChanged ? '✓ Dados atualizados' : '✓ Sem dados novos') : originalBtnText;
-      setTimeout(()=>{ btn.textContent = originalBtnText; btn.disabled = false; }, 1600);
-    }
-  }catch(err){
-    console.error('Erro ao carregar dados da planilha:', err);
-    if(btn){
-      btn.textContent = '⚠ Erro ao atualizar';
-      setTimeout(()=>{ btn.textContent = originalBtnText; btn.disabled = false; }, 2200);
-    }
-    if(Object.keys(DATA).length === 0){
-      // Sem dados ao vivo carregados ainda nesta sessão: usa o snapshot de segurança
-      DATA = FALLBACK_DATA;
-      applyDateBoundsAndRefresh();
-      const hint = location.protocol === 'file:'
-        ? ' Abra este arquivo por um servidor local (http://) em vez de abrir direto pelo navegador — Google Sheets costuma bloquear requisições vindas de arquivos locais (file://).'
-        : '';
-      document.getElementById('periodInfo').textContent =
-        '⚠ Não foi possível conectar à planilha (' + (err.message || err) + '). Mostrando o último snapshot salvo (22 a 25/06).' + hint;
-    }
-  }
+  await loadCsvWithFallback({
+    url: CSV_URL,
+    isManualRefresh,
+    signatureKey: 'reportIndustrial',
+    btnId: 'btnRefreshData',
+    infoElId: 'periodInfo',
+    errorLabel: 'dados da planilha',
+    parse: transformCsvToData,
+    onSuccess: (newData) => { DATA = newData; applyDateBoundsAndRefresh(); },
+    hasExistingData: () => Object.keys(DATA).length > 0,
+    fallbackData: FALLBACK_DATA,
+    onFallback: (fb) => { DATA = fb; applyDateBoundsAndRefresh(); },
+    fallbackMessage: (err, hint) =>
+      '⚠ Não foi possível conectar à planilha (' + (err.message || err) + '). Mostrando o último snapshot salvo (22 a 25/06).' + hint,
+  });
 }
 
 /* Recalcula os limites de data, repopula o filtro de setor e renderiza tudo
@@ -2955,7 +3011,6 @@ const TP_RETENCAO_COLOR = '#7a5ca1';
 let TP_currentLine = 'frances';
 let TP_DATA = [];      // array de registros (um por batelada) da linha atualmente selecionada
 let TP_FILTERED = [];
-let TP_lastSignature = {};   // assinatura por linha, pra detectar mudanças no botão Atualizar
 let TP_loadedLines = {};     // cache: já carregamos essa linha pelo menos uma vez?
 
 /* Dados de segurança (amostras reais enviadas) usados apenas se a planilha
@@ -3106,48 +3161,24 @@ function TP_transformCsv(csvText, lineKey){
 
 async function TP_loadData(isManualRefresh){
   const lineKey = TP_currentLine;
-  const cfg = TP_LINE_CONFIGS[lineKey];
-  const btn = document.getElementById('tpBtnRefresh');
-  const original = btn ? btn.textContent : null;
-  if(btn){ btn.disabled = true; btn.textContent = '⟳ Verificando...'; }
-
-  try{
-    const bust = (cfg.csvUrl.includes('?') ? '&' : '?') + 'cb=' + Date.now();
-    const res = await fetch(cfg.csvUrl + bust, { cache:'no-store' });
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-
-    const signature = text.length + ':' + text.slice(0,300);
-    const changed = signature !== TP_lastSignature[lineKey];
-    TP_lastSignature[lineKey] = signature;
-
-    const records = TP_transformCsv(text, lineKey);
-    if(records.length === 0) throw new Error('Nenhum dado válido encontrado na planilha.');
-
-    TP_DATA = records;
-    TP_loadedLines[lineKey] = true;
-    TP_applyDateBoundsAndRefresh();
-
-    if(btn){
-      btn.textContent = isManualRefresh ? (changed ? '✓ Dados atualizados' : '✓ Sem dados novos') : original;
-      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 1600);
-    }
-  }catch(err){
-    console.error('Erro ao carregar Tempo de Processo ('+lineKey+'):', err);
-    if(btn){
-      btn.textContent = '⚠ Erro ao atualizar';
-      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 2200);
-    }
-    if(TP_DATA.length === 0){
-      TP_DATA = TP_FALLBACK_DATA[lineKey] || [];
+  const lineCfg = TP_LINE_CONFIGS[lineKey];
+  await loadCsvWithFallback({
+    url: lineCfg.csvUrl,
+    isManualRefresh,
+    signatureKey: 'tempoProcesso:' + lineKey,
+    btnId: 'tpBtnRefresh',
+    infoElId: 'tpPeriodInfo',
+    errorLabel: 'Tempo de Processo (' + lineKey + ')',
+    parse: (text) => TP_transformCsv(text, lineKey),
+    onSuccess: (records) => {
+      TP_DATA = records;
+      TP_loadedLines[lineKey] = true;
       TP_applyDateBoundsAndRefresh();
-      const hint = location.protocol === 'file:'
-        ? ' Abra este arquivo por um servidor local (http://) — Google Sheets bloqueia requisições de arquivos locais (file://).'
-        : '';
-      document.getElementById('tpPeriodInfo').textContent =
-        '⚠ Não foi possível conectar à planilha (' + (err.message||err) + '). Mostrando dados de exemplo.' + hint;
-    }
-  }
+    },
+    hasExistingData: () => TP_DATA.length > 0,
+    fallbackData: TP_FALLBACK_DATA[lineKey] || [],
+    onFallback: (fb) => { TP_DATA = fb; TP_applyDateBoundsAndRefresh(); },
+  });
 }
 
 const tpLinhaEl = document.getElementById('tpLinha');
@@ -3443,7 +3474,6 @@ let PR_FILTERED = [];
 let PR_INSUMO_DATA = [];
 let PR_INSUMO_FILTERED = [];
 let PR_allDates = [];
-let PR_lastSignature = {};
 let PR_insumoLastSignature = {};
 let PR_selectedProdutos = new Set(); // vazio = todos os produtos
 
@@ -3676,20 +3706,16 @@ function PR_transformCsvInsumo(csvText){
    falhava silenciosamente, só no console). */
 let PR_insumoLoadError = null;
 async function PR_loadInsumoData(url){
-  try{
-    const bust = (url.includes('?') ? '&' : '?') + 'cb=' + Date.now();
-    const res = await fetch(url + bust, { cache:'no-store' });
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-    const records = PR_transformCsvInsumo(text);
-    if(records.length === 0) throw new Error('Nenhum dado válido encontrado na planilha de insumo.');
-    PR_INSUMO_DATA = records;
-    PR_insumoLoadError = null;
-  }catch(err){
-    console.error('Erro ao carregar dados de insumo (Massa Salgado):', err);
-    PR_insumoLoadError = err.message || String(err);
-    if(PR_INSUMO_DATA.length === 0) PR_INSUMO_DATA = PR_FALLBACK_INSUMO_DATA;
-  }
+  await loadCsvWithFallback({
+    url,
+    errorLabel: 'dados de insumo (Massa Salgado)',
+    parse: PR_transformCsvInsumo,
+    onSuccess: (records) => { PR_INSUMO_DATA = records; PR_insumoLoadError = null; },
+    onError: (err) => { PR_insumoLoadError = err.message || String(err); },
+    hasExistingData: () => PR_INSUMO_DATA.length > 0,
+    fallbackData: PR_FALLBACK_INSUMO_DATA,
+    onFallback: (fb) => { PR_INSUMO_DATA = fb; },
+  });
 }
 
 /* Formato "tempos" (ex: PÃO DE LÓ E BOLOS): cada linha é uma amostra solta
@@ -3737,57 +3763,39 @@ function PR_transformCsvTempos(csvText){
 
 async function PR_loadData(isManualRefresh){
   const setorKey = PR_currentSetor;
-  const cfg = PR_SETOR_CONFIGS[setorKey];
-  const btn = document.getElementById('prBtnRefresh');
-  const original = btn ? btn.textContent : null;
-  if(btn){ btn.disabled = true; btn.textContent = '⟳ Verificando...'; }
+  const setorCfg = PR_SETOR_CONFIGS[setorKey];
 
-  if(cfg.insumoCsvUrl){
-    await PR_loadInsumoData(cfg.insumoCsvUrl);
+  if(setorCfg.insumoCsvUrl){
+    await PR_loadInsumoData(setorCfg.insumoCsvUrl);
   } else {
     PR_INSUMO_DATA = [];
   }
 
-  try{
-    const bust = (cfg.csvUrl.includes('?') ? '&' : '?') + 'cb=' + Date.now();
-    const res = await fetch(cfg.csvUrl + bust, { cache:'no-store' });
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
+  const parseBySetorType = (text) => setorCfg.type === 'producao' ? PR_transformCsvProducao(text)
+    : setorCfg.type === 'tempos' ? PR_transformCsvTempos(text)
+    : PR_transformCsv(text);
 
-    const signature = text.length + ':' + text.slice(0,300);
-    const changed = signature !== PR_lastSignature[setorKey];
-    PR_lastSignature[setorKey] = signature;
-
-    const records = cfg.type === 'producao' ? PR_transformCsvProducao(text)
-      : cfg.type === 'tempos' ? PR_transformCsvTempos(text)
-      : PR_transformCsv(text);
-    if(records.length === 0) throw new Error('Nenhum dado válido encontrado na planilha.');
-
-    PR_DATA = records;
-    PR_currentSetorType = cfg.type;
-    PR_applyDateBoundsAndRefresh();
-
-    if(btn){
-      btn.textContent = isManualRefresh ? (changed ? '✓ Dados atualizados' : '✓ Sem dados novos') : original;
-      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 1600);
-    }
-  }catch(err){
-    console.error('Erro ao carregar Produtividade ('+setorKey+'):', err);
-    if(btn){
-      btn.textContent = '⚠ Erro ao atualizar';
-      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 2200);
-    }
-    if(PR_DATA.length === 0){
-      PR_DATA = PR_FALLBACK_DATA[setorKey] || [];
-      PR_currentSetorType = cfg.type;
+  await loadCsvWithFallback({
+    url: setorCfg.csvUrl,
+    isManualRefresh,
+    signatureKey: 'produtividade:' + setorKey,
+    btnId: 'prBtnRefresh',
+    infoElId: 'prPeriodInfo',
+    errorLabel: 'Produtividade (' + setorKey + ')',
+    parse: parseBySetorType,
+    onSuccess: (records) => {
+      PR_DATA = records;
+      PR_currentSetorType = setorCfg.type;
       PR_applyDateBoundsAndRefresh();
-      const hint = location.protocol === 'file:'
-        ? ' Abra este arquivo por um servidor local (http://) — Google Sheets bloqueia requisições de arquivos locais (file://).'
-        : '';
-      document.getElementById('prPeriodInfo').textContent =
-        '⚠ Não foi possível conectar à planilha (' + (err.message||err) + '). Mostrando dados de exemplo.' + hint;
-    }
-  }
+    },
+    hasExistingData: () => PR_DATA.length > 0,
+    fallbackData: PR_FALLBACK_DATA[setorKey] || [],
+    onFallback: (fb) => {
+      PR_DATA = fb;
+      PR_currentSetorType = setorCfg.type;
+      PR_applyDateBoundsAndRefresh();
+    },
+  });
 }
 
 const prDateStartEl = document.getElementById('prDateStart');
@@ -4855,47 +4863,30 @@ function RC_transformCsv(csvText){
 }
 
 async function RC_loadData(isManualRefresh){
-  const btn = document.getElementById('rcBtnRefresh');
-  const original = btn ? btn.textContent : null;
-  if(btn){ btn.disabled = true; btn.textContent = '⟳ Verificando...'; }
-
-  try{
-    const bust = (RC_CSV_URL.includes('?') ? '&' : '?') + 'cb=' + Date.now();
-    const res = await fetch(RC_CSV_URL + bust, { cache:'no-store' });
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-    const records = RC_transformCsv(text);
-    if(records.length === 0) throw new Error('Nenhum dado válido encontrado na planilha.');
-
-    RC_DATA = records;
-    RC_populateSetorSelect();
-    RC_renderMaquinaMultiSelect();
-    RC_renderProdutoMultiSelect();
-    RC_refreshAll();
-
-    if(btn){
-      btn.textContent = isManualRefresh ? '✓ Dados atualizados' : original;
-      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 1600);
-    }
-  }catch(err){
-    console.error('Erro ao carregar Rascunho (capacidade dos equipamentos):', err);
-    if(btn){
-      btn.textContent = '⚠ Erro ao atualizar';
-      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 2200);
-    }
-    if(RC_DATA.length === 0){
-      RC_DATA = RC_transformCsvFromFallback();
+  await loadCsvWithFallback({
+    url: RC_CSV_URL,
+    isManualRefresh,
+    btnId: 'rcBtnRefresh',
+    infoElId: 'rcPeriodInfo',
+    errorLabel: 'Máquinas (capacidade dos equipamentos)',
+    parse: RC_transformCsv,
+    onSuccess: (records) => {
+      RC_DATA = records;
       RC_populateSetorSelect();
       RC_renderMaquinaMultiSelect();
       RC_renderProdutoMultiSelect();
       RC_refreshAll();
-      const hint = location.protocol === 'file:'
-        ? ' Abra este arquivo por um servidor local (http://) — Google Sheets bloqueia requisições de arquivos locais (file://).'
-        : '';
-      document.getElementById('rcPeriodInfo').textContent =
-        '⚠ Não foi possível conectar à planilha (' + (err.message||err) + '). Mostrando dados de exemplo.' + hint;
-    }
-  }
+    },
+    hasExistingData: () => RC_DATA.length > 0,
+    fallbackData: RC_transformCsvFromFallback(),
+    onFallback: (fb) => {
+      RC_DATA = fb;
+      RC_populateSetorSelect();
+      RC_renderMaquinaMultiSelect();
+      RC_renderProdutoMultiSelect();
+      RC_refreshAll();
+    },
+  });
 }
 
 /* Aplica a mesma explosão por produto nos dados de exemplo (fallback). */
@@ -5159,20 +5150,18 @@ function OL_getConsumoForPeriod(filteredDates){
 }
 
 async function OL_loadData(isManualRefresh){
-  try{
-    const bust = (OL_CSV_URL.includes('?') ? '&' : '?') + 'cb=' + Date.now();
-    const res = await fetch(OL_CSV_URL + bust, { cache:'no-store' });
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-    const parsed = OL_transformCsv(text);
-    OL_DATA = parsed; // mesmo que vazio: planilha sem lançamentos ainda é um estado válido
-  }catch(err){
-    console.error('Erro ao carregar Consumo de Óleo:', err);
-    if(Object.keys(OL_DATA).length === 0) OL_DATA = OL_FALLBACK_DATA;
-  }
-  // Os cards de óleo vivem dentro do KPI grid do Relatório Industrial —
-  // só redesenha se essa página já tiver dados carregados.
-  if(Object.keys(DATA).length > 0) refreshAll();
+  const refreshIfReportLoaded = () => { if(Object.keys(DATA).length > 0) refreshAll(); };
+  await loadCsvWithFallback({
+    url: OL_CSV_URL,
+    isManualRefresh,
+    errorLabel: 'Consumo de Óleo',
+    parse: OL_transformCsv,
+    isEmpty: () => false, // planilha sem lançamentos ainda é um estado válido (não é erro)
+    onSuccess: (parsed) => { OL_DATA = parsed; refreshIfReportLoaded(); },
+    hasExistingData: () => Object.keys(OL_DATA).length > 0,
+    fallbackData: OL_FALLBACK_DATA,
+    onFallback: (fb) => { OL_DATA = fb; refreshIfReportLoaded(); },
+  });
 }
 
 /* ============================================================================
@@ -5252,43 +5241,18 @@ const mnMaquinaEl = document.getElementById('mnMaquina');
 const mnEspecialidadeEl = document.getElementById('mnEspecialidade');
 
 async function MN_loadData(isManualRefresh){
-  const btn = document.getElementById('mnBtnRefresh');
-  const original = btn ? btn.textContent : null;
-  if(btn){ btn.disabled = true; btn.textContent = '⟳ Verificando...'; }
-
-  try{
-    const bust = (MN_CSV_URL.includes('?') ? '&' : '?') + 'cb=' + Date.now();
-    const res = await fetch(MN_CSV_URL + bust, { cache:'no-store' });
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-    const records = MN_transformCsv(text);
-    if(records.length === 0) throw new Error('Nenhum dado válido encontrado na planilha.');
-
-    MN_DATA = records;
-    MN_applyDateBoundsAndPopulate();
-    MN_refreshAll();
-
-    if(btn){
-      btn.textContent = isManualRefresh ? '✓ Dados atualizados' : original;
-      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 1600);
-    }
-  }catch(err){
-    console.error('Erro ao carregar Manutenções:', err);
-    if(btn){
-      btn.textContent = '⚠ Erro ao atualizar';
-      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 2200);
-    }
-    if(MN_DATA.length === 0){
-      MN_DATA = MN_FALLBACK_DATA;
-      MN_applyDateBoundsAndPopulate();
-      MN_refreshAll();
-      const hint = location.protocol === 'file:'
-        ? ' Abra este arquivo por um servidor local (http://) — Google Sheets bloqueia requisições de arquivos locais (file://).'
-        : '';
-      document.getElementById('mnPeriodInfo').textContent =
-        '⚠ Não foi possível conectar à planilha (' + (err.message||err) + '). Mostrando dados de exemplo.' + hint;
-    }
-  }
+  await loadCsvWithFallback({
+    url: MN_CSV_URL,
+    isManualRefresh,
+    btnId: 'mnBtnRefresh',
+    infoElId: 'mnPeriodInfo',
+    errorLabel: 'Manutenções',
+    parse: MN_transformCsv,
+    onSuccess: (records) => { MN_DATA = records; MN_applyDateBoundsAndPopulate(); MN_refreshAll(); },
+    hasExistingData: () => MN_DATA.length > 0,
+    fallbackData: MN_FALLBACK_DATA,
+    onFallback: (fb) => { MN_DATA = fb; MN_applyDateBoundsAndPopulate(); MN_refreshAll(); },
+  });
 }
 
 function MN_applyDateBoundsAndPopulate(){
