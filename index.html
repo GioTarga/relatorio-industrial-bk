@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <title>Relatório Industrial — Bread King</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
     --red:#A10101;
@@ -16,6 +19,20 @@
     --good:#2f7d52;
     --good-bg:#dff3e6;
     --bad-bg:#fbe2dc;
+    /* Tipografia: Fraunces (serifada, com caráter) pros títulos/headlines —
+       reforça a herança de padaria/ofício sem virar clichê de "confeitaria
+       fofa" — e Inter pro corpo/UI/dados, que tem números tabulares
+       excelentes pras tabelas e KPIs numéricos que dominam o dashboard. */
+    --font-display:'Fraunces', Georgia, serif;
+    --font-body:'Inter', 'Helvetica Neue', Arial, sans-serif;
+    /* Escala de raio de borda — evita valores soltos (3px, 7px, 9px, 10px,
+       14px, 20px...) espalhados sem lógica. sm = controles pequenos
+       (inputs, botões), md = cards/painéis, lg = blocos grandes/hero,
+       pill = badges e tags arredondadas por completo. */
+    --radius-sm:7px;
+    --radius-md:12px;
+    --radius-lg:16px;
+    --radius-pill:999px;
   }
   *{box-sizing:border-box;}
 
@@ -29,15 +46,15 @@
   }
   .sidebar-brand{ display:flex; align-items:center; gap:10px; padding:20px 18px 16px; border-bottom:1px solid rgba(255,255,255,0.12); }
   .sidebar-logo-img{
-    width:38px; height:38px; border-radius:9px; object-fit:cover; flex-shrink:0;
+    width:38px; height:38px; border-radius:var(--radius-sm); object-fit:cover; flex-shrink:0;
     box-shadow:0 2px 6px rgba(0,0,0,0.25);
   }
-  .sidebar-brand-text{ font-weight:800; font-size:14px; letter-spacing:0.2px; }
+  .sidebar-brand-text{ font-weight:600; font-size:16px; letter-spacing:0.2px; font-family:var(--font-display); }
   .sidebar-nav{ display:flex; flex-direction:column; padding:14px 10px; gap:4px; }
   .nav-item{
     display:flex; align-items:center; gap:10px; text-align:left;
     background:none; border:none; color:#ffe6c9; font-family:inherit;
-    font-size:13px; font-weight:600; padding:10px 12px; border-radius:9px;
+    font-size:13px; font-weight:600; padding:10px 12px; border-radius:var(--radius-sm);
     cursor:pointer; transition:background 0.15s;
   }
   .nav-item svg{ width:16px; height:16px; flex-shrink:0; opacity:0.85; }
@@ -47,7 +64,7 @@
   .main-content{ flex:1; min-width:0; }
   .report-page .topbar{ position:relative; top:auto; }
   .logo-mark-fallback{
-    width:54px; height:54px; border-radius:12px; background:var(--gold);
+    width:54px; height:54px; border-radius:var(--radius-md); background:var(--gold);
     color:#3a1f00; display:flex; align-items:center; justify-content:center;
     font-size:22px; flex-shrink:0;
   }
@@ -62,9 +79,10 @@
   body{
     margin:0;
     background:var(--cream);
-    font-family:'Helvetica Neue', Arial, sans-serif;
+    font-family:var(--font-body);
     color:var(--ink);
     font-size:13.5px;
+    font-variant-numeric:tabular-nums;
   }
   .topbar{
     background:linear-gradient(135deg,var(--red) 0%, var(--red-dark) 100%);
@@ -88,9 +106,9 @@
     filter:drop-shadow(0 1px 3px rgba(0,0,0,0.15));
   }
   .brand .text-block{ text-align:left; }
-  .brand .eyebrow{ font-size:11px; letter-spacing:3px; text-transform:uppercase; color:#ffd9ad; font-weight:700; margin-bottom:6px; }
-  .brand h1{ margin:0; font-size:25px; font-weight:800; letter-spacing:0.3px; }
-  .brand .subtitle{ font-style:italic; font-size:15px; color:#ffe6c9; margin-top:6px; }
+  .brand .eyebrow{ font-size:11px; letter-spacing:3px; text-transform:uppercase; color:#ffd9ad; font-weight:700; margin-bottom:6px; font-family:var(--font-body); }
+  .brand h1{ margin:0; font-size:27px; font-weight:600; letter-spacing:0.2px; font-family:var(--font-display); }
+  .brand .subtitle{ font-style:italic; font-size:15px; color:#ffe6c9; margin-top:6px; font-family:var(--font-display); font-weight:500; }
 
   .period-bar{
     background:var(--paper);
@@ -108,16 +126,16 @@
   }
   .period-bar label{ font-size:12px; color:var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing:0.8px; }
   .period-bar input[type=date]{
-    border:1px solid var(--line); border-radius:8px; padding:8px 12px;
+    border:1px solid var(--line); border-radius:var(--radius-sm); padding:8px 12px;
     font-size:13.5px; color:var(--ink); font-family:inherit; background:var(--cream);
   }
   .period-bar .sep{ color:var(--ink-soft); font-weight:700; }
   .period-bar select{
-    border:1px solid var(--line); border-radius:8px; padding:8px 12px;
+    border:1px solid var(--line); border-radius:var(--radius-sm); padding:8px 12px;
     font-size:13.5px; color:var(--ink); font-family:inherit; background:var(--cream); cursor:pointer;
   }
   .btn-refresh{
-    background:var(--red); color:#fff; border:none; border-radius:8px;
+    background:var(--red); color:#fff; border:none; border-radius:var(--radius-sm);
     padding:9px 16px; font-size:13px; font-weight:700; cursor:pointer;
     box-shadow:0 2px 8px rgba(161,1,1,0.25); transition:background 0.15s;
   }
@@ -127,7 +145,7 @@
 
   .setor-tabs{ display:flex; gap:8px; padding:16px 32px 0; flex-wrap:wrap; max-width:1600px; margin:0 auto; }
   .setor-tab-btn{
-    padding:9px 20px; border-radius:9px 9px 0 0; border:1px solid var(--line); border-bottom:none;
+    padding:9px 20px; border-radius:var(--radius-sm) var(--radius-sm) 0 0; border:1px solid var(--line); border-bottom:none;
     background:#fbeed0; font-weight:800; font-size:12.5px; letter-spacing:0.6px; text-transform:uppercase;
     color:var(--ink-soft); cursor:pointer; transition:background 0.15s, color 0.15s;
   }
@@ -138,14 +156,14 @@
      do setor Giro-Dia) — mais discreto que o nível principal de Setor. */
   .setor-tabs.sub-tabs{ padding-top:10px; gap:6px; }
   .setor-tabs.sub-tabs .setor-tab-btn{
-    padding:6px 14px; border-radius:7px; font-size:11px; border-bottom:1px solid var(--line);
+    padding:6px 14px; border-radius:var(--radius-sm); font-size:11px; border-bottom:1px solid var(--line);
     background:#fff;
   }
   .setor-tabs.sub-tabs .setor-tab-btn.active{ background:#fbeed0; color:var(--red-dark); top:0; }
 
   .ms-wrap{ position:relative; display:inline-block; }
   .ms-btn{
-    background:#fff8e7; border:1px solid #e8d3a3; border-radius:8px; padding:8px 14px;
+    background:#fff8e7; border:1px solid #e8d3a3; border-radius:var(--radius-sm); padding:8px 14px;
     font-size:13px; font-weight:600; color:var(--ink); cursor:pointer; min-width:170px; max-width:280px;
     display:inline-flex; align-items:center; justify-content:space-between; gap:10px;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
@@ -154,21 +172,21 @@
   .ms-btn:hover{ border-color:var(--red); }
   .ms-panel{
     position:absolute; top:calc(100% + 4px); left:0; z-index:80; background:#fff;
-    border:1px solid var(--line); border-radius:10px; box-shadow:0 10px 28px rgba(0,0,0,0.15);
+    border:1px solid var(--line); border-radius:var(--radius-md); box-shadow:0 10px 28px rgba(0,0,0,0.15);
     min-width:260px; max-height:300px; overflow-y:auto; padding:8px; display:none;
   }
   .ms-panel.open{ display:block; }
   .ms-panel-actions{ display:flex; gap:14px; padding:2px 6px 8px; border-bottom:1px solid var(--line); margin-bottom:6px; }
   .ms-panel-actions button{ background:none; border:none; color:var(--red); font-size:11px; font-weight:800; cursor:pointer; text-transform:uppercase; letter-spacing:0.4px; padding:0; }
   .ms-panel-actions button:hover{ text-decoration:underline; }
-  .ms-option{ display:flex; align-items:center; gap:9px; padding:6px 6px; border-radius:6px; cursor:pointer; font-size:13px; color:var(--ink); }
+  .ms-option{ display:flex; align-items:center; gap:9px; padding:6px 6px; border-radius:var(--radius-sm); cursor:pointer; font-size:13px; color:var(--ink); }
   .ms-option:hover{ background:var(--cream); }
   .ms-option input{ cursor:pointer; flex-shrink:0; }
   .ms-empty{ padding:10px 6px; color:var(--ink-soft); font-size:12.5px; }
 
   .dr-wrap{ position:relative; display:inline-block; }
   .dr-btn{
-    background:#fff8e7; border:1px solid #e8d3a3; border-radius:8px; padding:8px 14px;
+    background:#fff8e7; border:1px solid #e8d3a3; border-radius:var(--radius-sm); padding:8px 14px;
     font-size:13px; font-weight:600; color:var(--ink); cursor:pointer; white-space:nowrap;
     display:inline-flex; align-items:center; gap:8px;
   }
@@ -176,12 +194,12 @@
   .dr-btn:hover{ border-color:var(--red); }
   .dr-panel{
     position:absolute; top:calc(100% + 4px); left:0; z-index:90; background:#fff;
-    border:1px solid var(--line); border-radius:12px; box-shadow:0 10px 28px rgba(0,0,0,0.15);
+    border:1px solid var(--line); border-radius:var(--radius-md); box-shadow:0 10px 28px rgba(0,0,0,0.15);
     padding:14px; display:none; width:280px;
   }
   .dr-panel.open{ display:block; }
   .dr-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-  .dr-nav{ background:none; border:none; cursor:pointer; font-size:16px; color:var(--red-dark); font-weight:800; padding:2px 8px; border-radius:6px; }
+  .dr-nav{ background:none; border:none; cursor:pointer; font-size:16px; color:var(--red-dark); font-weight:800; padding:2px 8px; border-radius:var(--radius-sm); }
   .dr-nav:hover{ background:var(--cream); }
   .dr-nav:disabled{ color:#ccc; cursor:default; }
   .dr-nav:disabled:hover{ background:none; }
@@ -190,15 +208,15 @@
   .dr-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
   .dr-day{
     aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-size:12px;
-    border-radius:6px; cursor:pointer; color:var(--ink); background:transparent; border:none;
+    border-radius:var(--radius-sm); cursor:pointer; color:var(--ink); background:transparent; border:none;
   }
   .dr-day:hover:not(.dr-disabled):not(.dr-empty){ background:var(--cream); }
   .dr-day.dr-empty{ cursor:default; }
   .dr-day.dr-disabled{ color:#ddd; cursor:default; }
   .dr-day.dr-in-range{ background:#fbeed0; border-radius:0; }
-  .dr-day.dr-range-start{ background:var(--red); color:#fff; font-weight:700; border-radius:6px 0 0 6px; }
+  .dr-day.dr-range-start{ background:var(--red); color:#fff; font-weight:700; border-radius:var(--radius-sm) 0 0 var(--radius-sm); }
   .dr-day.dr-range-end{ background:var(--red); color:#fff; font-weight:700; border-radius:0 6px 6px 0; }
-  .dr-day.dr-range-start.dr-range-end{ border-radius:6px; }
+  .dr-day.dr-range-start.dr-range-end{ border-radius:var(--radius-sm); }
   .dr-day.dr-pending{ background:var(--red); color:#fff; font-weight:700; }
   .dr-day.dr-today{ box-shadow:inset 0 0 0 1.5px var(--red); }
   .dr-footer{ display:flex; justify-content:space-between; margin-top:10px; padding-top:8px; border-top:1px solid var(--line); }
@@ -226,7 +244,7 @@
   .kpi-card{
     background:var(--paper);
     border:1px solid var(--line);
-    border-radius:12px;
+    border-radius:var(--radius-md);
     padding:18px 16px;
     text-align:center;
     box-shadow:0 2px 10px rgba(161,1,1,0.05);
@@ -239,7 +257,7 @@
   .day-detail-select{ display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
   .day-detail-select label{ font-size:12px; color:var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing:0.8px; }
   .day-detail-select select{
-    border:1px solid var(--line); border-radius:8px; padding:8px 14px;
+    border:1px solid var(--line); border-radius:var(--radius-sm); padding:8px 14px;
     font-size:13.5px; font-weight:700; color:var(--red); background:var(--cream); cursor:pointer;
   }
   .btn-download{
@@ -247,7 +265,7 @@
     background:var(--red);
     color:#fff;
     border:none;
-    border-radius:8px;
+    border-radius:var(--radius-sm);
     padding:9px 18px;
     font-size:13px;
     font-weight:700;
@@ -263,7 +281,7 @@
   .panel{
     background:var(--paper);
     border:1px solid var(--line);
-    border-radius:14px;
+    border-radius:var(--radius-lg);
     padding:24px 28px;
     margin-bottom:28px;
     box-shadow:0 2px 14px rgba(161,1,1,0.04);
@@ -289,7 +307,7 @@
      com rolagem vertical. Colunas com largura otimizada e quebra de texto
      para evitar a necessidade de rolagem lateral. */
   .table-wrap{
-    border:1px solid var(--line); border-radius:10px;
+    border:1px solid var(--line); border-radius:var(--radius-md);
     max-height:380px; overflow-y:auto; overflow-x:auto;
   }
   table.detail{ width:100%; border-collapse:collapse; font-size:12px; table-layout:fixed; }
@@ -343,11 +361,11 @@
   #tpTableWrap table.detail th:nth-child(3), #tpTableWrap table.detail td:nth-child(3){ width:16%; }
 
   .sector-tag{
-    display:inline-block;padding:2px 7px;border-radius:20px;font-size:10.5px;font-weight:700;
+    display:inline-block;padding:2px 7px;border-radius:var(--radius-pill);font-size:10.5px;font-weight:700;
     background:var(--cream);color:var(--red);border:1px solid var(--line);
   }
   .prod-name{ font-weight:600; }
-  .diff-cell{ font-weight:800;border-radius:6px;padding:4px 7px;display:inline-block;min-width:48px;text-align:center;font-size:11.5px; }
+  .diff-cell{ font-weight:800;border-radius:var(--radius-sm);padding:4px 7px;display:inline-block;min-width:48px;text-align:center;font-size:11.5px; }
   .diff-bad{ background:var(--bad-bg);color:var(--red); }
   .diff-good{ background:var(--good-bg);color:var(--good); }
   .diff-neutral{ background:#f1ecec;color:var(--ink-soft); }
@@ -355,7 +373,7 @@
   .obs-text{ color:var(--ink-soft);font-size:11px; }
 
   .noplan-list{ display:flex; flex-direction:column; gap:8px; text-align:left; }
-  .noplan-item{ display:flex; align-items:center; gap:14px; padding:10px 14px; background:var(--cream); border-radius:8px; flex-wrap:wrap; }
+  .noplan-item{ display:flex; align-items:center; gap:14px; padding:10px 14px; background:var(--cream); border-radius:var(--radius-sm); flex-wrap:wrap; }
   .noplan-produto{ font-weight:700; color:var(--ink); flex:1; min-width:200px; font-size:13px; }
   .noplan-qty{ font-weight:700; color:var(--red); white-space:nowrap; font-size:13px; }
   .noplan-obs{ font-size:11.5px; color:var(--ink-soft); font-style:italic; width:100%; }
@@ -371,7 +389,7 @@
   .kpi-card .label{ font-size:10px; letter-spacing:1.4px; opacity:.85; margin-bottom:10px; }
   .kpi-card .kpi-delta{
     display:inline-flex; align-items:center; gap:4px; font-size:11.5px; font-weight:700;
-    margin-top:8px; padding:2px 8px; border-radius:20px;
+    margin-top:8px; padding:2px 8px; border-radius:var(--radius-pill);
   }
   .kpi-delta.up{ background:var(--good-bg); color:var(--good); }
   .kpi-delta.down{ background:var(--bad-bg); color:var(--red); }
@@ -388,10 +406,10 @@
   /* ============ CONTROLES DE ZOOM ============ */
   .zoom-controls{
     display:inline-flex; align-items:center; gap:2px; margin-left:auto;
-    background:var(--cream); border:1px solid var(--line); border-radius:8px; padding:3px;
+    background:var(--cream); border:1px solid var(--line); border-radius:var(--radius-sm); padding:3px;
   }
   .zoom-controls button{
-    border:none; background:transparent; width:26px; height:26px; border-radius:6px;
+    border:none; background:transparent; width:26px; height:26px; border-radius:var(--radius-sm);
     font-size:14px; font-weight:700; color:var(--red); cursor:pointer; line-height:1;
   }
   .zoom-controls button:hover{ background:#fff; }
@@ -414,7 +432,7 @@
   /* ============ ESTADOS VAZIOS MAIS AMIGÁVEIS ============ */
   .empty-state{
     text-align:center; padding:28px 16px; color:var(--ink-soft); font-size:12.5px;
-    background:var(--cream); border:1px dashed var(--line); border-radius:10px;
+    background:var(--cream); border:1px dashed var(--line); border-radius:var(--radius-md);
   }
   .empty-state .empty-icon{ font-size:22px; margin-bottom:6px; display:block; }
   .empty-state .empty-sub{ font-size:11.5px; color:var(--ink-faint, #9c8d8d); margin-top:4px; }
@@ -432,16 +450,16 @@
      ============================================================ */
   .pin-gate{
     max-width:360px; margin:80px auto; background:var(--paper); border:1px solid var(--line);
-    border-radius:14px; padding:32px 28px; text-align:center; box-shadow:0 2px 14px rgba(161,1,1,0.06);
+    border-radius:var(--radius-lg); padding:32px 28px; text-align:center; box-shadow:0 2px 14px rgba(161,1,1,0.06);
   }
   .pin-gate h2{ margin:0 0 6px; font-size:18px; color:var(--red-dark); }
   .pin-gate p{ margin:0 0 18px; font-size:12.5px; color:var(--ink-soft); }
   .pin-gate input{
     width:100%; text-align:center; letter-spacing:6px; font-size:20px; padding:12px;
-    border:1px solid var(--line); border-radius:9px; font-family:inherit; margin-bottom:12px; background:var(--cream);
+    border:1px solid var(--line); border-radius:var(--radius-sm); font-family:inherit; margin-bottom:12px; background:var(--cream);
   }
   .pin-gate button{
-    width:100%; background:var(--red); color:#fff; border:none; border-radius:9px; padding:11px;
+    width:100%; background:var(--red); color:#fff; border:none; border-radius:var(--radius-sm); padding:11px;
     font-size:14px; font-weight:700; cursor:pointer;
   }
   .pin-gate button:hover{ background:var(--red-dark); }
@@ -449,7 +467,7 @@
 
   .lanc-tabs{ display:flex; gap:8px; margin-bottom:20px; }
   .lanc-tab-btn{
-    padding:10px 22px; border-radius:9px; border:1px solid var(--line); background:#fbeed0;
+    padding:10px 22px; border-radius:var(--radius-sm); border:1px solid var(--line); background:#fbeed0;
     font-weight:800; font-size:12.5px; letter-spacing:0.5px; text-transform:uppercase;
     color:var(--ink-soft); cursor:pointer;
   }
@@ -462,7 +480,7 @@
   .lanc-field label{ font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--ink-soft); }
   .lanc-field input[type=text], .lanc-field input[type=number], .lanc-field input[type=date],
   .lanc-field input[type=time], .lanc-field select, .lanc-field textarea{
-    border:1px solid #e8d3a3; border-radius:8px; padding:9px 12px; font-size:13.5px;
+    border:1px solid #e8d3a3; border-radius:var(--radius-sm); padding:9px 12px; font-size:13.5px;
     font-family:inherit; background:var(--cream); color:var(--ink);
   }
   .lanc-field textarea{ resize:vertical; min-height:60px; }
@@ -470,7 +488,7 @@
   .lanc-checkbox input{ cursor:pointer; }
   .lanc-submit-row{ grid-column:1 / -1; display:flex; align-items:center; gap:14px; margin-top:8px; }
   .lanc-submit-btn{
-    background:var(--red); color:#fff; border:none; border-radius:9px; padding:12px 28px;
+    background:var(--red); color:#fff; border:none; border-radius:var(--radius-sm); padding:12px 28px;
     font-size:14px; font-weight:700; cursor:pointer;
   }
   .lanc-submit-btn:hover{ background:var(--red-dark); }
@@ -479,7 +497,7 @@
   .lanc-feedback.ok{ color:var(--good); }
   .lanc-feedback.err{ color:var(--red); }
   .lanc-warning{
-    background:#fdf2dc; border:1px solid #f0d9ad; border-radius:9px; padding:12px 16px;
+    background:#fdf2dc; border:1px solid #f0d9ad; border-radius:var(--radius-sm); padding:12px 16px;
     font-size:12px; color:#8a740b; margin-bottom:18px;
   }
 
@@ -669,7 +687,7 @@
       <span><i class="dot" style="background:#fbf6ea;border:1px solid var(--gold)"></i>Sem planejamento / registro</span>
       <span style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;">
         <label for="fProdutoDetalhe" style="font-size:11.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.3px;">Produto</label>
-        <select id="fProdutoDetalhe" style="padding:6px 10px;border:1px solid #e8d3a3;border-radius:8px;font-size:12.5px;background:#fff8e7;"><option value="">Todos os produtos</option></select>
+        <select id="fProdutoDetalhe" style="padding:6px 10px;border:1px solid #e8d3a3;border-radius:var(--radius-sm);font-size:12.5px;background:#fff8e7;"><option value="">Todos os produtos</option></select>
       </span>
     </div>
     <div class="table-wrap" id="tableWrap">
@@ -837,7 +855,7 @@
 
       <div class="panel" id="prPanelInsumo" style="display:none;">
         <div class="panel-title">Produção de Insumos (Blocos de Massa e Rolos Laminados)</div>
-        <div id="prInsumoError" style="display:none;background:#fbe2dc;border:1px solid #e0a89a;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#7a2a1a;"></div>
+        <div id="prInsumoError" style="display:none;background:#fbe2dc;border:1px solid #e0a89a;border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:12px;font-size:12px;color:#7a2a1a;"></div>
         <div class="kpi-grid" id="prKpiGridInsumo" style="margin-bottom:0;"></div>
       </div>
 
@@ -932,7 +950,7 @@
         <div class="ms-panel" id="rcProdutoMSPanel"></div>
       </div>
       <label for="rcBusca">Buscar</label>
-      <input type="text" id="rcBusca" placeholder="Máquina, modelo ou produto..." style="padding:9px 12px;border:1px solid #e8d3a3;border-radius:8px;font-size:13px;min-width:180px;">
+      <input type="text" id="rcBusca" placeholder="Máquina, modelo ou produto..." style="padding:9px 12px;border:1px solid #e8d3a3;border-radius:var(--radius-sm);font-size:13px;min-width:180px;">
       <button class="btn-refresh" id="rcBtnRefresh" title="Verificar dados novos">⟳ Atualizar</button>
       <span class="period-info" id="rcPeriodInfo"></span>
     </div>
@@ -1299,19 +1317,13 @@ let PR_loadedOnce = false;
 let RC_loadedOnce = false;
 let MN_loadedOnce = false;
 
-/* ======================================================================
-   BASE DE DADOS — cada novo dia é adicionado aqui como uma nova entrada.
-   Para atualizar: envie o PDF do dia para o Claude, que extrai os dados
-   e adiciona um novo bloco neste objeto "DATA".
-   ====================================================================== */
 /* ============================================================
-   FONTE DE DADOS — Google Sheets publicado como CSV
+   FONTE DE DADOS — Supabase (tabela producao_diaria)
    ============================================================
-   Os dados deste relatório agora vêm DIRETAMENTE da planilha publicada
-   na web (Google Sheets → Arquivo → Compartilhar → Publicar na web).
-   Sempre que a planilha for atualizada, basta clicar em "Atualizar"
-   no topo da página para buscar a versão mais recente. */
-const CSV_URL = "https://docs.google.com/spreadsheets/d/1dPOqVznVZ3Z1AueP8o2H8nlu2AaWjIs1nqg47eUUYUg/export?format=csv&gid=1294851829";
+   Migrado do Google Sheets em jul/2026. A URL antiga da planilha
+   (docs.google.com/.../gid=1294851829) não é mais usada — o histórico
+   completo foi migrado pro banco, e a leitura agora é via getSupabaseClient()
+   (ver função loadData mais abaixo). */
 
 /* Dados de segurança (snapshot dos dias 22 a 25/06/2026) usados apenas se
    a planilha publicada não puder ser carregada (ex: bloqueio de CORS ao
@@ -2253,6 +2265,58 @@ function categorize(obs){
 }
 
 /* ---------- Gráfico de causas agregado no período ---------- */
+/* ============================================================================
+   GERADOR GENÉRICO DE BARRAS HORIZONTAIS (SVG)
+   ============================================================================
+   Substitui o bloco de ~15-20 linhas que se repetia quase idêntico em 6
+   lugares (causas de parada, produção perdida, produtividade, intervenções
+   por máquina, rankings de manutenções, e a versão rasterizada pro Word) —
+   cada um só variava a cor, a escala (linear/log) e o texto exibido.
+   Cada chamador continua responsável por montar a tag <svg> ao redor (varia
+   entre elas: algumas têm scroll, outras viewBox diferente, outras vão pra
+   exportação em Word) — só a lógica de calcular e desenhar as barras em si
+   foi unificada aqui.
+   items: [{ label, labelTitle?, value, displayText, color, textColor }]
+   opts: { barH, gap, leftPad, rightPad, topPad, chartW, labelFontSize,
+           valueFontSize, scale:'linear'|'log', minBarFraction, minPixelWidth } */
+function buildBarsSvg(items, opts){
+  opts = opts || {};
+  const barH = opts.barH ?? 28, gap = opts.gap ?? 12, leftPad = opts.leftPad ?? 220,
+        rightPad = opts.rightPad ?? 130, topPad = opts.topPad ?? 10, chartW = opts.chartW ?? 820;
+  const labelFs = opts.labelFontSize ?? 11.5, valueFs = opts.valueFontSize ?? 11.5;
+  const scale = opts.scale || 'linear';
+  const minBarFraction = opts.minBarFraction ?? 0;
+  const minPixelWidth = opts.minPixelWidth ?? 0;
+
+  const chartH = items.length*(barH+gap) + topPad;
+  const barWmax = chartW - leftPad - rightPad;
+  const maxVal = Math.max(...items.map(i=>i.value||0), 1);
+  const logMax = Math.log(maxVal + 1) || 1;
+
+  let bars = '';
+  items.forEach((item, i)=>{
+    const y = topPad + i*(barH+gap);
+    let w;
+    if(item.value > 0){
+      w = scale === 'log' ? (Math.log(item.value+1)/logMax)*barWmax : (item.value/maxVal)*barWmax;
+    } else {
+      w = barWmax * minBarFraction;
+    }
+    if(minPixelWidth) w = Math.max(w, minPixelWidth);
+    const color = item.color || '#A10101';
+    const textColor = item.textColor || color;
+    const labelHtml = item.labelTitle ? `${item.label}<title>${item.labelTitle}</title>` : item.label;
+    bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="${labelFs}" fill="#2a1a1a" text-anchor="end" font-weight="600">${labelHtml}</text>`;
+    // Trilha de fundo (largura total disponível) atrás da barra preenchida —
+    // dá contexto de escala e deixa o gráfico com aparência mais desenhada,
+    // em vez de barras "flutuando" soltas no espaço em branco.
+    bars += `<rect x="${leftPad}" y="${y}" width="${barWmax}" height="${barH}" fill="#000000" fill-opacity="0.035" rx="6"/>`;
+    bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="${color}" rx="6"/>`;
+    bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="${valueFs}" fill="${textColor}" font-weight="700">${item.displayText}</text>`;
+  });
+  return { bars, chartW, chartH };
+}
+
 function renderCauses(filteredDates){
   const counts = {};
   const durMinutes = {};
@@ -2279,9 +2343,6 @@ function renderCauses(filteredDates){
     return;
   }
 
-  const barH = 30, gap = 14, leftPad = 220, rightPad = 130, topPad = 10;
-  const chartW = 820;
-  const chartH = entries.length*(barH+gap) + topPad;
   const durValues = entries.map(([cat])=> durMinutes[cat]||0);
   const maxDur = Math.max(...durValues, 1);
 
@@ -2300,26 +2361,27 @@ function renderCauses(filteredDates){
     return (min/maxDur) > 0.45 ? '#A10101' : '#8a4c08';
   }
 
-  let bars = '';
-  entries.forEach(([cat,count], i)=>{
-    const pct = count/total*100;
+  const barItems = entries.map(([cat,count])=>{
     const dur = durMinutes[cat] || 0;
-    const barWmax = chartW - leftPad - rightPad;
+    const pct = count/total*100;
     // Sem duração registrada pra essa causa: mostra uma barrinha mínima
     // (só pra indicar presença), em cinza, no fim da lista.
-    const w = dur > 0 ? (dur/maxDur) * barWmax : barWmax * 0.05;
-    const y = topPad + i*(barH+gap);
-    const color = dur > 0 ? intensityColor(dur) : '#e3d9d4';
-    const textColor = dur > 0 ? intensityTextColor(dur) : '#8a7a75';
     const durTxt = dur > 0 ? TP_fmtDuration(dur*60) : 'sem duração registrada';
-    bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="12" fill="#2a1a1a" text-anchor="end" font-weight="600">${cat}</text>`;
-    bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="${color}" rx="5"/>`;
-    bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="12" fill="${textColor}" font-weight="700">${pct.toFixed(0)}% (${count}) · ${durTxt}</text>`;
+    return {
+      label: cat, value: dur,
+      displayText: `${pct.toFixed(0)}% (${count}) · ${durTxt}`,
+      color: dur > 0 ? intensityColor(dur) : '#e3d9d4',
+      textColor: dur > 0 ? intensityTextColor(dur) : '#8a7a75',
+    };
+  });
+  const { bars, chartW, chartH } = buildBarsSvg(barItems, {
+    barH:30, gap:14, leftPad:220, rightPad:130, topPad:10, chartW:820,
+    labelFontSize:12, valueFontSize:12, minBarFraction:0.05,
   });
 
   document.getElementById('causesWrap').innerHTML = `
     <div class="causes-scroll">
-      <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+      <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
         ${bars}
       </svg>
     </div>
@@ -2383,7 +2445,7 @@ function renderDayChart(rows){
   }
 
   document.getElementById('dayChartWrap').innerHTML = `
-    <svg viewBox="0 0 ${chartWidth} 460" width="${chartWidth}" height="460" style="overflow:visible;font-family:Arial;display:inline-block;">
+    <svg viewBox="0 0 ${chartWidth} 460" width="${chartWidth}" height="460" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       ${grid}${bars}
     </svg>
   `;
@@ -2537,25 +2599,19 @@ function renderLostProduction(filteredDates){
     return;
   }
 
-  const barH = 28, gap = 12, leftPad = 230, rightPad = 140, topPad = 10;
-  const chartW = 820;
-  const chartH = items.length*(barH+gap) + topPad;
-  const maxPerdido = Math.max(...items.map(i=>i.perdido), 1);
-
-  let bars = '';
-  items.forEach((item, i)=>{
-    const barWmax = chartW - leftPad - rightPad;
-    const w = (item.perdido/maxPerdido) * barWmax;
-    const y = topPad + i*(barH+gap);
+  const barItems = items.map(item=>{
     const pctPerdido = item.planejado > 0 ? (item.perdido/item.planejado*100) : 0;
-    const label = truncateProdLabel(item.produto, 28);
-    bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${label}<title>${item.produto}</title></text>`;
-    bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="#A10101" rx="5"/>`;
-    bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="11.5" fill="#A10101" font-weight="700">${item.perdido.toLocaleString('pt-BR')} ${item.uni} (-${pctPerdido.toFixed(0)}%)</text>`;
+    return {
+      label: truncateProdLabel(item.produto, 28), labelTitle: item.produto,
+      value: item.perdido,
+      displayText: `${item.perdido.toLocaleString('pt-BR')} ${item.uni} (-${pctPerdido.toFixed(0)}%)`,
+      color: '#A10101', textColor: '#A10101',
+    };
   });
+  const { bars, chartW, chartH } = buildBarsSvg(barItems, { barH:28, gap:12, leftPad:230, rightPad:140, topPad:10, chartW:820 });
 
   wrap.innerHTML = `
-    <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+    <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       ${bars}
     </svg>`;
 }
@@ -2608,31 +2664,19 @@ function renderProductivity(filteredDates){
     return;
   }
 
-  const barH = 28, gap = 12, leftPad = 230, rightPad = 140, topPad = 10;
-  const chartW = 820;
-  const chartH = top.length*(barH+gap) + topPad;
-  const maxTaxa = Math.max(...top.map(i=>i.taxa), 1);
-  // Escala logarítmica: usa log(taxa+1) normalizado pelo maior valor, pra
-  // não deixar as taxas menores viradas em traços invisíveis ao lado de
-  // produtos com taxa muito mais alta.
-  const logMax = Math.log(maxTaxa + 1) || 1;
-
-  let bars = '';
-  top.forEach((item, i)=>{
-    const barWmax = chartW - leftPad - rightPad;
-    const w = (Math.log(item.taxa + 1) / logMax) * barWmax;
-    const y = topPad + i*(barH+gap);
-    const label = truncateProdLabel(item.produto, 28);
-    bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${label}<title>${item.produto}</title></text>`;
-    bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="#B5640B" rx="5"/>`;
-    bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="11.5" fill="#8a4c08" font-weight="700">${item.taxa.toLocaleString('pt-BR',{maximumFractionDigits:1})} ${item.uni}/h</text>`;
-  });
+  const barItems = top.map(item=>({
+    label: truncateProdLabel(item.produto, 28), labelTitle: item.produto,
+    value: item.taxa,
+    displayText: `${item.taxa.toLocaleString('pt-BR',{maximumFractionDigits:1})} ${item.uni}/h`,
+    color: '#B5640B', textColor: '#8a4c08',
+  }));
+  const { bars, chartW, chartH } = buildBarsSvg(barItems, { barH:28, gap:12, leftPad:230, rightPad:140, topPad:10, chartW:820, scale:'log' });
 
   const visibleRows = 7;
-  const containerH = visibleRows*(barH+gap) + topPad + 10;
+  const containerH = visibleRows*(28+12) + 10 + 10;
   wrap.innerHTML = `
     <div style="max-height:${containerH}px; overflow-y:auto; overflow-x:hidden;">
-      <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="font-family:Arial;display:block;">
+      <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="font-family:'Inter',Arial,sans-serif;display:block;">
         ${bars}
       </svg>
     </div>`;
@@ -2780,7 +2824,7 @@ function renderOleoChart(filteredDates){
       <span class="oleo-legend-item"><span class="dot" style="background:${COR_KG}"></span>Kg Fritura</span>
       <span class="oleo-legend-item"><span class="dot" style="background:${COR_INDICADOR}"></span>Indicador Kg/Litro</span>
     </div>
-    <svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" style="overflow:visible;font-family:Arial;display:inline-block;">
+    <svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       <line x1="${padLeft}" y1="${h-padBottom}" x2="${w-padRight}" y2="${h-padBottom}" stroke="#f0ddc0" stroke-width="1"/>
       <path d="${sLitros.path}" fill="none" stroke="${COR_LITROS}" stroke-width="2.5"/>
       <path d="${sKg.path}" fill="none" stroke="${COR_KG}" stroke-width="2.5"/>
@@ -2814,7 +2858,7 @@ function renderTrendLine(points){
   });
 
   document.getElementById('trendWrap').innerHTML = `
-    <svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" style="overflow:visible;font-family:Arial;display:inline-block;">
+    <svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       <line x1="${padLeft}" y1="${h-padBottom}" x2="${w-padRight}" y2="${h-padBottom}" stroke="#f0ddc0" stroke-width="1"/>
       <path d="${path}" fill="none" stroke="#A10101" stroke-width="2.5"/>
       ${dots}
@@ -3055,25 +3099,20 @@ function buildDayCausesSvgElement(dayKey){
   const total = entries.reduce((a,[,v])=>a+v,0);
   if(entries.length === 0) return null;
 
-  const barH = 30, gap = 14, leftPad = 220, rightPad = 130, topPad = 10;
-  const chartW = 820;
-  const chartH = entries.length*(barH+gap) + topPad;
-  const durValues = entries.map(([cat])=> durMinutes[cat]||0);
-  const maxDur = Math.max(...durValues, 1);
-
-  let bars = '';
-  entries.forEach(([cat,count], i)=>{
-    const pct = count/total*100;
+  const barItems = entries.map(([cat,count])=>{
     const dur = durMinutes[cat] || 0;
-    const barWmax = chartW - leftPad - rightPad;
-    const w = dur > 0 ? (dur/maxDur) * barWmax : barWmax * 0.05;
-    const y = topPad + i*(barH+gap);
-    const color = dur > 0 ? '#A10101' : '#e3d9d4';
-    const textColor = dur > 0 ? '#A10101' : '#8a7a75';
+    const pct = count/total*100;
     const durTxt = dur > 0 ? TP_fmtDuration(dur*60) : 'sem duração registrada';
-    bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="12" fill="#2a1a1a" text-anchor="end" font-weight="600">${cat}</text>`;
-    bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="${color}" rx="5"/>`;
-    bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="12" fill="${textColor}" font-weight="700">${pct.toFixed(0)}% (${count}) · ${durTxt}</text>`;
+    return {
+      label: cat, value: dur,
+      displayText: `${pct.toFixed(0)}% (${count}) · ${durTxt}`,
+      color: dur > 0 ? '#A10101' : '#e3d9d4',
+      textColor: dur > 0 ? '#A10101' : '#8a7a75',
+    };
+  });
+  const { bars, chartW, chartH } = buildBarsSvg(barItems, {
+    barH:30, gap:14, leftPad:220, rightPad:130, topPad:10, chartW:820,
+    labelFontSize:12, valueFontSize:12, minBarFraction:0.05,
   });
 
   const wrapper = document.createElement('div');
@@ -3666,7 +3705,7 @@ function TP_renderStagesChart(){
   });
 
   document.getElementById('tpChartStages').innerHTML = `
-    <svg viewBox="0 0 ${chartWidth} 330" width="${chartWidth}" height="330" style="overflow:visible;font-family:Arial;display:inline-block;">
+    <svg viewBox="0 0 ${chartWidth} 330" width="${chartWidth}" height="330" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       ${grid}${bars}
     </svg>`;
 }
@@ -3701,7 +3740,7 @@ function TP_renderLeadTimeChart(){
   });
 
   document.getElementById('tpChartLeadTime').innerHTML = `
-    <svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" style="overflow:visible;font-family:Arial;display:inline-block;">
+    <svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       ${grid}<path d="${path}" fill="none" stroke="#A10101" stroke-width="2.4"/>${dots}${labels}
     </svg>`;
 }
@@ -3728,7 +3767,7 @@ function TP_renderProdutoChart(){
     bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="11.5" fill="#A10101" font-weight="700">${TP_fmtDuration(item.value)}</text>`;
   });
   document.getElementById('tpChartProduto').innerHTML = `
-    <svg viewBox="0 0 ${leftLabelW+chartW+90} ${h+10}" width="${leftLabelW+chartW+90}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+    <svg viewBox="0 0 ${leftLabelW+chartW+90} ${h+10}" width="${leftLabelW+chartW+90}" height="${h+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       ${bars}
     </svg>`;
 }
@@ -4387,7 +4426,7 @@ function PR_renderVelocidadeChart(){
     bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="11.5" fill="#A10101" font-weight="700">${PR_fmtNum(item.value, 1)} massas/h</text>`;
   });
   document.getElementById('prChartVelocidade').innerHTML = `
-    <svg viewBox="0 0 ${leftLabelW+chartW+90} ${h+10}" width="${leftLabelW+chartW+90}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+    <svg viewBox="0 0 ${leftLabelW+chartW+90} ${h+10}" width="${leftLabelW+chartW+90}" height="${h+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       ${bars}
     </svg>`;
 }
@@ -4414,7 +4453,7 @@ function PR_renderParadasChart(){
     bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="11.5" fill="#B5640B" font-weight="700">${TP_fmtDuration(item.value)}</text>`;
   });
   document.getElementById('prChartParadas').innerHTML = `
-    <svg viewBox="0 0 ${leftLabelW+chartW+100} ${h+10}" width="${leftLabelW+chartW+100}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+    <svg viewBox="0 0 ${leftLabelW+chartW+100} ${h+10}" width="${leftLabelW+chartW+100}" height="${h+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       ${bars}
     </svg>`;
 }
@@ -4647,7 +4686,7 @@ function PR_renderChartEtapas(rows){
     bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="11.5" fill="#A10101" font-weight="700">${TP_fmtDuration(item.avgSec)}</text>`;
   });
   el.innerHTML = `
-    <svg viewBox="0 0 ${leftLabelW+chartW+100} ${h+10}" width="${leftLabelW+chartW+100}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+    <svg viewBox="0 0 ${leftLabelW+chartW+100} ${h+10}" width="${leftLabelW+chartW+100}" height="${h+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       ${bars}
     </svg>
     <div style="margin-top:10px;font-size:11px;color:var(--ink-soft);">Ordenado da etapa mais lenta pra mais rápida — a primeira é o gargalo do processo.</div>
@@ -4677,7 +4716,7 @@ function PR_renderChartParadasTempos(rows){
     bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="11.5" fill="#B5640B" font-weight="700">${TP_fmtDuration(item.value)}</text>`;
   });
   el.innerHTML = `
-    <svg viewBox="0 0 ${leftLabelW+chartW+100} ${h+10}" width="${leftLabelW+chartW+100}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+    <svg viewBox="0 0 ${leftLabelW+chartW+100} ${h+10}" width="${leftLabelW+chartW+100}" height="${h+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       ${bars}
     </svg>`;
 }
@@ -4794,7 +4833,7 @@ function PR_renderChartUnidadesProduto(rows){
     }
   });
   document.getElementById('prChartVelocidade').innerHTML = `
-    <svg viewBox="0 0 ${leftLabelW+chartW+150} ${h+10}" width="${leftLabelW+chartW+150}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+    <svg viewBox="0 0 ${leftLabelW+chartW+150} ${h+10}" width="${leftLabelW+chartW+150}" height="${h+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       ${bars}
     </svg>
     <div style="margin-top:10px;font-size:11px;color:var(--ink-soft);display:flex;gap:16px;align-items:center;">
@@ -4826,7 +4865,7 @@ function PR_renderParadasChartProducao(rows){
     bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="11.5" fill="#B5640B" font-weight="700">${TP_fmtDuration(item.value)}</text>`;
   });
   document.getElementById('prChartParadas').innerHTML = `
-    <svg viewBox="0 0 ${leftLabelW+chartW+100} ${h+10}" width="${leftLabelW+chartW+100}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+    <svg viewBox="0 0 ${leftLabelW+chartW+100} ${h+10}" width="${leftLabelW+chartW+100}" height="${h+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       ${bars}
     </svg>`;
 }
@@ -4861,7 +4900,7 @@ function PR_renderParadasRolosChart(insumoRows){
     bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="11.5" fill="#B5640B" font-weight="700">${TP_fmtDuration(item.value)}</text>`;
   });
   el.innerHTML = `
-    <svg viewBox="0 0 ${leftLabelW+chartW+100} ${h+10}" width="${leftLabelW+chartW+100}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+    <svg viewBox="0 0 ${leftLabelW+chartW+100} ${h+10}" width="${leftLabelW+chartW+100}" height="${h+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       ${bars}
     </svg>`;
 }
@@ -4902,7 +4941,7 @@ function PR_renderEstimativaChart(rows){
     bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="13" fill="#A10101" font-weight="800">${PR_fmtNum(item.value,1)} un/h</text>`;
   });
   el.innerHTML = `
-    <svg viewBox="0 0 ${leftLabelW+chartW+130} ${h+10}" width="${leftLabelW+chartW+130}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+    <svg viewBox="0 0 ${leftLabelW+chartW+130} ${h+10}" width="${leftLabelW+chartW+130}" height="${h+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       ${bars}
     </svg>
   `;
@@ -4937,7 +4976,7 @@ function PR_renderRodadoParadoChart(rows){
     bars += `<text x="${leftLabelW+w+8}" y="${y+rowH/2+4}" font-size="13.5" fill="${item.color}" font-weight="800">${TP_fmtDuration(item.value)} (${pct.toFixed(0)}%)</text>`;
   });
   el.innerHTML = `
-    <svg viewBox="0 0 ${leftLabelW+chartW+150} ${h+10}" width="${leftLabelW+chartW+150}" height="${h+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+    <svg viewBox="0 0 ${leftLabelW+chartW+150} ${h+10}" width="${leftLabelW+chartW+150}" height="${h+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       ${bars}
     </svg>
     <div style="margin-top:10px;font-size:11.5px;color:var(--ink-soft);">Tempo total considerado (soma do Início ao Fim de cada corrida): ${TP_fmtDuration(tempoTotal)}.</div>
@@ -5522,8 +5561,8 @@ async function OL_loadData(isManualRefresh){
    Observação(11). Cabeçalho é 1 linha só (sem sub-cabeçalho tipo "SETOR"
    das outras planilhas).
    ============================================================================ */
-
-const MN_CSV_URL = "https://docs.google.com/spreadsheets/d/1OfZKpJKK3XNrYTF5cVMpUoDF6A6gFgAnb6qV69cJ4IM/export?format=csv&gid=0";
+/* Migrado do Google Sheets pro Supabase (tabela manutencoes) em jul/2026 —
+   a URL antiga da planilha não é mais usada. */
 
 const MN_FALLBACK_DATA = [
   {dateISO:"2026-07-13", dateRaw:"13/07/2026", requisitante:"Paulo", executante:"Romário", setor:"FORNEARIA", horaComunicacao:"18:00", maquina:"Climatica 2", problema:"Não estava esquentando", especialidade:"Mecânica", tipoIntervencao:"Aproveitamento Parada da Produção", inicioReal:"23:10", fimReal:"23:45", observacao:"Reservatório de água seco, consequentimente derreteu a mangueira. Após substituir mangueira, foi realizado um teste e o equipamento funcionou normalmente.", duracaoMin:35, esperaMin:310},
@@ -5731,23 +5770,18 @@ function MN_renderMaquinaChart(rows){
     el.innerHTML = `<div class="empty-state"><span class="empty-icon">🔧</span>Nenhum registro no período selecionado.</div>`;
     return;
   }
-  const barH = 26, gap = 11, leftPad = 210, rightPad = 150, topPad = 10;
-  const chartW = 820;
-  const chartH = entries.length*(barH+gap) + topPad;
-  const maxTempo = Math.max(...entries.map(([,v])=>v.tempoMin), 1);
-  let bars = '';
-  entries.forEach(([maquina,info], i)=>{
-    const barWmax = chartW - leftPad - rightPad;
-    const w = (info.tempoMin/maxTempo) * barWmax;
-    const y = topPad + i*(barH+gap);
-    const lbl = truncateProdLabel(maquina, 26);
+  const barItems = entries.map(([maquina,info])=>{
     const tempoTxt = info.tempoMin > 0 ? TP_fmtDuration(info.tempoMin*60) : 'sem duração registrada';
-    bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${lbl}<title>${maquina}</title></text>`;
-    bars += `<rect x="${leftPad}" y="${y}" width="${w||3}" height="${barH}" fill="#A10101" rx="5"/>`;
-    bars += `<text x="${leftPad+Math.max(w,3)+8}" y="${y+barH/2+4}" font-size="11.5" fill="#A10101" font-weight="700">${tempoTxt} (${info.count} interv.)</text>`;
+    return {
+      label: truncateProdLabel(maquina, 26), labelTitle: maquina,
+      value: info.tempoMin,
+      displayText: `${tempoTxt} (${info.count} interv.)`,
+      color: '#A10101', textColor: '#A10101',
+    };
   });
+  const { bars, chartW, chartH } = buildBarsSvg(barItems, { barH:26, gap:11, leftPad:210, rightPad:150, topPad:10, chartW:820, minPixelWidth:3 });
   el.innerHTML = `
-    <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+    <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       ${bars}
     </svg>`;
 }
@@ -5765,22 +5799,14 @@ function MN_renderRanking(rows, keyFn, elId, color, textColor){
     el.innerHTML = `<div class="empty-state"><span class="empty-icon">🔧</span>Nenhum registro no período selecionado.</div>`;
     return;
   }
-  const barH = 26, gap = 11, leftPad = 210, rightPad = 60, topPad = 10;
-  const chartW = 760;
-  const chartH = entries.length*(barH+gap) + topPad;
-  const maxCount = Math.max(...entries.map(([,v])=>v), 1);
-  let bars = '';
-  entries.forEach(([label,count], i)=>{
-    const barWmax = chartW - leftPad - rightPad;
-    const w = (count/maxCount) * barWmax;
-    const y = topPad + i*(barH+gap);
-    const lbl = truncateProdLabel(label, 26);
-    bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="11.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${lbl}<title>${label}</title></text>`;
-    bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="${color}" rx="5"/>`;
-    bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="11.5" fill="${textColor}" font-weight="700">${count}</text>`;
-  });
+  const barItems = entries.map(([label,count])=>({
+    label: truncateProdLabel(label, 26), labelTitle: label,
+    value: count, displayText: String(count),
+    color, textColor,
+  }));
+  const { bars, chartW, chartH } = buildBarsSvg(barItems, { barH:26, gap:11, leftPad:210, rightPad:60, topPad:10, chartW:760 });
   el.innerHTML = `
-    <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:Arial;display:inline-block;">
+    <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       ${bars}
     </svg>`;
 }
