@@ -1123,7 +1123,10 @@
               <label>Fim da Produção</label>
               <input type="time" id="lpFim">
             </div>
-            <div class="lanc-field"></div>
+            <div class="lanc-field">
+              <label>Duração da Parada</label>
+              <input type="time" step="1" id="lpDuracaoParada" placeholder="Opcional">
+            </div>
             <div class="lanc-field span-3">
               <label>Paradas, Ausências e Desvios de Produção</label>
               <textarea id="lpParadas" placeholder="Opcional"></textarea>
@@ -1648,7 +1651,11 @@ function classifyPlan(planRaw){
   const num = parseNumOrNull(planRaw);
   if(num !== null) return { prev: num, foraDoPlano: false };
   const norm = (planRaw||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  const foraDoPlano = norm.includes('nao planejada');
+  // Aceita tanto o texto original da planilha ("Produção não planejada")
+  // quanto o texto padronizado usado na migração pro Supabase e no
+  // formulário de Lançamento ("Fora do plano de produção") — os dois
+  // precisam ser reconhecidos como a mesma coisa.
+  const foraDoPlano = norm.includes('nao planejada') || norm.includes('fora do plano');
   return { prev: null, foraDoPlano };
 }
 
@@ -1933,11 +1940,7 @@ function transformSupabaseRowsToData(rows){
     const inicio = r.inicio_producao || '';
     const fim = r.fim_producao || '';
     const obs = r.paradas_desvios || '';
-    // A tabela ainda não tem uma coluna própria pra duração de parada (esse
-    // dado, quando existia na planilha antiga, era digitado à parte da
-    // observação). Fica em branco até decidirmos incluir esse campo no
-    // formulário de Lançamento e no schema.
-    const duracaoParada = '';
+    const duracaoParada = r.duracao_parada || '';
 
     if(!byDate[dateISO]) byDate[dateISO] = [];
     byDate[dateISO].push({ setor, equipe, maquina, produto, prev, foraDoPlano, real, uni, dif, obs, inicio, fim, duracaoParada });
@@ -2300,7 +2303,7 @@ function renderCauses(filteredDates){
       });
     });
   });
-  const entries = Object.entries(counts).sort((a,b)=> (durMinutes[b[0]]||0) - (durMinutes[a[0]]||0));
+  const entries = Object.entries(counts).sort((a,b)=> (durMinutes[b[0]]||0) - (durMinutes[a[0]]||0) || b[1] - a[1]);
   const total = entries.reduce((a,[,v])=>a+v,0);
 
   if(entries.length === 0){
@@ -3065,7 +3068,7 @@ function buildDayCausesSvgElement(dayKey){
       if(min !== null) durMinutes[cat] = (durMinutes[cat]||0) + min;
     });
   });
-  const entries = Object.entries(counts).sort((a,b)=> (durMinutes[b[0]]||0) - (durMinutes[a[0]]||0));
+  const entries = Object.entries(counts).sort((a,b)=> (durMinutes[b[0]]||0) - (durMinutes[a[0]]||0) || b[1] - a[1]);
   const total = entries.reduce((a,[,v])=>a+v,0);
   if(entries.length === 0) return null;
 
@@ -5918,6 +5921,7 @@ document.getElementById('lancFormProducao').addEventListener('submit', async (e)
       inicio_producao: document.getElementById('lpInicio').value || null,
       fim_producao: document.getElementById('lpFim').value || null,
       paradas_desvios: document.getElementById('lpParadas').value.trim() || null,
+      duracao_parada: document.getElementById('lpDuracaoParada').value || null,
     };
     const { error } = await client.from('producao_diaria').insert(payload);
     if(error) throw error;
