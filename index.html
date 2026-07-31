@@ -44,8 +44,14 @@
     color:#fff; display:flex; flex-direction:column;
     position:sticky; top:0; height:100vh; overflow-y:auto;
   }
-  .sidebar-brand{ display:flex; align-items:center; gap:10px; padding:22px 18px 18px; border-bottom:1px solid rgba(255,255,255,0.12); }
-  .sidebar-brand-text{ font-weight:600; font-size:18px; letter-spacing:0.2px; font-family:var(--font-display); }
+  .sidebar-brand{ display:flex; align-items:center; gap:10px; padding:18px 20px; border-bottom:1px solid rgba(255,255,255,0.12); }
+  .sidebar-mark{
+    width:26px; height:26px; flex-shrink:0; border-radius:var(--radius-sm);
+    background:var(--gold); color:var(--red-dark);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display); font-weight:600; font-size:14px;
+  }
+  .sidebar-brand-text{ font-weight:600; font-size:16px; letter-spacing:0.2px; font-family:var(--font-display); }
   .sidebar-nav{ display:flex; flex-direction:column; padding:14px 10px; gap:4px; }
   .nav-item{
     display:flex; align-items:center; gap:10px; text-align:left;
@@ -533,6 +539,7 @@
 <div class="app-shell">
   <aside class="sidebar">
     <div class="sidebar-brand">
+      <span class="sidebar-mark">B</span>
       <div class="sidebar-brand-text">Bread King</div>
     </div>
     <nav class="sidebar-nav">
