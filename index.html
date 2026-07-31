@@ -5892,25 +5892,42 @@ document.querySelectorAll('.lanc-tab-btn').forEach(btn=>{
    relatório (ex: "Salgado" vs "SALGADO"). Setor fica travado numa lista
    fechada (com opção de digitar um setor novo, caso realmente precise);
    Produto e Máquina viram sugestão automática (autocomplete), já que
-   esses dois crescem com o tempo e não dá pra travar numa lista fixa. */
+   esses dois crescem com o tempo e não dá pra travar numa lista fixa.
+   Produto e Máquina também são filtrados pelo setor selecionado, pra não
+   sugerir produto de outro setor no meio da lista. */
 function LANC_getKnownValues(){
-  const setores = new Set(), produtos = new Set(), maquinas = new Set();
+  const setores = new Set();
+  const produtosPorSetor = {}, maquinasPorSetor = {};
+  const produtosTodos = new Set(), maquinasTodos = new Set();
   Object.values(DATA || {}).forEach(day=>{
     (day.rows||[]).forEach(r=>{
       if(r.setor) setores.add(r.setor);
-      if(r.produto) produtos.add(r.produto);
-      if(r.maquina) maquinas.add(r.maquina);
+      if(r.produto){
+        produtosTodos.add(r.produto);
+        if(r.setor){
+          if(!produtosPorSetor[r.setor]) produtosPorSetor[r.setor] = new Set();
+          produtosPorSetor[r.setor].add(r.produto);
+        }
+      }
+      if(r.maquina){
+        maquinasTodos.add(r.maquina);
+        if(r.setor){
+          if(!maquinasPorSetor[r.setor]) maquinasPorSetor[r.setor] = new Set();
+          maquinasPorSetor[r.setor].add(r.maquina);
+        }
+      }
     });
   });
   return {
     setores: [...setores].sort(),
-    produtos: [...produtos].sort(),
-    maquinas: [...maquinas].sort(),
+    produtosTodos: [...produtosTodos].sort(),
+    maquinasTodos: [...maquinasTodos].sort(),
+    produtosPorSetor, maquinasPorSetor,
   };
 }
 
 function LANC_populateDropdowns(){
-  const { setores, produtos, maquinas } = LANC_getKnownValues();
+  const { setores } = LANC_getKnownValues();
 
   const setorEl = document.getElementById('lpSetor');
   const currentSetor = setorEl.value;
@@ -5918,6 +5935,24 @@ function LANC_populateDropdowns(){
     + setores.map(s=>`<option value="${s}">${s}</option>`).join('')
     + '<option value="__outro__">+ Outro setor (não está na lista)</option>';
   if(setores.includes(currentSetor) || currentSetor === '__outro__') setorEl.value = currentSetor;
+
+  lpUpdateProdutoMaquinaList();
+}
+
+/* Repopula os datalists de Produto e Máquina com base no setor
+   atualmente selecionado. Se nenhum setor válido estiver selecionado
+   ainda (ou for "Outro setor"), mostra a lista completa, de todos os
+   setores, como alternativa razoável. */
+function lpUpdateProdutoMaquinaList(){
+  const { produtosTodos, maquinasTodos, produtosPorSetor, maquinasPorSetor } = LANC_getKnownValues();
+  const setorAtual = document.getElementById('lpSetor').value;
+
+  const produtos = (setorAtual && produtosPorSetor[setorAtual])
+    ? [...produtosPorSetor[setorAtual]].sort()
+    : produtosTodos;
+  const maquinas = (setorAtual && maquinasPorSetor[setorAtual])
+    ? [...maquinasPorSetor[setorAtual]].sort()
+    : maquinasTodos;
 
   document.getElementById('lpProdutoList').innerHTML = produtos.map(p=>`<option value="${p}">`).join('');
   document.getElementById('lpMaquinaList').innerHTML = maquinas.map(m=>`<option value="${m}">`).join('');
@@ -5932,6 +5967,7 @@ document.getElementById('lpSetor').addEventListener('change', function(){
     outroEl.style.display = 'none';
     outroEl.value = '';
   }
+  lpUpdateProdutoMaquinaList();
 });
 
 function lpGetSetorValue(){
