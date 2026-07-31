@@ -1224,6 +1224,45 @@
 
 <script>
 /* ============================================================
+   CONEXÃO COMPARTILHADA COM O SUPABASE
+   ============================================================
+   Usada tanto pela leitura dos dados (Relatório Industrial e
+   Manutenções, que agora vêm do banco em vez do Google Sheets)
+   quanto pela gravação (aba Lançamento). anon/publishable key —
+   segura de expor no client-side, a escrita é protegida por RLS
+   + PIN da interface (ver seção "PÁGINA LANÇAMENTO" mais abaixo). */
+const SUPABASE_URL = "https://yymdbciabdmkvaydxzrj.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_w5FwCArgR8jr0mbN7teYlQ_59my67Tl";
+let SB_CLIENT = null;
+function getSupabaseClient(){
+  if(!SB_CLIENT){
+    if(typeof supabase === 'undefined' || !supabase.createClient){
+      throw new Error('SDK do Supabase não carregou. Verifique a conexão com a internet.');
+    }
+    SB_CLIENT = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+  return SB_CLIENT;
+}
+/* Busca todas as linhas de uma tabela, paginando de 1000 em 1000 (limite
+   padrão do Supabase por requisição), pra nunca perder dados conforme a
+   tabela cresce além disso. */
+async function sbFetchAll(table, orderCol){
+  const client = getSupabaseClient();
+  const pageSize = 1000;
+  let from = 0, all = [];
+  while(true){
+    let query = client.from(table).select('*').range(from, from + pageSize - 1);
+    if(orderCol) query = query.order(orderCol, { ascending: true });
+    const { data, error } = await query;
+    if(error) throw error;
+    all = all.concat(data || []);
+    if(!data || data.length < pageSize) break;
+    from += pageSize;
+  }
+  return all;
+}
+
+/* ============================================================
    NAVEGAÇÃO ENTRE PÁGINAS (menu lateral)
    ============================================================ */
 document.querySelectorAll('.nav-item').forEach(btn=>{
@@ -1889,37 +1928,34 @@ function fmtDuracaoParada(raw){
   return TP_fmtDuration(min*60);
 }
 
-/* ---------- Transforma o CSV bruto da planilha no formato interno DATA{} ---------- */
-function transformCsvToData(csvText){
-  const allRows = parseCSV(csvText).filter(r => r.some(c => c && c.trim() !== ''));
-  // As duas primeiras linhas (cabeçalho e sub-cabeçalho "SETOR") são descartadas
-  const dataRows = allRows.slice(2);
-
+/* ---------- Transforma as linhas da tabela producao_diaria (Supabase) no formato interno DATA{} ---------- */
+function transformSupabaseRowsToData(rows){
   const byDate = {};
-  let lastDateISO = null;
 
-  dataRows.forEach(r=>{
-    const dataRaw = (r[0]||'').trim();
-    const iso = dataRaw ? parseDataBR(dataRaw) : null;
-    if(iso) lastDateISO = iso;
-    const dateISO = iso || lastDateISO;
-    if(!dateISO) return; // linha sem nenhuma data de referência até agora — ignora
+  rows.forEach(r=>{
+    const dateISO = r.data;
+    if(!dateISO) return;
 
-    const setor = normalizeSector(r[1]);
-    const equipe = (r[2]||'').trim();
-    const maquina = (r[3]||'').trim(); // vazio = não usa máquina / ainda não mapeada
-    const produto = (r[4]||'').trim();
+    const setor = normalizeSector(r.setor || '');
+    const equipe = (r.equipe !== null && r.equipe !== undefined) ? String(r.equipe) : '';
+    const maquina = r.maquina || '';
+    const produto = r.produto || '';
     if(!produto) return;
 
-    const planRaw = (r[5]||'').trim();
-    const { prev, foraDoPlano } = classifyPlan(planRaw); // ver classifyPlan(): distingue "Fora do plano de produção" de "S/ Quantidade Planejada"
-    const real = parseNumOrNull(r[6]) ?? 0;
-    const dif = parsePctOrNull(r[7]);
-    const uni = normalizeUnitDisplay(r[8]);
-    const inicio = (r[9]||'').trim();   // início da produção
-    const fim = (r[10]||'').trim();     // fim da produção
-    const obs = (r[11]||'').trim();     // Paradas, Ausências e Desvios de Produção
-    const duracaoParada = (r[16]||'').trim(); // coluna Q — duração da parada (colunas M-P são um espaçador em branco após "Paradas...")
+    // producao_planejada vem como texto (aceita número OU "S/ Quantidade
+    // Planejada" / "Fora do plano de produção") — mesma lógica do CSV.
+    const { prev, foraDoPlano } = classifyPlan(r.producao_planejada || '');
+    const real = (r.producao_real !== null && r.producao_real !== undefined) ? Number(r.producao_real) : 0;
+    const dif = (prev !== null && prev !== 0) ? ((real - prev) / prev * 100) : null;
+    const uni = normalizeUnitDisplay(r.unidade || '');
+    const inicio = r.inicio_producao || '';
+    const fim = r.fim_producao || '';
+    const obs = r.paradas_desvios || '';
+    // A tabela ainda não tem uma coluna própria pra duração de parada (esse
+    // dado, quando existia na planilha antiga, era digitado à parte da
+    // observação). Fica em branco até decidirmos incluir esse campo no
+    // formulário de Lançamento e no schema.
+    const duracaoParada = '';
 
     if(!byDate[dateISO]) byDate[dateISO] = [];
     byDate[dateISO].push({ setor, equipe, maquina, produto, prev, foraDoPlano, real, uni, dif, obs, inicio, fim, duracaoParada });
@@ -1927,47 +1963,45 @@ function transformCsvToData(csvText){
 
   const result = {};
   Object.keys(byDate).forEach(iso=>{
-    const rows = byDate[iso];
-    const setoresUnicos = [...new Set(rows.map(r=>r.setor).filter(Boolean))];
-
-    // Tempo parado: soma a coluna "Duração" (duração de cada parada registrada)
-    let stopMinutes = null, anyValidDuration = false, sumMin = 0;
-    rows.forEach(r=>{
-      const min = timeToMinutes(r.duracaoParada);
-      if(min !== null){
-        sumMin += min;
-        anyValidDuration = true;
-      }
-    });
-    if(anyValidDuration) stopMinutes = sumMin;
-
+    const dayRows = byDate[iso];
+    const setoresUnicos = [...new Set(dayRows.map(r=>r.setor).filter(Boolean))];
     result[iso] = {
       label: buildLabelFromISO(iso),
       setores: setoresUnicos.length ? setoresUnicos.join(' · ') : '—',
-      stopMinutes,
-      rows: rows.map(({setor,equipe,maquina,produto,prev,foraDoPlano,real,uni,dif,obs,inicio,fim,duracaoParada})=>({setor,equipe,maquina,produto,prev,foraDoPlano,real,uni,dif,obs,inicio,fim,duracaoParada}))
+      stopMinutes: null,
+      rows: dayRows,
     };
   });
   return result;
 }
 
-/* ---------- Busca os dados na planilha (sem cache) e atualiza o relatório ---------- */
+/* ---------- Busca os dados direto do Supabase (tabela producao_diaria) e atualiza o relatório ---------- */
 async function loadData(isManualRefresh){
-  await loadCsvWithFallback({
-    url: CSV_URL,
-    isManualRefresh,
-    signatureKey: 'reportIndustrial',
-    btnId: 'btnRefreshData',
-    infoElId: 'periodInfo',
-    errorLabel: 'dados da planilha',
-    parse: transformCsvToData,
-    onSuccess: (newData) => { DATA = newData; applyDateBoundsAndRefresh(); },
-    hasExistingData: () => Object.keys(DATA).length > 0,
-    fallbackData: FALLBACK_DATA,
-    onFallback: (fb) => { DATA = fb; applyDateBoundsAndRefresh(); },
-    fallbackMessage: (err, hint) =>
-      '⚠ Não foi possível conectar à planilha (' + (err.message || err) + '). Mostrando o último snapshot salvo (22 a 25/06).' + hint,
-  });
+  const btn = document.getElementById('btnRefreshData');
+  const original = btn ? btn.textContent : null;
+  if(btn){ btn.disabled = true; btn.textContent = '⟳ Verificando...'; }
+  try{
+    const rows = await sbFetchAll('producao_diaria', 'data');
+    const newData = transformSupabaseRowsToData(rows);
+    if(Object.keys(newData).length === 0) throw new Error('Nenhum registro encontrado na tabela producao_diaria.');
+    DATA = newData;
+    applyDateBoundsAndRefresh();
+    if(btn){
+      btn.textContent = isManualRefresh ? '✓ Dados atualizados' : original;
+      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 1600);
+    }
+  }catch(err){
+    console.error('Erro ao carregar producao_diaria do Supabase:', err);
+    if(btn){
+      btn.textContent = '⚠ Erro ao atualizar';
+      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 2200);
+    }
+    if(Object.keys(DATA).length === 0){
+      DATA = FALLBACK_DATA;
+      applyDateBoundsAndRefresh();
+      periodInfo.textContent = '⚠ Não foi possível conectar ao Supabase (' + (err.message || err) + '). Mostrando dados de exemplo.';
+    }
+  }
 }
 
 /* Recalcula os limites de data, repopula o filtro de setor e renderiza tudo
@@ -3180,7 +3214,7 @@ const OL_FALLBACK_DATA = {
 let OL_DATA = {}; // { 'YYYY-MM-DD': {entrada, saida, consumo} }, somado por dia
 
 /* ---------- Inicializa página 1 (Relatório Industrial) ---------- */
-periodInfo.textContent = 'Carregando dados da planilha…';
+periodInfo.textContent = 'Carregando dados do banco…';
 loadData(false);
 OL_loadData(false);
 
@@ -5501,49 +5535,51 @@ let MN_DATA = [];
 let MN_FILTERED = [];
 let MN_allDates = [];
 
-function MN_transformCsv(csvText){
-  const rows = parseCSV(csvText).filter(r => r.some(c => c && c.trim() !== ''));
-  const dataRows = rows.slice(1); // só 1 linha de cabeçalho nessa planilha
+/* ---------- Transforma as linhas da tabela manutencoes (Supabase) no formato interno usado pela página ---------- */
+function MN_transformSupabaseRows(rows){
   const records = [];
-  dataRows.forEach(r=>{
-    const requisitante = (r[0]||'').trim();
-    const executante = (r[1]||'').trim();
-    const setor = (r[2]||'').trim();
-    const dataRaw = (r[3]||'').trim();
-    if(!dataRaw) return;
-    const iso = parseDataBR(dataRaw);
+  rows.forEach(r=>{
+    const iso = r.data;
     if(!iso) return;
-    const horaComunicacao = (r[4]||'').trim();
-    const maquina = (r[5]||'').trim();
-    const problema = (r[6]||'').trim();
-    const especialidade = (r[7]||'').trim();
-    const tipoIntervencao = (r[8]||'').trim();
-    const inicioReal = (r[9]||'').trim();
-    const fimReal = (r[10]||'').trim();
-    const observacao = (r[11]||'').trim();
+    const dateRaw = iso.split('-').reverse().join('/');
 
+    // inicio_real / fim_real já vêm como timestamptz completo (data + hora),
+    // então a duração é uma subtração direta — sem precisar adivinhar se
+    // cruzou meia-noite (isso já foi resolvido no momento do lançamento).
     let duracaoMin = null;
-    const iniSec = TP_clockToSeconds(inicioReal), fimSec = TP_clockToSeconds(fimReal);
-    if(iniSec !== null && fimSec !== null){
-      let diff = fimSec - iniSec;
-      if(diff < 0) diff += 24*3600; // cruzou meia-noite
-      duracaoMin = diff/60;
+    const iniDate = r.inicio_real ? new Date(r.inicio_real) : null;
+    const fimDate = r.fim_real ? new Date(r.fim_real) : null;
+    if(iniDate && fimDate && !isNaN(iniDate) && !isNaN(fimDate)){
+      duracaoMin = (fimDate - iniDate) / 60000;
     }
 
-    // Tempo de Resposta: da hora que o problema foi comunicado até o início
-    // real do atendimento.
+    // Tempo de Resposta: da Hora de Comunicação (só horário, mesma Data do
+    // registro) até o Início Real. Se der negativo, assume que a
+    // comunicação foi antes da meia-noite e o atendimento começou já no
+    // dia seguinte.
     let esperaMin = null;
-    const comSec = TP_clockToSeconds(horaComunicacao);
-    if(comSec !== null && iniSec !== null){
-      let diffEspera = iniSec - comSec;
-      if(diffEspera < 0) diffEspera += 24*3600; // cruzou meia-noite
-      esperaMin = diffEspera/60;
+    if(r.hora_comunicacao && iniDate && !isNaN(iniDate)){
+      const comDate = new Date(iso + 'T' + r.hora_comunicacao);
+      let diffMs = iniDate - comDate;
+      if(diffMs < 0) diffMs += 24*3600*1000;
+      esperaMin = diffMs / 60000;
     }
 
     records.push({
-      dateISO: iso, dateRaw: dataRaw, requisitante, executante, setor, horaComunicacao,
-      maquina, problema, especialidade, tipoIntervencao, inicioReal, fimReal,
-      observacao, duracaoMin, esperaMin,
+      dateISO: iso,
+      dateRaw,
+      requisitante: r.requisitante || '',
+      executante: r.executante || '',
+      setor: r.setor || '',
+      horaComunicacao: r.hora_comunicacao ? r.hora_comunicacao.slice(0,5) : '',
+      maquina: r.maquina || '',
+      problema: r.problema || '',
+      especialidade: r.especialidade || '',
+      tipoIntervencao: r.tipo_intervencao || '',
+      inicioReal: iniDate ? String(r.inicio_real).slice(11,16) : '',
+      fimReal: fimDate ? String(r.fim_real).slice(11,16) : '',
+      observacao: r.observacao || '',
+      duracaoMin, esperaMin,
     });
   });
   return records;
@@ -5556,18 +5592,33 @@ const mnMaquinaEl = document.getElementById('mnMaquina');
 const mnEspecialidadeEl = document.getElementById('mnEspecialidade');
 
 async function MN_loadData(isManualRefresh){
-  await loadCsvWithFallback({
-    url: MN_CSV_URL,
-    isManualRefresh,
-    btnId: 'mnBtnRefresh',
-    infoElId: 'mnPeriodInfo',
-    errorLabel: 'Manutenções',
-    parse: MN_transformCsv,
-    onSuccess: (records) => { MN_DATA = records; MN_applyDateBoundsAndPopulate(); MN_refreshAll(); },
-    hasExistingData: () => MN_DATA.length > 0,
-    fallbackData: MN_FALLBACK_DATA,
-    onFallback: (fb) => { MN_DATA = fb; MN_applyDateBoundsAndPopulate(); MN_refreshAll(); },
-  });
+  const btn = document.getElementById('mnBtnRefresh');
+  const original = btn ? btn.textContent : null;
+  if(btn){ btn.disabled = true; btn.textContent = '⟳ Verificando...'; }
+  try{
+    const rows = await sbFetchAll('manutencoes', 'data');
+    const records = MN_transformSupabaseRows(rows);
+    if(records.length === 0) throw new Error('Nenhum registro encontrado na tabela manutencoes.');
+    MN_DATA = records;
+    MN_applyDateBoundsAndPopulate();
+    MN_refreshAll();
+    if(btn){
+      btn.textContent = isManualRefresh ? '✓ Dados atualizados' : original;
+      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 1600);
+    }
+  }catch(err){
+    console.error('Erro ao carregar manutencoes do Supabase:', err);
+    if(btn){
+      btn.textContent = '⚠ Erro ao atualizar';
+      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 2200);
+    }
+    if(MN_DATA.length === 0){
+      MN_DATA = MN_FALLBACK_DATA;
+      MN_applyDateBoundsAndPopulate();
+      MN_refreshAll();
+      document.getElementById('mnPeriodInfo').textContent = '⚠ Não foi possível conectar ao Supabase (' + (err.message || err) + '). Mostrando dados de exemplo.';
+    }
+  }
 }
 
 function MN_applyDateBoundsAndPopulate(){
@@ -5781,18 +5832,9 @@ document.getElementById('mnBtnRefresh').addEventListener('click', ()=> MN_loadDa
    uso de uma única pessoa lançando os dados; não usar pra dados sensíveis.
    ============================================================================ */
 const LANC_PIN = "Bkprocesso#2026";
-const SUPABASE_URL = "https://yymdbciabdmkvaydxzrj.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_w5FwCArgR8jr0mbN7teYlQ_59my67Tl";
 
-let LANC_sb = null;
 function LANC_getClient(){
-  if(!LANC_sb){
-    if(typeof supabase === 'undefined' || !supabase.createClient){
-      throw new Error('SDK do Supabase não carregou. Verifique a conexão com a internet.');
-    }
-    LANC_sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  }
-  return LANC_sb;
+  return getSupabaseClient();
 }
 
 const LANC_SESSION_KEY = 'lancamentoDesbloqueado';
