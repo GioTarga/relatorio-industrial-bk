@@ -490,13 +490,41 @@
     font-size:12px; color:#8a740b; margin-bottom:18px;
   }
 
+  .lanc-items{ display:flex; flex-direction:column; gap:14px; }
+  .lanc-item{
+    border:1px solid var(--line); border-radius:var(--radius-md); padding:16px;
+    background:var(--cream); position:relative;
+  }
+  .lanc-item-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .lanc-item-title{
+    font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.6px; color:var(--ink-soft);
+  }
+  .lanc-item-remove{
+    background:none; border:none; color:var(--red); font-size:11.5px; font-weight:700;
+    cursor:pointer; text-transform:uppercase; letter-spacing:0.3px; padding:0;
+  }
+  .lanc-item-remove:hover{ text-decoration:underline; }
+  .lanc-item-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .lanc-item-grid .lanc-field.span-2{ grid-column:span 2; }
+  .lanc-item-grid .lanc-field.span-3{ grid-column:span 3; }
+  .lanc-add-item-btn{
+    align-self:flex-start; background:none; border:1px dashed #d8b877; border-radius:var(--radius-sm);
+    color:var(--red-dark); font-size:12.5px; font-weight:700; padding:10px 16px; cursor:pointer;
+    margin-top:14px;
+  }
+  .lanc-add-item-btn:hover{ background:#fdf2dc; }
+
   @media (max-width: 900px){
     .lanc-form{ grid-template-columns:repeat(2,1fr); }
     .lanc-field.span-2, .lanc-field.span-3{ grid-column:span 2; }
+    .lanc-item-grid{ grid-template-columns:repeat(2,1fr); }
+    .lanc-item-grid .lanc-field.span-2, .lanc-item-grid .lanc-field.span-3{ grid-column:span 2; }
   }
   @media (max-width: 640px){
     .lanc-form{ grid-template-columns:1fr; }
     .lanc-field.span-2, .lanc-field.span-3{ grid-column:span 1; }
+    .lanc-item-grid{ grid-template-columns:1fr; }
+    .lanc-item-grid .lanc-field.span-2, .lanc-item-grid .lanc-field.span-3{ grid-column:span 1; }
   }
 
   @media (max-width: 640px){
@@ -1082,60 +1110,27 @@
               <label>Data</label>
               <input type="date" id="lpData" required>
             </div>
-            <div class="lanc-field">
-              <label>Setor</label>
-              <input type="text" id="lpSetor" placeholder="Ex: SALGADO" required>
-            </div>
-            <div class="lanc-field">
-              <label>Equipe</label>
-              <input type="number" id="lpEquipe" placeholder="Nº da equipe">
-            </div>
-            <div class="lanc-field">
-              <label>Máquina</label>
-              <input type="text" id="lpMaquina" placeholder="Opcional">
-            </div>
             <div class="lanc-field span-2">
-              <label>Produto</label>
-              <input type="text" id="lpProduto" placeholder="Nome do produto" required>
+              <label>Setor</label>
+              <select id="lpSetor" required>
+                <option value="">Selecione o setor...</option>
+                <option value="__outro__">+ Outro setor (não está na lista)</option>
+              </select>
+              <input type="text" id="lpSetorOutro" placeholder="Digite o nome do novo setor" style="display:none;margin-top:8px;">
             </div>
-            <div class="lanc-field">
-              <label>Unidade</label>
-              <input type="text" id="lpUnidade" placeholder="Ex: UND, CAIXAS, KG">
-            </div>
-            <div class="lanc-field">
-              <label>Produção Planejada</label>
-              <input type="text" id="lpPlanejada" placeholder="Ex: 4500 ou texto">
-              <span class="lanc-checkbox">
-                <input type="checkbox" id="lpSemPlanejada">
-                <label for="lpSemPlanejada" style="text-transform:none;font-weight:400;">S/ Quantidade Planejada</label>
-              </span>
-            </div>
-            <div class="lanc-field">
-              <label>Produção Real</label>
-              <input type="number" step="0.01" id="lpReal" required>
-            </div>
-            <div class="lanc-field"></div>
-            <div class="lanc-field">
-              <label>Início da Produção</label>
-              <input type="time" id="lpInicio">
-            </div>
-            <div class="lanc-field">
-              <label>Fim da Produção</label>
-              <input type="time" id="lpFim">
-            </div>
-            <div class="lanc-field">
-              <label>Duração da Parada</label>
-              <input type="time" step="1" id="lpDuracaoParada" placeholder="Opcional">
-            </div>
+
             <div class="lanc-field span-3">
-              <label>Paradas, Ausências e Desvios de Produção</label>
-              <textarea id="lpParadas" placeholder="Opcional"></textarea>
+              <div id="lpItems" class="lanc-items"></div>
+              <button type="button" class="lanc-add-item-btn" id="lpAddItemBtn">+ Adicionar produto</button>
             </div>
+
             <div class="lanc-submit-row">
               <button type="submit" class="lanc-submit-btn" id="lpSubmitBtn">Salvar Lançamento</button>
               <span class="lanc-feedback" id="lpFeedback"></span>
             </div>
           </form>
+          <datalist id="lpProdutoList"></datalist>
+          <datalist id="lpMaquinaList"></datalist>
         </div>
 
         <!-- Formulário: Manutenções -->
@@ -1267,6 +1262,9 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     document.getElementById('page-rascunho').style.display = target === 'rascunho' ? 'block' : 'none';
     document.getElementById('page-manutencao').style.display = target === 'manutencao' ? 'block' : 'none';
     document.getElementById('page-lancamento').style.display = target === 'lancamento' ? 'block' : 'none';
+    if(target === 'lancamento' && typeof LANC_populateDropdowns === 'function'){
+      LANC_populateDropdowns();
+    }
     if(target === 'tempo' && !TP_loadedOnce){
       TP_loadedOnce = true;
       TP_loadData(false);
@@ -5847,6 +5845,7 @@ function LANC_checkPin(){
     document.getElementById('lancContent').style.display = 'block';
     try{ sessionStorage.setItem(LANC_SESSION_KEY, '1'); }catch(e){}
     LANC_setDefaultDates();
+    LANC_populateDropdowns();
   } else {
     errEl.textContent = 'PIN incorreto. Tente novamente.';
     input.value = '';
@@ -5863,6 +5862,7 @@ try{
   if(sessionStorage.getItem(LANC_SESSION_KEY) === '1'){
     document.getElementById('lancPinGate').style.display = 'none';
     document.getElementById('lancContent').style.display = 'block';
+    LANC_populateDropdowns();
   }
 }catch(e){}
 
@@ -5883,54 +5883,214 @@ document.querySelectorAll('.lanc-tab-btn').forEach(btn=>{
     const tab = btn.dataset.lanctab;
     document.getElementById('lancPanelProducao').style.display = tab === 'producao' ? 'block' : 'none';
     document.getElementById('lancPanelManutencao').style.display = tab === 'manutencao' ? 'block' : 'none';
+    if(tab === 'producao') LANC_populateDropdowns();
   });
 });
 
-/* ---------- Checkbox "S/ Quantidade Planejada" desabilita o campo de texto ---------- */
-const lpSemPlanejadaEl = document.getElementById('lpSemPlanejada');
-const lpPlanejadaEl = document.getElementById('lpPlanejada');
-lpSemPlanejadaEl.addEventListener('change', ()=>{
-  if(lpSemPlanejadaEl.checked){
-    lpPlanejadaEl.value = 'S/ Quantidade Planejada';
-    lpPlanejadaEl.disabled = true;
+/* ---------- Listas de Setor/Produto/Máquina já conhecidos ----------
+   Evita erro de digitação que cria uma aba de setor duplicada no
+   relatório (ex: "Salgado" vs "SALGADO"). Setor fica travado numa lista
+   fechada (com opção de digitar um setor novo, caso realmente precise);
+   Produto e Máquina viram sugestão automática (autocomplete), já que
+   esses dois crescem com o tempo e não dá pra travar numa lista fixa. */
+function LANC_getKnownValues(){
+  const setores = new Set(), produtos = new Set(), maquinas = new Set();
+  Object.values(DATA || {}).forEach(day=>{
+    (day.rows||[]).forEach(r=>{
+      if(r.setor) setores.add(r.setor);
+      if(r.produto) produtos.add(r.produto);
+      if(r.maquina) maquinas.add(r.maquina);
+    });
+  });
+  return {
+    setores: [...setores].sort(),
+    produtos: [...produtos].sort(),
+    maquinas: [...maquinas].sort(),
+  };
+}
+
+function LANC_populateDropdowns(){
+  const { setores, produtos, maquinas } = LANC_getKnownValues();
+
+  const setorEl = document.getElementById('lpSetor');
+  const currentSetor = setorEl.value;
+  setorEl.innerHTML = '<option value="">Selecione o setor...</option>'
+    + setores.map(s=>`<option value="${s}">${s}</option>`).join('')
+    + '<option value="__outro__">+ Outro setor (não está na lista)</option>';
+  if(setores.includes(currentSetor) || currentSetor === '__outro__') setorEl.value = currentSetor;
+
+  document.getElementById('lpProdutoList').innerHTML = produtos.map(p=>`<option value="${p}">`).join('');
+  document.getElementById('lpMaquinaList').innerHTML = maquinas.map(m=>`<option value="${m}">`).join('');
+}
+
+document.getElementById('lpSetor').addEventListener('change', function(){
+  const outroEl = document.getElementById('lpSetorOutro');
+  if(this.value === '__outro__'){
+    outroEl.style.display = 'block';
+    outroEl.focus();
   } else {
-    lpPlanejadaEl.disabled = false;
-    lpPlanejadaEl.value = '';
+    outroEl.style.display = 'none';
+    outroEl.value = '';
   }
 });
 
-/* ---------- Envio: Produção Diária ---------- */
+function lpGetSetorValue(){
+  const sel = document.getElementById('lpSetor').value;
+  if(sel === '__outro__') return document.getElementById('lpSetorOutro').value.trim();
+  return sel.trim();
+}
+
+/* ---------- Itens (produtos) repetíveis dentro do mesmo lançamento ---------- */
+function lpCreateItemRow(){
+  const row = document.createElement('div');
+  row.className = 'lanc-item';
+  row.innerHTML = `
+    <div class="lanc-item-header">
+      <span class="lanc-item-title">Produto</span>
+      <button type="button" class="lanc-item-remove" data-remove>Remover</button>
+    </div>
+    <div class="lanc-item-grid">
+      <div class="lanc-field span-2">
+        <label>Produto</label>
+        <input type="text" class="lp-produto" list="lpProdutoList" placeholder="Nome do produto" required>
+      </div>
+      <div class="lanc-field">
+        <label>Máquina</label>
+        <input type="text" class="lp-maquina" list="lpMaquinaList" placeholder="Opcional">
+      </div>
+      <div class="lanc-field">
+        <label>Equipe</label>
+        <input type="number" class="lp-equipe" placeholder="Nº da equipe">
+      </div>
+      <div class="lanc-field">
+        <label>Unidade</label>
+        <input type="text" class="lp-unidade" placeholder="Ex: UND, CAIXAS, KG">
+      </div>
+      <div class="lanc-field">
+        <label>Produção Real</label>
+        <input type="number" step="0.01" class="lp-real" required>
+      </div>
+      <div class="lanc-field">
+        <label>Produção Planejada</label>
+        <input type="text" class="lp-planejada" placeholder="Ex: 4500 ou texto">
+        <span class="lanc-checkbox">
+          <input type="checkbox" class="lp-sem-planejada">
+          <label style="text-transform:none;font-weight:400;">S/ Quantidade Planejada</label>
+        </span>
+      </div>
+      <div class="lanc-field">
+        <label>Início da Produção</label>
+        <input type="time" class="lp-inicio">
+      </div>
+      <div class="lanc-field">
+        <label>Fim da Produção</label>
+        <input type="time" class="lp-fim">
+      </div>
+      <div class="lanc-field">
+        <label>Duração da Parada</label>
+        <input type="time" step="1" class="lp-duracao">
+      </div>
+      <div class="lanc-field span-3">
+        <label>Paradas, Ausências e Desvios de Produção</label>
+        <textarea class="lp-paradas" placeholder="Opcional"></textarea>
+      </div>
+    </div>
+  `;
+  const semPlanejadaEl = row.querySelector('.lp-sem-planejada');
+  const planejadaEl = row.querySelector('.lp-planejada');
+  semPlanejadaEl.addEventListener('change', ()=>{
+    if(semPlanejadaEl.checked){
+      planejadaEl.value = 'S/ Quantidade Planejada';
+      planejadaEl.disabled = true;
+    } else {
+      planejadaEl.disabled = false;
+      planejadaEl.value = '';
+    }
+  });
+  row.querySelector('[data-remove]').addEventListener('click', ()=>{
+    row.remove();
+    lpUpdateItemNumbers();
+  });
+  return row;
+}
+
+function lpUpdateItemNumbers(){
+  document.querySelectorAll('#lpItems .lanc-item .lanc-item-title').forEach((el,i)=>{
+    el.textContent = 'Produto ' + (i+1);
+  });
+}
+
+function lpAddItem(){
+  const container = document.getElementById('lpItems');
+  container.appendChild(lpCreateItemRow());
+  lpUpdateItemNumbers();
+}
+
+document.getElementById('lpAddItemBtn').addEventListener('click', lpAddItem);
+lpAddItem(); // começa com 1 produto pronto pra preencher
+
+/* ---------- Envio: Produção Diária (grava todos os produtos do lançamento de uma vez) ---------- */
 document.getElementById('lancFormProducao').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const btn = document.getElementById('lpSubmitBtn');
   const feedback = document.getElementById('lpFeedback');
+
+  const data = document.getElementById('lpData').value;
+  const setor = lpGetSetorValue();
+  if(!setor){
+    feedback.textContent = '⚠ Selecione (ou digite) o setor antes de salvar.';
+    feedback.className = 'lanc-feedback err';
+    return;
+  }
+
+  const itemRows = [...document.querySelectorAll('#lpItems .lanc-item')];
+  if(itemRows.length === 0){
+    feedback.textContent = '⚠ Adicione pelo menos 1 produto.';
+    feedback.className = 'lanc-feedback err';
+    return;
+  }
+
+  const payloads = [];
+  for(const row of itemRows){
+    const produto = row.querySelector('.lp-produto').value.trim();
+    const realRaw = row.querySelector('.lp-real').value;
+    if(!produto || realRaw === ''){
+      feedback.textContent = '⚠ Cada produto precisa ter Produto e Produção Real preenchidos.';
+      feedback.className = 'lanc-feedback err';
+      return;
+    }
+    payloads.push({
+      data,
+      setor,
+      equipe: row.querySelector('.lp-equipe').value ? parseInt(row.querySelector('.lp-equipe').value, 10) : null,
+      maquina: row.querySelector('.lp-maquina').value.trim() || null,
+      produto,
+      producao_planejada: row.querySelector('.lp-planejada').value.trim() || null,
+      producao_real: parseFloat(realRaw),
+      unidade: row.querySelector('.lp-unidade').value.trim() || null,
+      inicio_producao: row.querySelector('.lp-inicio').value || null,
+      fim_producao: row.querySelector('.lp-fim').value || null,
+      paradas_desvios: row.querySelector('.lp-paradas').value.trim() || null,
+      duracao_parada: row.querySelector('.lp-duracao').value || null,
+    });
+  }
+
   btn.disabled = true;
-  feedback.textContent = 'Salvando...';
+  feedback.textContent = 'Salvando ' + payloads.length + ' produto(s)...';
   feedback.className = 'lanc-feedback';
   try{
     const client = LANC_getClient();
-    const payload = {
-      data: document.getElementById('lpData').value,
-      setor: document.getElementById('lpSetor').value.trim(),
-      equipe: document.getElementById('lpEquipe').value ? parseInt(document.getElementById('lpEquipe').value, 10) : null,
-      maquina: document.getElementById('lpMaquina').value.trim() || null,
-      produto: document.getElementById('lpProduto').value.trim(),
-      producao_planejada: lpPlanejadaEl.value.trim() || null,
-      producao_real: parseFloat(document.getElementById('lpReal').value),
-      unidade: document.getElementById('lpUnidade').value.trim() || null,
-      inicio_producao: document.getElementById('lpInicio').value || null,
-      fim_producao: document.getElementById('lpFim').value || null,
-      paradas_desvios: document.getElementById('lpParadas').value.trim() || null,
-      duracao_parada: document.getElementById('lpDuracaoParada').value || null,
-    };
-    const { error } = await client.from('producao_diaria').insert(payload);
+    const { error } = await client.from('producao_diaria').insert(payloads);
     if(error) throw error;
-    feedback.textContent = '✓ Lançamento salvo com sucesso!';
+    feedback.textContent = '✓ ' + payloads.length + ' produto(s) salvos com sucesso!';
     feedback.className = 'lanc-feedback ok';
-    document.getElementById('lancFormProducao').reset();
-    lpSemPlanejadaEl.checked = false;
-    lpPlanejadaEl.disabled = false;
+    document.getElementById('lpItems').innerHTML = '';
+    lpAddItem();
+    document.getElementById('lpSetorOutro').style.display = 'none';
+    document.getElementById('lpSetorOutro').value = '';
+    document.getElementById('lpSetor').value = setor; // mantém o setor selecionado pro próximo lançamento
     LANC_setDefaultDates();
+    LANC_populateDropdowns();
   }catch(err){
     console.error('Erro ao salvar Produção Diária:', err);
     feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
