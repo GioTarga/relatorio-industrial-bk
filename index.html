@@ -427,6 +427,71 @@
   /* ============================================================
      RESPONSIVIDADE MOBILE
      ============================================================ */
+  /* ============================================================
+     ABA "LANÇAMENTO" — formulário de entrada direto no Supabase
+     ============================================================ */
+  .pin-gate{
+    max-width:360px; margin:80px auto; background:var(--paper); border:1px solid var(--line);
+    border-radius:14px; padding:32px 28px; text-align:center; box-shadow:0 2px 14px rgba(161,1,1,0.06);
+  }
+  .pin-gate h2{ margin:0 0 6px; font-size:18px; color:var(--red-dark); }
+  .pin-gate p{ margin:0 0 18px; font-size:12.5px; color:var(--ink-soft); }
+  .pin-gate input{
+    width:100%; text-align:center; letter-spacing:6px; font-size:20px; padding:12px;
+    border:1px solid var(--line); border-radius:9px; font-family:inherit; margin-bottom:12px; background:var(--cream);
+  }
+  .pin-gate button{
+    width:100%; background:var(--red); color:#fff; border:none; border-radius:9px; padding:11px;
+    font-size:14px; font-weight:700; cursor:pointer;
+  }
+  .pin-gate button:hover{ background:var(--red-dark); }
+  .pin-gate .pin-error{ color:var(--red); font-size:12px; margin-top:10px; min-height:16px; }
+
+  .lanc-tabs{ display:flex; gap:8px; margin-bottom:20px; }
+  .lanc-tab-btn{
+    padding:10px 22px; border-radius:9px; border:1px solid var(--line); background:#fbeed0;
+    font-weight:800; font-size:12.5px; letter-spacing:0.5px; text-transform:uppercase;
+    color:var(--ink-soft); cursor:pointer;
+  }
+  .lanc-tab-btn.active{ background:var(--red); color:#fff; border-color:var(--red); }
+
+  .lanc-form{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .lanc-field{ display:flex; flex-direction:column; gap:6px; }
+  .lanc-field.span-2{ grid-column:span 2; }
+  .lanc-field.span-3{ grid-column:span 3; }
+  .lanc-field label{ font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--ink-soft); }
+  .lanc-field input[type=text], .lanc-field input[type=number], .lanc-field input[type=date],
+  .lanc-field input[type=time], .lanc-field select, .lanc-field textarea{
+    border:1px solid #e8d3a3; border-radius:8px; padding:9px 12px; font-size:13.5px;
+    font-family:inherit; background:var(--cream); color:var(--ink);
+  }
+  .lanc-field textarea{ resize:vertical; min-height:60px; }
+  .lanc-checkbox{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-soft); margin-top:2px; }
+  .lanc-checkbox input{ cursor:pointer; }
+  .lanc-submit-row{ grid-column:1 / -1; display:flex; align-items:center; gap:14px; margin-top:8px; }
+  .lanc-submit-btn{
+    background:var(--red); color:#fff; border:none; border-radius:9px; padding:12px 28px;
+    font-size:14px; font-weight:700; cursor:pointer;
+  }
+  .lanc-submit-btn:hover{ background:var(--red-dark); }
+  .lanc-submit-btn:disabled{ opacity:0.6; cursor:default; }
+  .lanc-feedback{ font-size:12.5px; font-weight:600; }
+  .lanc-feedback.ok{ color:var(--good); }
+  .lanc-feedback.err{ color:var(--red); }
+  .lanc-warning{
+    background:#fdf2dc; border:1px solid #f0d9ad; border-radius:9px; padding:12px 16px;
+    font-size:12px; color:#8a740b; margin-bottom:18px;
+  }
+
+  @media (max-width: 900px){
+    .lanc-form{ grid-template-columns:repeat(2,1fr); }
+    .lanc-field.span-2, .lanc-field.span-3{ grid-column:span 2; }
+  }
+  @media (max-width: 640px){
+    .lanc-form{ grid-template-columns:1fr; }
+    .lanc-field.span-2, .lanc-field.span-3{ grid-column:span 1; }
+  }
+
   @media (max-width: 640px){
     .container{ padding:16px 14px 40px; }
     .setor-tabs{ padding:12px 14px 0; }
@@ -464,6 +529,7 @@
     .legend{ font-size:11px; gap:10px; }
   }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -493,6 +559,10 @@
       <button class="nav-item" data-page="manutencao">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
         Manutenções
+      </button>
+      <button class="nav-item" data-page="lancamento">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Lançamento
       </button>
     </nav>
   </aside>
@@ -986,6 +1056,167 @@
     </div>
   </div> <!-- /page-manutencao -->
 
+  <!-- ============================================================ PÁGINA LANÇAMENTO ============================================================ -->
+  <div id="page-lancamento" class="report-page" style="display:none;">
+
+    <div class="topbar">
+      <div class="brand">
+        <div class="text-block" style="text-align:center;">
+          <div class="eyebrow">Bread King · Lançamento</div>
+          <h1>Lançamento de Dados</h1>
+          <div class="subtitle">Produção Diária e Manutenções — direto no banco de dados</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+
+      <div id="lancPinGate" class="pin-gate">
+        <h2>Área protegida</h2>
+        <p>Digite o PIN para acessar o lançamento de dados.</p>
+        <input type="password" id="lancPinInput" inputmode="numeric" maxlength="12" placeholder="••••">
+        <button type="button" id="lancPinBtn">Entrar</button>
+        <div class="pin-error" id="lancPinError"></div>
+      </div>
+
+      <div id="lancContent" style="display:none;">
+
+        <div class="lanc-tabs">
+          <button type="button" class="lanc-tab-btn active" data-lanctab="producao">Produção Diária</button>
+          <button type="button" class="lanc-tab-btn" data-lanctab="manutencao">Manutenção</button>
+        </div>
+
+        <!-- Formulário: Produção Diária -->
+        <div id="lancPanelProducao" class="panel">
+          <div class="panel-title">Novo lançamento — Produção Diária</div>
+          <form id="lancFormProducao" class="lanc-form">
+            <div class="lanc-field">
+              <label>Data</label>
+              <input type="date" id="lpData" required>
+            </div>
+            <div class="lanc-field">
+              <label>Setor</label>
+              <input type="text" id="lpSetor" placeholder="Ex: SALGADO" required>
+            </div>
+            <div class="lanc-field">
+              <label>Equipe</label>
+              <input type="number" id="lpEquipe" placeholder="Nº da equipe">
+            </div>
+            <div class="lanc-field">
+              <label>Máquina</label>
+              <input type="text" id="lpMaquina" placeholder="Opcional">
+            </div>
+            <div class="lanc-field span-2">
+              <label>Produto</label>
+              <input type="text" id="lpProduto" placeholder="Nome do produto" required>
+            </div>
+            <div class="lanc-field">
+              <label>Unidade</label>
+              <input type="text" id="lpUnidade" placeholder="Ex: UND, CAIXAS, KG">
+            </div>
+            <div class="lanc-field">
+              <label>Produção Planejada</label>
+              <input type="text" id="lpPlanejada" placeholder="Ex: 4500 ou texto">
+              <span class="lanc-checkbox">
+                <input type="checkbox" id="lpSemPlanejada">
+                <label for="lpSemPlanejada" style="text-transform:none;font-weight:400;">S/ Quantidade Planejada</label>
+              </span>
+            </div>
+            <div class="lanc-field">
+              <label>Produção Real</label>
+              <input type="number" step="0.01" id="lpReal" required>
+            </div>
+            <div class="lanc-field"></div>
+            <div class="lanc-field">
+              <label>Início da Produção</label>
+              <input type="time" id="lpInicio">
+            </div>
+            <div class="lanc-field">
+              <label>Fim da Produção</label>
+              <input type="time" id="lpFim">
+            </div>
+            <div class="lanc-field"></div>
+            <div class="lanc-field span-3">
+              <label>Paradas, Ausências e Desvios de Produção</label>
+              <textarea id="lpParadas" placeholder="Opcional"></textarea>
+            </div>
+            <div class="lanc-submit-row">
+              <button type="submit" class="lanc-submit-btn" id="lpSubmitBtn">Salvar Lançamento</button>
+              <span class="lanc-feedback" id="lpFeedback"></span>
+            </div>
+          </form>
+        </div>
+
+        <!-- Formulário: Manutenções -->
+        <div id="lancPanelManutencao" class="panel" style="display:none;">
+          <div class="panel-title">Novo lançamento — Manutenção</div>
+          <form id="lancFormManutencao" class="lanc-form">
+            <div class="lanc-field">
+              <label>Data</label>
+              <input type="date" id="lmData" required>
+            </div>
+            <div class="lanc-field">
+              <label>Setor</label>
+              <input type="text" id="lmSetor" placeholder="Ex: SALGADO">
+            </div>
+            <div class="lanc-field">
+              <label>Máquina</label>
+              <input type="text" id="lmMaquina">
+            </div>
+            <div class="lanc-field">
+              <label>Requisitante</label>
+              <input type="text" id="lmRequisitante">
+            </div>
+            <div class="lanc-field">
+              <label>Executante</label>
+              <input type="text" id="lmExecutante">
+            </div>
+            <div class="lanc-field">
+              <label>Hora de Comunicação</label>
+              <input type="time" id="lmHoraComunicacao">
+            </div>
+            <div class="lanc-field span-2">
+              <label>Problema</label>
+              <input type="text" id="lmProblema" placeholder="Descrição do problema">
+            </div>
+            <div class="lanc-field">
+              <label>Especialidade</label>
+              <input type="text" id="lmEspecialidade" placeholder="Ex: Mecânica, Elétrica">
+            </div>
+            <div class="lanc-field span-2">
+              <label>Tipo de Intervenção</label>
+              <input type="text" id="lmTipoIntervencao" placeholder="Ex: Parada para Manutenção">
+            </div>
+            <div class="lanc-field">
+              <label>Início Real</label>
+              <input type="time" id="lmInicioReal">
+            </div>
+            <div class="lanc-field">
+              <label>Fim Real</label>
+              <input type="time" id="lmFimReal">
+              <span class="lanc-checkbox">
+                <input type="checkbox" id="lmFimVirouDia">
+                <label for="lmFimVirouDia" style="text-transform:none;font-weight:400;">Terminou no dia seguinte</label>
+              </span>
+            </div>
+            <div class="lanc-field"></div>
+            <div class="lanc-field span-3">
+              <label>Observação</label>
+              <textarea id="lmObservacao" placeholder="Opcional"></textarea>
+            </div>
+            <div class="lanc-submit-row">
+              <button type="submit" class="lanc-submit-btn" id="lmSubmitBtn">Salvar Lançamento</button>
+              <span class="lanc-feedback" id="lmFeedback"></span>
+            </div>
+          </form>
+        </div>
+
+      </div> <!-- /lancContent -->
+
+    </div> <!-- /container -->
+
+  </div> <!-- /page-lancamento -->
+
   </div> <!-- /main-content -->
 </div> <!-- /app-shell -->
 
@@ -1005,6 +1236,7 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     document.getElementById('page-produtividade').style.display = target === 'produtividade' ? 'block' : 'none';
     document.getElementById('page-rascunho').style.display = target === 'rascunho' ? 'block' : 'none';
     document.getElementById('page-manutencao').style.display = target === 'manutencao' ? 'block' : 'none';
+    document.getElementById('page-lancamento').style.display = target === 'lancamento' ? 'block' : 'none';
     if(target === 'tempo' && !TP_loadedOnce){
       TP_loadedOnce = true;
       TP_loadData(false);
@@ -5540,6 +5772,184 @@ mnSetorEl.addEventListener('change', MN_refreshAll);
 mnMaquinaEl.addEventListener('change', MN_refreshAll);
 mnEspecialidadeEl.addEventListener('change', MN_refreshAll);
 document.getElementById('mnBtnRefresh').addEventListener('click', ()=> MN_loadData(true));
+
+/* ============================================================================
+   PÁGINA LANÇAMENTO — formulário de entrada direto no Supabase
+   ============================================================================
+   Proteção por PIN: só uma trava visual client-side (não é segurança real —
+   qualquer um que abrir o código-fonte da página vê o PIN). Suficiente pro
+   uso de uma única pessoa lançando os dados; não usar pra dados sensíveis.
+   ============================================================================ */
+const LANC_PIN = "Bkprocesso#2026";
+const SUPABASE_URL = "https://yymdbciabdmkvaydxzrj.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_w5FwCArgR8jr0mbN7teYlQ_59my67Tl";
+
+let LANC_sb = null;
+function LANC_getClient(){
+  if(!LANC_sb){
+    if(typeof supabase === 'undefined' || !supabase.createClient){
+      throw new Error('SDK do Supabase não carregou. Verifique a conexão com a internet.');
+    }
+    LANC_sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+  return LANC_sb;
+}
+
+const LANC_SESSION_KEY = 'lancamentoDesbloqueado';
+
+function LANC_checkPin(){
+  const input = document.getElementById('lancPinInput');
+  const errEl = document.getElementById('lancPinError');
+  if(input.value === LANC_PIN){
+    errEl.textContent = '';
+    document.getElementById('lancPinGate').style.display = 'none';
+    document.getElementById('lancContent').style.display = 'block';
+    try{ sessionStorage.setItem(LANC_SESSION_KEY, '1'); }catch(e){}
+    LANC_setDefaultDates();
+  } else {
+    errEl.textContent = 'PIN incorreto. Tente novamente.';
+    input.value = '';
+    input.focus();
+  }
+}
+document.getElementById('lancPinBtn').addEventListener('click', LANC_checkPin);
+document.getElementById('lancPinInput').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') LANC_checkPin();
+});
+// Mantém o acesso liberado durante a sessão do navegador (evita pedir o PIN
+// de novo a cada troca de aba dentro da mesma visita à página).
+try{
+  if(sessionStorage.getItem(LANC_SESSION_KEY) === '1'){
+    document.getElementById('lancPinGate').style.display = 'none';
+    document.getElementById('lancContent').style.display = 'block';
+  }
+}catch(e){}
+
+function LANC_setDefaultDates(){
+  const today = new Date();
+  const iso = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  const lpData = document.getElementById('lpData');
+  const lmData = document.getElementById('lmData');
+  if(lpData && !lpData.value) lpData.value = iso;
+  if(lmData && !lmData.value) lmData.value = iso;
+}
+
+/* ---------- Sub-abas Produção Diária / Manutenção ---------- */
+document.querySelectorAll('.lanc-tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.lanc-tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.lanctab;
+    document.getElementById('lancPanelProducao').style.display = tab === 'producao' ? 'block' : 'none';
+    document.getElementById('lancPanelManutencao').style.display = tab === 'manutencao' ? 'block' : 'none';
+  });
+});
+
+/* ---------- Checkbox "S/ Quantidade Planejada" desabilita o campo de texto ---------- */
+const lpSemPlanejadaEl = document.getElementById('lpSemPlanejada');
+const lpPlanejadaEl = document.getElementById('lpPlanejada');
+lpSemPlanejadaEl.addEventListener('change', ()=>{
+  if(lpSemPlanejadaEl.checked){
+    lpPlanejadaEl.value = 'S/ Quantidade Planejada';
+    lpPlanejadaEl.disabled = true;
+  } else {
+    lpPlanejadaEl.disabled = false;
+    lpPlanejadaEl.value = '';
+  }
+});
+
+/* ---------- Envio: Produção Diária ---------- */
+document.getElementById('lancFormProducao').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const btn = document.getElementById('lpSubmitBtn');
+  const feedback = document.getElementById('lpFeedback');
+  btn.disabled = true;
+  feedback.textContent = 'Salvando...';
+  feedback.className = 'lanc-feedback';
+  try{
+    const client = LANC_getClient();
+    const payload = {
+      data: document.getElementById('lpData').value,
+      setor: document.getElementById('lpSetor').value.trim(),
+      equipe: document.getElementById('lpEquipe').value ? parseInt(document.getElementById('lpEquipe').value, 10) : null,
+      maquina: document.getElementById('lpMaquina').value.trim() || null,
+      produto: document.getElementById('lpProduto').value.trim(),
+      producao_planejada: lpPlanejadaEl.value.trim() || null,
+      producao_real: parseFloat(document.getElementById('lpReal').value),
+      unidade: document.getElementById('lpUnidade').value.trim() || null,
+      inicio_producao: document.getElementById('lpInicio').value || null,
+      fim_producao: document.getElementById('lpFim').value || null,
+      paradas_desvios: document.getElementById('lpParadas').value.trim() || null,
+    };
+    const { error } = await client.from('producao_diaria').insert(payload);
+    if(error) throw error;
+    feedback.textContent = '✓ Lançamento salvo com sucesso!';
+    feedback.className = 'lanc-feedback ok';
+    document.getElementById('lancFormProducao').reset();
+    lpSemPlanejadaEl.checked = false;
+    lpPlanejadaEl.disabled = false;
+    LANC_setDefaultDates();
+  }catch(err){
+    console.error('Erro ao salvar Produção Diária:', err);
+    feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+/* ---------- Envio: Manutenções ---------- */
+document.getElementById('lancFormManutencao').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const btn = document.getElementById('lmSubmitBtn');
+  const feedback = document.getElementById('lmFeedback');
+  btn.disabled = true;
+  feedback.textContent = 'Salvando...';
+  feedback.className = 'lanc-feedback';
+  try{
+    const client = LANC_getClient();
+    const dataStr = document.getElementById('lmData').value; // YYYY-MM-DD
+    const fimVirouDia = document.getElementById('lmFimVirouDia').checked;
+
+    // inicio_real / fim_real são timestamptz — monta datetime combinando a
+    // Data do formulário com o horário informado. Se "Terminou no dia
+    // seguinte" estiver marcado, a data do Fim Real é a data + 1 dia.
+    function toTimestamp(dateStr, timeStr, addDay){
+      if(!timeStr) return null;
+      const d = new Date(dateStr + 'T' + timeStr + ':00');
+      if(addDay) d.setDate(d.getDate() + 1);
+      return d.toISOString();
+    }
+
+    const payload = {
+      requisitante: document.getElementById('lmRequisitante').value.trim() || null,
+      executante: document.getElementById('lmExecutante').value.trim() || null,
+      setor: document.getElementById('lmSetor').value.trim() || null,
+      data: dataStr,
+      hora_comunicacao: document.getElementById('lmHoraComunicacao').value || null,
+      maquina: document.getElementById('lmMaquina').value.trim() || null,
+      problema: document.getElementById('lmProblema').value.trim() || null,
+      especialidade: document.getElementById('lmEspecialidade').value.trim() || null,
+      tipo_intervencao: document.getElementById('lmTipoIntervencao').value.trim() || null,
+      inicio_real: toTimestamp(dataStr, document.getElementById('lmInicioReal').value, false),
+      fim_real: toTimestamp(dataStr, document.getElementById('lmFimReal').value, fimVirouDia),
+      observacao: document.getElementById('lmObservacao').value.trim() || null,
+    };
+    const { error } = await client.from('manutencoes').insert(payload);
+    if(error) throw error;
+    feedback.textContent = '✓ Lançamento salvo com sucesso!';
+    feedback.className = 'lanc-feedback ok';
+    document.getElementById('lancFormManutencao').reset();
+    document.getElementById('lmFimVirouDia').checked = false;
+    LANC_setDefaultDates();
+  }catch(err){
+    console.error('Erro ao salvar Manutenção:', err);
+    feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }finally{
+    btn.disabled = false;
+  }
+});
 
 </script>
 </body>
