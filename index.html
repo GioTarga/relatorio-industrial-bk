@@ -514,6 +514,32 @@
   }
   .lanc-add-item-btn:hover{ background:#fdf2dc; }
 
+  .lanc-subtabs{ display:flex; gap:8px; margin-bottom:20px; }
+  .lanc-subtab-btn{
+    padding:8px 16px; border-radius:var(--radius-sm); border:1px solid var(--line);
+    background:#fff; font-weight:700; font-size:11.5px; letter-spacing:0.4px; text-transform:uppercase;
+    color:var(--ink-soft); cursor:pointer;
+  }
+  .lanc-subtab-btn.active{ background:#fbeed0; color:var(--red-dark); border-color:#e8d3a3; }
+  .lanc-hist-filters{ display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; }
+  .lanc-hist-filters .lanc-field{ min-width:150px; }
+  #lpHistTable{ font-size:11.5px; }
+  #lpHistTable td, #lpHistTable th{ white-space:nowrap; }
+  #lpHistTable td.lanc-hist-wrap{ white-space:normal; max-width:180px; }
+  #lpHistTable input, #lpHistTable select{
+    width:100%; min-width:70px; border:1px solid #e8d3a3; border-radius:6px; padding:4px 6px;
+    font-size:11.5px; font-family:inherit; background:var(--cream);
+  }
+  .lanc-hist-btn{
+    border:none; background:none; cursor:pointer; font-size:11px; font-weight:700;
+    text-transform:uppercase; letter-spacing:0.3px; padding:3px 6px;
+  }
+  .lanc-hist-btn.edit{ color:var(--red-dark); }
+  .lanc-hist-btn.delete{ color:var(--red); }
+  .lanc-hist-btn.save{ color:var(--good); }
+  .lanc-hist-btn.cancel{ color:var(--ink-soft); }
+  .lanc-hist-btn:hover{ text-decoration:underline; }
+
   @media (max-width: 900px){
     .lanc-form{ grid-template-columns:repeat(2,1fr); }
     .lanc-field.span-2, .lanc-field.span-3{ grid-column:span 2; }
@@ -1104,6 +1130,12 @@
 
         <!-- Formulário: Produção Diária -->
         <div id="lancPanelProducao" class="panel">
+          <div class="lanc-subtabs">
+            <button type="button" class="lanc-subtab-btn active" data-lpview="novo">Novo Lançamento</button>
+            <button type="button" class="lanc-subtab-btn" data-lpview="historico">Histórico</button>
+          </div>
+
+          <div id="lpViewNovo">
           <div class="panel-title">Novo lançamento — Produção Diária</div>
           <form id="lancFormProducao" class="lanc-form">
             <div class="lanc-field">
@@ -1129,6 +1161,41 @@
               <span class="lanc-feedback" id="lpFeedback"></span>
             </div>
           </form>
+          </div>
+
+          <div id="lpViewHistorico" style="display:none;">
+            <div class="panel-title">Histórico de Lançamentos</div>
+            <div class="lanc-hist-filters">
+              <div class="lanc-field">
+                <label>De</label>
+                <input type="date" id="lpHistDataIni">
+              </div>
+              <div class="lanc-field">
+                <label>Até</label>
+                <input type="date" id="lpHistDataFim">
+              </div>
+              <div class="lanc-field">
+                <label>Setor</label>
+                <select id="lpHistSetor"><option value="">Todos os setores</option></select>
+              </div>
+              <button type="button" class="lanc-add-item-btn" id="lpHistBuscarBtn" style="align-self:flex-end;">Buscar</button>
+            </div>
+            <span class="lanc-feedback" id="lpHistFeedback"></span>
+            <div class="table-wrap" style="margin-top:12px;">
+              <table class="detail" id="lpHistTable">
+                <thead>
+                  <tr>
+                    <th>Data</th><th>Setor</th><th>Produto</th><th>Máquina</th>
+                    <th class="center">Equipe</th><th class="center">Planejada</th><th class="center">Real</th>
+                    <th>Unidade</th><th class="center">Início</th><th class="center">Fim</th>
+                    <th class="center">Duração</th><th>Desvios</th><th class="center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="lpHistTbody"></tbody>
+              </table>
+            </div>
+          </div>
+
           <datalist id="lpProdutoList"></datalist>
           <datalist id="lpMaquinaList"></datalist>
         </div>
@@ -6136,7 +6203,220 @@ document.getElementById('lancFormProducao').addEventListener('submit', async (e)
   }
 });
 
-/* ---------- Envio: Manutenções ---------- */
+/* ============================================================================
+   HISTÓRICO DE LANÇAMENTOS — Produção Diária
+   ============================================================================
+   Lista 1 linha por produto já lançado, com edição e exclusão direto por
+   aqui — evita precisar abrir o Table Editor do Supabase pra corrigir um
+   lançamento. */
+let LP_HIST_DATA = []; // linhas cruas vindas do Supabase (com id), da busca atual
+
+document.querySelectorAll('.lanc-subtab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.lanc-subtab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const view = btn.dataset.lpview;
+    document.getElementById('lpViewNovo').style.display = view === 'novo' ? 'block' : 'none';
+    document.getElementById('lpViewHistorico').style.display = view === 'historico' ? 'block' : 'none';
+    if(view === 'historico'){
+      LP_initHistFiltersIfEmpty();
+      LP_populateHistSetorSelect();
+      LP_loadHistorico();
+    }
+  });
+});
+
+function LP_initHistFiltersIfEmpty(){
+  const iniEl = document.getElementById('lpHistDataIni');
+  const fimEl = document.getElementById('lpHistDataFim');
+  if(!fimEl.value){
+    const hoje = new Date();
+    fimEl.value = hoje.toISOString().slice(0,10);
+  }
+  if(!iniEl.value){
+    const trintaDiasAtras = new Date();
+    trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
+    iniEl.value = trintaDiasAtras.toISOString().slice(0,10);
+  }
+}
+
+function LP_populateHistSetorSelect(){
+  const { setores } = LANC_getKnownValues();
+  const sel = document.getElementById('lpHistSetor');
+  const atual = sel.value;
+  sel.innerHTML = '<option value="">Todos os setores</option>' + setores.map(s=>`<option value="${s}">${s}</option>`).join('');
+  if(setores.includes(atual)) sel.value = atual;
+}
+
+document.getElementById('lpHistBuscarBtn').addEventListener('click', LP_loadHistorico);
+
+async function LP_loadHistorico(){
+  const feedback = document.getElementById('lpHistFeedback');
+  const tbody = document.getElementById('lpHistTbody');
+  feedback.textContent = 'Buscando...';
+  feedback.className = 'lanc-feedback';
+  try{
+    const client = LANC_getClient();
+    const ini = document.getElementById('lpHistDataIni').value;
+    const fim = document.getElementById('lpHistDataFim').value;
+    const setor = document.getElementById('lpHistSetor').value;
+    let query = client.from('producao_diaria').select('*').order('data', { ascending:false }).order('created_at', { ascending:false });
+    if(ini) query = query.gte('data', ini);
+    if(fim) query = query.lte('data', fim);
+    if(setor) query = query.eq('setor', setor);
+    const { data, error } = await query.limit(500);
+    if(error) throw error;
+    LP_HIST_DATA = data || [];
+    LP_renderHistTable();
+    feedback.textContent = LP_HIST_DATA.length + ' lançamento(s) encontrado(s)' + (LP_HIST_DATA.length === 500 ? ' (limitado a 500 — estreite o período pra ver todos)' : '');
+    feedback.className = 'lanc-feedback ok';
+  }catch(err){
+    console.error('Erro ao buscar histórico:', err);
+    feedback.textContent = '⚠ Erro ao buscar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+    tbody.innerHTML = '';
+  }
+}
+
+function LP_fmtDataBR(iso){
+  if(!iso) return '—';
+  return iso.split('-').reverse().join('/');
+}
+function LP_fmtTime(t){
+  if(!t) return '—';
+  return String(t).slice(0,5);
+}
+
+function LP_renderHistTable(){
+  const tbody = document.getElementById('lpHistTbody');
+  if(LP_HIST_DATA.length === 0){
+    tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum lançamento encontrado nesse filtro.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = LP_HIST_DATA.map(row => LP_buildHistRowHtml(row)).join('');
+  tbody.querySelectorAll('tr').forEach(tr=>{
+    const id = tr.dataset.id;
+    tr.querySelector('.lanc-hist-btn.edit').addEventListener('click', ()=> LP_startEditRow(id));
+    tr.querySelector('.lanc-hist-btn.delete').addEventListener('click', ()=> LP_deleteRow(id));
+  });
+}
+
+function LP_buildHistRowHtml(row){
+  return `
+    <tr data-id="${row.id}">
+      <td>${LP_fmtDataBR(row.data)}</td>
+      <td>${row.setor||'—'}</td>
+      <td class="lanc-hist-wrap">${row.produto||'—'}</td>
+      <td>${row.maquina||'—'}</td>
+      <td class="center">${row.equipe ?? '—'}</td>
+      <td class="center">${row.producao_planejada||'—'}</td>
+      <td class="center">${row.producao_real ?? '—'}</td>
+      <td>${row.unidade||'—'}</td>
+      <td class="center">${LP_fmtTime(row.inicio_producao)}</td>
+      <td class="center">${LP_fmtTime(row.fim_producao)}</td>
+      <td class="center">${LP_fmtTime(row.duracao_parada)}</td>
+      <td class="lanc-hist-wrap">${row.paradas_desvios||'—'}</td>
+      <td class="center">
+        <button type="button" class="lanc-hist-btn edit">Editar</button>
+        <button type="button" class="lanc-hist-btn delete">Excluir</button>
+      </td>
+    </tr>`;
+}
+
+function LP_buildHistEditRowHtml(row){
+  return `
+    <tr data-id="${row.id}">
+      <td><input type="date" class="eh-data" value="${row.data||''}"></td>
+      <td><input type="text" class="eh-setor" value="${(row.setor||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="text" class="eh-produto" list="lpProdutoList" value="${(row.produto||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="text" class="eh-maquina" list="lpMaquinaList" value="${(row.maquina||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="number" class="eh-equipe" value="${row.equipe ?? ''}"></td>
+      <td><input type="text" class="eh-planejada" value="${(row.producao_planejada||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="number" step="0.01" class="eh-real" value="${row.producao_real ?? ''}"></td>
+      <td><input type="text" class="eh-unidade" value="${(row.unidade||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="time" class="eh-inicio" value="${LP_fmtTime(row.inicio_producao)==='—'?'':LP_fmtTime(row.inicio_producao)}"></td>
+      <td><input type="time" class="eh-fim" value="${LP_fmtTime(row.fim_producao)==='—'?'':LP_fmtTime(row.fim_producao)}"></td>
+      <td><input type="time" step="1" class="eh-duracao" value="${row.duracao_parada||''}"></td>
+      <td><input type="text" class="eh-paradas" value="${(row.paradas_desvios||'').replace(/"/g,'&quot;')}"></td>
+      <td class="center">
+        <button type="button" class="lanc-hist-btn save">Salvar</button>
+        <button type="button" class="lanc-hist-btn cancel">Cancelar</button>
+      </td>
+    </tr>`;
+}
+
+function LP_startEditRow(id){
+  const row = LP_HIST_DATA.find(r => String(r.id) === String(id));
+  if(!row) return;
+  const tr = document.querySelector(`#lpHistTbody tr[data-id="${id}"]`);
+  if(!tr) return;
+  tr.outerHTML = LP_buildHistEditRowHtml(row);
+  const newTr = document.querySelector(`#lpHistTbody tr[data-id="${id}"]`);
+  newTr.querySelector('.lanc-hist-btn.save').addEventListener('click', ()=> LP_saveEditRow(id));
+  newTr.querySelector('.lanc-hist-btn.cancel').addEventListener('click', LP_renderHistTable);
+}
+
+async function LP_saveEditRow(id){
+  const tr = document.querySelector(`#lpHistTbody tr[data-id="${id}"]`);
+  if(!tr) return;
+  const feedback = document.getElementById('lpHistFeedback');
+  const val = cls => tr.querySelector('.'+cls).value;
+  const payload = {
+    data: val('eh-data') || null,
+    setor: val('eh-setor').trim() || null,
+    produto: val('eh-produto').trim(),
+    maquina: val('eh-maquina').trim() || null,
+    equipe: val('eh-equipe') ? parseInt(val('eh-equipe'),10) : null,
+    producao_planejada: val('eh-planejada').trim() || null,
+    producao_real: val('eh-real') !== '' ? parseFloat(val('eh-real')) : null,
+    unidade: val('eh-unidade').trim() || null,
+    inicio_producao: val('eh-inicio') || null,
+    fim_producao: val('eh-fim') || null,
+    duracao_parada: val('eh-duracao') || null,
+    paradas_desvios: val('eh-paradas').trim() || null,
+  };
+  if(!payload.produto || payload.producao_real === null){
+    feedback.textContent = '⚠ Produto e Produção Real são obrigatórios.';
+    feedback.className = 'lanc-feedback err';
+    return;
+  }
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from('producao_diaria').update(payload).eq('id', id);
+    if(error) throw error;
+    const idx = LP_HIST_DATA.findIndex(r => String(r.id) === String(id));
+    if(idx >= 0) LP_HIST_DATA[idx] = Object.assign({}, LP_HIST_DATA[idx], payload);
+    LP_renderHistTable();
+    feedback.textContent = '✓ Lançamento atualizado.';
+    feedback.className = 'lanc-feedback ok';
+    if(Object.keys(DATA).length > 0) loadData(false); // atualiza o relatório com o dado corrigido
+  }catch(err){
+    console.error('Erro ao atualizar lançamento:', err);
+    feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }
+}
+
+async function LP_deleteRow(id){
+  if(!confirm('Excluir esse lançamento? Essa ação não pode ser desfeita.')) return;
+  const feedback = document.getElementById('lpHistFeedback');
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from('producao_diaria').delete().eq('id', id);
+    if(error) throw error;
+    LP_HIST_DATA = LP_HIST_DATA.filter(r => String(r.id) !== String(id));
+    LP_renderHistTable();
+    feedback.textContent = '✓ Lançamento excluído.';
+    feedback.className = 'lanc-feedback ok';
+    if(Object.keys(DATA).length > 0) loadData(false); // atualiza o relatório
+  }catch(err){
+    console.error('Erro ao excluir lançamento:', err);
+    feedback.textContent = '⚠ Erro ao excluir: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }
+}
+
+
 document.getElementById('lancFormManutencao').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const btn = document.getElementById('lmSubmitBtn');
