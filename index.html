@@ -698,9 +698,14 @@
   </div>
 
   <div class="panel">
-    <div class="panel-title">Ranking de Produção Perdida</div>
+    <div class="panel-title">Atingimento de Meta</div>
     <div class="chart-wrap" id="lostProdWrap"></div>
-    <div class="trend-foot">Produtos com maior volume perdido (Planejado − Real), somado dentro do período e setor selecionados. Só entram produtos que ficaram abaixo do planejado.</div>
+    <div class="legend" id="metaLegend">
+      <span><i class="dot" style="background:#f3d9d0;border:1px solid var(--red)"></i>Meta (Planejado)</span>
+      <span><i class="dot" style="background:var(--red);border:1px solid var(--red)"></i>Realizado (abaixo da meta)</span>
+      <span><i class="dot" style="background:var(--good);border:1px solid var(--good)"></i>Realizado (meta atingida)</span>
+    </div>
+    <div class="trend-foot">Comparação entre a quantidade planejada (Meta) e a produzida (Realizado) por produto, somado dentro do período e setor selecionados. Só entram produtos com planejamento cadastrado.</div>
   </div>
 
   <div class="panel">
@@ -2605,8 +2610,12 @@ function fuzzyGroupBy(items, uniFn, produtoFn, initFn, mergeFn){
   return groups;
 }
 
-/* ---------- Ranking de produção perdida (Planejado - Real, somado por produto) ---------- */
-function computeLostProduction(filteredDates){
+/* ---------- Atingimento de Meta (Planejado x Real, somado por produto) ----------
+   Antes era "Ranking de Produção Perdida" (só mostrava o volume perdido).
+   Agora mostra os dois números lado a lado numa barra só: uma trilha
+   representando a Meta (Planejado) e uma barra sobreposta representando o
+   Realizado — dá pra ver de bate-pronto quanto da meta foi cumprido. */
+function computeMetaAtingimento(filteredDates){
   const source = [];
   filteredDates.forEach(d=>{
     getDayRows(d).forEach(r=>{
@@ -2621,14 +2630,18 @@ function computeLostProduction(filteredDates){
     r=>({ planejado: r.prev, real: r.real, perdido: r.prev - r.real }),
     (g, r)=>{ g.planejado += r.prev; g.real += r.real; g.perdido += (r.prev - r.real); }
   );
-  return groups.sort((a,b)=> b.perdido - a.perdido);
+  const withPct = groups
+    .filter(g => g.real > 0) // sem produção nenhuma no período não é "atingimento parcial", é ausência — não entra no gráfico
+    .map(g => Object.assign({}, g, { pct: g.planejado > 0 ? g.real/g.planejado : 0 }));
+  return withPct.sort((a,b)=> b.pct - a.pct);
 }
 
 function renderLostProduction(filteredDates){
   const wrap = document.getElementById('lostProdWrap');
-  const items = computeLostProduction(filteredDates).slice(0, 12);
+  const items = computeMetaAtingimento(filteredDates);
 
   if(items.length === 0){
+    document.getElementById('metaLegend').style.display = 'none';
     wrap.innerHTML = `
       <div class="empty-state">
         <span class="empty-icon">✓</span>
@@ -2636,22 +2649,43 @@ function renderLostProduction(filteredDates){
       </div>`;
     return;
   }
+  document.getElementById('metaLegend').style.display = '';
 
-  const barItems = items.map(item=>{
-    const pctPerdido = item.planejado > 0 ? (item.perdido/item.planejado*100) : 0;
-    return {
-      label: truncateProdLabel(item.produto, 28), labelTitle: item.produto,
-      value: item.perdido,
-      displayText: `${item.perdido.toLocaleString('pt-BR')} ${item.uni} (-${pctPerdido.toFixed(0)}%)`,
-      color: '#A10101', textColor: '#A10101',
-    };
+  const barH = 20, gap = 10, leftPad = 230, rightPad = 150, topPad = 8, chartW = 820;
+  const barWmax = chartW - leftPad - rightPad;
+  const chartH = items.length*(barH+gap) + topPad;
+
+  let bars = '';
+  items.forEach((item, i)=>{
+    const y = topPad + i*(barH+gap);
+    const pct = item.planejado > 0 ? (item.real/item.planejado*100) : 0;
+    // Normalizado: a Meta de CADA produto ocupa sempre a largura toda
+    // (representa 100% daquele produto), e o Realizado preenche a fração
+    // correspondente — assim dá pra comparar % de atingimento entre
+    // produtos de volumes bem diferentes, sem os menores virarem lascas.
+    const wMeta = barWmax;
+    const wReal = Math.min(pct/100, 1) * barWmax;
+    const atingiu = pct >= 100;
+    const realColor = atingiu ? 'var(--good)' : 'var(--red)';
+    const label = truncateProdLabel(item.produto, 28);
+    const labelHtml = `${label}<title>${item.produto}</title>`;
+
+    bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="10.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${labelHtml}</text>`;
+    // Trilha = Meta (Planejado), sempre a largura toda proporcional ao maior valor
+    bars += `<rect x="${leftPad}" y="${y}" width="${wMeta}" height="${barH}" fill="#f3d9d0" stroke="var(--red)" stroke-width="1" rx="5"/>`;
+    // Barra sobreposta = Realizado
+    bars += `<rect x="${leftPad}" y="${y}" width="${wReal}" height="${barH}" fill="${realColor}" rx="5"/>`;
+    bars += `<text x="${leftPad+Math.max(wMeta,wReal)+8}" y="${y+barH/2+4}" font-size="10.5" fill="${realColor}" font-weight="700">${Math.round(item.real).toLocaleString('pt-BR')} / ${Math.round(item.planejado).toLocaleString('pt-BR')} ${item.uni} (${pct.toFixed(0)}%)</text>`;
   });
-  const { bars, chartW, chartH } = buildBarsSvg(barItems, { barH:28, gap:12, leftPad:230, rightPad:140, topPad:10, chartW:820 });
 
+  const visibleRows = 6;
+  const containerH = visibleRows*(barH+gap) + topPad + 6;
   wrap.innerHTML = `
-    <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
+    <div style="max-height:${containerH}px; overflow-y:auto; overflow-x:hidden;">
+    <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:block;">
       ${bars}
-    </svg>`;
+    </svg>
+    </div>`;
 }
 
 /* ---------- Ranking de produtividade dos produtos (Real ÷ tempo de produção, somado por produto) ---------- */
