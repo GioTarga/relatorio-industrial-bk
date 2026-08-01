@@ -698,14 +698,14 @@
   </div>
 
   <div class="panel">
-    <div class="panel-title">Atingimento de Meta</div>
+    <div class="panel-title" id="metaTitle">Atingimento de Meta</div>
     <div class="chart-wrap" id="lostProdWrap"></div>
     <div class="legend" id="metaLegend">
       <span><i class="dot" style="background:#f3d9d0;border:1px solid var(--red)"></i>Meta (Planejado)</span>
       <span><i class="dot" style="background:var(--red);border:1px solid var(--red)"></i>Realizado (abaixo da meta)</span>
       <span><i class="dot" style="background:var(--good);border:1px solid var(--good)"></i>Realizado (meta atingida)</span>
     </div>
-    <div class="trend-foot">Comparação entre a quantidade planejada (Meta) e a produzida (Realizado) por produto, somado dentro do período e setor selecionados. Só entram produtos com planejamento cadastrado.</div>
+    <div class="trend-foot" id="metaFoot">Comparação entre a quantidade planejada (Meta) e a produzida (Realizado) por produto, somado dentro do período e setor selecionados. Só entram produtos com planejamento cadastrado.</div>
   </div>
 
   <div class="panel">
@@ -2667,16 +2667,55 @@ function computeMetaAtingimento(filteredDates){
   return withPct.sort((a,b)=> b.pct - a.pct);
 }
 
+/* Mesma ideia, mas agregada por Setor em vez de Produto — usada na aba
+   GERAL, onde misturar todos os setores por produto não faz sentido (e
+   também misturaria unidades diferentes: Massa, Caixas, Kg...). Como as
+   unidades variam entre produtos do mesmo setor, aqui a % de cada setor é a
+   MÉDIA do atingimento (Real ÷ Planejado) de cada lançamento — não dá pra
+   simplesmente somar quantidades em unidades diferentes. */
+function computeMetaAtingimentoPorSetor(filteredDates){
+  const bySetor = {};
+  filteredDates.forEach(d=>{
+    getDayRows(d).forEach(r=>{
+      if(r.prev !== null && r.prev > 0){
+        const setor = r.setor || '—';
+        if(!bySetor[setor]) bySetor[setor] = { sumRatio:0, count:0, planejado:0, real:0 };
+        bySetor[setor].sumRatio += (r.real / r.prev);
+        bySetor[setor].count += 1;
+        bySetor[setor].planejado += r.prev;
+        bySetor[setor].real += r.real;
+      }
+    });
+  });
+  const arr = Object.keys(bySetor).map(setor=>{
+    const info = bySetor[setor];
+    return {
+      produto: setor, uni: '', bySetor: true,
+      planejado: info.planejado, real: info.real, count: info.count,
+      pct: info.count ? info.sumRatio / info.count : 0,
+    };
+  });
+  return arr.sort((a,b)=> b.pct - a.pct);
+}
+
 function renderLostProduction(filteredDates){
   const wrap = document.getElementById('lostProdWrap');
-  const items = computeMetaAtingimento(filteredDates);
+  const isPorSetor = selectedSector === '';
+  const items = isPorSetor
+    ? computeMetaAtingimentoPorSetor(filteredDates)
+    : computeMetaAtingimento(filteredDates);
+
+  document.getElementById('metaTitle').textContent = isPorSetor ? 'Atingimento de Meta (por Setor)' : 'Atingimento de Meta (por Produto)';
+  document.getElementById('metaFoot').textContent = isPorSetor
+    ? 'Atingimento médio de meta por Setor (média do Real ÷ Planejado de cada lançamento), no período selecionado. Escolha um setor específico nas abas acima para ver o detalhamento por produto.'
+    : 'Comparação entre a quantidade planejada (Meta) e a produzida (Realizado) por produto, somado dentro do período e setor selecionados. Só entram produtos com planejamento cadastrado.';
 
   if(items.length === 0){
     document.getElementById('metaLegend').style.display = 'none';
     wrap.innerHTML = `
       <div class="empty-state">
         <span class="empty-icon">✓</span>
-        Nenhum produto abaixo do planejado no período selecionado.
+        Nenhum dado com planejamento cadastrado no período selecionado.
       </div>`;
     return;
   }
@@ -2689,24 +2728,27 @@ function renderLostProduction(filteredDates){
   let bars = '';
   items.forEach((item, i)=>{
     const y = topPad + i*(barH+gap);
-    const pct = item.planejado > 0 ? (item.real/item.planejado*100) : 0;
-    // Normalizado: a Meta de CADA produto ocupa sempre a largura toda
-    // (representa 100% daquele produto), e o Realizado preenche a fração
-    // correspondente — assim dá pra comparar % de atingimento entre
-    // produtos de volumes bem diferentes, sem os menores virarem lascas.
+    const pct = item.pct * 100;
+    // Normalizado: a Meta de CADA produto/setor ocupa sempre a largura toda
+    // (representa 100% daquele item), e o Realizado preenche a fração
+    // correspondente — assim dá pra comparar % de atingimento entre itens
+    // de volumes bem diferentes, sem os menores virarem lascas.
     const wMeta = barWmax;
     const wReal = Math.min(pct/100, 1) * barWmax;
     const atingiu = pct >= 100;
     const realColor = atingiu ? 'var(--good)' : 'var(--red)';
     const label = truncateProdLabel(item.produto, 28);
     const labelHtml = `${label}<title>${item.produto}</title>`;
+    const displayText = item.bySetor
+      ? `${pct.toFixed(0)}% de atingimento médio (${item.count} lançamento${item.count===1?'':'s'})`
+      : `${Math.round(item.real).toLocaleString('pt-BR')} / ${Math.round(item.planejado).toLocaleString('pt-BR')} ${item.uni} (${pct.toFixed(0)}%)`;
 
     bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="10.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${labelHtml}</text>`;
     // Trilha = Meta (Planejado), sempre a largura toda proporcional ao maior valor
     bars += `<rect x="${leftPad}" y="${y}" width="${wMeta}" height="${barH}" fill="#f3d9d0" stroke="var(--red)" stroke-width="1" rx="5"/>`;
     // Barra sobreposta = Realizado
     bars += `<rect x="${leftPad}" y="${y}" width="${wReal}" height="${barH}" fill="${realColor}" rx="5"/>`;
-    bars += `<text x="${leftPad+Math.max(wMeta,wReal)+8}" y="${y+barH/2+4}" font-size="10.5" fill="${realColor}" font-weight="700">${Math.round(item.real).toLocaleString('pt-BR')} / ${Math.round(item.planejado).toLocaleString('pt-BR')} ${item.uni} (${pct.toFixed(0)}%)</text>`;
+    bars += `<text x="${leftPad+Math.max(wMeta,wReal)+8}" y="${y+barH/2+4}" font-size="10.5" fill="${realColor}" font-weight="700">${displayText}</text>`;
   });
 
   const visibleRows = 6;
