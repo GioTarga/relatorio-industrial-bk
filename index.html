@@ -690,6 +690,11 @@
       </div>
     </div>
     <div class="chart-wrap" id="dayChartWrap"></div>
+    <div class="legend">
+      <span><i class="dot" style="background:#f3d9d0;border:1px solid var(--red)"></i>Prevista (Meta)</span>
+      <span><i class="dot" style="background:var(--red);border:1px solid var(--red)"></i>Real (abaixo da meta)</span>
+      <span><i class="dot" style="background:var(--good);border:1px solid var(--good)"></i>Real (meta atingida)</span>
+    </div>
   </div>
 
   <div class="panel">
@@ -2360,6 +2365,16 @@ function buildBarsSvg(items, opts){
   return { bars, chartW, chartH };
 }
 
+/* Mede a largura real disponível no painel (o .chart-wrap já ocupa 100% do
+   painel) e devolve 80% dela — assim os gráficos de barra horizontal
+   passam a ocupar a maior parte do espaço em vez de ficarem "presos" numa
+   largura fixa de 820px sobrando um vão em branco enorme em telas largas. */
+function getResponsiveChartW(elId, fallback){
+  const el = document.getElementById(elId);
+  if(el && el.clientWidth > 40) return Math.max(600, Math.round(el.clientWidth * 0.8));
+  return fallback;
+}
+
 function renderCauses(filteredDates){
   const counts = {};
   const durMinutes = {};
@@ -2417,15 +2432,16 @@ function renderCauses(filteredDates){
       textColor: dur > 0 ? intensityTextColor(dur) : '#8a7a75',
     };
   });
+  const chartW0 = getResponsiveChartW('causesWrap', 820);
   const { bars, chartW, chartH } = buildBarsSvg(barItems, {
-    barH:20, gap:10, leftPad:230, rightPad:150, topPad:8, chartW:820,
+    barH:20, gap:10, leftPad:230, rightPad:150, topPad:8, chartW:chartW0,
     labelFontSize:10.5, valueFontSize:10.5, minBarFraction:0.05,
   });
 
   const visibleRows = 6;
   const containerH = visibleRows*(20+10) + 8 + 6;
   document.getElementById('causesWrap').innerHTML = `
-    <div style="max-height:${containerH}px; overflow-y:auto; overflow-x:hidden;">
+    <div style="max-height:${containerH}px; width:${chartW}px; overflow-y:auto; overflow-x:hidden; display:inline-block; text-align:left;">
       <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:block;">
         ${bars}
       </svg>
@@ -2446,8 +2462,8 @@ function renderDayChart(rows){
   }
   const maxVal = Math.max(...rows.map(r=>Math.max(r.prev, r.real)));
   const z = zoomLevel; // 0.6 a 2.2
-  const barW = 13*z, gap = 5*z, groupGap = 18*z;
-  const groupW = barW*2+gap;
+  const barW = 22*z, groupGap = 16*z;
+  const groupW = barW;
   const baseY = 300, topPad = 70;
   const chartWidth = rows.length*(groupW+groupGap)+50;
   const fsVal = Math.max(8, 10*z), fsLab = Math.max(8, 10*z);
@@ -2460,14 +2476,17 @@ function renderDayChart(rows){
   let bars = '';
   rows.forEach((r,i)=>{
     const x0 = 36 + i*(groupW+groupGap);
-    const hP = scaledH(r.prev);
-    const hR = scaledH(r.real);
-    const xP = x0, xR = x0+barW+gap;
-    bars += `<rect x="${xP}" y="${baseY-hP}" width="${barW}" height="${hP}" fill="#A10101" rx="3"/>`;
-    bars += `<text x="${xP+barW/2}" y="${baseY-hP-9}" font-size="${fsVal}" font-weight="700" fill="#A10101" text-anchor="start" transform="rotate(-90 ${xP+barW/2} ${baseY-hP-9})">${Math.round(r.prev).toLocaleString('pt-BR')}</text>`;
-    bars += `<rect x="${xR}" y="${baseY-hR}" width="${barW}" height="${hR}" fill="#B5640B" rx="3"/>`;
-    bars += `<text x="${xR+barW/2}" y="${baseY-hR-9}" font-size="${fsVal}" font-weight="700" fill="#8a4c08" text-anchor="start" transform="rotate(-90 ${xR+barW/2} ${baseY-hR-9})">${Math.round(r.real).toLocaleString('pt-BR')}</text>`;
-    bars += `<text x="${xP+barW+gap/2}" y="${baseY+16}" font-size="${fsLab}" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${xP+barW+gap/2} ${baseY+16})">${truncateProdLabel(r.produto)}<title>${r.produto}</title></text>`;
+    const hP = scaledH(r.prev); // trilha = Prevista
+    const hR = scaledH(r.real); // preenchimento = Real
+    const atingiu = r.prev > 0 ? r.real >= r.prev : r.real > 0;
+    const realColor = atingiu ? '#2f7d52' : '#A10101';
+    const hTop = Math.max(hP, hR);
+    // Trilha = Produção Prevista (sempre desenhada até a altura da meta)
+    bars += `<rect x="${x0}" y="${baseY-hP}" width="${barW}" height="${hP}" fill="#f3d9d0" stroke="#A10101" stroke-width="1" rx="4"/>`;
+    // Preenchimento = Produção Real, sobreposto na mesma coluna
+    bars += `<rect x="${x0}" y="${baseY-hR}" width="${barW}" height="${hR}" fill="${realColor}" rx="4"/>`;
+    bars += `<text x="${x0+barW/2}" y="${baseY-hTop-9}" font-size="${fsVal}" font-weight="700" fill="${realColor}" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-hTop-9})">${Math.round(r.real).toLocaleString('pt-BR')} / ${Math.round(r.prev).toLocaleString('pt-BR')}</text>`;
+    bars += `<text x="${x0+barW/2}" y="${baseY+16}" font-size="${fsLab}" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+16})">${truncateProdLabel(r.produto)}<title>${r.produto}</title></text>`;
   });
 
   let grid = '';
@@ -2675,15 +2694,20 @@ function computeMetaAtingimento(filteredDates){
    simplesmente somar quantidades em unidades diferentes. */
 function computeMetaAtingimentoPorSetor(filteredDates){
   const bySetor = {};
+  // Cozinha ainda não tem coleta diária consistente — fica de fora do
+  // ranking por enquanto pra não distorcer com dado incompleto.
+  const SETORES_EXCLUIDOS = new Set(['COZINHA']);
   filteredDates.forEach(d=>{
     getDayRows(d).forEach(r=>{
       if(r.prev !== null && r.prev > 0){
         const setor = r.setor || '—';
-        if(!bySetor[setor]) bySetor[setor] = { sumRatio:0, count:0, planejado:0, real:0 };
+        if(SETORES_EXCLUIDOS.has(setor)) return;
+        if(!bySetor[setor]) bySetor[setor] = { sumRatio:0, count:0, planejado:0, real:0, dias:new Set() };
         bySetor[setor].sumRatio += (r.real / r.prev);
         bySetor[setor].count += 1;
         bySetor[setor].planejado += r.prev;
         bySetor[setor].real += r.real;
+        bySetor[setor].dias.add(d);
       }
     });
   });
@@ -2692,6 +2716,7 @@ function computeMetaAtingimentoPorSetor(filteredDates){
     return {
       produto: setor, uni: '', bySetor: true,
       planejado: info.planejado, real: info.real, count: info.count,
+      diasRegistrados: info.dias.size,
       pct: info.count ? info.sumRatio / info.count : 0,
     };
   });
@@ -2721,7 +2746,8 @@ function renderLostProduction(filteredDates){
   }
   document.getElementById('metaLegend').style.display = '';
 
-  const barH = 20, gap = 10, leftPad = 230, rightPad = 150, topPad = 8, chartW = 820;
+  const barH = 20, gap = 10, leftPad = 230, rightPad = 150, topPad = 8;
+  const chartW = getResponsiveChartW('lostProdWrap', 820);
   const barWmax = chartW - leftPad - rightPad;
   const chartH = items.length*(barH+gap) + topPad;
 
@@ -2740,7 +2766,7 @@ function renderLostProduction(filteredDates){
     const label = truncateProdLabel(item.produto, 28);
     const labelHtml = `${label}<title>${item.produto}</title>`;
     const displayText = item.bySetor
-      ? `${pct.toFixed(0)}% de atingimento médio (${item.count} lançamento${item.count===1?'':'s'})`
+      ? `${pct.toFixed(0)}% de atingimento médio (${item.diasRegistrados} dia${item.diasRegistrados===1?'':'s'} registrado${item.diasRegistrados===1?'':'s'})`
       : `${Math.round(item.real).toLocaleString('pt-BR')} / ${Math.round(item.planejado).toLocaleString('pt-BR')} ${item.uni} (${pct.toFixed(0)}%)`;
 
     bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="10.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${labelHtml}</text>`;
@@ -2754,7 +2780,7 @@ function renderLostProduction(filteredDates){
   const visibleRows = 6;
   const containerH = visibleRows*(barH+gap) + topPad + 6;
   wrap.innerHTML = `
-    <div style="max-height:${containerH}px; overflow-y:auto; overflow-x:hidden;">
+    <div style="max-height:${containerH}px; width:${chartW}px; overflow-y:auto; overflow-x:hidden; display:inline-block; text-align:left;">
     <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:block;">
       ${bars}
     </svg>
@@ -2815,12 +2841,13 @@ function renderProductivity(filteredDates){
     displayText: `${item.taxa.toLocaleString('pt-BR',{maximumFractionDigits:1})} ${item.uni}/h`,
     color: '#B5640B', textColor: '#8a4c08',
   }));
-  const { bars, chartW, chartH } = buildBarsSvg(barItems, { barH:20, gap:10, leftPad:230, rightPad:150, topPad:8, chartW:820, labelFontSize:10.5, valueFontSize:10.5, scale:'log' });
+  const chartW0 = getResponsiveChartW('prodRateWrap', 820);
+  const { bars, chartW, chartH } = buildBarsSvg(barItems, { barH:20, gap:10, leftPad:230, rightPad:150, topPad:8, chartW:chartW0, labelFontSize:10.5, valueFontSize:10.5, scale:'log' });
 
   const visibleRows = 6;
   const containerH = visibleRows*(20+10) + 8 + 6;
   wrap.innerHTML = `
-    <div style="max-height:${containerH}px; overflow-y:auto; overflow-x:hidden;">
+    <div style="max-height:${containerH}px; width:${chartW}px; overflow-y:auto; overflow-x:hidden; display:inline-block; text-align:left;">
       <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="font-family:'Inter',Arial,sans-serif;display:block;">
         ${bars}
       </svg>
@@ -3199,8 +3226,8 @@ function buildDaySvgElement(dayKey){
   const day = DATA[dayKey];
   const rows = getDayRows(dayKey).filter(r => typeof r.prev === 'number');
   const maxVal = Math.max(...rows.map(r=>Math.max(r.prev, r.real)));
-  const barW = 13, gap = 5, groupGap = 18;
-  const groupW = barW*2+gap;
+  const barW = 22, groupGap = 16;
+  const groupW = barW;
   const baseY = 300, topPad = 70;
   const chartWidth = rows.length*(groupW+groupGap)+50;
   let bars = '';
@@ -3208,12 +3235,13 @@ function buildDaySvgElement(dayKey){
     const x0 = 36 + i*(groupW+groupGap);
     const hP = (r.prev/maxVal)*(baseY-topPad);
     const hR = (r.real/maxVal)*(baseY-topPad);
-    const xP = x0, xR = x0+barW+gap;
-    bars += `<rect x="${xP}" y="${baseY-hP}" width="${barW}" height="${hP}" fill="#A10101" rx="3"/>`;
-    bars += `<text x="${xP+barW/2}" y="${baseY-hP-9}" font-size="10" font-weight="700" fill="#A10101" text-anchor="start" transform="rotate(-90 ${xP+barW/2} ${baseY-hP-9})">${Math.round(r.prev).toLocaleString('pt-BR')}</text>`;
-    bars += `<rect x="${xR}" y="${baseY-hR}" width="${barW}" height="${hR}" fill="#B5640B" rx="3"/>`;
-    bars += `<text x="${xR+barW/2}" y="${baseY-hR-9}" font-size="10" font-weight="700" fill="#8a4c08" text-anchor="start" transform="rotate(-90 ${xR+barW/2} ${baseY-hR-9})">${Math.round(r.real).toLocaleString('pt-BR')}</text>`;
-    bars += `<text x="${xP+barW+gap/2}" y="${baseY+16}" font-size="10" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${xP+barW+gap/2} ${baseY+16})">${truncateProdLabel(r.produto)}</text>`;
+    const atingiu = r.prev > 0 ? r.real >= r.prev : r.real > 0;
+    const realColor = atingiu ? '#2f7d52' : '#A10101';
+    const hTop = Math.max(hP, hR);
+    bars += `<rect x="${x0}" y="${baseY-hP}" width="${barW}" height="${hP}" fill="#f3d9d0" stroke="#A10101" stroke-width="1" rx="4"/>`;
+    bars += `<rect x="${x0}" y="${baseY-hR}" width="${barW}" height="${hR}" fill="${realColor}" rx="4"/>`;
+    bars += `<text x="${x0+barW/2}" y="${baseY-hTop-9}" font-size="10" font-weight="700" fill="${realColor}" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-hTop-9})">${Math.round(r.real).toLocaleString('pt-BR')} / ${Math.round(r.prev).toLocaleString('pt-BR')}</text>`;
+    bars += `<text x="${x0+barW/2}" y="${baseY+16}" font-size="10" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+16})">${truncateProdLabel(r.produto)}</text>`;
   });
   let grid = '';
   const step = maxVal > 5000 ? 2000 : (maxVal > 1000 ? 500 : 100);
