@@ -2351,10 +2351,10 @@ function buildBarsSvg(items, opts){
     const labelHtml = item.labelTitle ? `${item.label}<title>${item.labelTitle}</title>` : item.label;
     bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="${labelFs}" fill="#2a1a1a" text-anchor="end" font-weight="600">${labelHtml}</text>`;
     // Trilha de fundo (largura total disponível) atrás da barra preenchida —
-    // dá contexto de escala e deixa o gráfico com aparência mais desenhada,
-    // em vez de barras "flutuando" soltas no espaço em branco.
-    bars += `<rect x="${leftPad}" y="${y}" width="${barWmax}" height="${barH}" fill="#000000" fill-opacity="0.035" rx="6"/>`;
-    bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="${color}" rx="6"/>`;
+    // mesmo padrão visual do gráfico de Atingimento de Meta: trilha clara
+    // com borda, dá contexto de escala e deixa tudo com aparência consistente.
+    bars += `<rect x="${leftPad}" y="${y}" width="${barWmax}" height="${barH}" fill="#f3d9d0" stroke="#e0a89a" stroke-width="1" rx="5"/>`;
+    bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="${color}" rx="5"/>`;
     bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="${valueFs}" fill="${textColor}" font-weight="700">${item.displayText}</text>`;
   });
   return { bars, chartW, chartH };
@@ -2418,13 +2418,15 @@ function renderCauses(filteredDates){
     };
   });
   const { bars, chartW, chartH } = buildBarsSvg(barItems, {
-    barH:30, gap:14, leftPad:220, rightPad:130, topPad:10, chartW:820,
-    labelFontSize:12, valueFontSize:12, minBarFraction:0.05,
+    barH:20, gap:10, leftPad:230, rightPad:150, topPad:8, chartW:820,
+    labelFontSize:10.5, valueFontSize:10.5, minBarFraction:0.05,
   });
 
+  const visibleRows = 6;
+  const containerH = visibleRows*(20+10) + 8 + 6;
   document.getElementById('causesWrap').innerHTML = `
-    <div class="causes-scroll">
-      <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
+    <div style="max-height:${containerH}px; overflow-y:auto; overflow-x:hidden;">
+      <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:block;">
         ${bars}
       </svg>
     </div>
@@ -2742,10 +2744,10 @@ function renderProductivity(filteredDates){
     displayText: `${item.taxa.toLocaleString('pt-BR',{maximumFractionDigits:1})} ${item.uni}/h`,
     color: '#B5640B', textColor: '#8a4c08',
   }));
-  const { bars, chartW, chartH } = buildBarsSvg(barItems, { barH:28, gap:12, leftPad:230, rightPad:140, topPad:10, chartW:820, scale:'log' });
+  const { bars, chartW, chartH } = buildBarsSvg(barItems, { barH:20, gap:10, leftPad:230, rightPad:150, topPad:8, chartW:820, labelFontSize:10.5, valueFontSize:10.5, scale:'log' });
 
-  const visibleRows = 7;
-  const containerH = visibleRows*(28+12) + 10 + 10;
+  const visibleRows = 6;
+  const containerH = visibleRows*(20+10) + 8 + 6;
   wrap.innerHTML = `
     <div style="max-height:${containerH}px; overflow-y:auto; overflow-x:hidden;">
       <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="font-family:'Inter',Arial,sans-serif;display:block;">
