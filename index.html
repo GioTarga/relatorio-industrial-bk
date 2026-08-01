@@ -2621,7 +2621,12 @@ function computeMetaAtingimento(filteredDates){
   const source = [];
   filteredDates.forEach(d=>{
     getDayRows(d).forEach(r=>{
-      if(r.prev !== null && r.prev > r.real){
+      // Considera todo dia em que o produto tinha uma meta numérica
+      // cadastrada — não só os dias em que ficou abaixo dela. Antes só
+      // entravam os dias ruins, o que subestimava tanto o Planejado quanto
+      // o Real somados no período (resquício de quando isso era só um
+      // ranking de perda, não um indicador de atingimento).
+      if(r.prev !== null){
         source.push(r);
       }
     });
