@@ -2612,6 +2612,30 @@ function fuzzyGroupBy(items, uniFn, produtoFn, initFn, mergeFn){
   return groups;
 }
 
+/* Agrupamento por correspondência EXATA de nome+unidade — ao contrário de
+   fuzzyGroupBy, nunca junta dois produtos parecidos-mas-diferentes (ex:
+   "Pão Batata Frango" vs "Mini Pão Batata Frango"). Usado em indicadores
+   onde uma mistura indevida distorceria o número de forma enganosa (como
+   Meta x Real), agora que os nomes já foram padronizados direto no banco. */
+function exactGroupBy(items, uniFn, produtoFn, initFn, mergeFn){
+  const map = new Map();
+  items.forEach(item=>{
+    const uni = uniFn(item);
+    const produto = produtoFn(item);
+    const key = uni + '|' + produto;
+    if(map.has(key)){
+      mergeFn(map.get(key), item);
+    } else {
+      const g = initFn(item);
+      g.uni = uni;
+      g.produto = produto;
+      map.set(key, g);
+    }
+  });
+  return [...map.values()];
+}
+
+
 /* ---------- Atingimento de Meta (Planejado x Real, somado por produto) ----------
    Antes era "Ranking de Produção Perdida" (só mostrava o volume perdido).
    Agora mostra os dois números lado a lado numa barra só: uma trilha
@@ -2631,7 +2655,7 @@ function computeMetaAtingimento(filteredDates){
       }
     });
   });
-  const groups = fuzzyGroupBy(source,
+  const groups = exactGroupBy(source,
     r=>r.uni,
     r=>r.produto,
     r=>({ planejado: r.prev, real: r.real, perdido: r.prev - r.real }),
