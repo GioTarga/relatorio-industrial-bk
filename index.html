@@ -7801,8 +7801,17 @@ async function EQ_DASH_loadData(){
     });
     EQ_DASH_LATEST_CONTAGEM = latestContagem;
     EQ_DASH_LATEST_ENTRADA = latestEntrada;
+    const itensAtuais = Object.keys(latestContagem);
     if(EQ_DASH_SELECTED_ITEMS === null){
-      EQ_DASH_SELECTED_ITEMS = new Set(Object.keys(latestContagem));
+      EQ_DASH_SELECTED_ITEMS = new Set(itensAtuais);
+    } else {
+      // Remove da seleção itens que sumiram da base (ex: troca de dado
+      // fictício por dado real). Se isso esvaziar a seleção por completo,
+      // volta a marcar tudo — melhor do que o seletor parecer "vazio".
+      EQ_DASH_SELECTED_ITEMS = new Set([...EQ_DASH_SELECTED_ITEMS].filter(i => latestContagem[i]));
+      if(EQ_DASH_SELECTED_ITEMS.size === 0 && itensAtuais.length > 0){
+        EQ_DASH_SELECTED_ITEMS = new Set(itensAtuais);
+      }
     }
 
     // Consumo — esse sim respeita o período selecionado no topo.
