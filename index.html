@@ -549,6 +549,22 @@
   }
   .eq-checklist label:hover{ background:var(--cream); }
 
+  .pr-trend-modal{ position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; }
+  .pr-trend-modal-backdrop{ position:absolute; inset:0; background:rgba(42,26,26,0.55); }
+  .pr-trend-modal-box{
+    position:relative; background:#fff; border-radius:var(--radius-lg);
+    max-width:900px; width:92%; max-height:85vh; overflow-y:auto;
+    padding:26px 28px; box-shadow:0 20px 50px rgba(0,0,0,0.3);
+  }
+  .pr-trend-modal-header{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+  .pr-trend-modal-close{
+    background:var(--cream); border:1px solid var(--line); border-radius:50%;
+    width:32px; height:32px; font-size:14px; color:var(--ink-soft); cursor:pointer; flex-shrink:0;
+  }
+  .pr-trend-modal-close:hover{ background:#fbe2dc; color:var(--red); }
+  .pr-bar-group{ cursor:pointer; }
+  .pr-bar-group:hover rect{ filter:brightness(1.12); }
+
   .lanc-subtabs{ display:flex; gap:8px; margin-bottom:20px; }
   .lanc-subtab-btn{
     padding:8px 16px; border-radius:var(--radius-sm); border:1px solid var(--line);
@@ -755,7 +771,22 @@
   <div class="panel">
     <div class="panel-title">Ranking de Produtividade dos Produtos</div>
     <div class="chart-wrap" id="prodRateWrap"></div>
-    <div class="trend-foot" id="prodRateFoot">Produtividade = Produção Real ÷ (Fim − Início da Produção), somada no período e setor selecionados. Só entram produtos com Início e Fim da Produção registrados.</div>
+    <div class="trend-foot" id="prodRateFoot">Produtividade = Produção Real ÷ (Fim − Início da Produção), somada no período e setor selecionados. Só entram produtos com Início e Fim da Produção registrados. Clique numa barra pra ver a evolução diária daquele produto.</div>
+  </div>
+
+  <div id="prTrendModal" class="pr-trend-modal" style="display:none;">
+    <div class="pr-trend-modal-backdrop" id="prTrendModalBackdrop"></div>
+    <div class="pr-trend-modal-box">
+      <div class="pr-trend-modal-header">
+        <div>
+          <div class="eyebrow" style="color:var(--gold);">Histórico de Produtividade</div>
+          <h3 id="prTrendModalTitle" style="margin:2px 0 0;font-family:var(--font-display);color:var(--red);font-size:20px;"></h3>
+        </div>
+        <button type="button" id="prTrendModalClose" class="pr-trend-modal-close">✕</button>
+      </div>
+      <div id="prTrendModalChart" class="chart-wrap" style="margin-top:14px;"></div>
+      <div class="trend-foot" id="prTrendModalFoot" style="margin-top:10px;"></div>
+    </div>
   </div>
 
   <div class="panel">
@@ -3074,7 +3105,7 @@ function renderProductivity(filteredDates){
   const { items, semHorario, comHorario } = computeProductivity(filteredDates);
   const top = items; // mostra todos os produtos com Início/Fim + quantidade preenchidos
 
-  const baseFootTxt = 'Produtividade = Produção Real ÷ (Fim − Início da Produção), somada no período e setor selecionados. Só entram produtos com Início e Fim da Produção registrados.';
+  const baseFootTxt = 'Produtividade = Produção Real ÷ (Fim − Início da Produção), somada no período e setor selecionados. Só entram produtos com Início e Fim da Produção registrados. Clique numa barra pra ver a evolução diária daquele produto.';
   foot.textContent = semHorario > 0
     ? baseFootTxt + ` ${semHorario} registro(s) ficaram de fora por falta desse horário.`
     : baseFootTxt;
@@ -3088,14 +3119,29 @@ function renderProductivity(filteredDates){
     return;
   }
 
-  const barItems = top.map(item=>({
-    label: truncateProdLabel(item.produto, 28), labelTitle: item.produto,
-    value: item.taxa,
-    displayText: `${item.taxa.toLocaleString('pt-BR',{maximumFractionDigits:1})} ${item.uni}/h`,
-    color: '#B5640B', textColor: '#8a4c08',
-  }));
-  const chartW0 = getResponsiveChartW('prodRateWrap', 820);
-  const { bars, chartW, chartH } = buildBarsSvg(barItems, { barH:20, gap:10, leftPad:230, rightPad:150, topPad:8, chartW:chartW0, labelFontSize:10.5, valueFontSize:10.5, scale:'log' });
+  // Monta as barras na mão (em vez de buildBarsSvg) pra poder deixar cada
+  // uma clicável, abrindo o histórico diário daquele produto.
+  const barH = 20, gap = 10, leftPad = 230, rightPad = 150, topPad = 8;
+  const chartW = getResponsiveChartW('prodRateWrap', 820);
+  const barWmax = chartW - leftPad - rightPad;
+  const chartH = top.length*(barH+gap) + topPad;
+  const maxVal = Math.max(...top.map(i=>i.taxa||0), 1);
+  const logMax = Math.log(maxVal + 1) || 1;
+
+  let bars = '';
+  top.forEach((item, i)=>{
+    const y = topPad + i*(barH+gap);
+    const w = item.taxa > 0 ? (Math.log(item.taxa+1)/logMax)*barWmax : 0;
+    const label = truncateProdLabel(item.produto, 28);
+    const displayText = `${item.taxa.toLocaleString('pt-BR',{maximumFractionDigits:1})} ${item.uni}/h`;
+    const produtoAttr = item.produto.replace(/"/g,'&quot;');
+    bars += `<g class="pr-bar-group" data-produto="${produtoAttr}" data-uni="${(item.uni||'').replace(/"/g,'&quot;')}">
+      <text x="${leftPad-10}" y="${y+barH/2+4}" font-size="10.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${label}<title>Clique pra ver o histórico de ${item.produto}</title></text>
+      <rect x="${leftPad}" y="${y}" width="${barWmax}" height="${barH}" fill="#f3d9d0" stroke="#e0a89a" stroke-width="1" rx="5"/>
+      <rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="#B5640B" rx="5"/>
+      <text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="10.5" fill="#8a4c08" font-weight="700">${displayText}</text>
+    </g>`;
+  });
 
   const visibleRows = 6;
   const containerH = visibleRows*(20+10) + 8 + 6;
@@ -3105,7 +3151,90 @@ function renderProductivity(filteredDates){
         ${bars}
       </svg>
     </div>`;
+
+  wrap.querySelectorAll('.pr-bar-group').forEach(g=>{
+    g.addEventListener('click', ()=> PR_showProductTrend(g.dataset.produto, g.dataset.uni));
+  });
 }
+
+/* ---------- Modal: histórico diário de produtividade de 1 produto ---------- */
+function PR_computeProductTrend(produto, filteredDates){
+  const porDia = [];
+  filteredDates.forEach(d=>{
+    let real = 0, horas = 0, uni = '';
+    getDayRows(d).forEach(r=>{
+      if(RC_nameSimilarity(r.produto, produto) < 0.65) return;
+      const iniMin = timeToMinutes(r.inicio), fimMin = timeToMinutes(r.fim);
+      if(iniMin === null || fimMin === null || fimMin <= iniMin) return;
+      real += r.real;
+      horas += (fimMin - iniMin) / 60;
+      uni = r.uni;
+    });
+    if(horas > 0){
+      porDia.push({ data: d, label: DATA[d] ? DATA[d].label : d, taxa: real/horas, uni });
+    }
+  });
+  return porDia;
+}
+
+function PR_showProductTrend(produto, uniFallback){
+  const filteredDates = getFilteredDates();
+  const pontos = PR_computeProductTrend(produto, filteredDates);
+
+  document.getElementById('prTrendModalTitle').textContent = produto;
+  const chartEl = document.getElementById('prTrendModalChart');
+  const footEl = document.getElementById('prTrendModalFoot');
+
+  if(pontos.length === 0){
+    chartEl.innerHTML = `<div class="empty-state"><span class="empty-icon">⏱</span>Sem dias com Início/Fim registrados pra esse produto no período selecionado.</div>`;
+    footEl.textContent = '';
+  } else {
+    const uni = pontos.find(p=>p.uni)?.uni || uniFallback || '';
+    const w = 780, h = 300, padL = 60, padR = 20, padT = 20, padB = 60;
+    const chartW = Math.max(w, pontos.length*70);
+    const maxVal = Math.max(...pontos.map(p=>p.taxa), 1);
+    const stepX = pontos.length > 1 ? (chartW-padL-padR)/(pontos.length-1) : 0;
+    const xAt = i => padL + i*stepX;
+    const yAt = v => h-padB - (v/maxVal)*(h-padT-padB);
+
+    let grid = '';
+    for(let g=0; g<=4; g++){
+      const v = maxVal*g/4;
+      const y = yAt(v);
+      grid += `<line x1="${padL}" y1="${y}" x2="${chartW-padR}" y2="${y}" stroke="var(--line)" stroke-width="1"/>`;
+      grid += `<text x="${padL-8}" y="${y+4}" font-size="10" fill="var(--ink-soft)" text-anchor="end">${v.toLocaleString('pt-BR',{maximumFractionDigits:0})}</text>`;
+    }
+
+    let linePath = pontos.map((p,i)=> `${i===0?'M':'L'} ${xAt(i)} ${yAt(p.taxa)}`).join(' ');
+    let dots = '';
+    pontos.forEach((p,i)=>{
+      dots += `<circle cx="${xAt(i)}" cy="${yAt(p.taxa)}" r="4" fill="var(--red)"/>`;
+      dots += `<text x="${xAt(i)}" y="${yAt(p.taxa)-10}" font-size="10" fill="var(--red)" font-weight="700" text-anchor="middle">${p.taxa.toLocaleString('pt-BR',{maximumFractionDigits:1})}</text>`;
+      dots += `<text x="${xAt(i)}" y="${h-padB+18}" font-size="10" fill="var(--ink-soft)" text-anchor="end" transform="rotate(-40 ${xAt(i)} ${h-padB+18})">${p.label}</text>`;
+    });
+
+    chartEl.innerHTML = `
+      <div style="max-width:100%;overflow-x:auto;">
+        <svg viewBox="0 0 ${chartW} ${h}" width="${chartW}" height="${h}" style="font-family:'Inter',Arial,sans-serif;">
+          ${grid}
+          <path d="${linePath}" fill="none" stroke="var(--red)" stroke-width="2.5"/>
+          ${dots}
+        </svg>
+      </div>`;
+    footEl.textContent = `Produtividade (${uni}/h) por dia, dentro do período e setor selecionados. ${pontos.length} dia(s) com Início e Fim registrados pra esse produto.`;
+  }
+
+  document.getElementById('prTrendModal').style.display = 'flex';
+}
+
+function PR_closeTrendModal(){
+  document.getElementById('prTrendModal').style.display = 'none';
+}
+document.getElementById('prTrendModalClose').addEventListener('click', PR_closeTrendModal);
+document.getElementById('prTrendModalBackdrop').addEventListener('click', PR_closeTrendModal);
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape') PR_closeTrendModal();
+});
 
 function renderTrend(filteredDates){
   const points = filteredDates.map(d=>{
