@@ -2765,12 +2765,15 @@ function renderDayChart(rows){
     const atingiu = r.prev > 0 ? r.real >= r.prev : r.real > 0;
     const realColor = atingiu ? '#2f7d52' : '#A10101';
     const hTop = Math.max(hP, hR);
+    const produtoAttr = r.produto.replace(/"/g,'&quot;');
+    bars += `<g class="pr-bar-group" data-produto="${produtoAttr}" data-uni="${(r.uni||'').replace(/"/g,'&quot;')}">`;
     // Trilha = Produção Prevista (sempre desenhada até a altura da meta)
     bars += `<rect x="${x0}" y="${baseY-hP}" width="${barW}" height="${hP}" fill="#f3d9d0" stroke="#A10101" stroke-width="1" rx="4"/>`;
     // Preenchimento = Produção Real, sobreposto na mesma coluna
     bars += `<rect x="${x0}" y="${baseY-hR}" width="${barW}" height="${hR}" fill="${realColor}" rx="4"/>`;
     bars += `<text x="${x0+barW/2}" y="${baseY-hTop-9}" font-size="${fsVal}" font-weight="700" fill="${realColor}" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-hTop-9})">${Math.round(r.real).toLocaleString('pt-BR')} / ${Math.round(r.prev).toLocaleString('pt-BR')}</text>`;
-    bars += `<text x="${x0+barW/2}" y="${baseY+16}" font-size="${fsLab}" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+16})">${truncateProdLabel(r.produto)}<title>${r.produto}</title></text>`;
+    bars += `<text x="${x0+barW/2}" y="${baseY+16}" font-size="${fsLab}" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+16})">${truncateProdLabel(r.produto)}<title>Clique pra ver o histórico de ${r.produto}</title></text>`;
+    bars += `</g>`;
   });
 
   let grid = '';
@@ -2798,6 +2801,9 @@ function renderDayChart(rows){
     </svg>
   `;
 
+  document.querySelectorAll('#dayChartWrap .pr-bar-group').forEach(g=>{
+    g.addEventListener('click', ()=> DC_showProductTrend(g.dataset.produto, g.dataset.uni));
+  });
 }
 
 /* Lista de produtos disponíveis pro filtro da tabela de detalhamento —
@@ -3171,7 +3177,7 @@ function PR_computeProductTrend(produto, filteredDates){
       uni = r.uni;
     });
     if(horas > 0){
-      porDia.push({ data: d, label: DATA[d] ? DATA[d].label : d, taxa: real/horas, uni });
+      porDia.push({ data: d, label: d.split('-').reverse().join('/'), taxa: real/horas, uni });
     }
   });
   return porDia;
@@ -3235,6 +3241,91 @@ document.getElementById('prTrendModalBackdrop').addEventListener('click', PR_clo
 document.addEventListener('keydown', (e)=>{
   if(e.key === 'Escape') PR_closeTrendModal();
 });
+
+/* ---------- Modal: histórico diário de Real x Prevista de 1 produto
+   (reaproveita o mesmo modal do Ranking de Produtividade) ---------- */
+function DC_computeProductTrend(produto, filteredDates){
+  const porDia = [];
+  filteredDates.forEach(d=>{
+    let real = 0, prev = 0, temPrev = false, uni = '';
+    getDayRows(d).forEach(r=>{
+      if(RC_nameSimilarity(r.produto, produto) < 0.65) return;
+      real += r.real;
+      if(typeof r.prev === 'number'){ prev += r.prev; temPrev = true; }
+      uni = r.uni;
+    });
+    if(real > 0 || temPrev){
+      porDia.push({ data: d, label: d.split('-').reverse().join('/'), real, prev: temPrev ? prev : null, uni });
+    }
+  });
+  return porDia;
+}
+
+function DC_showProductTrend(produto, uniFallback){
+  const filteredDates = getFilteredDates();
+  const pontos = DC_computeProductTrend(produto, filteredDates);
+
+  document.getElementById('prTrendModalTitle').textContent = produto;
+  const chartEl = document.getElementById('prTrendModalChart');
+  const footEl = document.getElementById('prTrendModalFoot');
+
+  if(pontos.length === 0){
+    chartEl.innerHTML = `<div class="empty-state"><span class="empty-icon">📦</span>Sem lançamentos desse produto no período selecionado.</div>`;
+    footEl.textContent = '';
+    document.getElementById('prTrendModal').style.display = 'flex';
+    return;
+  }
+
+  const uni = pontos.find(p=>p.uni)?.uni || uniFallback || '';
+  const h = 300, padL = 60, padR = 20, padT = 30, padB = 60;
+  const chartW = Math.max(780, pontos.length*70);
+  const maxVal = Math.max(...pontos.map(p=>Math.max(p.real, p.prev||0)), 1);
+  const stepX = pontos.length > 1 ? (chartW-padL-padR)/(pontos.length-1) : 0;
+  const xAt = i => padL + i*stepX;
+  const yAt = v => h-padB - (v/maxVal)*(h-padT-padB);
+
+  let grid = '';
+  for(let g=0; g<=4; g++){
+    const v = maxVal*g/4;
+    const y = yAt(v);
+    grid += `<line x1="${padL}" y1="${y}" x2="${chartW-padR}" y2="${y}" stroke="var(--line)" stroke-width="1"/>`;
+    grid += `<text x="${padL-8}" y="${y+4}" font-size="10" fill="var(--ink-soft)" text-anchor="end">${v.toLocaleString('pt-BR',{maximumFractionDigits:0})}</text>`;
+  }
+
+  const temPrev = pontos.some(p => p.prev !== null);
+  let prevPath = '', prevDots = '';
+  if(temPrev){
+    prevPath = pontos.map((p,i)=> `${i===0?'M':'L'} ${xAt(i)} ${yAt(p.prev||0)}`).join(' ');
+    pontos.forEach((p,i)=>{
+      if(p.prev === null) return;
+      prevDots += `<circle cx="${xAt(i)}" cy="${yAt(p.prev)}" r="4" fill="var(--gold)"/>`;
+    });
+  }
+  let realPath = pontos.map((p,i)=> `${i===0?'M':'L'} ${xAt(i)} ${yAt(p.real)}`).join(' ');
+  let realDots = '';
+  pontos.forEach((p,i)=>{
+    realDots += `<circle cx="${xAt(i)}" cy="${yAt(p.real)}" r="4" fill="var(--red)"/>`;
+    realDots += `<text x="${xAt(i)}" y="${yAt(p.real)-10}" font-size="10" fill="var(--red)" font-weight="700" text-anchor="middle">${p.real.toLocaleString('pt-BR',{maximumFractionDigits:1})}</text>`;
+    realDots += `<text x="${xAt(i)}" y="${h-padB+18}" font-size="10" fill="var(--ink-soft)" text-anchor="end" transform="rotate(-40 ${xAt(i)} ${h-padB+18})">${p.label}</text>`;
+  });
+
+  chartEl.innerHTML = `
+    <div style="max-width:100%;overflow-x:auto;">
+      <svg viewBox="0 0 ${chartW} ${h}" width="${chartW}" height="${h}" style="font-family:'Inter',Arial,sans-serif;">
+        ${grid}
+        ${temPrev ? `<path d="${prevPath}" fill="none" stroke="var(--gold)" stroke-width="2" stroke-dasharray="5,4"/>${prevDots}` : ''}
+        <path d="${realPath}" fill="none" stroke="var(--red)" stroke-width="2.5"/>
+        ${realDots}
+      </svg>
+    </div>
+    ${temPrev ? `<div class="legend" style="margin-top:8px;">
+      <span><i class="dot" style="background:var(--red);border:1px solid var(--red)"></i>Real</span>
+      <span><i class="dot" style="background:var(--gold);border:1px solid var(--gold)"></i>Prevista</span>
+    </div>` : ''}`;
+  footEl.textContent = `Produção Real${temPrev ? ' e Prevista' : ''} (${uni}) por dia, dentro do período e setor selecionados. ${pontos.length} dia(s) com lançamento desse produto.`;
+
+  document.getElementById('prTrendModal').style.display = 'flex';
+}
 
 function renderTrend(filteredDates){
   const points = filteredDates.map(d=>{
