@@ -1219,6 +1219,15 @@
 
           <datalist id="lpProdutoList"></datalist>
           <datalist id="lpMaquinaList"></datalist>
+          <datalist id="lpUnidadeList">
+            <option value="Massa">
+            <option value="Massas">
+            <option value="Unid">
+            <option value="Caixas">
+            <option value="Kg">
+            <option value="Blocos">
+            <option value="Pacotes">
+          </datalist>
         </div>
 
         <!-- Formulário: Manutenções -->
@@ -1929,7 +1938,7 @@ function normalizeUnitDisplay(u){
   const t = (u||'').trim().toLowerCase();
   if(!t) return '';
   if(t.startsWith('massa')) return t.endsWith('s') ? 'Massas' : 'Massa';
-  if(t === 'un' || t === 'unid' || t === 'unidade' || t === 'unidades') return 'Unid';
+  if(t === 'un' || t === 'und' || t === 'unid' || t === 'unidade' || t === 'unidades') return 'Unid';
   if(t === 'cx' || t === 'caixa' || t === 'caixas') return 'Caixas';
   if(t === 'kg' || t === 'kgs') return 'Kg';
   if(t === 'bloco' || t === 'blocos') return 'Blocos';
@@ -6226,7 +6235,7 @@ function lpCreateItemRow(initial){
       </div>
       <div class="lanc-field">
         <label>Unidade</label>
-        <input type="text" class="lp-unidade" placeholder="Ex: UND, CAIXAS, KG">
+        <input type="text" class="lp-unidade" list="lpUnidadeList" placeholder="Ex: Unid, Caixas, Kg">
       </div>
       <div class="lanc-field">
         <label>Produção Real</label>
@@ -6543,7 +6552,7 @@ async function LP_saveSingleItem(row){
     produto,
     producao_planejada: row.querySelector('.lp-planejada').value.trim() || null,
     producao_real: parseFloat(realRaw),
-    unidade: row.querySelector('.lp-unidade').value.trim() || null,
+    unidade: normalizeUnitDisplay(row.querySelector('.lp-unidade').value) || null,
     inicio_producao: row.querySelector('.lp-inicio').value || null,
     fim_producao: row.querySelector('.lp-fim').value || null,
     paradas_desvios: row.querySelector('.lp-paradas').value.trim() || null,
@@ -6616,7 +6625,7 @@ document.getElementById('lancFormProducao').addEventListener('submit', async (e)
       produto,
       producao_planejada: row.querySelector('.lp-planejada').value.trim() || null,
       producao_real: parseFloat(realRaw),
-      unidade: row.querySelector('.lp-unidade').value.trim() || null,
+      unidade: normalizeUnitDisplay(row.querySelector('.lp-unidade').value) || null,
       inicio_producao: row.querySelector('.lp-inicio').value || null,
       fim_producao: row.querySelector('.lp-fim').value || null,
       paradas_desvios: row.querySelector('.lp-paradas').value.trim() || null,
