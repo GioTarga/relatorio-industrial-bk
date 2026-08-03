@@ -1173,11 +1173,7 @@
 
       <div class="panel">
         <div class="panel-title">⚠ Insumos com Estoque Baixo</div>
-        <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">
-          <div class="lanc-field" style="max-width:320px;margin-bottom:0;">
-            <label>Alertar por % quando não houver mínimo cadastrado (abaixo de X% da última entrada)</label>
-            <input type="number" id="eqLowStockPct" value="20" min="1" max="99" step="1" style="max-width:120px;">
-          </div>
+        <div style="margin-bottom:14px;">
           <button type="button" class="lanc-add-item-btn" id="eqMinimosToggleBtn">⚙ Configurar Mínimos por Insumo</button>
         </div>
 
@@ -1196,7 +1192,7 @@
         <div class="table-wrap">
           <table class="detail" id="eqLowStockTable">
             <thead>
-              <tr><th>Item</th><th>Unidade</th><th class="center">Estoque Atual</th><th class="center">Referência</th><th class="center">% Restante</th><th>Regra</th></tr>
+              <tr><th>Item</th><th>Unidade</th><th class="center">Estoque Atual</th><th class="center">Mínimo Cadastrado</th><th class="center">% Restante</th></tr>
             </thead>
             <tbody id="eqLowStockTbody"></tbody>
           </table>
@@ -1221,7 +1217,11 @@
             </div>
           </div>
         </div>
-        <div class="chart-wrap" id="eqQtyChartWrap" style="margin-top:16px;"></div>
+        <label class="scale-toggle" style="margin-top:14px;">
+          <input type="checkbox" id="eqQtyLogScale" checked>
+          Escala logarítmica (ajuda quando há itens de volume muito diferente)
+        </label>
+        <div class="chart-wrap" id="eqQtyChartWrap" style="margin-top:10px;"></div>
       </div>
 
       <div class="panel">
@@ -7627,7 +7627,6 @@ function EQ_DASH_init(){
     document.getElementById('eqDashDataIni').value = d.toISOString().slice(0,10);
   }
   document.getElementById('eqDashBtnRefresh').addEventListener('click', EQ_DASH_loadData);
-  document.getElementById('eqLowStockPct').addEventListener('input', EQ_DASH_renderLowStock);
   document.getElementById('eqProdutoFiltro').addEventListener('input', EQ_DASH_renderChecklist);
   document.getElementById('eqSelAllBtn').addEventListener('click', ()=>{
     EQ_DASH_SELECTED_ITEMS = new Set(Object.keys(EQ_DASH_LATEST_CONTAGEM));
@@ -7651,6 +7650,7 @@ function EQ_DASH_init(){
     panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
   });
   document.getElementById('eqMinimosFiltro').addEventListener('input', EQ_DASH_renderMinimosPanel);
+  document.getElementById('eqQtyLogScale').addEventListener('change', EQ_DASH_renderQtyChart);
   EQ_DASH_loadData();
 }
 
@@ -7798,11 +7798,16 @@ function EQ_DASH_renderQtyChart(){
   const maxVal = Math.max(...selecionados.map(r=>r.quantidade), 1);
   const barW = 34, gap = 20, baseY = 300, topPad = 50;
   const chartWidth = selecionados.length*(barW+gap) + 50;
+  const logOn = document.getElementById('eqQtyLogScale').checked;
+  function alturaBarra(v){
+    if(!logOn) return (v/maxVal) * (baseY-topPad);
+    return (Math.log10(v+1)/Math.log10(maxVal+1)) * (baseY-topPad);
+  }
 
   let bars = '';
   selecionados.forEach((r,i)=>{
     const x0 = 36 + i*(barW+gap);
-    const h = (r.quantidade/maxVal) * (baseY-topPad);
+    const h = alturaBarra(r.quantidade);
     bars += `<rect x="${x0}" y="${baseY-h}" width="${barW}" height="${h}" fill="var(--red)" rx="4"/>`;
     bars += `<text x="${x0+barW/2}" y="${baseY-h-8}" font-size="11" font-weight="700" fill="var(--red)" text-anchor="middle">${EQ_DASH_fmtNum(r.quantidade)} ${r.unidade||''}</text>`;
     bars += `<text x="${x0+barW/2}" y="${baseY+16}" font-size="10.5" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+16})">${truncateProdLabel(r.item,20)}<title>${r.item} (${r.unidade||''})</title></text>`;
@@ -7816,40 +7821,24 @@ function EQ_DASH_renderQtyChart(){
 
 /* ---------- Alerta de estoque baixo ---------- */
 function EQ_DASH_renderLowStock(){
-  const pct = parseFloat(document.getElementById('eqLowStockPct').value) || 20;
   const tbody = document.getElementById('eqLowStockTbody');
   const linhas = [];
   Object.keys(EQ_DASH_LATEST_CONTAGEM).forEach(item=>{
     const atual = EQ_DASH_LATEST_CONTAGEM[item];
     const minimo = EQ_DASH_MINIMOS[item];
-
-    if(minimo){
-      // Regra 1 (preferida): mínimo cadastrado manualmente.
-      if(atual.quantidade < minimo.quantidade_minima){
-        const pctRestante = minimo.quantidade_minima > 0 ? (atual.quantidade / minimo.quantidade_minima) * 100 : 0;
-        linhas.push({
-          item, unidade: atual.unidade || minimo.unidade || '', atual: atual.quantidade,
-          referencia: minimo.quantidade_minima, pctRestante, regra: 'Mínimo cadastrado',
-        });
-      }
-      return;
-    }
-
-    // Regra 2 (fallback): % da última entrada, só quando não tem mínimo cadastrado.
-    const ultimaEntrada = EQ_DASH_LATEST_ENTRADA[item];
-    if(!ultimaEntrada || !ultimaEntrada.quantidade) return;
-    const pctRestante = (atual.quantidade / ultimaEntrada.quantidade) * 100;
-    if(pctRestante < pct){
+    if(!minimo) return; // sem mínimo cadastrado, não entra no alerta
+    if(atual.quantidade < minimo.quantidade_minima){
+      const pctRestante = minimo.quantidade_minima > 0 ? (atual.quantidade / minimo.quantidade_minima) * 100 : 0;
       linhas.push({
-        item, unidade: atual.unidade || ultimaEntrada.unidade || '', atual: atual.quantidade,
-        referencia: ultimaEntrada.quantidade, pctRestante, regra: `Regra de ${pct}%`,
+        item, unidade: atual.unidade || minimo.unidade || '', atual: atual.quantidade,
+        minimo: minimo.quantidade_minima, pctRestante,
       });
     }
   });
   linhas.sort((a,b)=> a.pctRestante - b.pctRestante);
 
   if(linhas.length === 0){
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);padding:16px;">✓ Nenhum insumo abaixo do mínimo cadastrado (ou de ${pct}% da última entrada, pros que ainda não têm mínimo).</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);padding:16px;">✓ Nenhum insumo abaixo do mínimo cadastrado.</td></tr>`;
     return;
   }
   tbody.innerHTML = linhas.map(r => `
@@ -7857,9 +7846,8 @@ function EQ_DASH_renderLowStock(){
       <td style="font-weight:600;">${r.item}</td>
       <td>${r.unidade||'—'}</td>
       <td class="center">${EQ_DASH_fmtNum(r.atual)}</td>
-      <td class="center">${EQ_DASH_fmtNum(r.referencia)}</td>
+      <td class="center">${EQ_DASH_fmtNum(r.minimo)}</td>
       <td class="center" style="font-weight:700;color:var(--red);">${r.pctRestante.toFixed(0)}%</td>
-      <td style="font-size:11px;color:var(--ink-soft);">${r.regra}</td>
     </tr>
   `).join('');
 }
