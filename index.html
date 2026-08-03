@@ -623,6 +623,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
         Manutenções
       </button>
+      <button class="nav-item" data-page="estoque">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8L12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+        Estoque
+      </button>
       <button class="nav-item" data-page="lancamento">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
         Lançamento
@@ -1114,6 +1118,59 @@
     </div>
   </div> <!-- /page-manutencao -->
 
+  <!-- ============================================================ PÁGINA ESTOQUE ============================================================ -->
+  <div id="page-estoque" class="report-page" style="display:none;">
+
+    <div class="topbar">
+      <div class="brand">
+        <div class="text-block">
+          <div class="eyebrow">Bread King · Estoque</div>
+          <h1>Painel de Estoque</h1>
+          <div class="subtitle">Entradas, contagens e consumo calculado por insumo</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="period-bar">
+      <label for="eqDashDataIni">De</label>
+      <input type="date" id="eqDashDataIni">
+      <label for="eqDashDataFim">Até</label>
+      <input type="date" id="eqDashDataFim">
+      <button class="btn-refresh" id="eqDashBtnRefresh">⟳ Atualizar</button>
+      <span class="period-info" id="eqDashPeriodInfo"></span>
+    </div>
+
+    <div class="container">
+
+      <div class="kpi-grid" id="eqDashKpiGrid"></div>
+
+      <div class="panel">
+        <div class="panel-title">Ranking de Consumo por Insumo</div>
+        <div class="chart-wrap" id="eqDashChartWrap"></div>
+        <div class="trend-foot">Consumo = Estoque na 1ª contagem do período + Entradas lançadas no meio + Estoque na última contagem do período. Só entram itens com pelo menos 2 contagens dentro do período selecionado.</div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Detalhamento por Item</div>
+        <div class="table-wrap">
+          <table class="detail" id="eqDashTable">
+            <thead>
+              <tr>
+                <th>Item</th><th>Unidade</th>
+                <th class="center">Estoque Inicial</th><th class="center">Data</th>
+                <th class="center">Entradas no Período</th>
+                <th class="center">Estoque Final</th><th class="center">Data</th>
+                <th class="center">Consumo</th>
+              </tr>
+            </thead>
+            <tbody id="eqDashTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div> <!-- /page-estoque -->
+
   <!-- ============================================================ PÁGINA LANÇAMENTO ============================================================ -->
   <div id="page-lancamento" class="report-page" style="display:none;">
 
@@ -1441,6 +1498,7 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     document.getElementById('page-produtividade').style.display = target === 'produtividade' ? 'block' : 'none';
     document.getElementById('page-rascunho').style.display = target === 'rascunho' ? 'block' : 'none';
     document.getElementById('page-manutencao').style.display = target === 'manutencao' ? 'block' : 'none';
+    document.getElementById('page-estoque').style.display = target === 'estoque' ? 'block' : 'none';
     document.getElementById('page-lancamento').style.display = target === 'lancamento' ? 'block' : 'none';
     if(target === 'lancamento' && typeof LANC_populateDropdowns === 'function'){
       LANC_populateDropdowns();
@@ -1460,6 +1518,10 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     if(target === 'manutencao' && !MN_loadedOnce){
       MN_loadedOnce = true;
       MN_loadData(false);
+    }
+    if(target === 'estoque' && !EQ_DASH_loadedOnce){
+      EQ_DASH_loadedOnce = true;
+      EQ_DASH_init();
     }
   });
 });
@@ -7459,6 +7521,181 @@ async function EQ_deleteRow(id, tipo){
     feedback.textContent = '⚠ Erro ao excluir: ' + (err.message || err);
     feedback.className = 'lanc-feedback err';
   }
+}
+
+/* ============================================================================
+   PAINEL DE ESTOQUE — consumo calculado por insumo
+   ============================================================================
+   Consumo = Estoque na 1ª contagem do período + Entradas lançadas no meio −
+   Estoque na última contagem do período. Só entra item com pelo menos 2
+   contagens dentro do intervalo selecionado — sem isso não dá pra fechar
+   o cálculo de um jeito confiável. */
+let EQ_DASH_loadedOnce = false;
+let EQ_DASH_DATA = [];
+
+function EQ_DASH_init(){
+  const hoje = new Date();
+  if(!document.getElementById('eqDashDataFim').value){
+    document.getElementById('eqDashDataFim').value = hoje.toISOString().slice(0,10);
+  }
+  if(!document.getElementById('eqDashDataIni').value){
+    const d = new Date(); d.setDate(d.getDate()-60);
+    document.getElementById('eqDashDataIni').value = d.toISOString().slice(0,10);
+  }
+  document.getElementById('eqDashBtnRefresh').addEventListener('click', EQ_DASH_loadData);
+  EQ_DASH_loadData();
+}
+
+async function EQ_DASH_loadData(){
+  const ini = document.getElementById('eqDashDataIni').value;
+  const fim = document.getElementById('eqDashDataFim').value;
+  const infoEl = document.getElementById('eqDashPeriodInfo');
+  infoEl.textContent = 'Carregando...';
+  try{
+    const client = LANC_getClient();
+    const [entradasRes, contagensRes] = await Promise.all([
+      client.from('estoque_entradas').select('*').gte('data', ini).lte('data', fim).order('data'),
+      client.from('estoque_contagens').select('*').gte('data', ini).lte('data', fim).order('data'),
+    ]);
+    if(entradasRes.error) throw entradasRes.error;
+    if(contagensRes.error) throw contagensRes.error;
+
+    const porItem = {};
+    (contagensRes.data || []).forEach(c=>{
+      if(!porItem[c.item]) porItem[c.item] = { contagens: [], entradas: [], unidade: c.unidade };
+      porItem[c.item].contagens.push(c);
+      if(c.unidade) porItem[c.item].unidade = c.unidade;
+    });
+    (entradasRes.data || []).forEach(e=>{
+      if(!porItem[e.item]) porItem[e.item] = { contagens: [], entradas: [], unidade: e.unidade };
+      porItem[e.item].entradas.push(e);
+      if(e.unidade && !porItem[e.item].unidade) porItem[e.item].unidade = e.unidade;
+    });
+
+    const resultado = [];
+    Object.keys(porItem).sort().forEach(item=>{
+      const info = porItem[item];
+      info.contagens.sort((a,b)=> a.data.localeCompare(b.data));
+      const totalEntradasNoPeriodo = info.entradas.reduce((s,e)=> s + Number(e.quantidade||0), 0);
+      if(info.contagens.length < 2){
+        resultado.push({
+          item, unidade: info.unidade || '', status: 'incompleto',
+          contagensCount: info.contagens.length, entradas: totalEntradasNoPeriodo,
+        });
+        return;
+      }
+      const inicial = info.contagens[0];
+      const final = info.contagens[info.contagens.length - 1];
+      const entradasNoIntervalo = info.entradas
+        .filter(e => e.data >= inicial.data && e.data <= final.data)
+        .reduce((s,e)=> s + Number(e.quantidade||0), 0);
+      const consumo = Number(inicial.quantidade) + entradasNoIntervalo - Number(final.quantidade);
+      resultado.push({
+        item, unidade: info.unidade || '', status: 'ok',
+        estoqueInicial: Number(inicial.quantidade), dataInicial: inicial.data,
+        entradas: entradasNoIntervalo,
+        estoqueFinal: Number(final.quantidade), dataFinal: final.data,
+        consumo,
+      });
+    });
+
+    EQ_DASH_DATA = resultado;
+    EQ_DASH_render();
+    infoEl.textContent = `${resultado.length} insumo(s) no período`;
+  }catch(err){
+    console.error('Erro ao carregar painel de estoque:', err);
+    infoEl.textContent = '';
+    document.getElementById('eqDashKpiGrid').innerHTML = `<div class="empty-state"><span class="empty-icon">⚠</span>Erro ao carregar dados: ${err.message||err}</div>`;
+  }
+}
+
+function EQ_DASH_render(){
+  const completos = EQ_DASH_DATA.filter(r => r.status === 'ok');
+  const incompletos = EQ_DASH_DATA.filter(r => r.status === 'incompleto');
+
+  // ---------- KPIs ----------
+  const maiorConsumo = completos.length ? completos.reduce((a,b)=> b.consumo > a.consumo ? b : a) : null;
+  const kpis = [
+    { label: 'Insumos com Consumo Calculado', value: completos.length },
+    { label: 'Aguardando 2ª Contagem', value: incompletos.length },
+    { label: 'Maior Consumo do Período', value: maiorConsumo ? `${maiorConsumo.item}` : '—', small: maiorConsumo ? `${EQ_DASH_fmtNum(maiorConsumo.consumo)} ${maiorConsumo.unidade}` : '' },
+  ];
+  document.getElementById('eqDashKpiGrid').innerHTML = kpis.map(k => `
+    <div class="kpi-card">
+      <div class="label">${k.label}</div>
+      <div class="value" style="${typeof k.value === 'string' && k.value.length > 14 ? 'font-size:20px;' : ''}">${k.value}</div>
+      ${k.small ? `<div style="font-size:12px;color:var(--ink-soft);margin-top:4px;">${k.small}</div>` : ''}
+    </div>
+  `).join('');
+
+  // ---------- Gráfico (maior consumo no topo) ----------
+  const wrap = document.getElementById('eqDashChartWrap');
+  if(completos.length === 0){
+    wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">📦</span>Nenhum insumo com 2 contagens no período selecionado ainda.</div>`;
+  } else {
+    const ordenado = [...completos].sort((a,b)=> a.consumo - b.consumo); // menor pro maior -> maior fica no topo da barra horizontal
+    const barH = 20, gap = 10, leftPad = 210, rightPad = 150, topPad = 8;
+    const chartW = getResponsiveChartW('eqDashChartWrap', 820);
+    const barWmax = chartW - leftPad - rightPad;
+    const chartH = ordenado.length*(barH+gap) + topPad;
+    const maxVal = Math.max(...ordenado.map(r=>Math.abs(r.consumo)), 1);
+    let bars = '';
+    ordenado.forEach((r,i)=>{
+      const y = topPad + i*(barH+gap);
+      const w = Math.max((Math.abs(r.consumo)/maxVal)*barWmax, 2);
+      const cor = r.consumo < 0 ? 'var(--good)' : 'var(--red)'; // negativo = sobrou mais do que devia (raro, mas pode acontecer com erro de contagem)
+      const label = truncateProdLabel(r.item, 24);
+      bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="10.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${label}<title>${r.item}</title></text>`;
+      bars += `<rect x="${leftPad}" y="${y}" width="${barWmax}" height="${barH}" fill="#f3d9d0" stroke="#e0a89a" stroke-width="1" rx="5"/>`;
+      bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="${cor}" rx="5"/>`;
+      bars += `<text x="${leftPad+Math.max(w,barWmax)+8}" y="${y+barH/2+4}" font-size="10.5" fill="${cor}" font-weight="700">${EQ_DASH_fmtNum(r.consumo)} ${r.unidade}</text>`;
+    });
+    const visibleRows = 6;
+    const containerH = visibleRows*(barH+gap) + topPad + 6;
+    wrap.innerHTML = `
+      <div style="max-height:${containerH}px; width:${chartW}px; overflow-y:auto; overflow-x:hidden; display:inline-block; text-align:left;">
+        <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:block;">
+          ${bars}
+        </svg>
+      </div>`;
+  }
+
+  // ---------- Tabela de detalhamento ----------
+  const tbody = document.getElementById('eqDashTbody');
+  if(EQ_DASH_DATA.length === 0){
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum dado nesse período.</td></tr>`;
+    return;
+  }
+  const linhas = [...EQ_DASH_DATA].sort((a,b)=>{
+    if(a.status === 'ok' && b.status === 'ok') return b.consumo - a.consumo;
+    if(a.status === 'ok') return -1;
+    if(b.status === 'ok') return 1;
+    return a.item.localeCompare(b.item);
+  });
+  tbody.innerHTML = linhas.map(r=>{
+    if(r.status === 'incompleto'){
+      return `<tr>
+        <td>${r.item}</td><td>${r.unidade||'—'}</td>
+        <td colspan="6" style="color:var(--ink-soft);font-style:italic;">
+          Aguardando 2ª contagem no período (tem ${r.contagensCount} até agora) — ${EQ_DASH_fmtNum(r.entradas)} ${r.unidade||''} de entrada já registrada
+        </td>
+      </tr>`;
+    }
+    return `<tr>
+      <td>${r.item}</td><td>${r.unidade||'—'}</td>
+      <td class="center">${EQ_DASH_fmtNum(r.estoqueInicial)}</td><td class="center">${EQ_DASH_fmtDataBR(r.dataInicial)}</td>
+      <td class="center">${EQ_DASH_fmtNum(r.entradas)}</td>
+      <td class="center">${EQ_DASH_fmtNum(r.estoqueFinal)}</td><td class="center">${EQ_DASH_fmtDataBR(r.dataFinal)}</td>
+      <td class="center" style="font-weight:700;color:${r.consumo<0?'var(--good)':'var(--red)'};">${EQ_DASH_fmtNum(r.consumo)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function EQ_DASH_fmtNum(v){
+  return Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+}
+function EQ_DASH_fmtDataBR(iso){
+  return iso ? iso.split('-').reverse().join('/') : '—';
 }
 
 </script>
