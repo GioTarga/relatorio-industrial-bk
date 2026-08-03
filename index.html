@@ -753,6 +753,7 @@
       <span><i class="dot" style="background:#f3d9d0;border:1px solid var(--red)"></i>Prevista (Meta)</span>
       <span><i class="dot" style="background:var(--red);border:1px solid var(--red)"></i>Real (abaixo da meta)</span>
       <span><i class="dot" style="background:var(--good);border:1px solid var(--good)"></i>Real (meta atingida)</span>
+      <span><i class="dot" style="background:#8a4c9e;border:1px solid #8a4c9e"></i>Real (sem meta cadastrada)</span>
     </div>
   </div>
 
@@ -2801,12 +2802,18 @@ function renderDayChart(rows){
     const realColor = atingiu ? '#2f7d52' : '#A10101';
     const hTop = Math.max(hP, hR);
     const produtoAttr = r.produto.replace(/"/g,'&quot;');
+    const semMeta = !r.prev || r.prev <= 0;
     bars += `<g class="pr-bar-group" data-produto="${produtoAttr}" data-uni="${(r.uni||'').replace(/"/g,'&quot;')}">`;
-    // Trilha = Produção Prevista (sempre desenhada até a altura da meta)
-    bars += `<rect x="${x0}" y="${baseY-hP}" width="${barW}" height="${hP}" fill="#f3d9d0" stroke="#A10101" stroke-width="1" rx="4"/>`;
+    // Trilha = Produção Prevista (só desenhada quando existe meta cadastrada)
+    if(!semMeta){
+      bars += `<rect x="${x0}" y="${baseY-hP}" width="${barW}" height="${hP}" fill="#f3d9d0" stroke="#A10101" stroke-width="1" rx="4"/>`;
+    }
     // Preenchimento = Produção Real, sobreposto na mesma coluna
-    bars += `<rect x="${x0}" y="${baseY-hR}" width="${barW}" height="${hR}" fill="${realColor}" rx="4"/>`;
-    bars += `<text x="${x0+barW/2}" y="${baseY-hTop-9}" font-size="${fsVal}" font-weight="700" fill="${realColor}" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-hTop-9})">${Math.round(r.real).toLocaleString('pt-BR')} / ${Math.round(r.prev).toLocaleString('pt-BR')}</text>`;
+    bars += `<rect x="${x0}" y="${baseY-hR}" width="${barW}" height="${hR}" fill="${semMeta ? '#8a4c9e' : realColor}" rx="4"/>`;
+    const valorTxt = semMeta
+      ? `${Math.round(r.real).toLocaleString('pt-BR')} (sem meta)`
+      : `${Math.round(r.real).toLocaleString('pt-BR')} / ${Math.round(r.prev).toLocaleString('pt-BR')}`;
+    bars += `<text x="${x0+barW/2}" y="${baseY-hTop-9}" font-size="${fsVal}" font-weight="700" fill="${semMeta ? '#8a4c9e' : realColor}" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-hTop-9})">${valorTxt}</text>`;
     bars += `<text x="${x0+barW/2}" y="${baseY+16}" font-size="${fsLab}" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+16})">${truncateProdLabel(r.produto)}<title>Clique pra ver o histórico de ${r.produto}</title></text>`;
     bars += `</g>`;
   });
@@ -3556,7 +3563,15 @@ function computeChartRows(filteredDates){
   const source = [];
   filteredDates.forEach(d=>{
     getDayRows(d).forEach(r=>{
-      if(typeof r.prev === 'number') source.push(r);
+      // Inclui tanto os itens com meta numérica quanto os que tiveram produção
+      // real mas ficaram sem meta cadastrada (fora do plano ou "S/ Quantidade
+      // Planejada") — senão eles somem do gráfico mesmo tendo sido produzidos.
+      // Nesse segundo caso, prev vira 0 e a barra mostra só o Real.
+      if(typeof r.prev === 'number'){
+        source.push(r);
+      } else if(r.real > 0){
+        source.push(Object.assign({}, r, { prev: 0 }));
+      }
     });
   });
   const filtered = selectedFamilia ? source.filter(r => findFamiliaForProduto(r.produto) === selectedFamilia) : source;
