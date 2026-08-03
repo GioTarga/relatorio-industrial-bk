@@ -1495,7 +1495,15 @@
             <div class="table-wrap" style="margin-top:12px;">
               <table class="detail" id="eqHistTableEntrada">
                 <thead>
-                  <tr><th>Data</th><th>Item</th><th class="center">Quantidade</th><th>Unidade</th><th>Fornecedor</th><th>Nota Fiscal</th><th>Observação</th><th class="center">Ações</th></tr>
+                  <tr>
+                    <th>Data</th><th>Item</th><th class="center">Quantidade</th><th>Unidade</th>
+                    <th>Fornecedor</th><th>Nota Fiscal</th><th>Lote</th>
+                    <th class="center">Fabricação</th><th class="center">Validade</th>
+                    <th>Peso da Peça</th><th>SIF</th>
+                    <th class="center">Temp. Veículo</th><th class="center">Temp. Produto</th>
+                    <th>Armazenamento</th><th class="center">Aprovado</th><th>Recebedor</th>
+                    <th>Observação</th><th class="center">Ações</th>
+                  </tr>
                 </thead>
                 <tbody id="eqHistTbodyEntrada"></tbody>
               </table>
@@ -7212,6 +7220,54 @@ function EQ_createEntradaRow(){
         <label>Nota Fiscal</label>
         <input type="text" class="eq-nf" placeholder="Opcional">
       </div>
+      <div class="lanc-field">
+        <label>Lote</label>
+        <input type="text" class="eq-lote" placeholder="Opcional">
+      </div>
+      <div class="lanc-field">
+        <label>SIF</label>
+        <input type="text" class="eq-sif" placeholder="Opcional">
+      </div>
+      <div class="lanc-field">
+        <label>Peso da Peça</label>
+        <input type="text" class="eq-peso-peca" placeholder="Ex: 25 KG">
+      </div>
+      <div class="lanc-field">
+        <label>Data de Fabricação</label>
+        <input type="date" class="eq-data-fab">
+      </div>
+      <div class="lanc-field">
+        <label>Data de Validade</label>
+        <input type="date" class="eq-data-val">
+      </div>
+      <div class="lanc-field">
+        <label>Tipo de Armazenamento</label>
+        <select class="eq-tipo-arm">
+          <option value="">—</option>
+          <option value="Congelado">Congelado</option>
+          <option value="Resfriado">Resfriado</option>
+          <option value="Ambiente">Ambiente</option>
+        </select>
+      </div>
+      <div class="lanc-field">
+        <label>Temperatura do Veículo (ºC)</label>
+        <input type="number" step="0.1" class="eq-temp-veiculo" placeholder="Opcional">
+      </div>
+      <div class="lanc-field">
+        <label>Temperatura do Produto (ºC)</label>
+        <input type="number" step="0.1" class="eq-temp-produto" placeholder="Opcional">
+      </div>
+      <div class="lanc-field">
+        <label>Nome do Recebedor</label>
+        <input type="text" class="eq-recebedor" placeholder="Opcional">
+      </div>
+      <div class="lanc-field span-2" style="justify-content:center;">
+        <label>Inspeção</label>
+        <span class="lanc-checkbox" style="margin-top:8px;">
+          <input type="checkbox" class="eq-aprovado" checked>
+          <label style="text-transform:none;font-weight:400;">Aprovado no recebimento</label>
+        </span>
+      </div>
       <div class="lanc-field span-3">
         <label>Observação</label>
         <textarea class="eq-obs" placeholder="Opcional"></textarea>
@@ -7237,12 +7293,25 @@ function EQ_buildEntradaPayload(row, data){
   const item = row.querySelector('.eq-item').value.trim();
   const qtdRaw = row.querySelector('.eq-quantidade').value;
   if(!item || qtdRaw === '') return null;
+  const aprovadoEl = row.querySelector('.eq-aprovado');
+  const tempVeiculo = row.querySelector('.eq-temp-veiculo').value;
+  const tempProduto = row.querySelector('.eq-temp-produto').value;
   return {
     data, item,
     quantidade: parseFloat(qtdRaw),
     unidade: normalizeUnitDisplay(row.querySelector('.eq-unidade').value) || null,
     fornecedor: row.querySelector('.eq-fornecedor').value.trim() || null,
     nota_fiscal: row.querySelector('.eq-nf').value.trim() || null,
+    lote: row.querySelector('.eq-lote').value.trim() || null,
+    sif: row.querySelector('.eq-sif').value.trim() || null,
+    peso_peca: row.querySelector('.eq-peso-peca').value.trim() || null,
+    data_fabricacao: row.querySelector('.eq-data-fab').value || null,
+    data_validade: row.querySelector('.eq-data-val').value || null,
+    tipo_armazenamento: row.querySelector('.eq-tipo-arm').value || null,
+    temperatura_veiculo: tempVeiculo !== '' ? parseFloat(tempVeiculo) : null,
+    temperatura_produto: tempProduto !== '' ? parseFloat(tempProduto) : null,
+    nome_recebedor: row.querySelector('.eq-recebedor').value.trim() || null,
+    aprovado: aprovadoEl ? aprovadoEl.checked : null,
     observacao: row.querySelector('.eq-obs').value.trim() || null,
   };
 }
@@ -7472,7 +7541,7 @@ function EQ_fmtDataBR(iso){ return iso ? iso.split('-').reverse().join('/') : '�
 function EQ_renderHistTable(tipo){
   const tbodyId = tipo === 'entrada' ? 'eqHistTbodyEntrada' : 'eqHistTbodyContagem';
   const tbody = document.getElementById(tbodyId);
-  const colspan = tipo === 'entrada' ? 8 : 6;
+  const colspan = tipo === 'entrada' ? 18 : 6;
   if(EQ_HIST_DATA.length === 0){
     tbody.innerHTML = `<tr><td colspan="${colspan}" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum registro nesse filtro.</td></tr>`;
     return;
@@ -7487,10 +7556,16 @@ function EQ_renderHistTable(tipo){
 
 function EQ_buildHistRowHtml(row, tipo){
   if(tipo === 'entrada'){
+    const aprovadoTxt = row.aprovado === true ? '✓ Sim' : row.aprovado === false ? '✗ Não' : '—';
     return `<tr data-id="${row.id}">
       <td>${EQ_fmtDataBR(row.data)}</td><td>${row.item||'—'}</td>
       <td class="center">${row.quantidade ?? '—'}</td><td>${row.unidade||'—'}</td>
-      <td>${row.fornecedor||'—'}</td><td>${row.nota_fiscal||'—'}</td><td>${row.observacao||'—'}</td>
+      <td>${row.fornecedor||'—'}</td><td>${row.nota_fiscal||'—'}</td><td>${row.lote||'—'}</td>
+      <td class="center">${EQ_fmtDataBR(row.data_fabricacao)}</td><td class="center">${EQ_fmtDataBR(row.data_validade)}</td>
+      <td>${row.peso_peca||'—'}</td><td>${row.sif||'—'}</td>
+      <td class="center">${row.temperatura_veiculo ?? '—'}</td><td class="center">${row.temperatura_produto ?? '—'}</td>
+      <td>${row.tipo_armazenamento||'—'}</td><td class="center">${aprovadoTxt}</td><td>${row.nome_recebedor||'—'}</td>
+      <td>${row.observacao||'—'}</td>
       <td class="center">
         <button type="button" class="lanc-hist-btn edit">Editar</button>
         <button type="button" class="lanc-hist-btn delete">Excluir</button>
@@ -7514,6 +7589,25 @@ function EQ_buildHistEditRowHtml(row, tipo){
       <td><input type="text" class="eeh-unidade" list="lpUnidadeListEstoque" value="${(row.unidade||'').replace(/"/g,'&quot;')}"></td>
       <td><input type="text" class="eeh-fornecedor" value="${(row.fornecedor||'').replace(/"/g,'&quot;')}"></td>
       <td><input type="text" class="eeh-nf" value="${(row.nota_fiscal||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="text" class="eeh-lote" value="${(row.lote||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="date" class="eeh-data-fab" value="${row.data_fabricacao||''}"></td>
+      <td><input type="date" class="eeh-data-val" value="${row.data_validade||''}"></td>
+      <td><input type="text" class="eeh-peso-peca" value="${(row.peso_peca||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="text" class="eeh-sif" value="${(row.sif||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="number" step="0.1" class="eeh-temp-veiculo" value="${row.temperatura_veiculo ?? ''}"></td>
+      <td><input type="number" step="0.1" class="eeh-temp-produto" value="${row.temperatura_produto ?? ''}"></td>
+      <td><select class="eeh-tipo-arm">
+        <option value="" ${!row.tipo_armazenamento?'selected':''}>—</option>
+        <option value="Congelado" ${row.tipo_armazenamento==='Congelado'?'selected':''}>Congelado</option>
+        <option value="Resfriado" ${row.tipo_armazenamento==='Resfriado'?'selected':''}>Resfriado</option>
+        <option value="Ambiente" ${row.tipo_armazenamento==='Ambiente'?'selected':''}>Ambiente</option>
+      </select></td>
+      <td><select class="eeh-aprovado">
+        <option value="" ${row.aprovado===null||row.aprovado===undefined?'selected':''}>—</option>
+        <option value="true" ${row.aprovado===true?'selected':''}>Sim</option>
+        <option value="false" ${row.aprovado===false?'selected':''}>Não</option>
+      </select></td>
+      <td><input type="text" class="eeh-recebedor" value="${(row.nome_recebedor||'').replace(/"/g,'&quot;')}"></td>
       <td><input type="text" class="eeh-obs" value="${(row.observacao||'').replace(/"/g,'&quot;')}"></td>
       <td class="center">
         <button type="button" class="lanc-hist-btn save">Salvar</button>
@@ -7562,6 +7656,16 @@ async function EQ_saveEditRow(id, tipo){
   if(tipo === 'entrada'){
     payload.fornecedor = val('eeh-fornecedor').trim() || null;
     payload.nota_fiscal = val('eeh-nf').trim() || null;
+    payload.lote = val('eeh-lote').trim() || null;
+    payload.data_fabricacao = val('eeh-data-fab') || null;
+    payload.data_validade = val('eeh-data-val') || null;
+    payload.peso_peca = val('eeh-peso-peca').trim() || null;
+    payload.sif = val('eeh-sif').trim() || null;
+    payload.temperatura_veiculo = val('eeh-temp-veiculo') !== '' ? parseFloat(val('eeh-temp-veiculo')) : null;
+    payload.temperatura_produto = val('eeh-temp-produto') !== '' ? parseFloat(val('eeh-temp-produto')) : null;
+    payload.tipo_armazenamento = val('eeh-tipo-arm') || null;
+    payload.aprovado = val('eeh-aprovado') === '' ? null : val('eeh-aprovado') === 'true';
+    payload.nome_recebedor = val('eeh-recebedor').trim() || null;
   }
   if(!payload.item || payload.quantidade === null){
     feedback.textContent = '⚠ Item e Quantidade são obrigatórios.';
