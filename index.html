@@ -1142,6 +1142,7 @@
         <div class="lanc-tabs">
           <button type="button" class="lanc-tab-btn active" data-lanctab="producao">Produção Diária</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="manutencao">Manutenção</button>
+          <button type="button" class="lanc-tab-btn" data-lanctab="estoque">Estoque</button>
         </div>
 
         <!-- Formulário: Produção Diária -->
@@ -1284,6 +1285,96 @@
               <span class="lanc-feedback" id="lmFeedback"></span>
             </div>
           </form>
+        </div>
+
+        <!-- Formulário: Estoque -->
+        <div id="lancPanelEstoque" class="panel" style="display:none;">
+          <div class="lanc-subtabs">
+            <button type="button" class="lanc-subtab-btn active" data-eqview="entrada">Lançar Entrada</button>
+            <button type="button" class="lanc-subtab-btn" data-eqview="contagem">Lançar Contagem</button>
+            <button type="button" class="lanc-subtab-btn" data-eqview="historico">Histórico</button>
+          </div>
+
+          <!-- Lançar Entrada -->
+          <div id="eqViewEntrada">
+            <div class="panel-title">Nova Entrada de Estoque</div>
+            <form id="eqFormEntrada" class="lanc-form">
+              <div class="lanc-field">
+                <label>Data</label>
+                <input type="date" id="eqEntradaData" required>
+              </div>
+              <div class="lanc-field span-3">
+                <div id="eqEntradaItems" class="lanc-items"></div>
+                <button type="button" class="lanc-add-item-btn" id="eqEntradaAddBtn">+ Adicionar item</button>
+              </div>
+              <div class="lanc-submit-row">
+                <button type="submit" class="lanc-submit-btn" id="eqEntradaSubmitBtn">Salvar Lançamento</button>
+                <span class="lanc-feedback" id="eqEntradaFeedback"></span>
+              </div>
+            </form>
+          </div>
+
+          <!-- Lançar Contagem -->
+          <div id="eqViewContagem" style="display:none;">
+            <div class="panel-title">Nova Contagem de Estoque</div>
+            <form id="eqFormContagem" class="lanc-form">
+              <div class="lanc-field">
+                <label>Data</label>
+                <input type="date" id="eqContagemData" required>
+              </div>
+              <div class="lanc-field span-3">
+                <div id="eqContagemItems" class="lanc-items"></div>
+                <button type="button" class="lanc-add-item-btn" id="eqContagemAddBtn">+ Adicionar item</button>
+              </div>
+              <div class="lanc-submit-row">
+                <button type="submit" class="lanc-submit-btn" id="eqContagemSubmitBtn">Salvar Lançamento</button>
+                <span class="lanc-feedback" id="eqContagemFeedback"></span>
+              </div>
+            </form>
+          </div>
+
+          <!-- Histórico (Entradas + Contagens) -->
+          <div id="eqViewHistorico" style="display:none;">
+            <div class="panel-title">Histórico de Estoque</div>
+            <div class="lanc-hist-filters">
+              <div class="lanc-field">
+                <label>De</label>
+                <input type="date" id="eqHistDataIni">
+              </div>
+              <div class="lanc-field">
+                <label>Até</label>
+                <input type="date" id="eqHistDataFim">
+              </div>
+              <div class="lanc-field">
+                <label>Tipo</label>
+                <select id="eqHistTipo">
+                  <option value="entrada">Entradas</option>
+                  <option value="contagem">Contagens</option>
+                </select>
+              </div>
+              <button type="button" class="lanc-add-item-btn" id="eqHistBuscarBtn" style="align-self:flex-end;">Buscar</button>
+            </div>
+            <span class="lanc-feedback" id="eqHistFeedback"></span>
+            <div class="table-wrap" style="margin-top:12px;">
+              <table class="detail" id="eqHistTableEntrada">
+                <thead>
+                  <tr><th>Data</th><th>Item</th><th class="center">Quantidade</th><th>Unidade</th><th>Fornecedor</th><th>Nota Fiscal</th><th>Observação</th><th class="center">Ações</th></tr>
+                </thead>
+                <tbody id="eqHistTbodyEntrada"></tbody>
+              </table>
+              <table class="detail" id="eqHistTableContagem" style="display:none;">
+                <thead>
+                  <tr><th>Data</th><th>Item</th><th class="center">Quantidade Contada</th><th>Unidade</th><th>Observação</th><th class="center">Ações</th></tr>
+                </thead>
+                <tbody id="eqHistTbodyContagem"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <datalist id="eqItemList"></datalist>
+          <datalist id="lpUnidadeListEstoque">
+            <option value="Kg"><option value="Litro"><option value="Unid"><option value="Pacote"><option value="Caixa"><option value="Saco">
+          </datalist>
         </div>
 
       </div> <!-- /lancContent -->
@@ -6097,6 +6188,8 @@ document.querySelectorAll('.lanc-tab-btn').forEach(btn=>{
     const tab = btn.dataset.lanctab;
     document.getElementById('lancPanelProducao').style.display = tab === 'producao' ? 'block' : 'none';
     document.getElementById('lancPanelManutencao').style.display = tab === 'manutencao' ? 'block' : 'none';
+    document.getElementById('lancPanelEstoque').style.display = tab === 'estoque' ? 'block' : 'none';
+    if(tab === 'estoque') EQ_populateDropdowns();
     if(tab === 'producao') LANC_populateDropdowns();
   });
 });
@@ -6886,6 +6979,487 @@ document.getElementById('lancFormManutencao').addEventListener('submit', async (
     btn.disabled = false;
   }
 });
+
+/* ============================================================================
+   ESTOQUE — Entradas, Contagens e Histórico
+   ============================================================================
+   Mesmo padrão de item/produto: nome do insumo em texto livre com
+   autocomplete (cresce sozinho conforme lança), sem tabela de catálogo à
+   parte. A lista de itens/unidades conhecidos vem direto do Supabase (não
+   do DATA da Produção, que é outra base), buscada uma vez e cacheada. */
+let EQ_KNOWN_ITEMS = null; // cache: { itens:[...], unidades:[...] }
+
+async function EQ_fetchKnownItems(){
+  if(EQ_KNOWN_ITEMS) return EQ_KNOWN_ITEMS;
+  try{
+    const client = LANC_getClient();
+    const [entradas, contagens] = await Promise.all([
+      client.from('estoque_entradas').select('item, unidade').limit(5000),
+      client.from('estoque_contagens').select('item, unidade').limit(5000),
+    ]);
+    const itens = new Set(), unidades = new Set();
+    (entradas.data || []).forEach(r=>{ if(r.item) itens.add(r.item); if(r.unidade) unidades.add(r.unidade); });
+    (contagens.data || []).forEach(r=>{ if(r.item) itens.add(r.item); if(r.unidade) unidades.add(r.unidade); });
+    EQ_KNOWN_ITEMS = { itens: [...itens].sort(), unidades: [...unidades].sort() };
+  }catch(err){
+    console.error('Erro ao buscar itens de estoque conhecidos:', err);
+    EQ_KNOWN_ITEMS = { itens: [], unidades: [] };
+  }
+  return EQ_KNOWN_ITEMS;
+}
+
+async function EQ_populateDropdowns(){
+  EQ_KNOWN_ITEMS = null; // força buscar de novo, pode ter item novo desde a última vez
+  const { itens } = await EQ_fetchKnownItems();
+  document.getElementById('eqItemList').innerHTML = itens.map(i=>`<option value="${i}">`).join('');
+}
+
+function EQ_setDefaultDate(inputId){
+  const el = document.getElementById(inputId);
+  if(!el.value){
+    const hoje = new Date();
+    el.value = hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0')+'-'+String(hoje.getDate()).padStart(2,'0');
+  }
+}
+
+/* ---------- Sub-abas dentro de Estoque ---------- */
+document.querySelectorAll('[data-eqview]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('[data-eqview]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const view = btn.dataset.eqview;
+    document.getElementById('eqViewEntrada').style.display = view === 'entrada' ? 'block' : 'none';
+    document.getElementById('eqViewContagem').style.display = view === 'contagem' ? 'block' : 'none';
+    document.getElementById('eqViewHistorico').style.display = view === 'historico' ? 'block' : 'none';
+    if(view === 'historico') EQ_loadHistorico();
+  });
+});
+
+/* ---------- Cartões de item: Entrada ---------- */
+let EQ_ENTRADA_UID = 0;
+function EQ_createEntradaRow(){
+  const uid = ++EQ_ENTRADA_UID;
+  const row = document.createElement('div');
+  row.className = 'lanc-item';
+  row.innerHTML = `
+    <div class="lanc-item-header">
+      <span class="lanc-item-title">Item</span>
+      <span style="display:flex;gap:14px;align-items:center;">
+        <button type="button" class="lanc-hist-btn save" data-save>Salvar este item</button>
+        <button type="button" class="lanc-item-remove" data-remove>Remover</button>
+      </span>
+    </div>
+    <div class="lanc-item-grid">
+      <div class="lanc-field span-2">
+        <label>Item</label>
+        <input type="text" class="eq-item" list="eqItemList" placeholder="Nome do insumo" required>
+      </div>
+      <div class="lanc-field">
+        <label>Unidade</label>
+        <input type="text" class="eq-unidade" list="lpUnidadeListEstoque" placeholder="Ex: Kg, Litro, Pacote">
+      </div>
+      <div class="lanc-field">
+        <label>Quantidade</label>
+        <input type="number" step="0.01" class="eq-quantidade" required>
+      </div>
+      <div class="lanc-field">
+        <label>Fornecedor</label>
+        <input type="text" class="eq-fornecedor" placeholder="Opcional">
+      </div>
+      <div class="lanc-field">
+        <label>Nota Fiscal</label>
+        <input type="text" class="eq-nf" placeholder="Opcional">
+      </div>
+      <div class="lanc-field span-3">
+        <label>Observação</label>
+        <textarea class="eq-obs" placeholder="Opcional"></textarea>
+      </div>
+    </div>
+  `;
+  row.querySelector('[data-remove]').addEventListener('click', ()=>{ row.remove(); EQ_updateItemNumbers('eqEntradaItems'); });
+  row.querySelector('[data-save]').addEventListener('click', ()=> EQ_saveSingleEntrada(row));
+  return row;
+}
+function EQ_updateItemNumbers(containerId){
+  document.querySelectorAll(`#${containerId} .lanc-item .lanc-item-title`).forEach((el,i)=>{ el.textContent = 'Item ' + (i+1); });
+}
+function EQ_addEntradaItem(){
+  document.getElementById('eqEntradaItems').appendChild(EQ_createEntradaRow());
+  EQ_updateItemNumbers('eqEntradaItems');
+}
+document.getElementById('eqEntradaAddBtn').addEventListener('click', EQ_addEntradaItem);
+EQ_addEntradaItem();
+EQ_setDefaultDate('eqEntradaData');
+
+function EQ_buildEntradaPayload(row, data){
+  const item = row.querySelector('.eq-item').value.trim();
+  const qtdRaw = row.querySelector('.eq-quantidade').value;
+  if(!item || qtdRaw === '') return null;
+  return {
+    data, item,
+    quantidade: parseFloat(qtdRaw),
+    unidade: normalizeUnitDisplay(row.querySelector('.eq-unidade').value) || null,
+    fornecedor: row.querySelector('.eq-fornecedor').value.trim() || null,
+    nota_fiscal: row.querySelector('.eq-nf').value.trim() || null,
+    observacao: row.querySelector('.eq-obs').value.trim() || null,
+  };
+}
+
+async function EQ_saveSingleEntrada(row){
+  const feedback = document.getElementById('eqEntradaFeedback');
+  const data = document.getElementById('eqEntradaData').value;
+  const btn = row.querySelector('[data-save]');
+  if(!data){ feedback.textContent = '⚠ Preencha a Data antes de salvar.'; feedback.className = 'lanc-feedback err'; return; }
+  const payload = EQ_buildEntradaPayload(row, data);
+  if(!payload){ feedback.textContent = '⚠ Preencha Item e Quantidade antes de salvar.'; feedback.className = 'lanc-feedback err'; return; }
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from('estoque_entradas').insert([payload]);
+    if(error) throw error;
+    row.remove();
+    EQ_updateItemNumbers('eqEntradaItems');
+    if(document.querySelectorAll('#eqEntradaItems .lanc-item').length === 0) EQ_addEntradaItem();
+    feedback.textContent = `✓ "${payload.item}" salvo.`;
+    feedback.className = 'lanc-feedback ok';
+    EQ_KNOWN_ITEMS = null;
+  }catch(err){
+    console.error('Erro ao salvar entrada:', err);
+    btn.disabled = false; btn.textContent = 'Salvar este item';
+    feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }
+}
+
+document.getElementById('eqFormEntrada').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const feedback = document.getElementById('eqEntradaFeedback');
+  const btn = document.getElementById('eqEntradaSubmitBtn');
+  const data = document.getElementById('eqEntradaData').value;
+  if(!data){ feedback.textContent = '⚠ Preencha a Data antes de salvar.'; feedback.className = 'lanc-feedback err'; return; }
+  const rows = [...document.querySelectorAll('#eqEntradaItems .lanc-item')];
+  if(rows.length === 0){ feedback.textContent = '⚠ Adicione pelo menos 1 item.'; feedback.className = 'lanc-feedback err'; return; }
+  const payloads = [];
+  for(const row of rows){
+    const p = EQ_buildEntradaPayload(row, data);
+    if(!p){ feedback.textContent = '⚠ Cada item precisa ter Item e Quantidade preenchidos.'; feedback.className = 'lanc-feedback err'; return; }
+    payloads.push(p);
+  }
+  btn.disabled = true;
+  feedback.textContent = 'Salvando ' + payloads.length + ' item(ns)...';
+  feedback.className = 'lanc-feedback';
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from('estoque_entradas').insert(payloads);
+    if(error) throw error;
+    feedback.textContent = `✓ ${payloads.length} item(ns) salvos com sucesso!`;
+    feedback.className = 'lanc-feedback ok';
+    document.getElementById('eqEntradaItems').innerHTML = '';
+    EQ_addEntradaItem();
+    EQ_KNOWN_ITEMS = null;
+  }catch(err){
+    console.error('Erro ao salvar entradas:', err);
+    feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+/* ---------- Cartões de item: Contagem ---------- */
+let EQ_CONTAGEM_UID = 0;
+function EQ_createContagemRow(){
+  const uid = ++EQ_CONTAGEM_UID;
+  const row = document.createElement('div');
+  row.className = 'lanc-item';
+  row.innerHTML = `
+    <div class="lanc-item-header">
+      <span class="lanc-item-title">Item</span>
+      <span style="display:flex;gap:14px;align-items:center;">
+        <button type="button" class="lanc-hist-btn save" data-save>Salvar este item</button>
+        <button type="button" class="lanc-item-remove" data-remove>Remover</button>
+      </span>
+    </div>
+    <div class="lanc-item-grid">
+      <div class="lanc-field span-2">
+        <label>Item</label>
+        <input type="text" class="eq-item" list="eqItemList" placeholder="Nome do insumo" required>
+      </div>
+      <div class="lanc-field">
+        <label>Unidade</label>
+        <input type="text" class="eq-unidade" list="lpUnidadeListEstoque" placeholder="Ex: Kg, Litro, Pacote">
+      </div>
+      <div class="lanc-field">
+        <label>Quantidade Contada</label>
+        <input type="number" step="0.01" class="eq-quantidade" required>
+      </div>
+      <div class="lanc-field span-2">
+        <label>Observação</label>
+        <textarea class="eq-obs" placeholder="Opcional"></textarea>
+      </div>
+    </div>
+  `;
+  row.querySelector('[data-remove]').addEventListener('click', ()=>{ row.remove(); EQ_updateItemNumbers('eqContagemItems'); });
+  row.querySelector('[data-save]').addEventListener('click', ()=> EQ_saveSingleContagem(row));
+  return row;
+}
+function EQ_addContagemItem(){
+  document.getElementById('eqContagemItems').appendChild(EQ_createContagemRow());
+  EQ_updateItemNumbers('eqContagemItems');
+}
+document.getElementById('eqContagemAddBtn').addEventListener('click', EQ_addContagemItem);
+EQ_addContagemItem();
+EQ_setDefaultDate('eqContagemData');
+
+function EQ_buildContagemPayload(row, data){
+  const item = row.querySelector('.eq-item').value.trim();
+  const qtdRaw = row.querySelector('.eq-quantidade').value;
+  if(!item || qtdRaw === '') return null;
+  return {
+    data, item,
+    quantidade: parseFloat(qtdRaw),
+    unidade: normalizeUnitDisplay(row.querySelector('.eq-unidade').value) || null,
+    observacao: row.querySelector('.eq-obs').value.trim() || null,
+  };
+}
+
+async function EQ_saveSingleContagem(row){
+  const feedback = document.getElementById('eqContagemFeedback');
+  const data = document.getElementById('eqContagemData').value;
+  const btn = row.querySelector('[data-save]');
+  if(!data){ feedback.textContent = '⚠ Preencha a Data antes de salvar.'; feedback.className = 'lanc-feedback err'; return; }
+  const payload = EQ_buildContagemPayload(row, data);
+  if(!payload){ feedback.textContent = '⚠ Preencha Item e Quantidade antes de salvar.'; feedback.className = 'lanc-feedback err'; return; }
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from('estoque_contagens').insert([payload]);
+    if(error) throw error;
+    row.remove();
+    EQ_updateItemNumbers('eqContagemItems');
+    if(document.querySelectorAll('#eqContagemItems .lanc-item').length === 0) EQ_addContagemItem();
+    feedback.textContent = `✓ "${payload.item}" salvo.`;
+    feedback.className = 'lanc-feedback ok';
+    EQ_KNOWN_ITEMS = null;
+  }catch(err){
+    console.error('Erro ao salvar contagem:', err);
+    btn.disabled = false; btn.textContent = 'Salvar este item';
+    feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }
+}
+
+document.getElementById('eqFormContagem').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const feedback = document.getElementById('eqContagemFeedback');
+  const btn = document.getElementById('eqContagemSubmitBtn');
+  const data = document.getElementById('eqContagemData').value;
+  if(!data){ feedback.textContent = '⚠ Preencha a Data antes de salvar.'; feedback.className = 'lanc-feedback err'; return; }
+  const rows = [...document.querySelectorAll('#eqContagemItems .lanc-item')];
+  if(rows.length === 0){ feedback.textContent = '⚠ Adicione pelo menos 1 item.'; feedback.className = 'lanc-feedback err'; return; }
+  const payloads = [];
+  for(const row of rows){
+    const p = EQ_buildContagemPayload(row, data);
+    if(!p){ feedback.textContent = '⚠ Cada item precisa ter Item e Quantidade preenchidos.'; feedback.className = 'lanc-feedback err'; return; }
+    payloads.push(p);
+  }
+  btn.disabled = true;
+  feedback.textContent = 'Salvando ' + payloads.length + ' item(ns)...';
+  feedback.className = 'lanc-feedback';
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from('estoque_contagens').insert(payloads);
+    if(error) throw error;
+    feedback.textContent = `✓ ${payloads.length} item(ns) salvos com sucesso!`;
+    feedback.className = 'lanc-feedback ok';
+    document.getElementById('eqContagemItems').innerHTML = '';
+    EQ_addContagemItem();
+    EQ_KNOWN_ITEMS = null;
+  }catch(err){
+    console.error('Erro ao salvar contagens:', err);
+    feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+/* ---------- Histórico de Estoque (Entradas e Contagens) ---------- */
+let EQ_HIST_DATA = [];
+
+document.getElementById('eqHistTipo').addEventListener('change', EQ_loadHistorico);
+document.getElementById('eqHistBuscarBtn').addEventListener('click', EQ_loadHistorico);
+
+function EQ_initHistFiltersIfEmpty(){
+  const iniEl = document.getElementById('eqHistDataIni');
+  const fimEl = document.getElementById('eqHistDataFim');
+  if(!fimEl.value){ const hoje = new Date(); fimEl.value = hoje.toISOString().slice(0,10); }
+  if(!iniEl.value){ const d = new Date(); d.setDate(d.getDate()-30); iniEl.value = d.toISOString().slice(0,10); }
+}
+
+async function EQ_loadHistorico(){
+  EQ_initHistFiltersIfEmpty();
+  const tipo = document.getElementById('eqHistTipo').value;
+  const tabela = tipo === 'entrada' ? 'estoque_entradas' : 'estoque_contagens';
+  const feedback = document.getElementById('eqHistFeedback');
+  feedback.textContent = 'Buscando...'; feedback.className = 'lanc-feedback';
+  document.getElementById('eqHistTableEntrada').style.display = tipo === 'entrada' ? 'table' : 'none';
+  document.getElementById('eqHistTableContagem').style.display = tipo === 'contagem' ? 'table' : 'none';
+  try{
+    const client = LANC_getClient();
+    const ini = document.getElementById('eqHistDataIni').value;
+    const fim = document.getElementById('eqHistDataFim').value;
+    let query = client.from(tabela).select('*').order('data', { ascending:false }).order('created_at', { ascending:false });
+    if(ini) query = query.gte('data', ini);
+    if(fim) query = query.lte('data', fim);
+    const { data, error } = await query.limit(500);
+    if(error) throw error;
+    EQ_HIST_DATA = data || [];
+    EQ_renderHistTable(tipo);
+    feedback.textContent = EQ_HIST_DATA.length + ' registro(s) encontrado(s)' + (EQ_HIST_DATA.length === 500 ? ' (limitado a 500 — estreite o período)' : '');
+    feedback.className = 'lanc-feedback ok';
+  }catch(err){
+    console.error('Erro ao buscar histórico de estoque:', err);
+    feedback.textContent = '⚠ Erro ao buscar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }
+}
+
+function EQ_fmtDataBR(iso){ return iso ? iso.split('-').reverse().join('/') : '—'; }
+
+function EQ_renderHistTable(tipo){
+  const tbodyId = tipo === 'entrada' ? 'eqHistTbodyEntrada' : 'eqHistTbodyContagem';
+  const tbody = document.getElementById(tbodyId);
+  const colspan = tipo === 'entrada' ? 8 : 6;
+  if(EQ_HIST_DATA.length === 0){
+    tbody.innerHTML = `<tr><td colspan="${colspan}" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum registro nesse filtro.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = EQ_HIST_DATA.map(row => EQ_buildHistRowHtml(row, tipo)).join('');
+  tbody.querySelectorAll('tr').forEach(tr=>{
+    const id = tr.dataset.id;
+    tr.querySelector('.lanc-hist-btn.edit').addEventListener('click', ()=> EQ_startEditRow(id, tipo));
+    tr.querySelector('.lanc-hist-btn.delete').addEventListener('click', ()=> EQ_deleteRow(id, tipo));
+  });
+}
+
+function EQ_buildHistRowHtml(row, tipo){
+  if(tipo === 'entrada'){
+    return `<tr data-id="${row.id}">
+      <td>${EQ_fmtDataBR(row.data)}</td><td>${row.item||'—'}</td>
+      <td class="center">${row.quantidade ?? '—'}</td><td>${row.unidade||'—'}</td>
+      <td>${row.fornecedor||'—'}</td><td>${row.nota_fiscal||'—'}</td><td>${row.observacao||'—'}</td>
+      <td class="center">
+        <button type="button" class="lanc-hist-btn edit">Editar</button>
+        <button type="button" class="lanc-hist-btn delete">Excluir</button>
+      </td></tr>`;
+  }
+  return `<tr data-id="${row.id}">
+    <td>${EQ_fmtDataBR(row.data)}</td><td>${row.item||'—'}</td>
+    <td class="center">${row.quantidade ?? '—'}</td><td>${row.unidade||'—'}</td><td>${row.observacao||'—'}</td>
+    <td class="center">
+      <button type="button" class="lanc-hist-btn edit">Editar</button>
+      <button type="button" class="lanc-hist-btn delete">Excluir</button>
+    </td></tr>`;
+}
+
+function EQ_buildHistEditRowHtml(row, tipo){
+  if(tipo === 'entrada'){
+    return `<tr data-id="${row.id}">
+      <td><input type="date" class="eeh-data" value="${row.data||''}"></td>
+      <td><input type="text" class="eeh-item" list="eqItemList" value="${(row.item||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="number" step="0.01" class="eeh-quantidade" value="${row.quantidade ?? ''}"></td>
+      <td><input type="text" class="eeh-unidade" list="lpUnidadeListEstoque" value="${(row.unidade||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="text" class="eeh-fornecedor" value="${(row.fornecedor||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="text" class="eeh-nf" value="${(row.nota_fiscal||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="text" class="eeh-obs" value="${(row.observacao||'').replace(/"/g,'&quot;')}"></td>
+      <td class="center">
+        <button type="button" class="lanc-hist-btn save">Salvar</button>
+        <button type="button" class="lanc-hist-btn cancel">Cancelar</button>
+      </td></tr>`;
+  }
+  return `<tr data-id="${row.id}">
+    <td><input type="date" class="ech-data" value="${row.data||''}"></td>
+    <td><input type="text" class="ech-item" list="eqItemList" value="${(row.item||'').replace(/"/g,'&quot;')}"></td>
+    <td><input type="number" step="0.01" class="ech-quantidade" value="${row.quantidade ?? ''}"></td>
+    <td><input type="text" class="ech-unidade" list="lpUnidadeListEstoque" value="${(row.unidade||'').replace(/"/g,'&quot;')}"></td>
+    <td><input type="text" class="ech-obs" value="${(row.observacao||'').replace(/"/g,'&quot;')}"></td>
+    <td class="center">
+      <button type="button" class="lanc-hist-btn save">Salvar</button>
+      <button type="button" class="lanc-hist-btn cancel">Cancelar</button>
+    </td></tr>`;
+}
+
+function EQ_startEditRow(id, tipo){
+  const row = EQ_HIST_DATA.find(r => String(r.id) === String(id));
+  if(!row) return;
+  const tbodyId = tipo === 'entrada' ? 'eqHistTbodyEntrada' : 'eqHistTbodyContagem';
+  const tr = document.querySelector(`#${tbodyId} tr[data-id="${id}"]`);
+  if(!tr) return;
+  tr.outerHTML = EQ_buildHistEditRowHtml(row, tipo);
+  const newTr = document.querySelector(`#${tbodyId} tr[data-id="${id}"]`);
+  newTr.querySelector('.lanc-hist-btn.save').addEventListener('click', ()=> EQ_saveEditRow(id, tipo));
+  newTr.querySelector('.lanc-hist-btn.cancel').addEventListener('click', ()=> EQ_renderHistTable(tipo));
+}
+
+async function EQ_saveEditRow(id, tipo){
+  const tabela = tipo === 'entrada' ? 'estoque_entradas' : 'estoque_contagens';
+  const tbodyId = tipo === 'entrada' ? 'eqHistTbodyEntrada' : 'eqHistTbodyContagem';
+  const pfx = tipo === 'entrada' ? 'eeh' : 'ech';
+  const tr = document.querySelector(`#${tbodyId} tr[data-id="${id}"]`);
+  if(!tr) return;
+  const feedback = document.getElementById('eqHistFeedback');
+  const val = cls => tr.querySelector('.'+cls).value;
+  const payload = {
+    data: val(pfx+'-data') || null,
+    item: val(pfx+'-item').trim(),
+    quantidade: val(pfx+'-quantidade') !== '' ? parseFloat(val(pfx+'-quantidade')) : null,
+    unidade: normalizeUnitDisplay(val(pfx+'-unidade')) || null,
+    observacao: val(pfx+'-obs').trim() || null,
+  };
+  if(tipo === 'entrada'){
+    payload.fornecedor = val('eeh-fornecedor').trim() || null;
+    payload.nota_fiscal = val('eeh-nf').trim() || null;
+  }
+  if(!payload.item || payload.quantidade === null){
+    feedback.textContent = '⚠ Item e Quantidade são obrigatórios.';
+    feedback.className = 'lanc-feedback err';
+    return;
+  }
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from(tabela).update(payload).eq('id', id);
+    if(error) throw error;
+    const idx = EQ_HIST_DATA.findIndex(r => String(r.id) === String(id));
+    if(idx >= 0) EQ_HIST_DATA[idx] = Object.assign({}, EQ_HIST_DATA[idx], payload);
+    EQ_renderHistTable(tipo);
+    feedback.textContent = '✓ Registro atualizado.';
+    feedback.className = 'lanc-feedback ok';
+  }catch(err){
+    console.error('Erro ao atualizar registro de estoque:', err);
+    feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }
+}
+
+async function EQ_deleteRow(id, tipo){
+  if(!confirm('Excluir esse registro? Essa ação não pode ser desfeita.')) return;
+  const tabela = tipo === 'entrada' ? 'estoque_entradas' : 'estoque_contagens';
+  const feedback = document.getElementById('eqHistFeedback');
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from(tabela).delete().eq('id', id);
+    if(error) throw error;
+    EQ_HIST_DATA = EQ_HIST_DATA.filter(r => String(r.id) !== String(id));
+    EQ_renderHistTable(tipo);
+    feedback.textContent = '✓ Registro excluído.';
+    feedback.className = 'lanc-feedback ok';
+  }catch(err){
+    console.error('Erro ao excluir registro de estoque:', err);
+    feedback.textContent = '⚠ Erro ao excluir: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }
+}
 
 </script>
 </body>
