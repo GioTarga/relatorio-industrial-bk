@@ -7923,11 +7923,11 @@ function EQ_DASH_renderQtyChart(){
     const h = alturaBarra(r.quantidade);
     bars += `<rect x="${x0}" y="${baseY-h}" width="${barW}" height="${h}" fill="var(--red)" rx="4"/>`;
     bars += `<text x="${x0+barW/2}" y="${baseY-h-9}" font-size="11" font-weight="700" fill="var(--red)" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-h-9})">${EQ_DASH_fmtNum(r.quantidade)} ${r.unidade||''}</text>`;
-    bars += `<text x="${x0+barW/2}" y="${baseY+16}" font-size="10.5" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+16})">${truncateProdLabel(r.item,20)}<title>${r.item} (${r.unidade||''})</title></text>`;
+    bars += `<text x="${x0+barW/2}" y="${baseY+16}" font-size="10.5" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+16})">${r.item}<title>${r.item} (${r.unidade||''})</title></text>`;
   });
 
   wrap.innerHTML = `
-    <svg viewBox="0 0 ${chartWidth} 380" width="${chartWidth}" height="380" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
+    <svg viewBox="0 0 ${chartWidth} 550" width="${chartWidth}" height="550" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       ${bars}
     </svg>`;
 }
