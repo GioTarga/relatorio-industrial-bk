@@ -6,6 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
     --red:#A10101;
@@ -494,6 +495,11 @@
   .lanc-item{
     border:1px solid var(--line); border-radius:var(--radius-md); padding:16px;
     background:var(--cream); position:relative;
+  }
+  .lanc-item.lanc-item-pendente{ border-color:#e0a89a; background:#fbe2dc; }
+  .lanc-item-pendente-note{
+    background:#fdf2dc; border:1px solid #f0d9ad; border-radius:var(--radius-sm);
+    padding:8px 12px; font-size:11.5px; color:#8a740b; margin-bottom:12px;
   }
   .lanc-item-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
   .lanc-item-title{
@@ -1153,8 +1159,8 @@
               <input type="date" id="lpData" required>
             </div>
             <div class="lanc-field span-2">
-              <label>Setor</label>
-              <select id="lpSetor" required>
+              <label>Setor padrão (pros produtos adicionados manualmente)</label>
+              <select id="lpSetor">
                 <option value="">Selecione o setor...</option>
                 <option value="__outro__">+ Outro setor (não está na lista)</option>
               </select>
@@ -1163,7 +1169,12 @@
 
             <div class="lanc-field span-3">
               <div id="lpItems" class="lanc-items"></div>
-              <button type="button" class="lanc-add-item-btn" id="lpAddItemBtn">+ Adicionar produto</button>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
+                <button type="button" class="lanc-add-item-btn" id="lpAddItemBtn">+ Adicionar produto</button>
+                <button type="button" class="lanc-add-item-btn" id="lpImportExcelBtn" style="border-style:solid;background:var(--red-dark);color:#fff;border-color:var(--red-dark);">📥 Lançar Planejamento (Excel)</button>
+                <input type="file" id="lpExcelFile" accept=".xlsx,.xls" style="display:none;">
+              </div>
+              <span class="lanc-feedback" id="lpImportFeedback"></span>
             </div>
 
             <div class="lanc-submit-row">
@@ -6172,29 +6183,39 @@ document.getElementById('lpSetor').addEventListener('change', function(){
   lpUpdateProdutoMaquinaList();
 });
 
-function lpGetSetorValue(){
-  const sel = document.getElementById('lpSetor').value;
-  if(sel === '__outro__') return document.getElementById('lpSetorOutro').value.trim();
-  return sel.trim();
-}
-
 /* ---------- Itens (produtos) repetíveis dentro do mesmo lançamento ---------- */
-function lpCreateItemRow(){
+let LP_ITEM_UID = 0;
+
+function lpCreateItemRow(initial){
+  initial = initial || {};
+  const uid = ++LP_ITEM_UID;
   const row = document.createElement('div');
   row.className = 'lanc-item';
+  if(initial.pendente) row.classList.add('lanc-item-pendente');
   row.innerHTML = `
     <div class="lanc-item-header">
       <span class="lanc-item-title">Produto</span>
       <button type="button" class="lanc-item-remove" data-remove>Remover</button>
     </div>
+    ${initial.pendenteMotivo ? `<div class="lanc-item-pendente-note">⚠ ${initial.pendenteMotivo}</div>` : ''}
     <div class="lanc-item-grid">
+      <div class="lanc-field">
+        <label>Setor</label>
+        <select class="lp-item-setor">
+          <option value="">Selecione...</option>
+          <option value="__outro__">+ Outro setor</option>
+        </select>
+        <input type="text" class="lp-item-setor-outro" placeholder="Nome do setor" style="display:none;margin-top:6px;">
+      </div>
       <div class="lanc-field span-2">
         <label>Produto</label>
-        <input type="text" class="lp-produto" list="lpProdutoList" placeholder="Nome do produto" required>
+        <input type="text" class="lp-produto" list="lpProdutoList_${uid}" placeholder="Nome do produto" required>
+        <datalist id="lpProdutoList_${uid}"></datalist>
       </div>
       <div class="lanc-field">
         <label>Máquina</label>
-        <input type="text" class="lp-maquina" list="lpMaquinaList" placeholder="Opcional">
+        <input type="text" class="lp-maquina" list="lpMaquinaList_${uid}" placeholder="Opcional">
+        <datalist id="lpMaquinaList_${uid}"></datalist>
       </div>
       <div class="lanc-field">
         <label>Equipe</label>
@@ -6249,7 +6270,51 @@ function lpCreateItemRow(){
     row.remove();
     lpUpdateItemNumbers();
   });
+
+  // Setor por item: mesma lógica de dropdown fechado + "outro" do cabeçalho,
+  // só que agora vale por produto — necessário pro Lançar Planejamento, que
+  // traz produtos de vários setores misturados no mesmo arquivo.
+  const setorEl = row.querySelector('.lp-item-setor');
+  const setorOutroEl = row.querySelector('.lp-item-setor-outro');
+  const { setores } = LANC_getKnownValues();
+  setorEl.innerHTML = '<option value="">Selecione...</option>'
+    + setores.map(s=>`<option value="${s}">${s}</option>`).join('')
+    + '<option value="__outro__">+ Outro setor</option>';
+  const setorInicial = initial.setor || document.getElementById('lpSetor').value;
+  if(setorInicial && setorInicial !== '__outro__'){
+    if(setores.includes(setorInicial)) setorEl.value = setorInicial;
+    else { setorEl.value = '__outro__'; setorOutroEl.style.display = 'block'; setorOutroEl.value = setorInicial; }
+  }
+  setorEl.addEventListener('change', ()=>{
+    if(setorEl.value === '__outro__'){
+      setorOutroEl.style.display = 'block'; setorOutroEl.focus();
+    } else {
+      setorOutroEl.style.display = 'none'; setorOutroEl.value = '';
+    }
+    lpUpdateRowProdutoMaquinaList(row, uid);
+  });
+  lpUpdateRowProdutoMaquinaList(row, uid);
+
+  if(initial.produto) row.querySelector('.lp-produto').value = initial.produto;
+  if(initial.unidade) row.querySelector('.lp-unidade').value = initial.unidade;
+  if(initial.planejado) row.querySelector('.lp-planejada').value = initial.planejado;
+
   return row;
+}
+
+/* Filtra o datalist de Produto/Máquina desse item específico pelo setor
+   selecionado NESSE item (cada item tem seu próprio par de datalists,
+   diferente do resto do formulário, porque o setor agora varia por linha). */
+function lpUpdateRowProdutoMaquinaList(row, uid){
+  const { produtosPorSetor, maquinasPorSetor, produtosTodos, maquinasTodos } = LANC_getKnownValues();
+  const setorEl = row.querySelector('.lp-item-setor');
+  const setorAtual = setorEl.value;
+  const produtos = (setorAtual && produtosPorSetor[setorAtual]) ? [...produtosPorSetor[setorAtual]].sort() : produtosTodos;
+  const maquinas = (setorAtual && maquinasPorSetor[setorAtual]) ? [...maquinasPorSetor[setorAtual]].sort() : maquinasTodos;
+  const prodList = row.querySelector(`#lpProdutoList_${uid}`);
+  const maqList = row.querySelector(`#lpMaquinaList_${uid}`);
+  if(prodList) prodList.innerHTML = produtos.map(p=>`<option value="${p}">`).join('');
+  if(maqList) maqList.innerHTML = maquinas.map(m=>`<option value="${m}">`).join('');
 }
 
 function lpUpdateItemNumbers(){
@@ -6258,14 +6323,186 @@ function lpUpdateItemNumbers(){
   });
 }
 
-function lpAddItem(){
+function lpAddItem(initial){
   const container = document.getElementById('lpItems');
-  container.appendChild(lpCreateItemRow());
+  container.appendChild(lpCreateItemRow(initial));
   lpUpdateItemNumbers();
+
 }
 
-document.getElementById('lpAddItemBtn').addEventListener('click', lpAddItem);
+document.getElementById('lpAddItemBtn').addEventListener('click', ()=> lpAddItem());
 lpAddItem(); // começa com 1 produto pronto pra preencher
+
+/* ============================================================================
+   LANÇAR PLANEJAMENTO — importa o arquivo Excel "FOR-PCP-029" (Ordem de
+   Produção Embalagem) e pré-preenche Produto, Unidade e Planejado de cada
+   item automaticamente. Setor é descoberto cruzando o nome do produto com o
+   histórico já lançado no banco (o arquivo mistura vários setores na mesma
+   lista, sem essa informação). O que sobra pra preencher manualmente é
+   Equipe, Máquina, Horários e principalmente a Produção Real — que é o
+   único dado que só existe depois que o dia realmente aconteceu.
+   ============================================================================ */
+
+/* Interpreta uma célula de quantidade tipo "4 MASSAS", "5130 UNID (10
+   ARMARIOS)", "2000KG" — devolve {valor, unidade} ou null se não conseguir
+   reconhecer um número + unidade válida (ex: anotações de máquina/turno
+   como "PANITEC 4 TARDE" não têm quantidade nenhuma). */
+function LP_mapUnidadeExcel(u){
+  const t = (u||'').trim().toUpperCase();
+  if(t.startsWith('MASSA')) return 'Massa';
+  if(t.startsWith('CARRINHO')) return 'Carrinhos';
+  if(t.startsWith('CAIXA')) return 'Caixas';
+  if(t.startsWith('BLOCO')) return 'Blocos';
+  if(t === 'KG' || t === 'KGS') return 'Kg';
+  if(t.startsWith('UNID') || t === 'UN') return 'Unid';
+  return null;
+}
+function LP_parseQuantidadeExcel(cell){
+  if(cell === null || cell === undefined) return null;
+  if(typeof cell === 'number') return { valor: cell, unidade: '' };
+  const s = String(cell).trim();
+  if(!s) return null;
+  const semParenteses = s.replace(/\([^)]*\)/g, '').trim();
+  const m = semParenteses.match(/^([\d.,]+)\s*([A-Za-zÀ-ú]*)/);
+  if(!m) return null;
+  const numStr = m[1].replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.');
+  const valor = parseFloat(numStr);
+  if(isNaN(valor)) return null;
+  const unidade = LP_mapUnidadeExcel(m[2]);
+  if(!unidade) return null;
+  return { valor, unidade };
+}
+
+/* Limpa o nome cru do formulário (cheio de sufixo de embalagem/logística)
+   pra virar um nome mais curto — só usado como candidato caso não ache
+   correspondência no histórico; se achar, usa o nome já padronizado do
+   banco em vez deste. */
+function LP_limparNomeProdutoExcel(raw){
+  let s = String(raw||'').trim();
+  s = s.replace(/\s*-\s*(CX\s*)?(C\/|FD\s*C\/|PCT\s*)[\d.,]+.*$/i, '');
+  s = s.replace(/\(\d+\s*ARM[ÁA]RIOS?\)/i, '').trim();
+  s = s.toLowerCase().replace(/(^|\s)([a-zà-ú])/g, (m,p1,p2)=> p1+p2.toUpperCase());
+  s = s.replace(/\bBk\b/g, 'BK');
+  return s.trim();
+}
+
+/* Busca no histórico (DATA, já carregado no dashboard) o produto mais
+   parecido com o nome do arquivo, e devolve o setor mais comum lançado
+   pra ele. Usa o mesmo comparador de similaridade já usado no Rascunho. */
+function LP_matchProdutoHistorico(produtoLimpo){
+  const bySetorCount = {};
+  Object.values(DATA || {}).forEach(day=>{
+    (day.rows||[]).forEach(r=>{
+      if(!r.produto || !r.setor) return;
+      if(!bySetorCount[r.produto]) bySetorCount[r.produto] = {};
+      bySetorCount[r.produto][r.setor] = (bySetorCount[r.produto][r.setor]||0) + 1;
+    });
+  });
+  let melhor = null, melhorScore = 0;
+  Object.keys(bySetorCount).forEach(nome=>{
+    const score = RC_nameSimilarity(produtoLimpo, nome);
+    if(score > melhorScore){ melhorScore = score; melhor = nome; }
+  });
+  if(melhor && melhorScore >= 0.55){
+    const setores = bySetorCount[melhor];
+    const setorMaisComum = Object.keys(setores).sort((a,b)=>setores[b]-setores[a])[0];
+    return { produto: melhor, setor: setorMaisComum };
+  }
+  return null;
+}
+
+function LP_parseExcelRow(produtoRaw, qtdC, qtdD){
+  const parsed = LP_parseQuantidadeExcel(qtdC) || LP_parseQuantidadeExcel(qtdD);
+  const produtoLimpo = LP_limparNomeProdutoExcel(produtoRaw);
+  const match = LP_matchProdutoHistorico(produtoLimpo);
+  let motivo = '';
+  if(!parsed && !match) motivo = 'Sem quantidade clara nesta linha e produto não encontrado no histórico — confira Planejado e Setor.';
+  else if(!parsed) motivo = `Sem quantidade numérica clara ("${qtdC || qtdD || ''}") — confira o Planejado.`;
+  else if(!match) motivo = 'Produto não encontrado no histórico — confira o Setor.';
+  return {
+    produto: match ? match.produto : produtoLimpo,
+    unidade: parsed ? parsed.unidade : '',
+    planejado: parsed ? String(parsed.valor) : '',
+    setor: match ? match.setor : '',
+    pendente: !parsed || !match,
+    pendenteMotivo: motivo,
+  };
+}
+
+async function LP_handleExcelImport(ev){
+  const file = ev.target.files[0];
+  if(!file) return;
+  const feedback = document.getElementById('lpImportFeedback');
+  feedback.textContent = 'Lendo arquivo...';
+  feedback.className = 'lanc-feedback';
+  try{
+    if(typeof XLSX === 'undefined') throw new Error('Biblioteca de leitura de Excel não carregou — verifique sua conexão e tente de novo.');
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    const sheetName = wb.SheetNames.includes('FOR-PCP-029') ? 'FOR-PCP-029' : wb.SheetNames[0];
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null });
+
+    let dataEncontrada = null;
+    for(const r of rows){
+      if(r[0] && String(r[0]).trim().toUpperCase() === 'DATA'){
+        const v = r[1];
+        if(v instanceof Date){
+          dataEncontrada = new Date(v.getTime() - v.getTimezoneOffset()*60000).toISOString().slice(0,10);
+        } else if(typeof v === 'number'){
+          const epoch = new Date(Date.UTC(1899,11,30));
+          dataEncontrada = new Date(epoch.getTime() + v*86400000).toISOString().slice(0,10);
+        }
+        break;
+      }
+    }
+
+    let headerIdx = -1;
+    for(let i=0;i<rows.length;i++){
+      if(rows[i].some(c => c && String(c).trim().toUpperCase() === 'DESCRIÇÃO PRODUTO')){ headerIdx = i; break; }
+    }
+    if(headerIdx === -1){
+      throw new Error('Não encontrei a coluna "DESCRIÇÃO PRODUTO" no arquivo. Confere se é a Ordem de Produção (FOR-PCP-029) certa.');
+    }
+
+    const itens = [];
+    let brancosSeguidos = 0;
+    for(let i=headerIdx+2; i<rows.length; i++){
+      const r = rows[i] || [];
+      const produtoRaw = r[1];
+      if(!produtoRaw || !String(produtoRaw).trim()){
+        brancosSeguidos++;
+        if(brancosSeguidos >= 3) break;
+        continue;
+      }
+      brancosSeguidos = 0;
+      itens.push(LP_parseExcelRow(String(produtoRaw).trim(), r[2], r[3]));
+    }
+
+    if(itens.length === 0) throw new Error('Não encontrei nenhum produto na lista desse arquivo.');
+
+    if(dataEncontrada) document.getElementById('lpData').value = dataEncontrada;
+
+    document.getElementById('lpItems').innerHTML = '';
+    itens.forEach(it => lpAddItem(it));
+
+    const pendentes = itens.filter(it => it.pendente).length;
+    feedback.textContent = `✓ ${itens.length} produto(s) carregados do arquivo` + (dataEncontrada ? ` (${dataEncontrada.split('-').reverse().join('/')})` : '') + '.'
+      + (pendentes ? ` ⚠ ${pendentes} linha(s) destacada(s) precisam de revisão manual (quantidade ou setor não identificados).` : ' Tudo identificado — confira e complete Equipe, Máquina, Horários e Real.');
+    feedback.className = pendentes ? 'lanc-feedback err' : 'lanc-feedback ok';
+  }catch(err){
+    console.error('Erro ao importar planejamento:', err);
+    feedback.textContent = '⚠ ' + err.message;
+    feedback.className = 'lanc-feedback err';
+  }finally{
+    ev.target.value = '';
+  }
+}
+
+document.getElementById('lpImportExcelBtn').addEventListener('click', ()=>{
+  document.getElementById('lpExcelFile').click();
+});
+document.getElementById('lpExcelFile').addEventListener('change', LP_handleExcelImport);
 
 /* ---------- Envio: Produção Diária (grava todos os produtos do lançamento de uma vez) ---------- */
 document.getElementById('lancFormProducao').addEventListener('submit', async (e)=>{
@@ -6274,9 +6511,8 @@ document.getElementById('lancFormProducao').addEventListener('submit', async (e)
   const feedback = document.getElementById('lpFeedback');
 
   const data = document.getElementById('lpData').value;
-  const setor = lpGetSetorValue();
-  if(!setor){
-    feedback.textContent = '⚠ Selecione (ou digite) o setor antes de salvar.';
+  if(!data){
+    feedback.textContent = '⚠ Preencha a Data antes de salvar.';
     feedback.className = 'lanc-feedback err';
     return;
   }
@@ -6292,6 +6528,13 @@ document.getElementById('lancFormProducao').addEventListener('submit', async (e)
   for(const row of itemRows){
     const produto = row.querySelector('.lp-produto').value.trim();
     const realRaw = row.querySelector('.lp-real').value;
+    const setorSel = row.querySelector('.lp-item-setor').value;
+    const setor = setorSel === '__outro__' ? row.querySelector('.lp-item-setor-outro').value.trim() : setorSel;
+    if(!setor){
+      feedback.textContent = '⚠ Cada produto precisa ter o Setor selecionado (linha "' + (produto || '(sem nome)') + '").';
+      feedback.className = 'lanc-feedback err';
+      return;
+    }
     if(!produto || realRaw === ''){
       feedback.textContent = '⚠ Cada produto precisa ter Produto e Produção Real preenchidos.';
       feedback.className = 'lanc-feedback err';
@@ -6326,7 +6569,6 @@ document.getElementById('lancFormProducao').addEventListener('submit', async (e)
     lpAddItem();
     document.getElementById('lpSetorOutro').style.display = 'none';
     document.getElementById('lpSetorOutro').value = '';
-    document.getElementById('lpSetor').value = setor; // mantém o setor selecionado pro próximo lançamento
     LANC_setDefaultDates();
     LANC_populateDropdowns();
   }catch(err){
