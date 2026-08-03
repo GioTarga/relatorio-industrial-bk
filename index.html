@@ -521,20 +521,33 @@
   .lanc-add-item-btn:hover{ background:#fdf2dc; }
 
   .eq-selector-wrap{ display:flex; flex-direction:column; gap:10px; }
-  .eq-selector-wrap #eqProdutoFiltro{
-    max-width:320px; padding:9px 12px; border:1px solid var(--line); border-radius:var(--radius-sm);
-    font-size:13px; font-family:inherit; background:var(--cream);
+  .eq-dropdown{ position:relative; max-width:420px; }
+  .eq-dropdown-btn{
+    width:100%; display:flex; justify-content:space-between; align-items:center;
+    padding:10px 14px; border:1px solid var(--line); border-radius:var(--radius-sm);
+    background:var(--cream); font-size:13px; font-family:inherit; color:var(--ink); cursor:pointer;
   }
-  .eq-selector-actions{ display:flex; gap:10px; }
+  .eq-dropdown-btn:hover{ border-color:#e0a89a; }
+  .eq-dropdown-arrow{ color:var(--ink-soft); font-size:11px; }
+  .eq-dropdown-panel{
+    position:absolute; top:calc(100% + 6px); left:0; width:380px; z-index:20;
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius-md);
+    box-shadow:0 8px 24px rgba(0,0,0,0.14); padding:14px;
+  }
+  .eq-dropdown-panel #eqProdutoFiltro{
+    width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:var(--radius-sm);
+    font-size:13px; font-family:inherit; background:var(--cream); margin-bottom:10px;
+  }
+  .eq-selector-actions{ display:flex; gap:10px; margin-bottom:10px; }
   .eq-selector-actions .lanc-add-item-btn{ margin-top:0; font-size:11.5px; padding:7px 12px; }
   .eq-checklist{
-    max-height:200px; overflow-y:auto; border:1px solid var(--line); border-radius:var(--radius-sm);
-    padding:10px 14px; background:#fff; display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:6px 16px;
+    max-height:240px; overflow-y:auto; display:flex; flex-direction:column; gap:2px;
   }
   .eq-checklist label{
     display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink); cursor:pointer; font-weight:400;
-    text-transform:none; letter-spacing:0;
+    text-transform:none; letter-spacing:0; padding:5px 6px; border-radius:6px;
   }
+  .eq-checklist label:hover{ background:var(--cream); }
 
   .lanc-subtabs{ display:flex; gap:8px; margin-bottom:20px; }
   .lanc-subtab-btn{
@@ -1177,12 +1190,20 @@
       <div class="panel">
         <div class="panel-title">Quantidade em Estoque por Produto</div>
         <div class="eq-selector-wrap">
-          <input type="text" id="eqProdutoFiltro" placeholder="Buscar produto...">
-          <div class="eq-selector-actions">
-            <button type="button" class="lanc-add-item-btn" id="eqSelAllBtn">Marcar todos</button>
-            <button type="button" class="lanc-add-item-btn" id="eqSelNoneBtn">Desmarcar todos</button>
+          <div class="eq-dropdown" id="eqDropdown">
+            <button type="button" class="eq-dropdown-btn" id="eqDropdownBtn">
+              <span id="eqDropdownLabel">Selecione os produtos...</span>
+              <span class="eq-dropdown-arrow">▾</span>
+            </button>
+            <div class="eq-dropdown-panel" id="eqDropdownPanel" style="display:none;">
+              <input type="text" id="eqProdutoFiltro" placeholder="Buscar produto...">
+              <div class="eq-selector-actions">
+                <button type="button" class="lanc-add-item-btn" id="eqSelAllBtn">Marcar todos</button>
+                <button type="button" class="lanc-add-item-btn" id="eqSelNoneBtn">Desmarcar todos</button>
+              </div>
+              <div id="eqProdutoChecklist" class="eq-checklist"></div>
+            </div>
           </div>
-          <div id="eqProdutoChecklist" class="eq-checklist"></div>
         </div>
         <div class="chart-wrap" id="eqQtyChartWrap" style="margin-top:16px;"></div>
       </div>
@@ -7593,13 +7614,28 @@ function EQ_DASH_init(){
   document.getElementById('eqProdutoFiltro').addEventListener('input', EQ_DASH_renderChecklist);
   document.getElementById('eqSelAllBtn').addEventListener('click', ()=>{
     EQ_DASH_SELECTED_ITEMS = new Set(Object.keys(EQ_DASH_LATEST_CONTAGEM));
-    EQ_DASH_renderChecklist(); EQ_DASH_renderQtyChart();
+    EQ_DASH_renderChecklist(); EQ_DASH_renderQtyChart(); EQ_DASH_updateDropdownLabel();
   });
   document.getElementById('eqSelNoneBtn').addEventListener('click', ()=>{
     EQ_DASH_SELECTED_ITEMS = new Set();
-    EQ_DASH_renderChecklist(); EQ_DASH_renderQtyChart();
+    EQ_DASH_renderChecklist(); EQ_DASH_renderQtyChart(); EQ_DASH_updateDropdownLabel();
+  });
+  document.getElementById('eqDropdownBtn').addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const panel = document.getElementById('eqDropdownPanel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  });
+  document.getElementById('eqDropdownPanel').addEventListener('click', (e)=> e.stopPropagation());
+  document.addEventListener('click', ()=>{
+    document.getElementById('eqDropdownPanel').style.display = 'none';
   });
   EQ_DASH_loadData();
+}
+
+function EQ_DASH_updateDropdownLabel(){
+  const n = EQ_DASH_SELECTED_ITEMS ? EQ_DASH_SELECTED_ITEMS.size : 0;
+  document.getElementById('eqDropdownLabel').textContent =
+    n === 0 ? 'Nenhum produto selecionado' : n === 1 ? '1 produto selecionado' : `${n} produtos selecionados`;
 }
 
 async function EQ_DASH_loadData(){
@@ -7711,8 +7747,10 @@ function EQ_DASH_renderChecklist(){
       if(cb.checked) EQ_DASH_SELECTED_ITEMS.add(cb.value);
       else EQ_DASH_SELECTED_ITEMS.delete(cb.value);
       EQ_DASH_renderQtyChart();
+      EQ_DASH_updateDropdownLabel();
     });
   });
+  EQ_DASH_updateDropdownLabel();
 }
 
 /* ---------- Gráfico vertical de quantidade em estoque ---------- */
@@ -7737,7 +7775,7 @@ function EQ_DASH_renderQtyChart(){
     const x0 = 36 + i*(barW+gap);
     const h = (r.quantidade/maxVal) * (baseY-topPad);
     bars += `<rect x="${x0}" y="${baseY-h}" width="${barW}" height="${h}" fill="var(--red)" rx="4"/>`;
-    bars += `<text x="${x0+barW/2}" y="${baseY-h-8}" font-size="11" font-weight="700" fill="var(--red)" text-anchor="middle">${EQ_DASH_fmtNum(r.quantidade)}</text>`;
+    bars += `<text x="${x0+barW/2}" y="${baseY-h-8}" font-size="11" font-weight="700" fill="var(--red)" text-anchor="middle">${EQ_DASH_fmtNum(r.quantidade)} ${r.unidade||''}</text>`;
     bars += `<text x="${x0+barW/2}" y="${baseY+16}" font-size="10.5" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+16})">${truncateProdLabel(r.item,20)}<title>${r.item} (${r.unidade||''})</title></text>`;
   });
 
