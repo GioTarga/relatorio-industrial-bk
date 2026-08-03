@@ -1158,14 +1158,6 @@
               <label>Data</label>
               <input type="date" id="lpData" required>
             </div>
-            <div class="lanc-field span-2">
-              <label>Setor padrão (pros produtos adicionados manualmente)</label>
-              <select id="lpSetor">
-                <option value="">Selecione o setor...</option>
-                <option value="__outro__">+ Outro setor (não está na lista)</option>
-              </select>
-              <input type="text" id="lpSetorOutro" placeholder="Digite o nome do novo setor" style="display:none;margin-top:8px;">
-            </div>
 
             <div class="lanc-field span-3">
               <div id="lpItems" class="lanc-items"></div>
@@ -6151,49 +6143,22 @@ function LANC_getKnownValues(){
 function LANC_populateDropdowns(){
   const { setores } = LANC_getKnownValues();
 
-  const setorEl = document.getElementById('lpSetor');
-  const currentSetor = setorEl.value;
-  setorEl.innerHTML = '<option value="">Selecione o setor...</option>'
-    + setores.map(s=>`<option value="${s}">${s}</option>`).join('')
-    + '<option value="__outro__">+ Outro setor (não está na lista)</option>';
-  if(setores.includes(currentSetor) || currentSetor === '__outro__') setorEl.value = currentSetor;
-
   lpUpdateProdutoMaquinaList();
 }
 
-/* Repopula os datalists de Produto e Máquina com base no setor
-   atualmente selecionado. Se nenhum setor válido estiver selecionado
-   ainda (ou for "Outro setor"), mostra a lista completa, de todos os
-   setores, como alternativa razoável. */
+/* Popula os datalists globais de Produto e Máquina (usados na edição inline
+   do Histórico) com a lista completa — sem filtro por setor, já que não
+   existe mais um "setor atual" único no topo do formulário (cada cartão de
+   produto tem o seu próprio, ver lpUpdateRowProdutoMaquinaList). */
 function lpUpdateProdutoMaquinaList(){
-  const { produtosTodos, maquinasTodos, produtosPorSetor, maquinasPorSetor } = LANC_getKnownValues();
-  const setorAtual = document.getElementById('lpSetor').value;
-
-  const produtos = (setorAtual && produtosPorSetor[setorAtual])
-    ? [...produtosPorSetor[setorAtual]].sort()
-    : produtosTodos;
-  const maquinas = (setorAtual && maquinasPorSetor[setorAtual])
-    ? [...maquinasPorSetor[setorAtual]].sort()
-    : maquinasTodos;
-
-  document.getElementById('lpProdutoList').innerHTML = produtos.map(p=>`<option value="${p}">`).join('');
-  document.getElementById('lpMaquinaList').innerHTML = maquinas.map(m=>`<option value="${m}">`).join('');
+  const { produtosTodos, maquinasTodos } = LANC_getKnownValues();
+  document.getElementById('lpProdutoList').innerHTML = produtosTodos.map(p=>`<option value="${p}">`).join('');
+  document.getElementById('lpMaquinaList').innerHTML = maquinasTodos.map(m=>`<option value="${m}">`).join('');
 }
-
-document.getElementById('lpSetor').addEventListener('change', function(){
-  const outroEl = document.getElementById('lpSetorOutro');
-  if(this.value === '__outro__'){
-    outroEl.style.display = 'block';
-    outroEl.focus();
-  } else {
-    outroEl.style.display = 'none';
-    outroEl.value = '';
-  }
-  lpUpdateProdutoMaquinaList();
-});
 
 /* ---------- Itens (produtos) repetíveis dentro do mesmo lançamento ---------- */
 let LP_ITEM_UID = 0;
+let LP_LAST_SETOR = ''; // lembra o último setor escolhido, pra sugerir no próximo cartão
 
 function lpCreateItemRow(initial){
   initial = initial || {};
@@ -6293,7 +6258,7 @@ function lpCreateItemRow(initial){
   setorEl.innerHTML = '<option value="">Selecione...</option>'
     + setores.map(s=>`<option value="${s}">${s}</option>`).join('')
     + '<option value="__outro__">+ Outro setor</option>';
-  const setorInicial = initial.setor || document.getElementById('lpSetor').value;
+  const setorInicial = initial.setor || LP_LAST_SETOR;
   if(setorInicial && setorInicial !== '__outro__'){
     if(setores.includes(setorInicial)) setorEl.value = setorInicial;
     else { setorEl.value = '__outro__'; setorOutroEl.style.display = 'block'; setorOutroEl.value = setorInicial; }
@@ -6303,6 +6268,7 @@ function lpCreateItemRow(initial){
       setorOutroEl.style.display = 'block'; setorOutroEl.focus();
     } else {
       setorOutroEl.style.display = 'none'; setorOutroEl.value = '';
+      if(setorEl.value) LP_LAST_SETOR = setorEl.value;
     }
     lpUpdateRowProdutoMaquinaList(row, uid);
   });
@@ -6644,8 +6610,6 @@ document.getElementById('lancFormProducao').addEventListener('submit', async (e)
     feedback.className = 'lanc-feedback ok';
     document.getElementById('lpItems').innerHTML = '';
     lpAddItem();
-    document.getElementById('lpSetorOutro').style.display = 'none';
-    document.getElementById('lpSetorOutro').value = '';
     LANC_setDefaultDates();
     LANC_populateDropdowns();
   }catch(err){
