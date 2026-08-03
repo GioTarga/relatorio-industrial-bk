@@ -3109,7 +3109,9 @@ function computeProductivity(filteredDates){
       source.push({ produto: r.produto, uni: r.uni, real: r.real, horas });
     });
   });
-  const groups = fuzzyGroupBy(source,
+  // Correspondência EXATA (ver nota em computeChartRows) — evita juntar
+  // produtos diferentes-mas-parecidos no cálculo da taxa de produtividade.
+  const groups = exactGroupBy(source,
     r=>r.uni,
     r=>r.produto,
     r=>({ real: r.real, horas: r.horas }),
@@ -3185,7 +3187,9 @@ function PR_computeProductTrend(produto, filteredDates){
   filteredDates.forEach(d=>{
     let real = 0, horas = 0, uni = '';
     getDayRows(d).forEach(r=>{
-      if(RC_nameSimilarity(r.produto, produto) < 0.65) return;
+      // Correspondência EXATA (ver nota em DC_computeProductTrend) — evita
+      // juntar produtos diferentes-mas-parecidos no mesmo histórico.
+      if(r.produto !== produto) return;
       const iniMin = timeToMinutes(r.inicio), fimMin = timeToMinutes(r.fim);
       if(iniMin === null || fimMin === null || fimMin <= iniMin) return;
       real += r.real;
@@ -3265,7 +3269,13 @@ function DC_computeProductTrend(produto, filteredDates){
   filteredDates.forEach(d=>{
     let real = 0, prev = 0, temPrev = false, uni = '';
     getDayRows(d).forEach(r=>{
-      if(RC_nameSimilarity(r.produto, produto) < 0.65) return;
+      // Correspondência EXATA de nome (não aproximada) — os nomes já foram
+      // padronizados direto no banco, e usar RC_nameSimilarity aqui juntava
+      // produtos diferentes-mas-parecidos por engano (ex: clicar em "Empada
+      // Frango c/ Req BK 130g" também somava "Coxinha Frango c/ Req BK 80g"
+      // e "Bauru Frango c/ Req BK 165g", só por compartilharem várias
+      // palavras), inflando o histórico do produto.
+      if(r.produto !== produto) return;
       real += r.real;
       if(typeof r.prev === 'number'){ prev += r.prev; temPrev = true; }
       uni = r.uni;
@@ -3530,9 +3540,12 @@ function renderTrendLine(points){
 
 /* ---------- Detalhamento do gráfico "Comparativo": 1 dia mostra as linhas
    daquele dia; mais de 1 dia soma Previsto e Real por produto no período
-   inteiro (mesma correspondência aproximada de nome usada no ranking de
-   produção perdida, pra não duplicar "Pastel Belem" / "Pastel Belem Varejo"
-   como barras separadas). Definida antes do uso — funções são hoisted. */
+   inteiro, usando correspondência EXATA de nome (exactGroupBy) — os nomes já
+   foram padronizados direto no banco, e usar correspondência aproximada aqui
+   juntava produtos diferentes-mas-parecidos por engano (ex: "Empada Frango
+   c/ Req BK 130g" somando junto "Coxinha Frango c/ Req BK 80g", só por
+   compartilharem várias palavras), inflando o total de cada barra. Definida
+   antes do uso — funções são hoisted. */
 function computeChartRows(filteredDates){
   const source = [];
   filteredDates.forEach(d=>{
@@ -3556,7 +3569,7 @@ function computeChartRows(filteredDates){
       })
     : source;
   if(filteredDates.length <= 1) return filtered;
-  const groups = fuzzyGroupBy(filtered,
+  const groups = exactGroupBy(filtered,
     r=>r.uni,
     r=>r.produto,
     r=>({ prev: r.prev, real: r.real }),
