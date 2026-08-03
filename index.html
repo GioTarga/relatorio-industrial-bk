@@ -520,6 +520,22 @@
   }
   .lanc-add-item-btn:hover{ background:#fdf2dc; }
 
+  .eq-selector-wrap{ display:flex; flex-direction:column; gap:10px; }
+  .eq-selector-wrap #eqProdutoFiltro{
+    max-width:320px; padding:9px 12px; border:1px solid var(--line); border-radius:var(--radius-sm);
+    font-size:13px; font-family:inherit; background:var(--cream);
+  }
+  .eq-selector-actions{ display:flex; gap:10px; }
+  .eq-selector-actions .lanc-add-item-btn{ margin-top:0; font-size:11.5px; padding:7px 12px; }
+  .eq-checklist{
+    max-height:200px; overflow-y:auto; border:1px solid var(--line); border-radius:var(--radius-sm);
+    padding:10px 14px; background:#fff; display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:6px 16px;
+  }
+  .eq-checklist label{
+    display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink); cursor:pointer; font-weight:400;
+    text-transform:none; letter-spacing:0;
+  }
+
   .lanc-subtabs{ display:flex; gap:8px; margin-bottom:20px; }
   .lanc-subtab-btn{
     padding:8px 16px; border-radius:var(--radius-sm); border:1px solid var(--line);
@@ -1142,7 +1158,34 @@
 
     <div class="container">
 
-      <div class="kpi-grid" id="eqDashKpiGrid"></div>
+      <div class="panel">
+        <div class="panel-title">⚠ Insumos com Estoque Baixo</div>
+        <div class="lanc-field" style="max-width:320px;margin-bottom:14px;">
+          <label>Alertar quando o estoque atual ficar abaixo de X% da última entrada</label>
+          <input type="number" id="eqLowStockPct" value="20" min="1" max="99" step="1" style="max-width:120px;">
+        </div>
+        <div class="table-wrap">
+          <table class="detail" id="eqLowStockTable">
+            <thead>
+              <tr><th>Item</th><th>Unidade</th><th class="center">Estoque Atual</th><th class="center">Última Entrada</th><th class="center">% Restante</th></tr>
+            </thead>
+            <tbody id="eqLowStockTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Quantidade em Estoque por Produto</div>
+        <div class="eq-selector-wrap">
+          <input type="text" id="eqProdutoFiltro" placeholder="Buscar produto...">
+          <div class="eq-selector-actions">
+            <button type="button" class="lanc-add-item-btn" id="eqSelAllBtn">Marcar todos</button>
+            <button type="button" class="lanc-add-item-btn" id="eqSelNoneBtn">Desmarcar todos</button>
+          </div>
+          <div id="eqProdutoChecklist" class="eq-checklist"></div>
+        </div>
+        <div class="chart-wrap" id="eqQtyChartWrap" style="margin-top:16px;"></div>
+      </div>
 
       <div class="panel">
         <div class="panel-title">Ranking de Consumo por Insumo</div>
@@ -7532,6 +7575,9 @@ async function EQ_deleteRow(id, tipo){
    o cálculo de um jeito confiável. */
 let EQ_DASH_loadedOnce = false;
 let EQ_DASH_DATA = [];
+let EQ_DASH_LATEST_CONTAGEM = {}; // item -> {data, quantidade, unidade} — mais recente de TODOS os tempos, não só do período
+let EQ_DASH_LATEST_ENTRADA = {};  // idem, pra última entrada
+let EQ_DASH_SELECTED_ITEMS = null; // Set — null até carregar pela 1ª vez (aí seleciona tudo por padrão)
 
 function EQ_DASH_init(){
   const hoje = new Date();
@@ -7543,6 +7589,16 @@ function EQ_DASH_init(){
     document.getElementById('eqDashDataIni').value = d.toISOString().slice(0,10);
   }
   document.getElementById('eqDashBtnRefresh').addEventListener('click', EQ_DASH_loadData);
+  document.getElementById('eqLowStockPct').addEventListener('input', EQ_DASH_renderLowStock);
+  document.getElementById('eqProdutoFiltro').addEventListener('input', EQ_DASH_renderChecklist);
+  document.getElementById('eqSelAllBtn').addEventListener('click', ()=>{
+    EQ_DASH_SELECTED_ITEMS = new Set(Object.keys(EQ_DASH_LATEST_CONTAGEM));
+    EQ_DASH_renderChecklist(); EQ_DASH_renderQtyChart();
+  });
+  document.getElementById('eqSelNoneBtn').addEventListener('click', ()=>{
+    EQ_DASH_SELECTED_ITEMS = new Set();
+    EQ_DASH_renderChecklist(); EQ_DASH_renderQtyChart();
+  });
   EQ_DASH_loadData();
 }
 
@@ -7553,20 +7609,42 @@ async function EQ_DASH_loadData(){
   infoEl.textContent = 'Carregando...';
   try{
     const client = LANC_getClient();
-    const [entradasRes, contagensRes] = await Promise.all([
+    const [entradasPeriodoRes, contagensPeriodoRes, entradasTodasRes, contagensTodasRes] = await Promise.all([
       client.from('estoque_entradas').select('*').gte('data', ini).lte('data', fim).order('data'),
       client.from('estoque_contagens').select('*').gte('data', ini).lte('data', fim).order('data'),
+      client.from('estoque_entradas').select('*').order('data', { ascending:false }).limit(3000),
+      client.from('estoque_contagens').select('*').order('data', { ascending:false }).limit(3000),
     ]);
-    if(entradasRes.error) throw entradasRes.error;
-    if(contagensRes.error) throw contagensRes.error;
+    if(entradasPeriodoRes.error) throw entradasPeriodoRes.error;
+    if(contagensPeriodoRes.error) throw contagensPeriodoRes.error;
+    if(entradasTodasRes.error) throw entradasTodasRes.error;
+    if(contagensTodasRes.error) throw contagensTodasRes.error;
 
+    // Estado ATUAL de cada item (independe do filtro de período — é sempre
+    // o dado mais recente de verdade, usado no gráfico de quantidade e no
+    // alerta de estoque baixo).
+    const latestContagem = {};
+    (contagensTodasRes.data || []).forEach(c=>{
+      if(!latestContagem[c.item]) latestContagem[c.item] = { data: c.data, quantidade: Number(c.quantidade), unidade: c.unidade };
+    });
+    const latestEntrada = {};
+    (entradasTodasRes.data || []).forEach(e=>{
+      if(!latestEntrada[e.item]) latestEntrada[e.item] = { data: e.data, quantidade: Number(e.quantidade), unidade: e.unidade };
+    });
+    EQ_DASH_LATEST_CONTAGEM = latestContagem;
+    EQ_DASH_LATEST_ENTRADA = latestEntrada;
+    if(EQ_DASH_SELECTED_ITEMS === null){
+      EQ_DASH_SELECTED_ITEMS = new Set(Object.keys(latestContagem));
+    }
+
+    // Consumo — esse sim respeita o período selecionado no topo.
     const porItem = {};
-    (contagensRes.data || []).forEach(c=>{
+    (contagensPeriodoRes.data || []).forEach(c=>{
       if(!porItem[c.item]) porItem[c.item] = { contagens: [], entradas: [], unidade: c.unidade };
       porItem[c.item].contagens.push(c);
       if(c.unidade) porItem[c.item].unidade = c.unidade;
     });
-    (entradasRes.data || []).forEach(e=>{
+    (entradasPeriodoRes.data || []).forEach(e=>{
       if(!porItem[e.item]) porItem[e.item] = { contagens: [], entradas: [], unidade: e.unidade };
       porItem[e.item].entradas.push(e);
       if(e.unidade && !porItem[e.item].unidade) porItem[e.item].unidade = e.unidade;
@@ -7601,32 +7679,108 @@ async function EQ_DASH_loadData(){
 
     EQ_DASH_DATA = resultado;
     EQ_DASH_render();
+    EQ_DASH_renderChecklist();
+    EQ_DASH_renderQtyChart();
+    EQ_DASH_renderLowStock();
     infoEl.textContent = `${resultado.length} insumo(s) no período`;
   }catch(err){
     console.error('Erro ao carregar painel de estoque:', err);
     infoEl.textContent = '';
-    document.getElementById('eqDashKpiGrid').innerHTML = `<div class="empty-state"><span class="empty-icon">⚠</span>Erro ao carregar dados: ${err.message||err}</div>`;
+    document.getElementById('eqDashChartWrap').innerHTML = `<div class="empty-state"><span class="empty-icon">⚠</span>Erro ao carregar dados: ${err.message||err}</div>`;
   }
+}
+
+/* ---------- Seletor de produtos (checklist) ---------- */
+function EQ_DASH_renderChecklist(){
+  const filtro = (document.getElementById('eqProdutoFiltro').value || '').toLowerCase().trim();
+  const itens = Object.keys(EQ_DASH_LATEST_CONTAGEM).sort();
+  const container = document.getElementById('eqProdutoChecklist');
+  const visiveis = filtro ? itens.filter(i => i.toLowerCase().includes(filtro)) : itens;
+  if(visiveis.length === 0){
+    container.innerHTML = `<span style="color:var(--ink-soft);font-size:12.5px;">Nenhum item encontrado.</span>`;
+    return;
+  }
+  container.innerHTML = visiveis.map(item => `
+    <label>
+      <input type="checkbox" class="eq-check-item" value="${item.replace(/"/g,'&quot;')}" ${EQ_DASH_SELECTED_ITEMS.has(item) ? 'checked' : ''}>
+      ${item}
+    </label>
+  `).join('');
+  container.querySelectorAll('.eq-check-item').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      if(cb.checked) EQ_DASH_SELECTED_ITEMS.add(cb.value);
+      else EQ_DASH_SELECTED_ITEMS.delete(cb.value);
+      EQ_DASH_renderQtyChart();
+    });
+  });
+}
+
+/* ---------- Gráfico vertical de quantidade em estoque ---------- */
+function EQ_DASH_renderQtyChart(){
+  const wrap = document.getElementById('eqQtyChartWrap');
+  const selecionados = Object.keys(EQ_DASH_LATEST_CONTAGEM)
+    .filter(item => EQ_DASH_SELECTED_ITEMS.has(item))
+    .map(item => ({ item, ...EQ_DASH_LATEST_CONTAGEM[item] }))
+    .sort((a,b)=> b.quantidade - a.quantidade);
+
+  if(selecionados.length === 0){
+    wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">📦</span>Marque pelo menos 1 produto na lista acima pra ver o gráfico.</div>`;
+    return;
+  }
+
+  const maxVal = Math.max(...selecionados.map(r=>r.quantidade), 1);
+  const barW = 34, gap = 20, baseY = 300, topPad = 50;
+  const chartWidth = selecionados.length*(barW+gap) + 50;
+
+  let bars = '';
+  selecionados.forEach((r,i)=>{
+    const x0 = 36 + i*(barW+gap);
+    const h = (r.quantidade/maxVal) * (baseY-topPad);
+    bars += `<rect x="${x0}" y="${baseY-h}" width="${barW}" height="${h}" fill="var(--red)" rx="4"/>`;
+    bars += `<text x="${x0+barW/2}" y="${baseY-h-8}" font-size="11" font-weight="700" fill="var(--red)" text-anchor="middle">${EQ_DASH_fmtNum(r.quantidade)}</text>`;
+    bars += `<text x="${x0+barW/2}" y="${baseY+16}" font-size="10.5" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+16})">${truncateProdLabel(r.item,20)}<title>${r.item} (${r.unidade||''})</title></text>`;
+  });
+
+  wrap.innerHTML = `
+    <svg viewBox="0 0 ${chartWidth} 380" width="${chartWidth}" height="380" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
+      ${bars}
+    </svg>`;
+}
+
+/* ---------- Alerta de estoque baixo ---------- */
+function EQ_DASH_renderLowStock(){
+  const pct = parseFloat(document.getElementById('eqLowStockPct').value) || 20;
+  const tbody = document.getElementById('eqLowStockTbody');
+  const linhas = [];
+  Object.keys(EQ_DASH_LATEST_CONTAGEM).forEach(item=>{
+    const atual = EQ_DASH_LATEST_CONTAGEM[item];
+    const ultimaEntrada = EQ_DASH_LATEST_ENTRADA[item];
+    if(!ultimaEntrada || !ultimaEntrada.quantidade) return; // sem entrada registrada, não dá pra comparar
+    const pctRestante = (atual.quantidade / ultimaEntrada.quantidade) * 100;
+    if(pctRestante < pct){
+      linhas.push({ item, unidade: atual.unidade || ultimaEntrada.unidade || '', atual: atual.quantidade, ultimaEntrada: ultimaEntrada.quantidade, pctRestante });
+    }
+  });
+  linhas.sort((a,b)=> a.pctRestante - b.pctRestante);
+
+  if(linhas.length === 0){
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);padding:16px;">✓ Nenhum insumo abaixo de ${pct}% da última entrada.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = linhas.map(r => `
+    <tr>
+      <td style="font-weight:600;">${r.item}</td>
+      <td>${r.unidade||'—'}</td>
+      <td class="center">${EQ_DASH_fmtNum(r.atual)}</td>
+      <td class="center">${EQ_DASH_fmtNum(r.ultimaEntrada)}</td>
+      <td class="center" style="font-weight:700;color:var(--red);">${r.pctRestante.toFixed(0)}%</td>
+    </tr>
+  `).join('');
 }
 
 function EQ_DASH_render(){
   const completos = EQ_DASH_DATA.filter(r => r.status === 'ok');
   const incompletos = EQ_DASH_DATA.filter(r => r.status === 'incompleto');
-
-  // ---------- KPIs ----------
-  const maiorConsumo = completos.length ? completos.reduce((a,b)=> b.consumo > a.consumo ? b : a) : null;
-  const kpis = [
-    { label: 'Insumos com Consumo Calculado', value: completos.length },
-    { label: 'Aguardando 2ª Contagem', value: incompletos.length },
-    { label: 'Maior Consumo do Período', value: maiorConsumo ? `${maiorConsumo.item}` : '—', small: maiorConsumo ? `${EQ_DASH_fmtNum(maiorConsumo.consumo)} ${maiorConsumo.unidade}` : '' },
-  ];
-  document.getElementById('eqDashKpiGrid').innerHTML = kpis.map(k => `
-    <div class="kpi-card">
-      <div class="label">${k.label}</div>
-      <div class="value" style="${typeof k.value === 'string' && k.value.length > 14 ? 'font-size:20px;' : ''}">${k.value}</div>
-      ${k.small ? `<div style="font-size:12px;color:var(--ink-soft);margin-top:4px;">${k.small}</div>` : ''}
-    </div>
-  `).join('');
 
   // ---------- Gráfico (maior consumo no topo) ----------
   const wrap = document.getElementById('eqDashChartWrap');
