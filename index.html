@@ -6195,7 +6195,10 @@ function lpCreateItemRow(initial){
   row.innerHTML = `
     <div class="lanc-item-header">
       <span class="lanc-item-title">Produto</span>
-      <button type="button" class="lanc-item-remove" data-remove>Remover</button>
+      <span style="display:flex;gap:14px;align-items:center;">
+        <button type="button" class="lanc-hist-btn save" data-save>Salvar este produto</button>
+        <button type="button" class="lanc-item-remove" data-remove>Remover</button>
+      </span>
     </div>
     ${initial.pendenteMotivo ? `<div class="lanc-item-pendente-note">⚠ ${initial.pendenteMotivo}</div>` : ''}
     <div class="lanc-item-grid">
@@ -6270,6 +6273,7 @@ function lpCreateItemRow(initial){
     row.remove();
     lpUpdateItemNumbers();
   });
+  row.querySelector('[data-save]').addEventListener('click', ()=> LP_saveSingleItem(row));
 
   // Setor por item: mesma lógica de dropdown fechado + "outro" do cabeçalho,
   // só que agora vale por produto — necessário pro Lançar Planejamento, que
@@ -6503,6 +6507,70 @@ document.getElementById('lpImportExcelBtn').addEventListener('click', ()=>{
   document.getElementById('lpExcelFile').click();
 });
 document.getElementById('lpExcelFile').addEventListener('change', LP_handleExcelImport);
+
+/* ---------- Salvar 1 produto por vez (sai da lista assim que salvo — os
+   que sobram na tela são justamente os que ainda faltam completar) ---------- */
+async function LP_saveSingleItem(row){
+  const data = document.getElementById('lpData').value;
+  const btn = row.querySelector('[data-save]');
+  const globalFeedback = document.getElementById('lpFeedback');
+
+  if(!data){
+    globalFeedback.textContent = '⚠ Preencha a Data antes de salvar.';
+    globalFeedback.className = 'lanc-feedback err';
+    return;
+  }
+  const produto = row.querySelector('.lp-produto').value.trim();
+  const realRaw = row.querySelector('.lp-real').value;
+  const setorSel = row.querySelector('.lp-item-setor').value;
+  const setor = setorSel === '__outro__' ? row.querySelector('.lp-item-setor-outro').value.trim() : setorSel;
+
+  if(!setor){
+    globalFeedback.textContent = '⚠ Selecione o Setor desse produto antes de salvar.';
+    globalFeedback.className = 'lanc-feedback err';
+    return;
+  }
+  if(!produto || realRaw === ''){
+    globalFeedback.textContent = '⚠ Preencha Produto e Produção Real antes de salvar.';
+    globalFeedback.className = 'lanc-feedback err';
+    return;
+  }
+
+  const payload = {
+    data, setor,
+    equipe: row.querySelector('.lp-equipe').value ? parseInt(row.querySelector('.lp-equipe').value, 10) : null,
+    maquina: row.querySelector('.lp-maquina').value.trim() || null,
+    produto,
+    producao_planejada: row.querySelector('.lp-planejada').value.trim() || null,
+    producao_real: parseFloat(realRaw),
+    unidade: row.querySelector('.lp-unidade').value.trim() || null,
+    inicio_producao: row.querySelector('.lp-inicio').value || null,
+    fim_producao: row.querySelector('.lp-fim').value || null,
+    paradas_desvios: row.querySelector('.lp-paradas').value.trim() || null,
+    duracao_parada: row.querySelector('.lp-duracao').value || null,
+  };
+
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from('producao_diaria').insert([payload]);
+    if(error) throw error;
+    row.remove();
+    lpUpdateItemNumbers();
+    if(document.querySelectorAll('#lpItems .lanc-item').length === 0) lpAddItem();
+    globalFeedback.textContent = `✓ "${produto}" salvo. ` + document.querySelectorAll('#lpItems .lanc-item').length + ' produto(s) ainda na lista.';
+    globalFeedback.className = 'lanc-feedback ok';
+    LANC_populateDropdowns();
+    if(Object.keys(DATA).length > 0) loadData(false);
+  }catch(err){
+    console.error('Erro ao salvar produto:', err);
+    btn.disabled = false;
+    btn.textContent = 'Salvar este produto';
+    globalFeedback.textContent = '⚠ Erro ao salvar "' + produto + '": ' + (err.message || err);
+    globalFeedback.className = 'lanc-feedback err';
+  }
+}
 
 /* ---------- Envio: Produção Diária (grava todos os produtos do lançamento de uma vez) ---------- */
 document.getElementById('lancFormProducao').addEventListener('submit', async (e)=>{
