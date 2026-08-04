@@ -6852,31 +6852,18 @@ function PP_renderVelocidade(){
    velocidade, não etapas). Os campos são montados dinamicamente conforme
    a combinação escolhida, em vez de ter uma tela fixa por linha. */
 
-const PPL_ETAPAS_CONFIG = {
-  'Giro': { temBatelada:true, temMasseira:true, temRetencao:true,
-    etapas:['Preparação','Mistura 1','Mistura 2','Transporte','Modelagem GA'] },
-  'Pão de Queijo': { temBatelada:true, temMasseira:false, temRetencao:true,
-    etapas:['Preparação','Bater Massa','Transportar','Modelagem'] },
-  'Padaria': { temBatelada:true, temMasseira:false, temRetencao:false,
-    etapas:['Preparo','Mistura 1','Mistura 2','Porcionar','Bolear bloco','Boleadeira','Bolear Pão'] },
-  'Pão de Ló e Bolos': { temBatelada:false, temMasseira:false, temRetencao:false, formatoDuracao:true, temParadaUnica:true,
-    etapas:['Pesar Insumos','Bater na Masseira','Raspar e Untar Formas','Encher Formas','Transportar p/ Forno','Buscar no Forno','Desenformar','Carrinho Pronto p/ Fornear'] },
-};
-
+// Velocidade continua com campos específicos por linha (são as colunas reais
+// da tabela produtividade_corridas) — mas agora toda linha tem um conjunto
+// disponível, incluindo um padrão genérico pras que não tinham antes.
 const PPL_VELOCIDADE_CONFIG = {
-  'Giro': { campos:['masseira','hora_massa','velocidade_paes_hora','peso_massa_kg'], temParadasMultiplas:true },
-  'Salgado': { campos:['maquina','inicio','fim','velocidade_prensa','qtd_colaboradores','unidades_por_hora','producao_por_hora','tempo_medio_seg','unidade_medida','duracao_rolo_seg'], temParadasMultiplas:true },
-  'Massa Salgado': { campos:['inicio','fim','quantidade','tempo_medio_seg'], temParadasMultiplas:true },
+  'Giro': { campos:['masseira','hora_massa','velocidade_paes_hora','peso_massa_kg'] },
+  'Salgado': { campos:['maquina','inicio','fim','velocidade_prensa','qtd_colaboradores','unidades_por_hora','producao_por_hora','tempo_medio_seg','unidade_medida','duracao_rolo_seg'] },
+  'Massa Salgado': { campos:['inicio','fim','quantidade','tempo_medio_seg'] },
+  'Pão de Queijo': { campos:['maquina','inicio','fim','quantidade','tempo_medio_seg'] },
+  'Padaria': { campos:['maquina','inicio','fim','quantidade','tempo_medio_seg'] },
+  'Pão de Ló e Bolos': { campos:['maquina','inicio','fim','quantidade','tempo_medio_seg'] },
 };
 
-const PPL_TIPOS_POR_LINHA = {
-  'Giro': ['etapas','velocidade'],
-  'Salgado': ['velocidade'],
-  'Massa Salgado': ['velocidade'],
-  'Pão de Queijo': ['etapas'],
-  'Padaria': ['etapas'],
-  'Pão de Ló e Bolos': ['etapas'],
-};
 const PPL_TIPO_LABELS = { etapas:'Tempo de Processo (Etapas)', velocidade:'Produtividade (Velocidade)' };
 
 const PPL_CAMPO_META = {
@@ -6905,6 +6892,9 @@ async function PPL_init(){
   if(!PPL_initialized){
     document.getElementById('pplLinha').addEventListener('change', PPL_updateTipoOptions);
     document.getElementById('pplTipo').addEventListener('change', PPL_renderCamposDinamicos);
+    document.getElementById('pplProduto').addEventListener('change', ()=>{
+      if(document.getElementById('pplTipo').value === 'etapas') PPL_renderCamposDinamicos();
+    });
     document.querySelectorAll('[data-ppview]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         document.querySelectorAll('[data-ppview]').forEach(b=>b.classList.remove('active'));
@@ -6945,55 +6935,120 @@ async function PPL_populateProdutoList(){
   }
 }
 
+/* Tipo agora está sempre disponível nas duas opções, pra qualquer linha —
+   quem decide o que faz sentido lançar é quem está lançando, não uma
+   configuração fixa por linha. */
 function PPL_updateTipoOptions(){
-  const linha = document.getElementById('pplLinha').value;
   const sel = document.getElementById('pplTipo');
-  const tipos = PPL_TIPOS_POR_LINHA[linha] || [];
-  if(tipos.length === 1){
-    sel.innerHTML = `<option value="${tipos[0]}">${PPL_TIPO_LABELS[tipos[0]]}</option>`;
-  } else {
-    sel.innerHTML = '<option value="">Selecione...</option>' + tipos.map(t=>`<option value="${t}">${PPL_TIPO_LABELS[t]}</option>`).join('');
-  }
+  const anterior = sel.value;
+  sel.innerHTML = '<option value="">Selecione...</option>' + Object.keys(PPL_TIPO_LABELS).map(t=>`<option value="${t}">${PPL_TIPO_LABELS[t]}</option>`).join('');
+  if(anterior) sel.value = anterior;
   PPL_renderCamposDinamicos();
 }
 
-function PPL_renderCamposDinamicos(){
+async function PPL_renderCamposDinamicos(){
   const linha = document.getElementById('pplLinha').value;
   const tipo = document.getElementById('pplTipo').value;
   const container = document.getElementById('pplCamposDinamicos');
   if(!linha || !tipo){ container.innerHTML = ''; return; }
+  if(tipo === 'etapas') await PPL_renderCamposEtapas(linha);
+  else PPL_renderCamposVelocidade(linha);
+}
 
-  if(tipo === 'etapas'){
-    const cfg = PPL_ETAPAS_CONFIG[linha];
-    if(!cfg){ container.innerHTML = '<p style="color:var(--ink-soft);">Essa linha não tem lançamento de Tempo de Processo.</p>'; return; }
-    let html = '<div class="lanc-item-grid">';
-    if(cfg.temBatelada) html += `<div class="lanc-field"><label>Batelada</label><input type="number" id="pplBatelada"></div>`;
-    if(cfg.temMasseira) html += `<div class="lanc-field"><label>Masseira</label><input type="text" id="pplMasseira"></div>`;
-    if(cfg.temRetencao) html += `<div class="lanc-field"><label>Retenção (hh:mm:ss)</label><input type="time" step="1" id="pplRetencao"></div>`;
-    html += '</div>';
-    html += '<div class="lanc-item-grid" style="margin-top:14px;">';
-    cfg.etapas.forEach((nome, i)=>{
-      if(cfg.formatoDuracao){
-        html += `<div class="lanc-field"><label>${nome} (hh:mm:ss)</label><input type="time" step="1" class="ppl-etapa-dur" data-etapa="${nome}" data-ordem="${i+1}"></div>`;
-      } else {
-        html += `<div class="lanc-field"><label>${nome} — Início</label><input type="time" class="ppl-etapa-ini" data-etapa="${nome}" data-ordem="${i+1}"></div>`;
-        html += `<div class="lanc-field"><label>${nome} — Fim</label><input type="time" class="ppl-etapa-fim" data-etapa="${nome}" data-ordem="${i+1}"></div>`;
-      }
+/* Campos-base de uma batelada — genéricos, valem pra qualquer linha,
+   nenhum é obrigatório (nem toda linha usa masseira/retenção, por exemplo). */
+function PPL_camposBaseEtapasHtml(){
+  return '<div class="lanc-item-grid">'
+    + '<div class="lanc-field"><label>Batelada (opcional)</label><input type="number" id="pplBatelada"></div>'
+    + '<div class="lanc-field"><label>Masseira (opcional)</label><input type="text" id="pplMasseira"></div>'
+    + '<div class="lanc-field"><label>Retenção (opcional, hh:mm:ss)</label><input type="time" step="1" id="pplRetencao"></div>'
+    + '</div>';
+}
+function PPL_paradaUnicaHtml(){
+  return `<div class="lanc-item-grid" style="margin-top:16px;">
+    <div class="lanc-field span-2"><label>Parada — Motivo (opcional)</label><input type="text" id="pplParadaMotivo"></div>
+    <div class="lanc-field"><label>Parada — Duração (opcional, hh:mm:ss)</label><input type="time" step="1" id="pplParadaDuracao"></div>
+  </div>`;
+}
+
+/* Busca a batelada mais recente desse produto (na mesma linha) e devolve
+   os nomes de etapa já usados, na ordem certa — assim quem já mapeou um
+   processo antes não precisa digitar tudo de novo toda vez. */
+async function PPL_buscarEtapasHistoricas(linha, produto){
+  try{
+    const client = LANC_getClient();
+    const { data, error } = await client.from('tempo_processo_bateladas')
+      .select('id, tempo_processo_etapas(etapa, ordem)')
+      .eq('linha', linha).eq('produto', produto)
+      .order('data', { ascending:false }).order('created_at', { ascending:false }).limit(1);
+    if(error) throw error;
+    if(!data || data.length === 0) return null;
+    const etapas = data[0].tempo_processo_etapas || [];
+    if(etapas.length === 0) return null;
+    return [...etapas].sort((a,b)=> (a.ordem||0)-(b.ordem||0)).map(e=>e.etapa);
+  }catch(err){
+    console.error('Erro ao buscar histórico de etapas:', err);
+    return null;
+  }
+}
+
+async function PPL_renderCamposEtapas(linha){
+  const container = document.getElementById('pplCamposDinamicos');
+  const produto = document.getElementById('pplProduto').value.trim();
+  const base = PPL_camposBaseEtapasHtml();
+
+  if(!produto){
+    container.innerHTML = base + '<p style="color:var(--ink-soft);margin-top:14px;">Digite o Produto acima pra carregar (ou criar) as etapas desse processo.</p>';
+    return;
+  }
+
+  container.innerHTML = base + '<p style="color:var(--ink-soft);margin-top:14px;">Verificando se esse produto já tem etapas mapeadas...</p>';
+  const etapasExistentes = await PPL_buscarEtapasHistoricas(linha, produto);
+
+  if(etapasExistentes && etapasExistentes.length > 0){
+    let html = base + `<p style="color:var(--good);margin:10px 0 4px;font-size:12px;">✓ Encontramos o padrão de etapas já usado pra "${produto}" — é só preencher os horários.</p>`;
+    html += '<div class="lanc-item-grid">';
+    etapasExistentes.forEach((nome, i)=>{
+      const nomeAttr = nome.replace(/"/g,'&quot;');
+      html += `<div class="lanc-field"><label>${nome} — Início</label><input type="time" class="ppl-etapa-ini" data-etapa="${nomeAttr}" data-ordem="${i+1}"></div>`;
+      html += `<div class="lanc-field"><label>${nome} — Fim</label><input type="time" class="ppl-etapa-fim" data-etapa="${nomeAttr}" data-ordem="${i+1}"></div>`;
     });
-    html += '</div>';
-    if(cfg.temParadaUnica){
-      html += `<div class="lanc-item-grid" style="margin-top:14px;">
-        <div class="lanc-field span-2"><label>Parada — Motivo</label><input type="text" id="pplParadaMotivo" placeholder="Opcional"></div>
-        <div class="lanc-field"><label>Parada — Duração (hh:mm:ss)</label><input type="time" step="1" id="pplParadaDuracao"></div>
-      </div>`;
-    }
+    html += '</div>' + PPL_paradaUnicaHtml();
     container.innerHTML = html;
     return;
   }
 
-  // tipo === 'velocidade'
-  const cfg = PPL_VELOCIDADE_CONFIG[linha];
-  if(!cfg){ container.innerHTML = '<p style="color:var(--ink-soft);">Essa linha não tem lançamento de Produtividade.</p>'; return; }
+  // Mapeamento novo — pergunta quantas etapas e deixa nomear cada uma.
+  container.innerHTML = base + `
+    <div class="lanc-field" style="max-width:320px;margin-top:14px;">
+      <label>Mapeamento novo — quantas etapas esse processo tem?</label>
+      <div style="display:flex;gap:10px;">
+        <input type="number" id="pplQtdEtapas" min="1" max="20" placeholder="Ex: 5" style="max-width:100px;">
+        <button type="button" class="lanc-add-item-btn" id="pplGerarEtapasBtn" style="margin-top:0;">Gerar Campos</button>
+      </div>
+    </div>
+    <div id="pplEtapasNovasContainer" style="margin-top:14px;"></div>
+  `;
+  document.getElementById('pplGerarEtapasBtn').addEventListener('click', PPL_gerarCamposEtapasNovas);
+}
+
+function PPL_gerarCamposEtapasNovas(){
+  const qtd = parseInt(document.getElementById('pplQtdEtapas').value, 10);
+  const wrap = document.getElementById('pplEtapasNovasContainer');
+  if(!qtd || qtd < 1){ wrap.innerHTML = ''; return; }
+  let html = '<div class="lanc-item-grid">';
+  for(let i=1; i<=qtd; i++){
+    html += `<div class="lanc-field"><label>Nome da Etapa ${i}</label><input type="text" class="ppl-etapa-nome-nova" data-ordem="${i}" placeholder="Ex: Bater na Masseira"></div>`;
+    html += `<div class="lanc-field"><label>Início</label><input type="time" class="ppl-etapa-ini-nova" data-ordem="${i}"></div>`;
+    html += `<div class="lanc-field"><label>Fim</label><input type="time" class="ppl-etapa-fim-nova" data-ordem="${i}"></div>`;
+  }
+  html += '</div>';
+  wrap.innerHTML = html + PPL_paradaUnicaHtml();
+}
+
+function PPL_renderCamposVelocidade(linha){
+  const container = document.getElementById('pplCamposDinamicos');
+  const cfg = PPL_VELOCIDADE_CONFIG[linha] || { campos:['maquina','inicio','fim','quantidade','tempo_medio_seg'] };
   let html = '<div class="lanc-item-grid">';
   cfg.campos.forEach(campo=>{
     const meta = PPL_CAMPO_META[campo];
@@ -7002,17 +7057,14 @@ function PPL_renderCamposDinamicos(){
     html += `<div class="lanc-field"><label>${meta.label}</label><input type="${inputType}"${step} id="pplCampo_${campo}"></div>`;
   });
   html += '</div>';
-  if(cfg.temParadasMultiplas){
-    html += `<div style="margin-top:16px;">
-      <div id="pplParadasContainer" class="lanc-items"></div>
-      <button type="button" class="lanc-add-item-btn" id="pplAddParadaBtn">+ Adicionar parada</button>
-    </div>`;
-  }
+  html += `<div style="margin-top:16px;">
+    <div id="pplParadasContainer" class="lanc-items"></div>
+    <button type="button" class="lanc-add-item-btn" id="pplAddParadaBtn">+ Adicionar parada (opcional)</button>
+  </div>`;
   container.innerHTML = html;
-  if(cfg.temParadasMultiplas){
-    document.getElementById('pplAddParadaBtn').addEventListener('click', PPL_addParadaRow);
-  }
+  document.getElementById('pplAddParadaBtn').addEventListener('click', PPL_addParadaRow);
 }
+
 
 function PPL_addParadaRow(){
   const container = document.getElementById('pplParadasContainer');
@@ -7039,6 +7091,14 @@ function PPL_timeToSeconds(str){
   return null;
 }
 
+function PPL_calcDuracao(ini, fim){
+  const [ih,im] = ini.split(':').map(Number);
+  const [fh,fm] = fim.split(':').map(Number);
+  let dur = (fh*60+fm - (ih*60+im)) * 60;
+  if(dur < 0) dur += 86400; // atravessou meia-noite
+  return dur;
+}
+
 async function PPL_handleSubmit(e){
   e.preventDefault();
   const feedback = document.getElementById('pplFeedback');
@@ -7058,47 +7118,62 @@ async function PPL_handleSubmit(e){
   try{
     const client = LANC_getClient();
     if(tipo === 'etapas'){
-      const cfg = PPL_ETAPAS_CONFIG[linha];
+      const bateladaEl = document.getElementById('pplBatelada');
+      const masseiraEl = document.getElementById('pplMasseira');
+      const retencaoEl = document.getElementById('pplRetencao');
+      const paradaMotivoEl = document.getElementById('pplParadaMotivo');
+      const paradaDurEl = document.getElementById('pplParadaDuracao');
+
       const bateladaPayload = {
         linha, data, produto,
-        batelada: cfg.temBatelada && document.getElementById('pplBatelada').value ? parseFloat(document.getElementById('pplBatelada').value) : null,
-        masseira: cfg.temMasseira ? (document.getElementById('pplMasseira').value.trim() || null) : null,
-        retencao_seg: cfg.temRetencao ? PPL_timeToSeconds(document.getElementById('pplRetencao').value) : null,
-        parada_motivo: cfg.temParadaUnica ? (document.getElementById('pplParadaMotivo').value.trim() || null) : null,
-        parada_duracao_seg: cfg.temParadaUnica ? PPL_timeToSeconds(document.getElementById('pplParadaDuracao').value) : null,
+        batelada: bateladaEl && bateladaEl.value ? parseFloat(bateladaEl.value) : null,
+        masseira: masseiraEl && masseiraEl.value.trim() ? masseiraEl.value.trim() : null,
+        retencao_seg: retencaoEl ? PPL_timeToSeconds(retencaoEl.value) : null,
+        parada_motivo: paradaMotivoEl && paradaMotivoEl.value.trim() ? paradaMotivoEl.value.trim() : null,
+        parada_duracao_seg: paradaDurEl ? PPL_timeToSeconds(paradaDurEl.value) : null,
       };
       const { data: batInserted, error: batErr } = await client.from('tempo_processo_bateladas').insert([bateladaPayload]).select().single();
       if(batErr) throw batErr;
 
-      const container_qs = (sel) => document.getElementById('pplCamposDinamicos').querySelector(sel);
       const etapasPayload = [];
-      cfg.etapas.forEach((nome, i)=>{
-        if(cfg.formatoDuracao){
-          const durEl = container_qs(`.ppl-etapa-dur[data-etapa="${CSS.escape(nome)}"]`);
-          const dur = durEl ? PPL_timeToSeconds(durEl.value) : null;
-          if(dur !== null) etapasPayload.push({ batelada_id: batInserted.id, etapa: nome, ordem: i+1, duracao_seg: dur });
-        } else {
-          const iniEl = container_qs(`.ppl-etapa-ini[data-etapa="${CSS.escape(nome)}"]`);
-          const fimEl = container_qs(`.ppl-etapa-fim[data-etapa="${CSS.escape(nome)}"]`);
-          const ini = iniEl ? iniEl.value : '', fim = fimEl ? fimEl.value : '';
+      // Caminho A: produto já tinha etapas mapeadas (nomes fixos, campo .ppl-etapa-ini/.ppl-etapa-fim)
+      const etapasExistentesEls = document.querySelectorAll('#pplCamposDinamicos .ppl-etapa-ini');
+      if(etapasExistentesEls.length > 0){
+        etapasExistentesEls.forEach(iniEl=>{
+          const nome = iniEl.dataset.etapa;
+          const ordem = parseInt(iniEl.dataset.ordem, 10);
+          const fimEl = document.querySelector(`#pplCamposDinamicos .ppl-etapa-fim[data-etapa="${CSS.escape(nome)}"]`);
+          const ini = iniEl.value, fim = fimEl ? fimEl.value : '';
           if(ini || fim){
-            let dur = null;
-            if(ini && fim){
-              const [ih,im] = ini.split(':').map(Number);
-              const [fh,fm] = fim.split(':').map(Number);
-              dur = (fh*60+fm - (ih*60+im)) * 60;
-              if(dur < 0) dur += 86400;
-            }
-            etapasPayload.push({ batelada_id: batInserted.id, etapa: nome, ordem: i+1, inicio: ini ? ini+':00' : null, fim: fim ? fim+':00' : null, duracao_seg: dur });
+            etapasPayload.push({
+              batelada_id: batInserted.id, etapa: nome, ordem,
+              inicio: ini ? ini+':00' : null, fim: fim ? fim+':00' : null,
+              duracao_seg: (ini && fim) ? PPL_calcDuracao(ini, fim) : null,
+            });
           }
-        }
-      });
+        });
+      } else {
+        // Caminho B: mapeamento novo (nome digitado pelo usuário, campo .ppl-etapa-nome-nova)
+        document.querySelectorAll('#pplCamposDinamicos .ppl-etapa-nome-nova').forEach(nomeEl=>{
+          const ordem = nomeEl.dataset.ordem;
+          const nome = nomeEl.value.trim();
+          if(!nome) return;
+          const iniEl = document.querySelector(`.ppl-etapa-ini-nova[data-ordem="${ordem}"]`);
+          const fimEl = document.querySelector(`.ppl-etapa-fim-nova[data-ordem="${ordem}"]`);
+          const ini = iniEl ? iniEl.value : '', fim = fimEl ? fimEl.value : '';
+          etapasPayload.push({
+            batelada_id: batInserted.id, etapa: nome, ordem: parseInt(ordem,10),
+            inicio: ini ? ini+':00' : null, fim: fim ? fim+':00' : null,
+            duracao_seg: (ini && fim) ? PPL_calcDuracao(ini, fim) : null,
+          });
+        });
+      }
       if(etapasPayload.length > 0){
         const { error: etErr } = await client.from('tempo_processo_etapas').insert(etapasPayload);
         if(etErr) throw etErr;
       }
     } else {
-      const cfg = PPL_VELOCIDADE_CONFIG[linha];
+      const cfg = PPL_VELOCIDADE_CONFIG[linha] || { campos:['maquina','inicio','fim','quantidade','tempo_medio_seg'] };
       const corridaPayload = { linha, data, produto };
       cfg.campos.forEach(campo=>{
         const meta = PPL_CAMPO_META[campo];
@@ -7113,17 +7188,15 @@ async function PPL_handleSubmit(e){
       const { data: corInserted, error: corErr } = await client.from('produtividade_corridas').insert([corridaPayload]).select().single();
       if(corErr) throw corErr;
 
-      if(cfg.temParadasMultiplas){
-        const paradasPayload = [];
-        document.querySelectorAll('#pplParadasContainer .lanc-item').forEach(row=>{
-          const motivo = row.querySelector('.ppl-parada-motivo').value.trim();
-          const dur = PPL_timeToSeconds(row.querySelector('.ppl-parada-duracao').value);
-          if(motivo || dur !== null) paradasPayload.push({ corrida_id: corInserted.id, motivo: motivo || null, duracao_seg: dur });
-        });
-        if(paradasPayload.length > 0){
-          const { error: parErr } = await client.from('produtividade_paradas').insert(paradasPayload);
-          if(parErr) throw parErr;
-        }
+      const paradasPayload = [];
+      document.querySelectorAll('#pplParadasContainer .lanc-item').forEach(row=>{
+        const motivo = row.querySelector('.ppl-parada-motivo').value.trim();
+        const dur = PPL_timeToSeconds(row.querySelector('.ppl-parada-duracao').value);
+        if(motivo || dur !== null) paradasPayload.push({ corrida_id: corInserted.id, motivo: motivo || null, duracao_seg: dur });
+      });
+      if(paradasPayload.length > 0){
+        const { error: parErr } = await client.from('produtividade_paradas').insert(paradasPayload);
+        if(parErr) throw parErr;
       }
     }
     feedback.textContent = '✓ Lançamento salvo com sucesso!';
