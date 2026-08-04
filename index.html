@@ -863,6 +863,8 @@
       </div>
       <input type="date" id="ppDateStart" style="display:none;">
       <input type="date" id="ppDateEnd" style="display:none;">
+      <label for="ppProduto">Produto</label>
+      <select id="ppProduto"><option value="">Todos os produtos</option></select>
       <button class="btn-refresh" id="ppBtnRefresh" title="Verificar dados novos">⟳ Atualizar</button>
       <span class="period-info" id="ppPeriodInfo"></span>
     </div>
@@ -880,7 +882,7 @@
         </div>
 
         <div class="panel">
-          <div class="panel-title">Lead Time por Batelada</div>
+          <div class="panel-title">Lead Time Médio por Produto</div>
           <div class="chart-wrap" id="ppChartLeadTime"></div>
         </div>
 
@@ -910,7 +912,7 @@
         </div>
 
         <div class="panel">
-          <div class="panel-title">Registros de Corrida</div>
+          <div class="panel-title">Registros de Produção (Velocidade)</div>
           <div class="table-wrap">
             <table class="detail" id="ppTableCorridas">
               <thead>
@@ -6393,8 +6395,11 @@ function EQ_DASH_fmtDataBR(iso){
 let PP_loadedOnce = false;
 const PP_LINHAS = ['Giro','Salgado','Massa Salgado','Pão de Queijo','Padaria','Pão de Ló e Bolos'];
 let PP_currentLinha = 'Giro';
+let PP_selectedProduto = '';
 let PP_BATELADAS = [];
 let PP_CORRIDAS = [];
+let PP_BATELADAS_RAW = []; // sem filtro de produto — base pra popular o dropdown e refiltrar sem precisar buscar de novo
+let PP_CORRIDAS_RAW = [];
 const PP_CORES = ['#A10101','#B5640B','#D9A35C','#6e8e6b','#4472a8','#8a4c9c','#c2554a'];
 
 function PP_init(){
@@ -6417,6 +6422,11 @@ function PP_init(){
   });
   initDateRangePicker('pp', startEl, endEl);
   document.getElementById('ppBtnRefresh').addEventListener('click', PP_loadData);
+  document.getElementById('ppProduto').addEventListener('change', (e)=>{
+    PP_selectedProduto = e.target.value;
+    PP_applyProdutoFilter();
+    PP_render();
+  });
   PP_loadData();
 }
 
@@ -6426,11 +6436,30 @@ function PP_renderLinhaTabs(){
   el.querySelectorAll('[data-linha]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       PP_currentLinha = btn.dataset.linha;
+      PP_selectedProduto = ''; // troca de linha reseta o filtro de produto (o catálogo é outro)
       el.querySelectorAll('[data-linha]').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       PP_loadData();
     });
   });
+}
+
+/* Popula o dropdown de Produto com o que existe pra linha/período atuais,
+   e reaplica a seleção anterior se ela ainda for válida. */
+function PP_populateProdutoFilter(){
+  const produtos = new Set();
+  PP_BATELADAS_RAW.forEach(b => { if(b.produto) produtos.add(b.produto); });
+  PP_CORRIDAS_RAW.forEach(c => { if(c.produto) produtos.add(c.produto); });
+  const lista = [...produtos].sort();
+  const sel = document.getElementById('ppProduto');
+  sel.innerHTML = '<option value="">Todos os produtos</option>' + lista.map(p=>`<option value="${p}">${p}</option>`).join('');
+  if(lista.includes(PP_selectedProduto)) sel.value = PP_selectedProduto;
+  else PP_selectedProduto = '';
+}
+
+function PP_applyProdutoFilter(){
+  PP_BATELADAS = PP_selectedProduto ? PP_BATELADAS_RAW.filter(b => b.produto === PP_selectedProduto) : PP_BATELADAS_RAW;
+  PP_CORRIDAS = PP_selectedProduto ? PP_CORRIDAS_RAW.filter(c => c.produto === PP_selectedProduto) : PP_CORRIDAS_RAW;
 }
 
 async function PP_loadData(){
@@ -6448,10 +6477,12 @@ async function PP_loadData(){
     ]);
     if(bateladasRes.error) throw bateladasRes.error;
     if(corridasRes.error) throw corridasRes.error;
-    PP_BATELADAS = bateladasRes.data || [];
-    PP_CORRIDAS = corridasRes.data || [];
+    PP_BATELADAS_RAW = bateladasRes.data || [];
+    PP_CORRIDAS_RAW = corridasRes.data || [];
+    PP_populateProdutoFilter();
+    PP_applyProdutoFilter();
     PP_render();
-    infoEl.textContent = `${PP_BATELADAS.length} batelada(s), ${PP_CORRIDAS.length} corrida(s) no período`;
+    infoEl.textContent = `${PP_BATELADAS.length} batelada(s), ${PP_CORRIDAS.length} registro(s) de produção no período`;
   }catch(err){
     console.error('Erro ao carregar Produtividade & Processos:', err);
     infoEl.textContent = '';
@@ -6471,7 +6502,7 @@ function PP_render(){
   document.getElementById('ppBlocoVelocidade').style.display = temVelocidade ? 'block' : 'none';
   const emptyEl = document.getElementById('ppEmptyState');
   emptyEl.style.display = (!temEtapas && !temVelocidade) ? 'block' : 'none';
-  emptyEl.innerHTML = `<span class="empty-icon">📊</span>Nenhum dado registrado pra essa linha no período selecionado.`;
+  emptyEl.innerHTML = `<span class="empty-icon">📊</span>Nenhum dado registrado pra essa linha${PP_selectedProduto ? ' / produto' : ''} no período selecionado.`;
 
   PP_renderKPIs();
   if(temEtapas) PP_renderEtapas();
@@ -6499,13 +6530,15 @@ function PP_renderKPIs(){
     kpis.push({ label:'Lead Time Médio', value: PP_fmtDuracao(leadMedio) });
   }
   if(PP_CORRIDAS.length > 0){
-    kpis.push({ label:'Corridas no Período', value: PP_CORRIDAS.length });
+    kpis.push({ label:'Registros de Produção', value: PP_CORRIDAS.length });
     const paradas = PP_CORRIDAS.flatMap(c => c.produtividade_paradas || []);
     kpis.push({ label:'Paradas Registradas', value: paradas.length });
     const tempoParadoTotal = paradas.reduce((s,p)=> s + (Number(p.duracao_seg)||0), 0);
     kpis.push({ label:'Tempo Total Parado', value: PP_fmtDuracao(tempoParadoTotal) });
   }
-  document.getElementById('ppKpiGrid').innerHTML = kpis.map(k=>`
+  const grid = document.getElementById('ppKpiGrid');
+  grid.style.gridTemplateColumns = `repeat(${Math.max(kpis.length,1)},1fr)`;
+  grid.innerHTML = kpis.map(k=>`
     <div class="kpi-card"><div class="label">${k.label}</div><div class="value">${k.value}</div></div>
   `).join('');
 }
@@ -6558,13 +6591,25 @@ function PP_renderEtapas(){
 
 function PP_renderLeadTimeChart(){
   const wrap = document.getElementById('ppChartLeadTime');
-  const linhas = [...PP_BATELADAS].sort((a,b)=> a.data.localeCompare(b.data));
-  if(linhas.length === 0){ wrap.innerHTML = ''; return; }
-  const dados = linhas.map(b=>({
-    label: PP_fmtDataBR(b.data) + (b.batelada != null ? ' #'+b.batelada : ''),
-    valor: (b.tempo_processo_etapas||[]).reduce((s,e)=> s+(Number(e.duracao_seg)||0), 0),
-  }));
-  const barW = 26, gap = 14, baseY = 260, topPad = 40;
+  if(PP_BATELADAS.length === 0){ wrap.innerHTML = ''; return; }
+
+  // Agrupa por produto: cada barra = tempo médio de batelada daquele produto
+  const porProduto = {};
+  PP_BATELADAS.forEach(b=>{
+    const produto = b.produto || '—';
+    const total = (b.tempo_processo_etapas||[]).reduce((s,e)=> s+(Number(e.duracao_seg)||0), 0);
+    if(total <= 0) return;
+    if(!porProduto[produto]) porProduto[produto] = { soma:0, count:0 };
+    porProduto[produto].soma += total;
+    porProduto[produto].count += 1;
+  });
+  const dados = Object.keys(porProduto)
+    .map(produto => ({ label: produto, valor: porProduto[produto].soma/porProduto[produto].count, count: porProduto[produto].count }))
+    .sort((a,b)=> b.valor - a.valor);
+
+  if(dados.length === 0){ wrap.innerHTML = ''; return; }
+
+  const barW = 46, gap = 22, baseY = 260, topPad = 40;
   const chartWidth = dados.length*(barW+gap) + 50;
   const maxVal = Math.max(...dados.map(d=>d.valor), 1);
   let bars = '';
@@ -6573,7 +6618,7 @@ function PP_renderLeadTimeChart(){
     const h = (d.valor/maxVal)*(baseY-topPad);
     bars += `<rect x="${x0}" y="${baseY-h}" width="${barW}" height="${h}" fill="var(--red)" rx="4"/>`;
     bars += `<text x="${x0+barW/2}" y="${baseY-h-9}" font-size="10" font-weight="700" fill="var(--red)" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-h-9})">${PP_fmtDuracao(d.valor)}</text>`;
-    bars += `<text x="${x0+barW/2}" y="${baseY+14}" font-size="9.5" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+14})">${d.label}</text>`;
+    bars += `<text x="${x0+barW/2}" y="${baseY+14}" font-size="9.5" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+14})">${truncateProdLabel(d.label,22)}<title>${d.label} — média de ${d.count} batelada(s)</title></text>`;
   });
   wrap.innerHTML = `<svg viewBox="0 0 ${chartWidth} 340" width="${chartWidth}" height="340" style="overflow:visible;font-family:'Inter',Arial,sans-serif;">${bars}</svg>`;
 }
