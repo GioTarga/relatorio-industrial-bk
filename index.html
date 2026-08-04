@@ -902,7 +902,7 @@
       <!-- Bloco Velocidade & Paradas — só aparece se a linha tiver esse tipo de dado -->
       <div id="ppBlocoVelocidade" style="display:none;">
         <div class="panel">
-          <div class="panel-title">Velocidade por Produto</div>
+          <div class="panel-title">Produtividade</div>
           <div class="chart-wrap" id="ppChartVelocidade"></div>
         </div>
 
@@ -6481,6 +6481,7 @@ async function PP_loadData(){
     PP_CORRIDAS_RAW = corridasRes.data || [];
     PP_populateProdutoFilter();
     PP_applyProdutoFilter();
+    if(PP_currentLinha === 'Salgado') await PP_fetchSalgadoMeta(ini, fim);
     PP_render();
     infoEl.textContent = `${PP_BATELADAS.length} batelada(s), ${PP_CORRIDAS.length} registro(s) de produção no período`;
   }catch(err){
@@ -6519,7 +6520,58 @@ function PP_fmtDuracao(seg){
 }
 function PP_fmtDataBR(iso){ return iso ? iso.split('-').reverse().join('/') : '—'; }
 
+let PP_SALGADO_ACURACIA = null;
+let PP_SALGADO_ATINGIMENTO = null;
+
+/* Cruza com a Produção Diária (mesmo setor Salgado) pra calcular Acurácia e
+   Atingimento de Meta — a tabela de Produtividade não tem campo de "meta"
+   próprio, então usamos o Planejado x Real que já existe lá, mesma fórmula
+   do Relatório Industrial. Não filtra por produto (nomes de produto entre
+   os dois sistemas não necessariamente batem) — é uma visão do setor
+   inteiro, não só do produto filtrado na tela. */
+async function PP_fetchSalgadoMeta(ini, fim){
+  try{
+    const client = LANC_getClient();
+    const { data, error } = await client.from('producao_diaria')
+      .select('producao_planejada, producao_real').eq('setor', 'SALGADO').gte('data', ini).lte('data', fim);
+    if(error) throw error;
+    const pares = (data || []).map(r=>{
+      const prev = parseNumOrNull(r.producao_planejada);
+      const real = Number(r.producao_real);
+      if(prev === null || prev <= 0 || isNaN(real)) return null;
+      return real/prev;
+    }).filter(v => v !== null);
+    if(pares.length === 0){ PP_SALGADO_ACURACIA = null; PP_SALGADO_ATINGIMENTO = null; return; }
+    const atingimento = (pares.reduce((a,b)=>a+b,0)/pares.length) * 100;
+    PP_SALGADO_ATINGIMENTO = atingimento;
+    PP_SALGADO_ACURACIA = atingimento - 100;
+  }catch(err){
+    console.error('Erro ao calcular Acurácia/Atingimento do Salgado:', err);
+    PP_SALGADO_ACURACIA = null;
+    PP_SALGADO_ATINGIMENTO = null;
+  }
+}
+
 function PP_renderKPIs(){
+  const grid = document.getElementById('ppKpiGrid');
+
+  // Salgado tem um conjunto de cards próprio (cruza com a Produção Diária)
+  if(PP_currentLinha === 'Salgado'){
+    const paradas = PP_CORRIDAS.flatMap(c => c.produtividade_paradas || []);
+    const tempoParadoTotal = paradas.reduce((s,p)=> s + (Number(p.duracao_seg)||0), 0);
+    const kpis = [
+      { label:'Acurácia', value: PP_SALGADO_ACURACIA != null ? `${PP_SALGADO_ACURACIA>0?'+':''}${PP_SALGADO_ACURACIA.toFixed(1)}%` : '—' },
+      { label:'Atingimento de Meta', value: PP_SALGADO_ATINGIMENTO != null ? `${PP_SALGADO_ATINGIMENTO.toFixed(1)}%` : '—' },
+      { label:'Paradas Totais', value: paradas.length },
+      { label:'Tempo Total Parado', value: PP_fmtDuracao(tempoParadoTotal) },
+    ];
+    grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
+    grid.innerHTML = kpis.map(k=>`
+      <div class="kpi-card"><div class="label">${k.label}</div><div class="value">${k.value}</div></div>
+    `).join('');
+    return;
+  }
+
   const kpis = [];
   if(PP_BATELADAS.length > 0){
     kpis.push({ label:'Bateladas no Período', value: PP_BATELADAS.length });
@@ -6536,7 +6588,6 @@ function PP_renderKPIs(){
     const tempoParadoTotal = paradas.reduce((s,p)=> s + (Number(p.duracao_seg)||0), 0);
     kpis.push({ label:'Tempo Total Parado', value: PP_fmtDuracao(tempoParadoTotal) });
   }
-  const grid = document.getElementById('ppKpiGrid');
   grid.style.gridTemplateColumns = `repeat(${Math.max(kpis.length,1)},1fr)`;
   grid.innerHTML = kpis.map(k=>`
     <div class="kpi-card"><div class="label">${k.label}</div><div class="value">${k.value}</div></div>
@@ -6636,28 +6687,25 @@ function PP_renderVelocidade(){
   });
   const itens = Object.keys(porProduto)
     .map(p => ({ produto:p, media: porProduto[p].soma/porProduto[p].count }))
-    .sort((a,b) => a.media - b.media);
+    .sort((a,b) => b.media - a.media);
 
   const wrap = document.getElementById('ppChartVelocidade');
   if(itens.length === 0){
-    wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">⚡</span>Nenhum dado de velocidade nesse período.</div>`;
+    wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">⚡</span>Nenhum dado de produtividade nesse período.</div>`;
   } else {
-    const barH=20, gap=10, leftPad=210, rightPad=150, topPad=8;
-    const chartW = getResponsiveChartW('ppChartVelocidade', 820);
-    const barWmax = chartW-leftPad-rightPad;
-    const chartH = itens.length*(barH+gap)+topPad;
+    // Barra vertical: eixo x = produtos, altura = produtividade média (unid/h)
+    const barW = 46, gap = 22, baseY = 260, topPad = 40;
+    const chartWidth = itens.length*(barW+gap) + 50;
     const maxVal = Math.max(...itens.map(i=>i.media), 1);
     let bars = '';
     itens.forEach((it,i)=>{
-      const y = topPad + i*(barH+gap);
-      const w = (it.media/maxVal)*barWmax;
-      bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="10.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${truncateProdLabel(it.produto,26)}<title>${it.produto}</title></text>`;
-      bars += `<rect x="${leftPad}" y="${y}" width="${barWmax}" height="${barH}" fill="#f3d9d0" stroke="#e0a89a" stroke-width="1" rx="5"/>`;
-      bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="#B5640B" rx="5"/>`;
-      bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="10.5" fill="#8a4c08" font-weight="700">${it.media.toLocaleString('pt-BR',{maximumFractionDigits:1})}/h</text>`;
+      const x0 = 36 + i*(barW+gap);
+      const h = (it.media/maxVal)*(baseY-topPad);
+      bars += `<rect x="${x0}" y="${baseY-h}" width="${barW}" height="${h}" fill="#B5640B" rx="4"/>`;
+      bars += `<text x="${x0+barW/2}" y="${baseY-h-9}" font-size="10" font-weight="700" fill="#8a4c08" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-h-9})">${it.media.toLocaleString('pt-BR',{maximumFractionDigits:1})}/h</text>`;
+      bars += `<text x="${x0+barW/2}" y="${baseY+14}" font-size="9.5" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+14})">${truncateProdLabel(it.produto,22)}<title>${it.produto}</title></text>`;
     });
-    const visibleRows=6, containerH=visibleRows*(barH+gap)+topPad+6;
-    wrap.innerHTML = `<div style="max-height:${containerH}px;width:${chartW}px;overflow-y:auto;overflow-x:hidden;display:inline-block;text-align:left;"><svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="font-family:'Inter',Arial,sans-serif;display:block;">${bars}</svg></div>`;
+    wrap.innerHTML = `<svg viewBox="0 0 ${chartWidth} 340" width="${chartWidth}" height="340" style="overflow:visible;font-family:'Inter',Arial,sans-serif;">${bars}</svg>`;
   }
 
   const porMotivo = {};
@@ -6671,7 +6719,7 @@ function PP_renderVelocidade(){
   });
   const motivos = Object.keys(porMotivo)
     .map(m => ({ motivo:m, count: porMotivo[m].count, dur: porMotivo[m].dur }))
-    .sort((a,b) => a.dur - b.dur);
+    .sort((a,b) => b.dur - a.dur); // decrescente: maior duração primeiro (topo da lista)
 
   const wrap2 = document.getElementById('ppChartParadas');
   if(motivos.length === 0){
