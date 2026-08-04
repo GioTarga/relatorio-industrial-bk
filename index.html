@@ -1750,9 +1750,9 @@ const MONTH_NAMES_PT = ['janeiro','fevereiro','março','abril','maio','junho','j
    CARREGADOR GENÉRICO DE CSV (Google Sheets), COM FALLBACK
    ============================================================================
    Substitui os 7 padrões quase idênticos que existiam antes (um "loadData"
-   por página: Relatório Industrial, Tempo de Processo, Produtividade,
-   Máquinas, Óleo, Manutenções). Cada página continua com sua própria função
-   pública (loadData, TP_loadData, etc.) — só o miolo de fetch/cache-bust/
+   por página: Relatório Industrial, Máquinas, Óleo, Manutenções). Cada
+   página continua com sua própria função pública (loadData, MN_loadData,
+   etc.) — só o miolo de fetch/cache-bust/
    fallback/estado do botão foi centralizado aqui, pra não precisar manter
    7 cópias em sincronia quando um bug aparecer nesse trecho.
    ============================================================================ */
@@ -2173,6 +2173,12 @@ function TP_fmtDuration(totalSec){
   if(h > 0) return `${h}h ${m}min`;
   return `${m}min`;
 }
+
+/* Média e soma simples de um array de números, ignorando null/NaN — usadas
+   pelo cálculo de KPI de Manutenções (MTTR, tempo de resposta, etc), não
+   são exclusivas de nenhuma página específica. */
+function PR_avg(arr){ const a = arr.filter(v=>v!==null && !isNaN(v)); return a.length ? a.reduce((s,v)=>s+v,0)/a.length : null; }
+function PR_sum(arr){ const a = arr.filter(v=>v!==null && !isNaN(v)); return a.length ? a.reduce((s,v)=>s+v,0) : 0; }
 
 /* Formata a duração da parada pra exibição na tabela, aceitando tanto o
    texto "HH:MM:SS" quanto o formato decimal (fração do dia) que às vezes
