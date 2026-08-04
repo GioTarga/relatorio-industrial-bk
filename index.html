@@ -1216,6 +1216,7 @@
           <button type="button" class="lanc-tab-btn active" data-lanctab="producao">Produção Diária</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="manutencao">Manutenção</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="estoque">Estoque</button>
+          <button type="button" class="lanc-tab-btn" data-lanctab="prodproc">Produtividade & Processos</button>
         </div>
 
         <!-- Formulário: Produção Diária -->
@@ -1456,6 +1457,86 @@
           <datalist id="lpUnidadeListEstoque">
             <option value="Kg"><option value="Litro"><option value="Unid"><option value="Pacote"><option value="Caixa"><option value="Saco">
           </datalist>
+        </div>
+
+        <!-- Formulário: Produtividade & Processos -->
+        <div id="lancPanelProdProc" class="panel" style="display:none;">
+          <div class="lanc-subtabs">
+            <button type="button" class="lanc-subtab-btn active" data-ppview="novo">Novo Lançamento</button>
+            <button type="button" class="lanc-subtab-btn" data-ppview="historico">Histórico</button>
+          </div>
+
+          <div id="ppLancViewNovo">
+            <div class="panel-title">Novo Lançamento — Produtividade & Processos</div>
+            <form id="ppLancForm" class="lanc-form">
+              <div class="lanc-field">
+                <label>Data</label>
+                <input type="date" id="pplData" required>
+              </div>
+              <div class="lanc-field">
+                <label>Setor / Linha</label>
+                <select id="pplLinha" required>
+                  <option value="">Selecione...</option>
+                  <option value="Giro">Giro</option>
+                  <option value="Salgado">Salgado</option>
+                  <option value="Massa Salgado">Massa Salgado</option>
+                  <option value="Pão de Queijo">Pão de Queijo</option>
+                  <option value="Padaria">Padaria</option>
+                  <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
+                </select>
+              </div>
+              <div class="lanc-field">
+                <label>Tipo de Lançamento</label>
+                <select id="pplTipo" required>
+                  <option value="">Selecione o setor primeiro...</option>
+                </select>
+              </div>
+              <div class="lanc-field span-3">
+                <label>Produto</label>
+                <input type="text" id="pplProduto" list="pplProdutoList" placeholder="Nome do produto" required>
+                <datalist id="pplProdutoList"></datalist>
+              </div>
+
+              <div class="lanc-field span-3" id="pplCamposWrap">
+                <div id="pplCamposDinamicos"></div>
+              </div>
+
+              <div class="lanc-submit-row">
+                <button type="submit" class="lanc-submit-btn" id="pplSubmitBtn">Salvar Lançamento</button>
+                <span class="lanc-feedback" id="pplFeedback"></span>
+              </div>
+            </form>
+          </div>
+
+          <div id="ppLancViewHistorico" style="display:none;">
+            <div class="panel-title">Histórico de Produtividade & Processos</div>
+            <div class="lanc-hist-filters">
+              <div class="lanc-field"><label>De</label><input type="date" id="pplHistDataIni"></div>
+              <div class="lanc-field"><label>Até</label><input type="date" id="pplHistDataFim"></div>
+              <div class="lanc-field">
+                <label>Linha</label>
+                <select id="pplHistLinha">
+                  <option value="">Todas</option>
+                  <option value="Giro">Giro</option>
+                  <option value="Salgado">Salgado</option>
+                  <option value="Massa Salgado">Massa Salgado</option>
+                  <option value="Pão de Queijo">Pão de Queijo</option>
+                  <option value="Padaria">Padaria</option>
+                  <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
+                </select>
+              </div>
+              <button type="button" class="lanc-add-item-btn" id="pplHistBuscarBtn" style="align-self:flex-end;">Buscar</button>
+            </div>
+            <span class="lanc-feedback" id="pplHistFeedback"></span>
+            <div class="table-wrap" style="margin-top:12px;">
+              <table class="detail" id="pplHistTable">
+                <thead>
+                  <tr><th>Data</th><th>Linha</th><th>Tipo</th><th>Produto</th><th>Resumo</th><th class="center">Ações</th></tr>
+                </thead>
+                <tbody id="pplHistTbody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
       </div> <!-- /lancContent -->
@@ -4613,8 +4694,10 @@ document.querySelectorAll('.lanc-tab-btn').forEach(btn=>{
     document.getElementById('lancPanelProducao').style.display = tab === 'producao' ? 'block' : 'none';
     document.getElementById('lancPanelManutencao').style.display = tab === 'manutencao' ? 'block' : 'none';
     document.getElementById('lancPanelEstoque').style.display = tab === 'estoque' ? 'block' : 'none';
+    document.getElementById('lancPanelProdProc').style.display = tab === 'prodproc' ? 'block' : 'none';
     if(tab === 'estoque') EQ_populateDropdowns();
     if(tab === 'producao') LANC_populateDropdowns();
+    if(tab === 'prodproc') PPL_init();
   });
 });
 
@@ -6758,6 +6841,396 @@ function PP_renderVelocidade(){
       <td style="font-size:11px;color:var(--ink-soft);">${paradas || '—'}</td>
     </tr>`;
   }).join('');
+}
+
+/* ============================================================================
+   LANÇAMENTO — Produtividade & Processos
+   ============================================================================
+   Um lançamento por vez: Setor/Linha + Tipo (Etapas ou Velocidade) definem
+   quais campos aparecem — cada linha tem um formato bem diferente (a
+   quantidade e o nome das etapas variam, e Salgado/Massa Salgado só têm
+   velocidade, não etapas). Os campos são montados dinamicamente conforme
+   a combinação escolhida, em vez de ter uma tela fixa por linha. */
+
+const PPL_ETAPAS_CONFIG = {
+  'Giro': { temBatelada:true, temMasseira:true, temRetencao:true,
+    etapas:['Preparação','Mistura 1','Mistura 2','Transporte','Modelagem GA'] },
+  'Pão de Queijo': { temBatelada:true, temMasseira:false, temRetencao:true,
+    etapas:['Preparação','Bater Massa','Transportar','Modelagem'] },
+  'Padaria': { temBatelada:true, temMasseira:false, temRetencao:false,
+    etapas:['Preparo','Mistura 1','Mistura 2','Porcionar','Bolear bloco','Boleadeira','Bolear Pão'] },
+  'Pão de Ló e Bolos': { temBatelada:false, temMasseira:false, temRetencao:false, formatoDuracao:true, temParadaUnica:true,
+    etapas:['Pesar Insumos','Bater na Masseira','Raspar e Untar Formas','Encher Formas','Transportar p/ Forno','Buscar no Forno','Desenformar','Carrinho Pronto p/ Fornear'] },
+};
+
+const PPL_VELOCIDADE_CONFIG = {
+  'Giro': { campos:['masseira','hora_massa','velocidade_paes_hora','peso_massa_kg'], temParadasMultiplas:true },
+  'Salgado': { campos:['maquina','inicio','fim','velocidade_prensa','qtd_colaboradores','unidades_por_hora','producao_por_hora','tempo_medio_seg','unidade_medida','duracao_rolo_seg'], temParadasMultiplas:true },
+  'Massa Salgado': { campos:['inicio','fim','quantidade','tempo_medio_seg'], temParadasMultiplas:true },
+};
+
+const PPL_TIPOS_POR_LINHA = {
+  'Giro': ['etapas','velocidade'],
+  'Salgado': ['velocidade'],
+  'Massa Salgado': ['velocidade'],
+  'Pão de Queijo': ['etapas'],
+  'Padaria': ['etapas'],
+  'Pão de Ló e Bolos': ['etapas'],
+};
+const PPL_TIPO_LABELS = { etapas:'Tempo de Processo (Etapas)', velocidade:'Produtividade (Velocidade)' };
+
+const PPL_CAMPO_META = {
+  masseira: { label:'Masseira', type:'text' },
+  maquina: { label:'Máquina', type:'text' },
+  hora_massa: { label:'Hora da Massa', type:'time' },
+  inicio: { label:'Início', type:'time' },
+  fim: { label:'Fim', type:'time' },
+  velocidade_paes_hora: { label:'Velocidade (pães/hora)', type:'number' },
+  velocidade_prensa: { label:'Velocidade de Prensa', type:'number' },
+  peso_massa_kg: { label:'Peso da Massa (kg)', type:'number' },
+  qtd_colaboradores: { label:'Qtd. Colaboradores', type:'number' },
+  unidades_por_hora: { label:'Unidades por Hora', type:'number' },
+  producao_por_hora: { label:'Produção por Hora (caixa/telas)', type:'number' },
+  tempo_medio_seg: { label:'Tempo Médio (hh:mm:ss)', type:'timesec' },
+  unidade_medida: { label:'Unidade de Medida', type:'text' },
+  duracao_rolo_seg: { label:'Duração do Rolo (hh:mm:ss)', type:'timesec' },
+  quantidade: { label:'Quantidade', type:'number' },
+};
+
+let PPL_initialized = false;
+
+async function PPL_init(){
+  PPL_setDefaultDate();
+  PPL_populateProdutoList();
+  if(!PPL_initialized){
+    document.getElementById('pplLinha').addEventListener('change', PPL_updateTipoOptions);
+    document.getElementById('pplTipo').addEventListener('change', PPL_renderCamposDinamicos);
+    document.querySelectorAll('[data-ppview]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        document.querySelectorAll('[data-ppview]').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        const view = btn.dataset.ppview;
+        document.getElementById('ppLancViewNovo').style.display = view === 'novo' ? 'block' : 'none';
+        document.getElementById('ppLancViewHistorico').style.display = view === 'historico' ? 'block' : 'none';
+        if(view === 'historico') PPL_loadHistorico();
+      });
+    });
+    document.getElementById('pplHistBuscarBtn').addEventListener('click', PPL_loadHistorico);
+    document.getElementById('ppLancForm').addEventListener('submit', PPL_handleSubmit);
+    PPL_initialized = true;
+  }
+}
+
+function PPL_setDefaultDate(){
+  const el = document.getElementById('pplData');
+  if(!el.value){
+    const hoje = new Date();
+    el.value = hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0')+'-'+String(hoje.getDate()).padStart(2,'0');
+  }
+}
+
+async function PPL_populateProdutoList(){
+  try{
+    const client = LANC_getClient();
+    const [bat, cor] = await Promise.all([
+      client.from('tempo_processo_bateladas').select('produto').limit(2000),
+      client.from('produtividade_corridas').select('produto').limit(2000),
+    ]);
+    const produtos = new Set();
+    (bat.data||[]).forEach(r=>{ if(r.produto) produtos.add(r.produto); });
+    (cor.data||[]).forEach(r=>{ if(r.produto) produtos.add(r.produto); });
+    document.getElementById('pplProdutoList').innerHTML = [...produtos].sort().map(p=>`<option value="${p}">`).join('');
+  }catch(err){
+    console.error('Erro ao buscar produtos de Produtividade & Processos:', err);
+  }
+}
+
+function PPL_updateTipoOptions(){
+  const linha = document.getElementById('pplLinha').value;
+  const sel = document.getElementById('pplTipo');
+  const tipos = PPL_TIPOS_POR_LINHA[linha] || [];
+  if(tipos.length === 1){
+    sel.innerHTML = `<option value="${tipos[0]}">${PPL_TIPO_LABELS[tipos[0]]}</option>`;
+  } else {
+    sel.innerHTML = '<option value="">Selecione...</option>' + tipos.map(t=>`<option value="${t}">${PPL_TIPO_LABELS[t]}</option>`).join('');
+  }
+  PPL_renderCamposDinamicos();
+}
+
+function PPL_renderCamposDinamicos(){
+  const linha = document.getElementById('pplLinha').value;
+  const tipo = document.getElementById('pplTipo').value;
+  const container = document.getElementById('pplCamposDinamicos');
+  if(!linha || !tipo){ container.innerHTML = ''; return; }
+
+  if(tipo === 'etapas'){
+    const cfg = PPL_ETAPAS_CONFIG[linha];
+    if(!cfg){ container.innerHTML = '<p style="color:var(--ink-soft);">Essa linha não tem lançamento de Tempo de Processo.</p>'; return; }
+    let html = '<div class="lanc-item-grid">';
+    if(cfg.temBatelada) html += `<div class="lanc-field"><label>Batelada</label><input type="number" id="pplBatelada"></div>`;
+    if(cfg.temMasseira) html += `<div class="lanc-field"><label>Masseira</label><input type="text" id="pplMasseira"></div>`;
+    if(cfg.temRetencao) html += `<div class="lanc-field"><label>Retenção (hh:mm:ss)</label><input type="time" step="1" id="pplRetencao"></div>`;
+    html += '</div>';
+    html += '<div class="lanc-item-grid" style="margin-top:14px;">';
+    cfg.etapas.forEach((nome, i)=>{
+      if(cfg.formatoDuracao){
+        html += `<div class="lanc-field"><label>${nome} (hh:mm:ss)</label><input type="time" step="1" class="ppl-etapa-dur" data-etapa="${nome}" data-ordem="${i+1}"></div>`;
+      } else {
+        html += `<div class="lanc-field"><label>${nome} — Início</label><input type="time" class="ppl-etapa-ini" data-etapa="${nome}" data-ordem="${i+1}"></div>`;
+        html += `<div class="lanc-field"><label>${nome} — Fim</label><input type="time" class="ppl-etapa-fim" data-etapa="${nome}" data-ordem="${i+1}"></div>`;
+      }
+    });
+    html += '</div>';
+    if(cfg.temParadaUnica){
+      html += `<div class="lanc-item-grid" style="margin-top:14px;">
+        <div class="lanc-field span-2"><label>Parada — Motivo</label><input type="text" id="pplParadaMotivo" placeholder="Opcional"></div>
+        <div class="lanc-field"><label>Parada — Duração (hh:mm:ss)</label><input type="time" step="1" id="pplParadaDuracao"></div>
+      </div>`;
+    }
+    container.innerHTML = html;
+    return;
+  }
+
+  // tipo === 'velocidade'
+  const cfg = PPL_VELOCIDADE_CONFIG[linha];
+  if(!cfg){ container.innerHTML = '<p style="color:var(--ink-soft);">Essa linha não tem lançamento de Produtividade.</p>'; return; }
+  let html = '<div class="lanc-item-grid">';
+  cfg.campos.forEach(campo=>{
+    const meta = PPL_CAMPO_META[campo];
+    const inputType = meta.type === 'timesec' ? 'time' : meta.type;
+    const step = meta.type === 'timesec' ? ' step="1"' : (meta.type === 'number' ? ' step="0.01"' : '');
+    html += `<div class="lanc-field"><label>${meta.label}</label><input type="${inputType}"${step} id="pplCampo_${campo}"></div>`;
+  });
+  html += '</div>';
+  if(cfg.temParadasMultiplas){
+    html += `<div style="margin-top:16px;">
+      <div id="pplParadasContainer" class="lanc-items"></div>
+      <button type="button" class="lanc-add-item-btn" id="pplAddParadaBtn">+ Adicionar parada</button>
+    </div>`;
+  }
+  container.innerHTML = html;
+  if(cfg.temParadasMultiplas){
+    document.getElementById('pplAddParadaBtn').addEventListener('click', PPL_addParadaRow);
+  }
+}
+
+function PPL_addParadaRow(){
+  const container = document.getElementById('pplParadasContainer');
+  const row = document.createElement('div');
+  row.className = 'lanc-item';
+  row.innerHTML = `
+    <div class="lanc-item-header">
+      <span class="lanc-item-title">Parada</span>
+      <button type="button" class="lanc-item-remove" data-remove>Remover</button>
+    </div>
+    <div class="lanc-item-grid">
+      <div class="lanc-field span-2"><label>Motivo</label><input type="text" class="ppl-parada-motivo"></div>
+      <div class="lanc-field"><label>Duração (hh:mm:ss)</label><input type="time" step="1" class="ppl-parada-duracao"></div>
+    </div>`;
+  row.querySelector('[data-remove]').addEventListener('click', ()=> row.remove());
+  container.appendChild(row);
+}
+
+function PPL_timeToSeconds(str){
+  if(!str) return null;
+  const parts = str.split(':').map(Number);
+  if(parts.length === 3) return parts[0]*3600 + parts[1]*60 + parts[2];
+  if(parts.length === 2) return parts[0]*3600 + parts[1]*60;
+  return null;
+}
+
+async function PPL_handleSubmit(e){
+  e.preventDefault();
+  const feedback = document.getElementById('pplFeedback');
+  const btn = document.getElementById('pplSubmitBtn');
+  const linha = document.getElementById('pplLinha').value;
+  const tipo = document.getElementById('pplTipo').value;
+  const data = document.getElementById('pplData').value;
+  const produto = document.getElementById('pplProduto').value.trim();
+  if(!linha || !tipo || !data || !produto){
+    feedback.textContent = '⚠ Preencha Data, Setor, Tipo e Produto.';
+    feedback.className = 'lanc-feedback err';
+    return;
+  }
+  btn.disabled = true;
+  feedback.textContent = 'Salvando...';
+  feedback.className = 'lanc-feedback';
+  try{
+    const client = LANC_getClient();
+    if(tipo === 'etapas'){
+      const cfg = PPL_ETAPAS_CONFIG[linha];
+      const bateladaPayload = {
+        linha, data, produto,
+        batelada: cfg.temBatelada && document.getElementById('pplBatelada').value ? parseFloat(document.getElementById('pplBatelada').value) : null,
+        masseira: cfg.temMasseira ? (document.getElementById('pplMasseira').value.trim() || null) : null,
+        retencao_seg: cfg.temRetencao ? PPL_timeToSeconds(document.getElementById('pplRetencao').value) : null,
+        parada_motivo: cfg.temParadaUnica ? (document.getElementById('pplParadaMotivo').value.trim() || null) : null,
+        parada_duracao_seg: cfg.temParadaUnica ? PPL_timeToSeconds(document.getElementById('pplParadaDuracao').value) : null,
+      };
+      const { data: batInserted, error: batErr } = await client.from('tempo_processo_bateladas').insert([bateladaPayload]).select().single();
+      if(batErr) throw batErr;
+
+      const container_qs = (sel) => document.getElementById('pplCamposDinamicos').querySelector(sel);
+      const etapasPayload = [];
+      cfg.etapas.forEach((nome, i)=>{
+        if(cfg.formatoDuracao){
+          const durEl = container_qs(`.ppl-etapa-dur[data-etapa="${CSS.escape(nome)}"]`);
+          const dur = durEl ? PPL_timeToSeconds(durEl.value) : null;
+          if(dur !== null) etapasPayload.push({ batelada_id: batInserted.id, etapa: nome, ordem: i+1, duracao_seg: dur });
+        } else {
+          const iniEl = container_qs(`.ppl-etapa-ini[data-etapa="${CSS.escape(nome)}"]`);
+          const fimEl = container_qs(`.ppl-etapa-fim[data-etapa="${CSS.escape(nome)}"]`);
+          const ini = iniEl ? iniEl.value : '', fim = fimEl ? fimEl.value : '';
+          if(ini || fim){
+            let dur = null;
+            if(ini && fim){
+              const [ih,im] = ini.split(':').map(Number);
+              const [fh,fm] = fim.split(':').map(Number);
+              dur = (fh*60+fm - (ih*60+im)) * 60;
+              if(dur < 0) dur += 86400;
+            }
+            etapasPayload.push({ batelada_id: batInserted.id, etapa: nome, ordem: i+1, inicio: ini ? ini+':00' : null, fim: fim ? fim+':00' : null, duracao_seg: dur });
+          }
+        }
+      });
+      if(etapasPayload.length > 0){
+        const { error: etErr } = await client.from('tempo_processo_etapas').insert(etapasPayload);
+        if(etErr) throw etErr;
+      }
+    } else {
+      const cfg = PPL_VELOCIDADE_CONFIG[linha];
+      const corridaPayload = { linha, data, produto };
+      cfg.campos.forEach(campo=>{
+        const meta = PPL_CAMPO_META[campo];
+        const el = document.getElementById(`pplCampo_${campo}`);
+        const val = el ? el.value : '';
+        if(val === ''){ corridaPayload[campo] = null; return; }
+        if(meta.type === 'timesec') corridaPayload[campo] = PPL_timeToSeconds(val);
+        else if(meta.type === 'time') corridaPayload[campo] = val + ':00';
+        else if(meta.type === 'number') corridaPayload[campo] = parseFloat(val);
+        else corridaPayload[campo] = val.trim();
+      });
+      const { data: corInserted, error: corErr } = await client.from('produtividade_corridas').insert([corridaPayload]).select().single();
+      if(corErr) throw corErr;
+
+      if(cfg.temParadasMultiplas){
+        const paradasPayload = [];
+        document.querySelectorAll('#pplParadasContainer .lanc-item').forEach(row=>{
+          const motivo = row.querySelector('.ppl-parada-motivo').value.trim();
+          const dur = PPL_timeToSeconds(row.querySelector('.ppl-parada-duracao').value);
+          if(motivo || dur !== null) paradasPayload.push({ corrida_id: corInserted.id, motivo: motivo || null, duracao_seg: dur });
+        });
+        if(paradasPayload.length > 0){
+          const { error: parErr } = await client.from('produtividade_paradas').insert(paradasPayload);
+          if(parErr) throw parErr;
+        }
+      }
+    }
+    feedback.textContent = '✓ Lançamento salvo com sucesso!';
+    feedback.className = 'lanc-feedback ok';
+    document.getElementById('pplProduto').value = '';
+    PPL_renderCamposDinamicos();
+    PPL_populateProdutoList();
+  }catch(err){
+    console.error('Erro ao salvar Produtividade & Processos:', err);
+    feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+/* ---------- Histórico (visualizar + excluir) ---------- */
+let PPL_HIST_DATA = [];
+
+function PPL_initHistFiltersIfEmpty(){
+  const iniEl = document.getElementById('pplHistDataIni');
+  const fimEl = document.getElementById('pplHistDataFim');
+  if(!fimEl.value){ const hoje = new Date(); fimEl.value = hoje.toISOString().slice(0,10); }
+  if(!iniEl.value){ const d = new Date(); d.setDate(d.getDate()-30); iniEl.value = d.toISOString().slice(0,10); }
+}
+
+async function PPL_loadHistorico(){
+  PPL_initHistFiltersIfEmpty();
+  const feedback = document.getElementById('pplHistFeedback');
+  feedback.textContent = 'Buscando...';
+  feedback.className = 'lanc-feedback';
+  const ini = document.getElementById('pplHistDataIni').value;
+  const fim = document.getElementById('pplHistDataFim').value;
+  const linha = document.getElementById('pplHistLinha').value;
+  try{
+    const client = LANC_getClient();
+    let qBat = client.from('tempo_processo_bateladas').select('*, tempo_processo_etapas(*)').order('data', { ascending:false }).limit(300);
+    let qCor = client.from('produtividade_corridas').select('*, produtividade_paradas(*)').order('data', { ascending:false }).limit(300);
+    if(ini){ qBat = qBat.gte('data', ini); qCor = qCor.gte('data', ini); }
+    if(fim){ qBat = qBat.lte('data', fim); qCor = qCor.lte('data', fim); }
+    if(linha){ qBat = qBat.eq('linha', linha); qCor = qCor.eq('linha', linha); }
+    const [batRes, corRes] = await Promise.all([qBat, qCor]);
+    if(batRes.error) throw batRes.error;
+    if(corRes.error) throw corRes.error;
+    const bateladas = (batRes.data || []).map(b => Object.assign({ tipo:'etapas' }, b));
+    const corridas = (corRes.data || []).map(c => Object.assign({ tipo:'velocidade' }, c));
+    PPL_HIST_DATA = [...bateladas, ...corridas].sort((a,b)=> b.data.localeCompare(a.data));
+    PPL_renderHistorico();
+    feedback.textContent = `${PPL_HIST_DATA.length} registro(s) encontrado(s)`;
+    feedback.className = 'lanc-feedback ok';
+  }catch(err){
+    console.error('Erro ao buscar histórico de Produtividade & Processos:', err);
+    feedback.textContent = '⚠ Erro ao buscar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }
+}
+
+function PPL_renderHistorico(){
+  const tbody = document.getElementById('pplHistTbody');
+  if(PPL_HIST_DATA.length === 0){
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum registro encontrado nesse filtro.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = PPL_HIST_DATA.map(r=>{
+    const dataFmt = r.data.split('-').reverse().join('/');
+    const tipoLabel = r.tipo === 'etapas' ? 'Tempo de Processo' : 'Produtividade';
+    let resumo = '';
+    if(r.tipo === 'etapas'){
+      const total = (r.tempo_processo_etapas||[]).reduce((s,e)=> s+(Number(e.duracao_seg)||0), 0);
+      resumo = `Lead time: ${PP_fmtDuracao(total)}` + (r.batelada != null ? ` · Batelada #${r.batelada}` : '');
+    } else {
+      const v = r.velocidade_paes_hora ?? r.velocidade_prensa ?? r.unidades_por_hora ?? r.producao_por_hora ?? r.quantidade;
+      resumo = v != null ? `Velocidade: ${v}` : '—';
+      const nParadas = (r.produtividade_paradas||[]).length;
+      if(nParadas) resumo += ` · ${nParadas} parada(s)`;
+    }
+    return `<tr data-id="${r.id}" data-tipo="${r.tipo}">
+      <td>${dataFmt}</td><td>${r.linha}</td><td>${tipoLabel}</td><td>${r.produto||'—'}</td>
+      <td style="font-size:11px;color:var(--ink-soft);">${resumo}</td>
+      <td class="center"><button type="button" class="lanc-hist-btn delete">Excluir</button></td>
+    </tr>`;
+  }).join('');
+  tbody.querySelectorAll('.lanc-hist-btn.delete').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const tr = e.target.closest('tr');
+      PPL_deleteRegistro(tr.dataset.id, tr.dataset.tipo);
+    });
+  });
+}
+
+async function PPL_deleteRegistro(id, tipo){
+  if(!confirm('Excluir esse lançamento? Essa ação não pode ser desfeita.')) return;
+  const feedback = document.getElementById('pplHistFeedback');
+  try{
+    const client = LANC_getClient();
+    const tabela = tipo === 'etapas' ? 'tempo_processo_bateladas' : 'produtividade_corridas';
+    const { error } = await client.from(tabela).delete().eq('id', id);
+    if(error) throw error;
+    PPL_HIST_DATA = PPL_HIST_DATA.filter(r => String(r.id) !== String(id));
+    PPL_renderHistorico();
+    feedback.textContent = '✓ Lançamento excluído.';
+    feedback.className = 'lanc-feedback ok';
+  }catch(err){
+    console.error('Erro ao excluir:', err);
+    feedback.textContent = '⚠ Erro ao excluir: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }
 }
 
 </script>
