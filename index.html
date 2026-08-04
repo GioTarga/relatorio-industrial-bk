@@ -652,13 +652,9 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
         Relatório Industrial
       </button>
-      <button class="nav-item" data-page="tempo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-        Tempo de Processo
-      </button>
-      <button class="nav-item" data-page="produtividade">
+      <button class="nav-item" data-page="produtividade-processos">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
-        Produtividade
+        Produtividade & Processos
       </button>
       <button class="nav-item" data-page="rascunho">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
@@ -737,10 +733,6 @@
         <input type="checkbox" id="logScaleToggle" checked>
         Escala logarítmica (ajuda quando há itens de volume muito diferente)
       </label>
-      <label class="scale-toggle" for="fBuscaProdutoChart" style="gap:6px;">
-        Buscar produto
-        <input type="text" id="fBuscaProdutoChart" placeholder="ex: empada, mini nata..." style="padding:5px 8px;border:1px solid #e8d3a3;border-radius:var(--radius-sm);font-size:12.5px;background:#fff8e7;min-width:180px;">
-      </label>
       <div class="zoom-controls">
         <button id="zoomOut" title="Diminuir zoom">−</button>
         <span class="zoom-pct" id="zoomPct">100%</span>
@@ -753,7 +745,6 @@
       <span><i class="dot" style="background:#f3d9d0;border:1px solid var(--red)"></i>Prevista (Meta)</span>
       <span><i class="dot" style="background:var(--red);border:1px solid var(--red)"></i>Real (abaixo da meta)</span>
       <span><i class="dot" style="background:var(--good);border:1px solid var(--good)"></i>Real (meta atingida)</span>
-      <span><i class="dot" style="background:#8a4c9e;border:1px solid #8a4c9e"></i>Real (sem meta cadastrada)</span>
     </div>
   </div>
 
@@ -837,201 +828,108 @@
 
   </div> <!-- /page-industrial -->
 
-  <div id="page-tempo" class="report-page" style="display:none;">
+  <div id="page-produtividade-processos" class="report-page" style="display:none;">
 
     <div class="topbar">
       <div class="brand">
         <div class="text-block">
-          <div class="eyebrow">Bread King · Tempo de Processo</div>
-          <h1>Tempo de Processo</h1>
-          <div class="subtitle">Duração das etapas de produção, por batelada, masseira e produto</div>
+          <div class="eyebrow">Bread King · Produtividade & Processos</div>
+          <h1>Produtividade & Processos</h1>
+          <div class="subtitle">Velocidade de produção, paradas e tempo de processo por etapa, por linha</div>
         </div>
       </div>
     </div>
 
-    <div class="setor-tabs" id="tpSetorTabs"></div>
-    <div class="setor-tabs sub-tabs" id="tpLineSubTabs" style="display:none;"></div>
+    <div class="setor-tabs" id="ppLinhaTabs"></div>
 
     <div class="period-bar">
       <label>Período</label>
-      <div class="dr-wrap" id="drWrap_tp">
-        <button type="button" class="dr-btn" id="drBtn_tp"></button>
-        <div class="dr-panel" id="drPanel_tp">
+      <div class="dr-wrap" id="drWrap_pp">
+        <button type="button" class="dr-btn" id="drBtn_pp"></button>
+        <div class="dr-panel" id="drPanel_pp">
           <div class="dr-header">
-            <button type="button" class="dr-nav" id="drPrev_tp">‹</button>
-            <div class="dr-month-label" id="drLabel_tp"></div>
-            <button type="button" class="dr-nav" id="drNext_tp">›</button>
+            <button type="button" class="dr-nav" id="drPrev_pp">‹</button>
+            <div class="dr-month-label" id="drLabel_pp"></div>
+            <button type="button" class="dr-nav" id="drNext_pp">›</button>
           </div>
           <div class="dr-weekdays"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
-          <div class="dr-grid" id="drGrid_tp"></div>
-          <div class="dr-hint" id="drHint_tp">Clique numa data para começar, e em outra pra fechar o intervalo</div>
+          <div class="dr-grid" id="drGrid_pp"></div>
+          <div class="dr-hint" id="drHint_pp">Clique numa data para começar, e em outra pra fechar o intervalo</div>
           <div class="dr-footer">
-            <button type="button" id="drClear_tp">Limpar</button>
-            <button type="button" id="drToday_tp">Hoje</button>
+            <button type="button" id="drClear_pp">Limpar</button>
+            <button type="button" id="drToday_pp">Hoje</button>
           </div>
         </div>
       </div>
-      <input type="date" id="tpDateStart" style="display:none;">
-      <input type="date" id="tpDateEnd" style="display:none;">
-      <label for="tpProduto">Produto</label>
-      <select id="tpProduto"><option value="">Todos os produtos</option></select>
-      <button class="btn-refresh" id="tpBtnRefresh" title="Verificar dados novos">⟳ Atualizar</button>
-      <span class="period-info" id="tpPeriodInfo"></span>
+      <input type="date" id="ppDateStart" style="display:none;">
+      <input type="date" id="ppDateEnd" style="display:none;">
+      <button class="btn-refresh" id="ppBtnRefresh" title="Verificar dados novos">⟳ Atualizar</button>
+      <span class="period-info" id="ppPeriodInfo"></span>
     </div>
 
     <div class="container">
 
-      <div class="kpi-grid" id="tpKpiGrid"></div>
+      <div class="kpi-grid" id="ppKpiGrid"></div>
 
-      <div class="panel">
-        <div class="panel-title">Composição do Tempo de Processo</div>
-        <div class="legend" id="tpStageLegend"></div>
-        <div class="chart-wrap" id="tpChartStages"></div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">Lead Time por Batelada</div>
-        <div class="chart-wrap" id="tpChartLeadTime"></div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">Comparativo por Produto (Lead Time Médio)</div>
-        <div class="chart-wrap" id="tpChartProduto"></div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">Registros Detalhados</div>
-        <div class="table-wrap" id="tpTableWrap">
-          <table class="detail">
-            <thead>
-              <tr id="tpTheadRow"></tr>
-            </thead>
-            <tbody id="tpTbody"></tbody>
-          </table>
+      <!-- Bloco Tempo de Processo (etapas) — só aparece se a linha tiver esse tipo de dado -->
+      <div id="ppBlocoEtapas" style="display:none;">
+        <div class="panel">
+          <div class="panel-title">Composição do Tempo de Processo (duração média por etapa)</div>
+          <div class="legend" id="ppEtapasLegend"></div>
+          <div class="chart-wrap" id="ppChartEtapas"></div>
         </div>
-      </div>
 
-    </div>
-  </div> <!-- /page-tempo -->
-
-
-  <!-- ============================================================ PÁGINA PRODUTIVIDADE ============================================================ -->
-  <div id="page-produtividade" class="report-page" style="display:none;">
-
-    <div class="topbar">
-      <div class="brand">
-        <div class="text-block">
-          <div class="eyebrow">Bread King · Produtividade</div>
-          <h1>Produtividade</h1>
-          <div class="subtitle">Velocidade de produção, paradas e volume de massa, por setor e produto</div>
+        <div class="panel">
+          <div class="panel-title">Lead Time por Batelada</div>
+          <div class="chart-wrap" id="ppChartLeadTime"></div>
         </div>
-      </div>
-    </div>
 
-    <div class="setor-tabs" id="prSetorTabs"></div>
-
-    <div class="period-bar">
-      <label>Período</label>
-      <div class="dr-wrap" id="drWrap_pr">
-        <button type="button" class="dr-btn" id="drBtn_pr"></button>
-        <div class="dr-panel" id="drPanel_pr">
-          <div class="dr-header">
-            <button type="button" class="dr-nav" id="drPrev_pr">‹</button>
-            <div class="dr-month-label" id="drLabel_pr"></div>
-            <button type="button" class="dr-nav" id="drNext_pr">›</button>
-          </div>
-          <div class="dr-weekdays"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
-          <div class="dr-grid" id="drGrid_pr"></div>
-          <div class="dr-hint" id="drHint_pr">Clique numa data para começar, e em outra pra fechar o intervalo</div>
-          <div class="dr-footer">
-            <button type="button" id="drClear_pr">Limpar</button>
-            <button type="button" id="drToday_pr">Hoje</button>
+        <div class="panel">
+          <div class="panel-title">Registros de Batelada</div>
+          <div class="table-wrap">
+            <table class="detail" id="ppTableBateladas">
+              <thead>
+                <tr><th>Data</th><th class="center">Batelada</th><th>Masseira</th><th>Produto</th><th class="center">Tempo Total</th><th class="center">Retenção</th></tr>
+              </thead>
+              <tbody id="ppTbodyBateladas"></tbody>
+            </table>
           </div>
         </div>
       </div>
-      <input type="date" id="prDateStart" style="display:none;">
-      <input type="date" id="prDateEnd" style="display:none;">
-      <span id="prMaquinaWrap" style="display:none;">
-        <label for="prMaquina">Máquina</label>
-        <select id="prMaquina"><option value="">Todas as máquinas</option></select>
-      </span>
-      <label>Produto</label>
-      <div class="ms-wrap" id="prProdutoMS">
-        <button type="button" class="ms-btn" id="prProdutoMSBtn">Todos os produtos</button>
-        <div class="ms-panel" id="prProdutoMSPanel"></div>
-      </div>
-      <button class="btn-refresh" id="prBtnRefresh" title="Verificar dados novos">⟳ Atualizar</button>
-      <span class="period-info" id="prPeriodInfo"></span>
-    </div>
 
-    <div class="container">
+      <!-- Bloco Velocidade & Paradas — só aparece se a linha tiver esse tipo de dado -->
+      <div id="ppBlocoVelocidade" style="display:none;">
+        <div class="panel">
+          <div class="panel-title">Velocidade por Produto</div>
+          <div class="chart-wrap" id="ppChartVelocidade"></div>
+        </div>
 
-      <div class="kpi-grid" id="prKpiGrid"></div>
+        <div class="panel">
+          <div class="panel-title">Paradas por Motivo</div>
+          <div class="chart-wrap" id="ppChartParadas"></div>
+        </div>
 
-      <div class="panel" id="prPanelInsumo" style="display:none;">
-        <div class="panel-title">Produção de Insumos (Blocos de Massa e Rolos Laminados)</div>
-        <div id="prInsumoError" style="display:none;background:#fbe2dc;border:1px solid #e0a89a;border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:12px;font-size:12px;color:#7a2a1a;"></div>
-        <div class="kpi-grid" id="prKpiGridInsumo" style="margin-bottom:0;"></div>
-      </div>
-
-      <div class="panel" id="prPanelChart1">
-        <div class="panel-title" id="prTitleChart1">Massa/Hora por Produto (quantidade de massas)</div>
-        <div class="chart-wrap" id="prChartVelocidade"></div>
-      </div>
-
-      <div class="panel" id="prPanelEtapas" style="display:none;">
-        <div class="panel-title">Tempo por Etapa do Processo</div>
-        <div class="chart-wrap" id="prChartEtapas"></div>
-      </div>
-
-      <div class="panel" id="prPanelParadasTempos" style="display:none;">
-        <div class="panel-title">Paradas por Motivo</div>
-        <div class="chart-wrap" id="prChartParadasTempos"></div>
-      </div>
-
-      <div class="panel" id="prPanelParadasRolos" style="display:none;">
-        <div class="panel-title">Paradas na Produção de Rolos Laminados e Blocos de Massa</div>
-        <div class="chart-wrap" id="prChartParadasRolos"></div>
-      </div>
-
-      <div class="panel" id="prPanelParadas">
-        <div class="panel-title">Paradas por Motivo</div>
-        <div class="chart-wrap" id="prChartParadas"></div>
-      </div>
-
-      <div class="panel" id="prPanelEstimativa" style="display:none;">
-        <div class="panel-title">Produtividade Estimada</div>
-        <div class="chart-wrap" id="prChartEstimativa"></div>
-      </div>
-
-      <div class="panel" id="prPanelRodadoParado" style="display:none;">
-        <div class="panel-title">Tempo Rodando × Tempo Parado</div>
-        <div class="chart-wrap" id="prChartRodadoParado"></div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">Registros Detalhados</div>
-        <div class="table-wrap">
-          <table class="detail">
-            <thead id="prThead">
-              <tr>
-                <th>Data</th>
-                <th class="center">Masseira</th>
-                <th class="center">Hora da Massa</th>
-                <th>Produto</th>
-                <th class="center">Velocidade GA (pães/hora)</th>
-                <th class="center">Parada</th>
-                <th>Motivo</th>
-                <th class="center">Peso da Massa (kg)</th>
-              </tr>
-            </thead>
-            <tbody id="prTbody"></tbody>
-          </table>
+        <div class="panel">
+          <div class="panel-title">Registros de Corrida</div>
+          <div class="table-wrap">
+            <table class="detail" id="ppTableCorridas">
+              <thead>
+                <tr><th>Data</th><th>Produto</th><th>Máquina/Masseira</th><th class="center">Início</th><th class="center">Fim</th><th class="center">Velocidade</th><th>Paradas</th></tr>
+              </thead>
+              <tbody id="ppTbodyCorridas"></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
+      <div class="empty-state" id="ppEmptyState" style="display:none;">
+        <span class="empty-icon">📊</span>
+        Nenhum dado registrado pra essa linha no período selecionado.
+      </div>
+
     </div>
-  </div> <!-- /page-produtividade -->
+  </div> <!-- /page-produtividade-processos -->
+
 
   <!-- ============================================================ PÁGINA RASCUNHO ============================================================ -->
   <div id="page-rascunho" class="report-page" style="display:none;">
@@ -1618,8 +1516,7 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     btn.classList.add('active');
     const target = btn.dataset.page;
     document.getElementById('page-industrial').style.display = target === 'industrial' ? 'block' : 'none';
-    document.getElementById('page-tempo').style.display = target === 'tempo' ? 'block' : 'none';
-    document.getElementById('page-produtividade').style.display = target === 'produtividade' ? 'block' : 'none';
+    document.getElementById('page-produtividade-processos').style.display = target === 'produtividade-processos' ? 'block' : 'none';
     document.getElementById('page-rascunho').style.display = target === 'rascunho' ? 'block' : 'none';
     document.getElementById('page-manutencao').style.display = target === 'manutencao' ? 'block' : 'none';
     document.getElementById('page-estoque').style.display = target === 'estoque' ? 'block' : 'none';
@@ -1627,13 +1524,9 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     if(target === 'lancamento' && typeof LANC_populateDropdowns === 'function'){
       LANC_populateDropdowns();
     }
-    if(target === 'tempo' && !TP_loadedOnce){
-      TP_loadedOnce = true;
-      TP_loadData(false);
-    }
-    if(target === 'produtividade' && !PR_loadedOnce){
-      PR_loadedOnce = true;
-      PR_loadData(false);
+    if(target === 'produtividade-processos' && !PP_loadedOnce){
+      PP_loadedOnce = true;
+      PP_init();
     }
     if(target === 'rascunho' && !RC_loadedOnce){
       RC_loadedOnce = true;
@@ -2434,11 +2327,6 @@ function getPreviousPeriodDates(filteredDates){
   return allDates.slice(prevStart, idxStart);
 }
 
-/* Filtro por texto do gráfico "Comparativo": busca livre no nome do produto
-   (substring, sem acento/case), ex: digitar "empada" mostra todos os
-   produtos cujo nome contém "empada" em algum lugar. */
-let buscaProdutoChart = '';
-
 /* Filtro por setor: quando um setor está selecionado, todas as funções de
    render usam esta função para obter apenas as linhas daquele setor */
 let selectedSector = '';
@@ -2776,18 +2664,12 @@ function renderDayChart(rows){
     const realColor = atingiu ? '#2f7d52' : '#A10101';
     const hTop = Math.max(hP, hR);
     const produtoAttr = r.produto.replace(/"/g,'&quot;');
-    const semMeta = !r.prev || r.prev <= 0;
     bars += `<g class="pr-bar-group" data-produto="${produtoAttr}" data-uni="${(r.uni||'').replace(/"/g,'&quot;')}">`;
-    // Trilha = Produção Prevista (só desenhada quando existe meta cadastrada)
-    if(!semMeta){
-      bars += `<rect x="${x0}" y="${baseY-hP}" width="${barW}" height="${hP}" fill="#f3d9d0" stroke="#A10101" stroke-width="1" rx="4"/>`;
-    }
+    // Trilha = Produção Prevista (sempre desenhada até a altura da meta)
+    bars += `<rect x="${x0}" y="${baseY-hP}" width="${barW}" height="${hP}" fill="#f3d9d0" stroke="#A10101" stroke-width="1" rx="4"/>`;
     // Preenchimento = Produção Real, sobreposto na mesma coluna
-    bars += `<rect x="${x0}" y="${baseY-hR}" width="${barW}" height="${hR}" fill="${semMeta ? '#8a4c9e' : realColor}" rx="4"/>`;
-    const valorTxt = semMeta
-      ? `${Math.round(r.real).toLocaleString('pt-BR')} (sem meta)`
-      : `${Math.round(r.real).toLocaleString('pt-BR')} / ${Math.round(r.prev).toLocaleString('pt-BR')}`;
-    bars += `<text x="${x0+barW/2}" y="${baseY-hTop-9}" font-size="${fsVal}" font-weight="700" fill="${semMeta ? '#8a4c9e' : realColor}" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-hTop-9})">${valorTxt}</text>`;
+    bars += `<rect x="${x0}" y="${baseY-hR}" width="${barW}" height="${hR}" fill="${realColor}" rx="4"/>`;
+    bars += `<text x="${x0+barW/2}" y="${baseY-hTop-9}" font-size="${fsVal}" font-weight="700" fill="${realColor}" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-hTop-9})">${Math.round(r.real).toLocaleString('pt-BR')} / ${Math.round(r.prev).toLocaleString('pt-BR')}</text>`;
     bars += `<text x="${x0+barW/2}" y="${baseY+16}" font-size="${fsLab}" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+16})">${truncateProdLabel(r.produto)}<title>Clique pra ver o histórico de ${r.produto}</title></text>`;
     bars += `</g>`;
   });
@@ -3109,9 +2991,7 @@ function computeProductivity(filteredDates){
       source.push({ produto: r.produto, uni: r.uni, real: r.real, horas });
     });
   });
-  // Correspondência EXATA (ver nota em computeChartRows) — evita juntar
-  // produtos diferentes-mas-parecidos no cálculo da taxa de produtividade.
-  const groups = exactGroupBy(source,
+  const groups = fuzzyGroupBy(source,
     r=>r.uni,
     r=>r.produto,
     r=>({ real: r.real, horas: r.horas }),
@@ -3187,9 +3067,7 @@ function PR_computeProductTrend(produto, filteredDates){
   filteredDates.forEach(d=>{
     let real = 0, horas = 0, uni = '';
     getDayRows(d).forEach(r=>{
-      // Correspondência EXATA (ver nota em DC_computeProductTrend) — evita
-      // juntar produtos diferentes-mas-parecidos no mesmo histórico.
-      if(r.produto !== produto) return;
+      if(RC_nameSimilarity(r.produto, produto) < 0.65) return;
       const iniMin = timeToMinutes(r.inicio), fimMin = timeToMinutes(r.fim);
       if(iniMin === null || fimMin === null || fimMin <= iniMin) return;
       real += r.real;
@@ -3269,13 +3147,7 @@ function DC_computeProductTrend(produto, filteredDates){
   filteredDates.forEach(d=>{
     let real = 0, prev = 0, temPrev = false, uni = '';
     getDayRows(d).forEach(r=>{
-      // Correspondência EXATA de nome (não aproximada) — os nomes já foram
-      // padronizados direto no banco, e usar RC_nameSimilarity aqui juntava
-      // produtos diferentes-mas-parecidos por engano (ex: clicar em "Empada
-      // Frango c/ Req BK 130g" também somava "Coxinha Frango c/ Req BK 80g"
-      // e "Bauru Frango c/ Req BK 165g", só por compartilharem várias
-      // palavras), inflando o histórico do produto.
-      if(r.produto !== produto) return;
+      if(RC_nameSimilarity(r.produto, produto) < 0.65) return;
       real += r.real;
       if(typeof r.prev === 'number'){ prev += r.prev; temPrev = true; }
       uni = r.uni;
@@ -3540,36 +3412,18 @@ function renderTrendLine(points){
 
 /* ---------- Detalhamento do gráfico "Comparativo": 1 dia mostra as linhas
    daquele dia; mais de 1 dia soma Previsto e Real por produto no período
-   inteiro, usando correspondência EXATA de nome (exactGroupBy) — os nomes já
-   foram padronizados direto no banco, e usar correspondência aproximada aqui
-   juntava produtos diferentes-mas-parecidos por engano (ex: "Empada Frango
-   c/ Req BK 130g" somando junto "Coxinha Frango c/ Req BK 80g", só por
-   compartilharem várias palavras), inflando o total de cada barra. Definida
-   antes do uso — funções são hoisted. */
+   inteiro (mesma correspondência aproximada de nome usada no ranking de
+   produção perdida, pra não duplicar "Pastel Belem" / "Pastel Belem Varejo"
+   como barras separadas). Definida antes do uso — funções são hoisted. */
 function computeChartRows(filteredDates){
   const source = [];
   filteredDates.forEach(d=>{
     getDayRows(d).forEach(r=>{
-      // Inclui tanto os itens com meta numérica quanto os que tiveram produção
-      // real mas ficaram sem meta cadastrada (fora do plano ou "S/ Quantidade
-      // Planejada") — senão eles somem do gráfico mesmo tendo sido produzidos.
-      // Nesse segundo caso, prev vira 0 e a barra mostra só o Real.
-      if(typeof r.prev === 'number'){
-        source.push(r);
-      } else if(r.real > 0){
-        source.push(Object.assign({}, r, { prev: 0 }));
-      }
+      if(typeof r.prev === 'number') source.push(r);
     });
   });
-  const buscaWords = RC_normalizeStr(buscaProdutoChart).split(' ').filter(Boolean);
-  const filtered = buscaWords.length
-    ? source.filter(r => {
-        const prodNorm = RC_normalizeStr(r.produto);
-        return buscaWords.every(w => prodNorm.includes(w));
-      })
-    : source;
-  if(filteredDates.length <= 1) return filtered;
-  const groups = exactGroupBy(filtered,
+  if(filteredDates.length <= 1) return source;
+  const groups = fuzzyGroupBy(source,
     r=>r.uni,
     r=>r.produto,
     r=>({ prev: r.prev, real: r.real }),
@@ -3581,13 +3435,12 @@ function computeChartRows(filteredDates){
 function renderDayDetail(filteredDates){
   const rows = computeChartRows(filteredDates);
   const titleEl = document.getElementById('chartTitle');
-  const buscaSufixo = buscaProdutoChart.trim() ? ` · Busca: "${buscaProdutoChart.trim()}"` : '';
   if(filteredDates.length === 1){
-    titleEl.textContent = `Comparativo: Produção Prevista × Produção Real — ${DATA[filteredDates[0]].label}${buscaSufixo}`;
+    titleEl.textContent = `Comparativo: Produção Prevista × Produção Real — ${DATA[filteredDates[0]].label}`;
   } else if(filteredDates.length > 1){
     const first = DATA[filteredDates[0]].label;
     const last = DATA[filteredDates[filteredDates.length-1]].label;
-    titleEl.textContent = `Comparativo: Produção Prevista × Produção Real — ${first} a ${last} (somado no período, ${filteredDates.length} dias)${buscaSufixo}`;
+    titleEl.textContent = `Comparativo: Produção Prevista × Produção Real — ${first} a ${last} (somado no período, ${filteredDates.length} dias)`;
   } else {
     titleEl.textContent = 'Comparativo: Produção Prevista × Produção Real';
   }
@@ -3635,13 +3488,6 @@ function refreshAll(){
     renderDayDetail(filteredDates);
   }
 }
-
-let _buscaProdutoChartDebounce = null;
-document.getElementById('fBuscaProdutoChart').addEventListener('input', (e)=>{
-  buscaProdutoChart = e.target.value;
-  clearTimeout(_buscaProdutoChartDebounce);
-  _buscaProdutoChartDebounce = setTimeout(()=> renderDayDetail(currentChartFilteredDates), 200);
-});
 
 document.getElementById('fProdutoDetalhe').addEventListener('change', () => renderTable(getFilteredDates()));
 
@@ -8374,6 +8220,297 @@ function EQ_DASH_fmtNum(v){
 }
 function EQ_DASH_fmtDataBR(iso){
   return iso ? iso.split('-').reverse().join('/') : '—';
+}
+
+/* ============================================================================
+   PRODUTIVIDADE & PROCESSOS — página unificada, lendo do Supabase
+   ============================================================================
+   Substitui as antigas páginas "Tempo de Processo" e "Produtividade" (que
+   liam de planilhas Google Sheets separadas, mas com sobreposição real: o
+   estudo de "Pão de Ló e Bolos" era do mesmo tipo dos estudos de etapas do
+   processo, só que morava na aba errada).
+
+   Cada linha (Giro, Salgado, Massa Salgado, Pão de Queijo, Padaria, Pão de
+   Ló e Bolos) pode ter dois tipos de dado — "etapas" (tempo_processo_*) e/ou
+   "velocidade" (produtividade_*). A página busca os dois e só mostra os
+   painéis do tipo que realmente tiver dado pra aquela linha no período —
+   por isso o Giro (que tem os dois tipos) mostra tudo, e as outras linhas
+   (que só têm um tipo) mostram só o bloco correspondente. */
+let PP_loadedOnce = false;
+const PP_LINHAS = ['Giro','Salgado','Massa Salgado','Pão de Queijo','Padaria','Pão de Ló e Bolos'];
+let PP_currentLinha = 'Giro';
+let PP_BATELADAS = [];
+let PP_CORRIDAS = [];
+const PP_CORES = ['#A10101','#B5640B','#D9A35C','#6e8e6b','#4472a8','#8a4c9c','#c2554a'];
+
+function PP_init(){
+  PP_renderLinhaTabs();
+  const hoje = new Date();
+  const startEl = document.getElementById('ppDateStart');
+  const endEl = document.getElementById('ppDateEnd');
+  if(!endEl.value) endEl.value = hoje.toISOString().slice(0,10);
+  if(!startEl.value){
+    const d = new Date(); d.setDate(d.getDate()-60);
+    startEl.value = d.toISOString().slice(0,10);
+  }
+  startEl.addEventListener('change', ()=>{
+    if(startEl.value > endEl.value) endEl.value = startEl.value;
+    PP_loadData();
+  });
+  endEl.addEventListener('change', ()=>{
+    if(endEl.value < startEl.value) startEl.value = endEl.value;
+    PP_loadData();
+  });
+  initDateRangePicker('pp', startEl, endEl);
+  document.getElementById('ppBtnRefresh').addEventListener('click', PP_loadData);
+  PP_loadData();
+}
+
+function PP_renderLinhaTabs(){
+  const el = document.getElementById('ppLinhaTabs');
+  el.innerHTML = PP_LINHAS.map(l => `<button type="button" class="setor-tab-btn ${l===PP_currentLinha?'active':''}" data-linha="${l}">${l}</button>`).join('');
+  el.querySelectorAll('[data-linha]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      PP_currentLinha = btn.dataset.linha;
+      el.querySelectorAll('[data-linha]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      PP_loadData();
+    });
+  });
+}
+
+async function PP_loadData(){
+  const ini = document.getElementById('ppDateStart').value;
+  const fim = document.getElementById('ppDateEnd').value;
+  const infoEl = document.getElementById('ppPeriodInfo');
+  infoEl.textContent = 'Carregando...';
+  try{
+    const client = LANC_getClient();
+    const [bateladasRes, corridasRes] = await Promise.all([
+      client.from('tempo_processo_bateladas').select('*, tempo_processo_etapas(*)')
+        .eq('linha', PP_currentLinha).gte('data', ini).lte('data', fim).order('data'),
+      client.from('produtividade_corridas').select('*, produtividade_paradas(*)')
+        .eq('linha', PP_currentLinha).gte('data', ini).lte('data', fim).order('data'),
+    ]);
+    if(bateladasRes.error) throw bateladasRes.error;
+    if(corridasRes.error) throw corridasRes.error;
+    PP_BATELADAS = bateladasRes.data || [];
+    PP_CORRIDAS = corridasRes.data || [];
+    PP_render();
+    infoEl.textContent = `${PP_BATELADAS.length} batelada(s), ${PP_CORRIDAS.length} corrida(s) no período`;
+  }catch(err){
+    console.error('Erro ao carregar Produtividade & Processos:', err);
+    infoEl.textContent = '';
+    document.getElementById('ppBlocoEtapas').style.display = 'none';
+    document.getElementById('ppBlocoVelocidade').style.display = 'none';
+    document.getElementById('ppKpiGrid').innerHTML = '';
+    const emptyEl = document.getElementById('ppEmptyState');
+    emptyEl.style.display = 'block';
+    emptyEl.innerHTML = `<span class="empty-icon">⚠</span>Erro ao carregar dados: ${err.message||err}`;
+  }
+}
+
+function PP_render(){
+  const temEtapas = PP_BATELADAS.length > 0;
+  const temVelocidade = PP_CORRIDAS.length > 0;
+  document.getElementById('ppBlocoEtapas').style.display = temEtapas ? 'block' : 'none';
+  document.getElementById('ppBlocoVelocidade').style.display = temVelocidade ? 'block' : 'none';
+  const emptyEl = document.getElementById('ppEmptyState');
+  emptyEl.style.display = (!temEtapas && !temVelocidade) ? 'block' : 'none';
+  emptyEl.innerHTML = `<span class="empty-icon">📊</span>Nenhum dado registrado pra essa linha no período selecionado.`;
+
+  PP_renderKPIs();
+  if(temEtapas) PP_renderEtapas();
+  if(temVelocidade) PP_renderVelocidade();
+}
+
+function PP_fmtDuracao(seg){
+  if(seg == null || isNaN(seg)) return '—';
+  seg = Math.round(seg);
+  const h = Math.floor(seg/3600), m = Math.floor((seg%3600)/60), s = seg%60;
+  if(h > 0) return `${h}h${String(m).padStart(2,'0')}m`;
+  if(m > 0) return `${m}m${String(s).padStart(2,'0')}s`;
+  return `${s}s`;
+}
+function PP_fmtDataBR(iso){ return iso ? iso.split('-').reverse().join('/') : '—'; }
+
+function PP_renderKPIs(){
+  const kpis = [];
+  if(PP_BATELADAS.length > 0){
+    kpis.push({ label:'Bateladas no Período', value: PP_BATELADAS.length });
+    const leadTimes = PP_BATELADAS
+      .map(b => (b.tempo_processo_etapas||[]).reduce((s,e)=> s + (Number(e.duracao_seg)||0), 0))
+      .filter(v => v > 0);
+    const leadMedio = leadTimes.length ? leadTimes.reduce((a,b)=>a+b,0)/leadTimes.length : 0;
+    kpis.push({ label:'Lead Time Médio', value: PP_fmtDuracao(leadMedio) });
+  }
+  if(PP_CORRIDAS.length > 0){
+    kpis.push({ label:'Corridas no Período', value: PP_CORRIDAS.length });
+    const paradas = PP_CORRIDAS.flatMap(c => c.produtividade_paradas || []);
+    kpis.push({ label:'Paradas Registradas', value: paradas.length });
+    const tempoParadoTotal = paradas.reduce((s,p)=> s + (Number(p.duracao_seg)||0), 0);
+    kpis.push({ label:'Tempo Total Parado', value: PP_fmtDuracao(tempoParadoTotal) });
+  }
+  document.getElementById('ppKpiGrid').innerHTML = kpis.map(k=>`
+    <div class="kpi-card"><div class="label">${k.label}</div><div class="value">${k.value}</div></div>
+  `).join('');
+}
+
+/* ---------- Bloco Etapas ---------- */
+function PP_renderEtapas(){
+  const porEtapa = {};
+  PP_BATELADAS.forEach(b=>{
+    (b.tempo_processo_etapas||[]).forEach(e=>{
+      if(!porEtapa[e.etapa]) porEtapa[e.etapa] = { soma:0, count:0, ordem: e.ordem||0 };
+      if(e.duracao_seg != null){
+        porEtapa[e.etapa].soma += Number(e.duracao_seg);
+        porEtapa[e.etapa].count += 1;
+      }
+    });
+  });
+  const etapas = Object.keys(porEtapa)
+    .map(nome => ({ nome, media: porEtapa[nome].count ? porEtapa[nome].soma/porEtapa[nome].count : 0, ordem: porEtapa[nome].ordem }))
+    .sort((a,b) => a.ordem - b.ordem);
+
+  document.getElementById('ppEtapasLegend').innerHTML = etapas.map((e,i)=>`
+    <span><i class="dot" style="background:${PP_CORES[i%PP_CORES.length]};border:1px solid ${PP_CORES[i%PP_CORES.length]}"></i>${e.nome}</span>
+  `).join('');
+
+  const wrap = document.getElementById('ppChartEtapas');
+  const barItems = etapas.map((e,i)=>({
+    label: e.nome, labelTitle: e.nome, value: e.media,
+    displayText: PP_fmtDuracao(e.media), color: PP_CORES[i%PP_CORES.length], textColor: PP_CORES[i%PP_CORES.length],
+  }));
+  const chartW0 = getResponsiveChartW('ppChartEtapas', 820);
+  const { bars, chartW, chartH } = buildBarsSvg(barItems, { barH:26, gap:14, leftPad:200, rightPad:140, topPad:10, chartW:chartW0 });
+  wrap.innerHTML = `<svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;">${bars}</svg>`;
+
+  PP_renderLeadTimeChart();
+
+  const tbody = document.getElementById('ppTbodyBateladas');
+  const linhas = [...PP_BATELADAS].sort((a,b)=> a.data.localeCompare(b.data));
+  tbody.innerHTML = linhas.map(b=>{
+    const total = (b.tempo_processo_etapas||[]).reduce((s,e)=> s+(Number(e.duracao_seg)||0), 0);
+    return `<tr>
+      <td>${PP_fmtDataBR(b.data)}</td>
+      <td class="center">${b.batelada ?? '—'}</td>
+      <td>${b.masseira ?? '—'}</td>
+      <td>${b.produto ?? '—'}</td>
+      <td class="center">${PP_fmtDuracao(total)}</td>
+      <td class="center">${b.retencao_seg != null ? PP_fmtDuracao(b.retencao_seg) : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function PP_renderLeadTimeChart(){
+  const wrap = document.getElementById('ppChartLeadTime');
+  const linhas = [...PP_BATELADAS].sort((a,b)=> a.data.localeCompare(b.data));
+  if(linhas.length === 0){ wrap.innerHTML = ''; return; }
+  const dados = linhas.map(b=>({
+    label: PP_fmtDataBR(b.data) + (b.batelada != null ? ' #'+b.batelada : ''),
+    valor: (b.tempo_processo_etapas||[]).reduce((s,e)=> s+(Number(e.duracao_seg)||0), 0),
+  }));
+  const barW = 26, gap = 14, baseY = 260, topPad = 40;
+  const chartWidth = dados.length*(barW+gap) + 50;
+  const maxVal = Math.max(...dados.map(d=>d.valor), 1);
+  let bars = '';
+  dados.forEach((d,i)=>{
+    const x0 = 36 + i*(barW+gap);
+    const h = (d.valor/maxVal)*(baseY-topPad);
+    bars += `<rect x="${x0}" y="${baseY-h}" width="${barW}" height="${h}" fill="var(--red)" rx="4"/>`;
+    bars += `<text x="${x0+barW/2}" y="${baseY-h-9}" font-size="10" font-weight="700" fill="var(--red)" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-h-9})">${PP_fmtDuracao(d.valor)}</text>`;
+    bars += `<text x="${x0+barW/2}" y="${baseY+14}" font-size="9.5" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+14})">${d.label}</text>`;
+  });
+  wrap.innerHTML = `<svg viewBox="0 0 ${chartWidth} 340" width="${chartWidth}" height="340" style="overflow:visible;font-family:'Inter',Arial,sans-serif;">${bars}</svg>`;
+}
+
+/* ---------- Bloco Velocidade & Paradas ---------- */
+function PP_renderVelocidade(){
+  const porProduto = {};
+  PP_CORRIDAS.forEach(c=>{
+    const v = c.velocidade_paes_hora ?? c.unidades_por_hora ?? c.producao_por_hora ?? null;
+    if(v == null) return;
+    const key = c.produto || '—';
+    if(!porProduto[key]) porProduto[key] = { soma:0, count:0 };
+    porProduto[key].soma += Number(v);
+    porProduto[key].count += 1;
+  });
+  const itens = Object.keys(porProduto)
+    .map(p => ({ produto:p, media: porProduto[p].soma/porProduto[p].count }))
+    .sort((a,b) => a.media - b.media);
+
+  const wrap = document.getElementById('ppChartVelocidade');
+  if(itens.length === 0){
+    wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">⚡</span>Nenhum dado de velocidade nesse período.</div>`;
+  } else {
+    const barH=20, gap=10, leftPad=210, rightPad=150, topPad=8;
+    const chartW = getResponsiveChartW('ppChartVelocidade', 820);
+    const barWmax = chartW-leftPad-rightPad;
+    const chartH = itens.length*(barH+gap)+topPad;
+    const maxVal = Math.max(...itens.map(i=>i.media), 1);
+    let bars = '';
+    itens.forEach((it,i)=>{
+      const y = topPad + i*(barH+gap);
+      const w = (it.media/maxVal)*barWmax;
+      bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="10.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${truncateProdLabel(it.produto,26)}<title>${it.produto}</title></text>`;
+      bars += `<rect x="${leftPad}" y="${y}" width="${barWmax}" height="${barH}" fill="#f3d9d0" stroke="#e0a89a" stroke-width="1" rx="5"/>`;
+      bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="#B5640B" rx="5"/>`;
+      bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="10.5" fill="#8a4c08" font-weight="700">${it.media.toLocaleString('pt-BR',{maximumFractionDigits:1})}/h</text>`;
+    });
+    const visibleRows=6, containerH=visibleRows*(barH+gap)+topPad+6;
+    wrap.innerHTML = `<div style="max-height:${containerH}px;width:${chartW}px;overflow-y:auto;overflow-x:hidden;display:inline-block;text-align:left;"><svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="font-family:'Inter',Arial,sans-serif;display:block;">${bars}</svg></div>`;
+  }
+
+  const porMotivo = {};
+  PP_CORRIDAS.forEach(c=>{
+    (c.produtividade_paradas||[]).forEach(p=>{
+      const key = p.motivo || 'Sem motivo informado';
+      if(!porMotivo[key]) porMotivo[key] = { count:0, dur:0 };
+      porMotivo[key].count += 1;
+      porMotivo[key].dur += Number(p.duracao_seg)||0;
+    });
+  });
+  const motivos = Object.keys(porMotivo)
+    .map(m => ({ motivo:m, count: porMotivo[m].count, dur: porMotivo[m].dur }))
+    .sort((a,b) => a.dur - b.dur);
+
+  const wrap2 = document.getElementById('ppChartParadas');
+  if(motivos.length === 0){
+    wrap2.innerHTML = `<div class="empty-state"><span class="empty-icon">✓</span>Nenhuma parada registrada nesse período.</div>`;
+  } else {
+    const barH=20, gap=10, leftPad=230, rightPad=150, topPad=8;
+    const chartW = getResponsiveChartW('ppChartParadas', 820);
+    const barWmax = chartW-leftPad-rightPad;
+    const chartH = motivos.length*(barH+gap)+topPad;
+    const maxVal = Math.max(...motivos.map(m=>m.dur), 1);
+    let bars = '';
+    motivos.forEach((m,i)=>{
+      const y = topPad + i*(barH+gap);
+      const w = (m.dur/maxVal)*barWmax;
+      bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="10.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${truncateProdLabel(m.motivo,28)}<title>${m.motivo}</title></text>`;
+      bars += `<rect x="${leftPad}" y="${y}" width="${barWmax}" height="${barH}" fill="#f3d9d0" stroke="#e0a89a" stroke-width="1" rx="5"/>`;
+      bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="var(--red)" rx="5"/>`;
+      bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="10.5" fill="var(--red)" font-weight="700">${m.count}x · ${PP_fmtDuracao(m.dur)}</text>`;
+    });
+    const visibleRows=6, containerH=visibleRows*(barH+gap)+topPad+6;
+    wrap2.innerHTML = `<div style="max-height:${containerH}px;width:${chartW}px;overflow-y:auto;overflow-x:hidden;display:inline-block;text-align:left;"><svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="font-family:'Inter',Arial,sans-serif;display:block;">${bars}</svg></div>`;
+  }
+
+  const tbody = document.getElementById('ppTbodyCorridas');
+  const linhas = [...PP_CORRIDAS].sort((a,b)=> a.data.localeCompare(b.data));
+  tbody.innerHTML = linhas.map(c=>{
+    const veloc = c.velocidade_paes_hora ?? c.velocidade_prensa ?? c.unidades_por_hora ?? c.producao_por_hora ?? c.quantidade ?? null;
+    const paradas = (c.produtividade_paradas||[]).map(p=>`${p.motivo||'—'} (${PP_fmtDuracao(p.duracao_seg||0)})`).join('; ');
+    return `<tr>
+      <td>${PP_fmtDataBR(c.data)}</td>
+      <td>${c.produto ?? '—'}</td>
+      <td>${c.maquina || c.masseira || '—'}</td>
+      <td class="center">${(c.inicio||c.hora_massa||'—').toString().slice(0,5)}</td>
+      <td class="center">${(c.fim||'—').toString().slice(0,5)}</td>
+      <td class="center">${veloc != null ? veloc.toLocaleString('pt-BR',{maximumFractionDigits:1}) : '—'}</td>
+      <td style="font-size:11px;color:var(--ink-soft);">${paradas || '—'}</td>
+    </tr>`;
+  }).join('');
 }
 
 </script>
