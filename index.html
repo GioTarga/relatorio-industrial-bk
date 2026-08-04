@@ -835,7 +835,7 @@
         <div class="text-block">
           <div class="eyebrow">Bread King · Produtividade & Processos</div>
           <h1>Produtividade & Processos</h1>
-          <div class="subtitle">Velocidade de produção, paradas e tempo de processo por etapa, por linha</div>
+          <div class="subtitle">Produtividade, paradas e tempo de processo por etapa, por linha</div>
         </div>
       </div>
     </div>
@@ -912,11 +912,11 @@
         </div>
 
         <div class="panel">
-          <div class="panel-title">Registros de Produção (Velocidade)</div>
+          <div class="panel-title">Registros de Produção (Produtividade)</div>
           <div class="table-wrap">
             <table class="detail" id="ppTableCorridas">
               <thead>
-                <tr><th>Data</th><th>Produto</th><th>Máquina/Masseira</th><th class="center">Início</th><th class="center">Fim</th><th class="center">Velocidade</th><th>Paradas</th></tr>
+                <tr><th>Data</th><th>Produto</th><th>Máquina/Masseira</th><th class="center">Início</th><th class="center">Fim</th><th class="center">Produtividade</th><th>Paradas</th></tr>
               </thead>
               <tbody id="ppTbodyCorridas"></tbody>
             </table>
@@ -1495,6 +1495,10 @@
                 <label>Produto</label>
                 <input type="text" id="pplProduto" list="pplProdutoList" placeholder="Nome do produto" required>
                 <datalist id="pplProdutoList"></datalist>
+                <datalist id="pplUnidadeMedidaList">
+                  <option value="Massa"><option value="Massas"><option value="Kg"><option value="Unid">
+                  <option value="Telas"><option value="Carrinhos"><option value="Caixas"><option value="Rolos"><option value="Pães">
+                </datalist>
               </div>
 
               <div class="lanc-field span-3" id="pplCamposWrap">
@@ -6761,22 +6765,23 @@ function PP_renderLeadTimeChart(){
 function PP_renderVelocidade(){
   const porProduto = {};
   PP_CORRIDAS.forEach(c=>{
-    const v = c.velocidade_paes_hora ?? c.unidades_por_hora ?? c.producao_por_hora ?? null;
+    const v = c.velocidade_paes_hora ?? c.velocidade_prensa ?? c.unidades_por_hora ?? c.producao_por_hora ?? null;
     if(v == null) return;
     const key = c.produto || '—';
-    if(!porProduto[key]) porProduto[key] = { soma:0, count:0 };
+    if(!porProduto[key]) porProduto[key] = { soma:0, count:0, unidade: c.unidade_medida || '' };
     porProduto[key].soma += Number(v);
     porProduto[key].count += 1;
+    if(!porProduto[key].unidade && c.unidade_medida) porProduto[key].unidade = c.unidade_medida;
   });
   const itens = Object.keys(porProduto)
-    .map(p => ({ produto:p, media: porProduto[p].soma/porProduto[p].count }))
+    .map(p => ({ produto:p, media: porProduto[p].soma/porProduto[p].count, unidade: porProduto[p].unidade }))
     .sort((a,b) => b.media - a.media);
 
   const wrap = document.getElementById('ppChartVelocidade');
   if(itens.length === 0){
     wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">⚡</span>Nenhum dado de produtividade nesse período.</div>`;
   } else {
-    // Barra vertical: eixo x = produtos, altura = produtividade média (unid/h)
+    // Barra vertical: eixo x = produtos, altura = produtividade média (unidade/h)
     const barW = 46, gap = 22, baseY = 260, topPad = 40;
     const chartWidth = itens.length*(barW+gap) + 50;
     const maxVal = Math.max(...itens.map(i=>i.media), 1);
@@ -6784,8 +6789,9 @@ function PP_renderVelocidade(){
     itens.forEach((it,i)=>{
       const x0 = 36 + i*(barW+gap);
       const h = (it.media/maxVal)*(baseY-topPad);
+      const sufixo = it.unidade ? `${it.unidade}/h` : '/h';
       bars += `<rect x="${x0}" y="${baseY-h}" width="${barW}" height="${h}" fill="#B5640B" rx="4"/>`;
-      bars += `<text x="${x0+barW/2}" y="${baseY-h-9}" font-size="10" font-weight="700" fill="#8a4c08" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-h-9})">${it.media.toLocaleString('pt-BR',{maximumFractionDigits:1})}/h</text>`;
+      bars += `<text x="${x0+barW/2}" y="${baseY-h-9}" font-size="10" font-weight="700" fill="#8a4c08" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-h-9})">${it.media.toLocaleString('pt-BR',{maximumFractionDigits:1})} ${sufixo}</text>`;
       bars += `<text x="${x0+barW/2}" y="${baseY+14}" font-size="9.5" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+14})">${truncateProdLabel(it.produto,22)}<title>${it.produto}</title></text>`;
     });
     wrap.innerHTML = `<svg viewBox="0 0 ${chartWidth} 340" width="${chartWidth}" height="340" style="overflow:visible;font-family:'Inter',Arial,sans-serif;">${bars}</svg>`;
@@ -6852,19 +6858,20 @@ function PP_renderVelocidade(){
    velocidade, não etapas). Os campos são montados dinamicamente conforme
    a combinação escolhida, em vez de ter uma tela fixa por linha. */
 
-// Velocidade continua com campos específicos por linha (são as colunas reais
-// da tabela produtividade_corridas) — mas agora toda linha tem um conjunto
-// disponível, incluindo um padrão genérico pras que não tinham antes.
+// Cada linha mede produtividade numa unidade diferente (Massa/h, Telas/h,
+// Kg/h, Carrinhos/h...), por isso "Unidade de Medida" e "Quantidade por
+// Recipiente" (só relevante quando a unidade é Caixa/Carrinho/Tela) agora
+// entram em TODA linha, além dos campos específicos que já existiam.
 const PPL_VELOCIDADE_CONFIG = {
-  'Giro': { campos:['masseira','hora_massa','velocidade_paes_hora','peso_massa_kg'] },
-  'Salgado': { campos:['maquina','inicio','fim','velocidade_prensa','qtd_colaboradores','unidades_por_hora','producao_por_hora','tempo_medio_seg','unidade_medida','duracao_rolo_seg'] },
-  'Massa Salgado': { campos:['inicio','fim','quantidade','tempo_medio_seg'] },
-  'Pão de Queijo': { campos:['maquina','inicio','fim','quantidade','tempo_medio_seg'] },
-  'Padaria': { campos:['maquina','inicio','fim','quantidade','tempo_medio_seg'] },
-  'Pão de Ló e Bolos': { campos:['maquina','inicio','fim','quantidade','tempo_medio_seg'] },
+  'Giro': { campos:['masseira','hora_massa','produtividade_paes_hora','unidade_medida','unidades_por_recipiente','peso_massa_kg'] },
+  'Salgado': { campos:['maquina','inicio','fim','produtividade_prensa','qtd_colaboradores','unidades_por_hora','producao_por_hora','tempo_medio_seg','unidade_medida','unidades_por_recipiente','duracao_rolo_seg'] },
+  'Massa Salgado': { campos:['inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
+  'Pão de Queijo': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
+  'Padaria': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
+  'Pão de Ló e Bolos': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
 };
 
-const PPL_TIPO_LABELS = { etapas:'Tempo de Processo (Etapas)', velocidade:'Produtividade (Velocidade)' };
+const PPL_TIPO_LABELS = { etapas:'Tempo de Processo (Etapas)', velocidade:'Produtividade' };
 
 const PPL_CAMPO_META = {
   masseira: { label:'Masseira', type:'text' },
@@ -6872,14 +6879,15 @@ const PPL_CAMPO_META = {
   hora_massa: { label:'Hora da Massa', type:'time' },
   inicio: { label:'Início', type:'time' },
   fim: { label:'Fim', type:'time' },
-  velocidade_paes_hora: { label:'Velocidade (pães/hora)', type:'number' },
-  velocidade_prensa: { label:'Velocidade de Prensa', type:'number' },
+  produtividade_paes_hora: { label:'Produtividade (pães/hora)', type:'number', coluna:'velocidade_paes_hora' },
+  produtividade_prensa: { label:'Produtividade da Prensa (unid/hora)', type:'number', coluna:'velocidade_prensa' },
   peso_massa_kg: { label:'Peso da Massa (kg)', type:'number' },
   qtd_colaboradores: { label:'Qtd. Colaboradores', type:'number' },
   unidades_por_hora: { label:'Unidades por Hora', type:'number' },
   producao_por_hora: { label:'Produção por Hora (caixa/telas)', type:'number' },
   tempo_medio_seg: { label:'Tempo Médio (hh:mm:ss)', type:'timesec' },
-  unidade_medida: { label:'Unidade de Medida', type:'text' },
+  unidade_medida: { label:'Unidade de Medida (Massa, Kg, Telas, Carrinhos, Caixas...)', type:'text_datalist' },
+  unidades_por_recipiente: { label:'Quantas unidades cabem em 1 recipiente? (só se a Unidade acima for Caixa/Carrinho/Tela)', type:'number' },
   duracao_rolo_seg: { label:'Duração do Rolo (hh:mm:ss)', type:'timesec' },
   quantidade: { label:'Quantidade', type:'number' },
 };
@@ -7048,10 +7056,14 @@ function PPL_gerarCamposEtapasNovas(){
 
 function PPL_renderCamposVelocidade(linha){
   const container = document.getElementById('pplCamposDinamicos');
-  const cfg = PPL_VELOCIDADE_CONFIG[linha] || { campos:['maquina','inicio','fim','quantidade','tempo_medio_seg'] };
+  const cfg = PPL_VELOCIDADE_CONFIG[linha] || { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] };
   let html = '<div class="lanc-item-grid">';
   cfg.campos.forEach(campo=>{
     const meta = PPL_CAMPO_META[campo];
+    if(meta.type === 'text_datalist'){
+      html += `<div class="lanc-field span-2"><label>${meta.label}</label><input type="text" list="pplUnidadeMedidaList" id="pplCampo_${campo}" placeholder="Ex: Telas, Massa, Kg, Carrinhos, Caixas"></div>`;
+      return;
+    }
     const inputType = meta.type === 'timesec' ? 'time' : meta.type;
     const step = meta.type === 'timesec' ? ' step="1"' : (meta.type === 'number' ? ' step="0.01"' : '');
     html += `<div class="lanc-field"><label>${meta.label}</label><input type="${inputType}"${step} id="pplCampo_${campo}"></div>`;
@@ -7173,17 +7185,18 @@ async function PPL_handleSubmit(e){
         if(etErr) throw etErr;
       }
     } else {
-      const cfg = PPL_VELOCIDADE_CONFIG[linha] || { campos:['maquina','inicio','fim','quantidade','tempo_medio_seg'] };
+      const cfg = PPL_VELOCIDADE_CONFIG[linha] || { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] };
       const corridaPayload = { linha, data, produto };
       cfg.campos.forEach(campo=>{
         const meta = PPL_CAMPO_META[campo];
+        const coluna = meta.coluna || campo; // alguns campos têm nome de exibição diferente da coluna real
         const el = document.getElementById(`pplCampo_${campo}`);
         const val = el ? el.value : '';
-        if(val === ''){ corridaPayload[campo] = null; return; }
-        if(meta.type === 'timesec') corridaPayload[campo] = PPL_timeToSeconds(val);
-        else if(meta.type === 'time') corridaPayload[campo] = val + ':00';
-        else if(meta.type === 'number') corridaPayload[campo] = parseFloat(val);
-        else corridaPayload[campo] = val.trim();
+        if(val === ''){ corridaPayload[coluna] = null; return; }
+        if(meta.type === 'timesec') corridaPayload[coluna] = PPL_timeToSeconds(val);
+        else if(meta.type === 'time') corridaPayload[coluna] = val + ':00';
+        else if(meta.type === 'number') corridaPayload[coluna] = parseFloat(val);
+        else corridaPayload[coluna] = val.trim();
       });
       const { data: corInserted, error: corErr } = await client.from('produtividade_corridas').insert([corridaPayload]).select().single();
       if(corErr) throw corErr;
@@ -7269,7 +7282,7 @@ function PPL_renderHistorico(){
       resumo = `Lead time: ${PP_fmtDuracao(total)}` + (r.batelada != null ? ` · Batelada #${r.batelada}` : '');
     } else {
       const v = r.velocidade_paes_hora ?? r.velocidade_prensa ?? r.unidades_por_hora ?? r.producao_por_hora ?? r.quantidade;
-      resumo = v != null ? `Velocidade: ${v}` : '—';
+      resumo = v != null ? `Produtividade: ${v}` : '—';
       const nParadas = (r.produtividade_paradas||[]).length;
       if(nParadas) resumo += ` · ${nParadas} parada(s)`;
     }
