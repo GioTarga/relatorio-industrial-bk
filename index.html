@@ -2710,7 +2710,6 @@ function renderCauses(filteredDates){
     });
   });
   const entries = Object.entries(counts).sort((a,b)=> (durMinutes[b[0]]||0) - (durMinutes[a[0]]||0) || b[1] - a[1]);
-  const total = entries.reduce((a,[,v])=>a+v,0);
 
   if(entries.length === 0){
     document.getElementById('causesWrap').innerHTML = `
@@ -2722,82 +2721,74 @@ function renderCauses(filteredDates){
     return;
   }
 
-  const durValues = entries.map(([cat])=> durMinutes[cat]||0);
-  const maxDur = Math.max(...durValues, 1);
+  // ---------- Pareto combo: barra = horas de parada (eixo esquerdo),
+  // linha = % acumulado de tempo (eixo direito, 0–100%), na mesma ordem
+  // decrescente já usada — tudo num gráfico só. ----------
+  const totalDur = entries.reduce((s,[cat])=> s + (durMinutes[cat]||0), 0); // minutos
+  const maxDurH = Math.max(...entries.map(([cat])=> (durMinutes[cat]||0)/60), 1);
+  const eixoMaxH = Math.ceil(maxDurH / 5) * 5 || 5;
 
-  // Degradê de intensidade: vermelho mais forte pro maior tempo parado,
-  // mais claro/fraco pros menores — tudo dentro do tom vermelho da marca
-  function intensityColor(min){
-    const t = min/maxDur;
-    const light = [0xFB,0xE2,0xDC]; // tom bem claro do vermelho da marca
-    const strong = [0xA1,0x01,0x01]; // vermelho forte da marca
-    const r = Math.round(light[0] + (strong[0]-light[0])*t);
-    const g = Math.round(light[1] + (strong[1]-light[1])*t);
-    const b = Math.round(light[2] + (strong[2]-light[2])*t);
-    return `rgb(${r},${g},${b})`;
-  }
-  function intensityTextColor(min){
-    return (min/maxDur) > 0.45 ? '#A10101' : '#8a4c08';
-  }
+  const barW = 85, gap = 30, baseY = 300, topPad = 60, leftPad = 55, rightPad = 60;
+  const chartWidth = Math.max(760, entries.length*(barW+gap) + leftPad + rightPad + 40);
+  const plotH = baseY - topPad;
+  const plotLeft = leftPad + 20, plotRight = chartWidth - rightPad;
 
-  const barItems = entries.map(([cat,count])=>{
-    const dur = durMinutes[cat] || 0;
-    const pct = count/total*100;
-    // Sem duração registrada pra essa causa: mostra uma barrinha mínima
-    // (só pra indicar presença), em cinza, no fim da lista.
-    const durTxt = dur > 0 ? TP_fmtDuration(dur*60) : 'sem duração registrada';
-    return {
-      label: cat, value: dur,
-      displayText: `${pct.toFixed(0)}% (${count}) · ${durTxt}`,
-      color: dur > 0 ? intensityColor(dur) : '#e3d9d4',
-      textColor: dur > 0 ? intensityTextColor(dur) : '#8a7a75',
-    };
-  });
-
-  // ---------- Pareto: % acumulado de TEMPO (não de ocorrência), na mesma
-  // ordem decrescente já usada nas barras. Acha o ponto onde o acumulado
-  // cruza 80% pra marcar visualmente o "corte" (quais causas concentram a
-  // maior parte do tempo perdido). ----------
-  const totalDurPareto = entries.reduce((s,[cat])=> s + (durMinutes[cat]||0), 0);
   let cumMin = 0;
-  let paretoCutIndex = -1;
+  let bars = '';
+  const linePoints = [];
   entries.forEach(([cat], i)=>{
-    cumMin += (durMinutes[cat] || 0);
-    const cumPct = totalDurPareto > 0 ? (cumMin/totalDurPareto*100) : 0;
-    if(durMinutes[cat] > 0){
-      barItems[i].displayText += ` · Acum: ${cumPct.toFixed(0)}%`;
-    }
-    if(paretoCutIndex === -1 && cumPct >= 80 && totalDurPareto > 0){
-      paretoCutIndex = i;
-    }
+    const durMin = durMinutes[cat] || 0;
+    const durH = durMin / 60;
+    cumMin += durMin;
+    const cumPct = totalDur > 0 ? (cumMin/totalDur*100) : 0;
+
+    const x0 = plotLeft + i*(barW+gap) + gap/2;
+    const hBar = (durH/eixoMaxH) * plotH;
+    const yBarTop = baseY - hBar;
+    const corBarra = durMin > 0 ? 'var(--red)' : '#e3d9d4';
+
+    bars += `<rect x="${x0}" y="${yBarTop}" width="${barW}" height="${hBar}" fill="${corBarra}" rx="4"/>`;
+    bars += `<text x="${x0+barW/2}" y="${yBarTop-8}" font-size="12" font-weight="700" fill="var(--red)" text-anchor="middle">${durH.toFixed(1)}h</text>`;
+    bars += `<text x="${x0+barW/2}" y="${baseY+20}" font-size="10.5" fill="#4a3a3a" text-anchor="middle">${truncateProdLabel(cat,16)}<title>${cat}</title></text>`;
+
+    linePoints.push({ x: x0+barW/2, y: baseY - (cumPct/100)*plotH, pct: cumPct });
   });
 
-  const chartW0 = getResponsiveChartW('causesWrap', 820);
-  const { bars, chartW, chartH } = buildBarsSvg(barItems, {
-    barH:20, gap:10, leftPad:230, rightPad:150, topPad:8, chartW:chartW0,
-    labelFontSize:10.5, valueFontSize:10.5, minBarFraction:0.05,
-  });
+  const linePath = linePoints.map((p,i)=> `${i===0?'M':'L'} ${p.x} ${p.y}`).join(' ');
+  const lineDots = linePoints.map(p => `
+    <circle cx="${p.x}" cy="${p.y}" r="4" fill="var(--gold)"/>
+    <text x="${p.x}" y="${p.y-10}" font-size="10.5" font-weight="700" fill="var(--gold)" text-anchor="middle">${p.pct.toFixed(0)}%</text>
+  `).join('');
 
-  // Linha tracejada horizontal marcando onde o acumulado cruza 80% —
-  // tudo ACIMA dessa linha já responde por 80% do tempo perdido.
-  let paretoLine = '';
-  if(paretoCutIndex !== -1 && paretoCutIndex < entries.length - 1){
-    const barH = 20, gap = 10, topPad = 8;
-    const yLinha = topPad + (paretoCutIndex+1)*(barH+gap) - gap/2;
-    paretoLine = `
-      <line x1="4" y1="${yLinha}" x2="${chartW-4}" y2="${yLinha}" stroke="#B5640B" stroke-width="1.5" stroke-dasharray="6,4"/>
-      <text x="${chartW-4}" y="${yLinha-5}" font-size="10" font-weight="700" fill="#B5640B" text-anchor="end">80% do tempo perdido está acima dessa linha</text>
-    `;
+  let eixoEsq = '';
+  for(let v=0; v<=eixoMaxH; v+=eixoMaxH/5){
+    const y = baseY - (v/eixoMaxH)*plotH;
+    eixoEsq += `<line x1="${plotLeft}" y1="${y}" x2="${plotRight}" y2="${y}" stroke="var(--line)" stroke-width="1"/>`;
+    eixoEsq += `<text x="${plotLeft-8}" y="${y+4}" font-size="10" fill="var(--ink-soft)" text-anchor="end">${v.toFixed(0)}h</text>`;
   }
+  let eixoDir = '';
+  [0,20,40,60,80,100].forEach(v=>{
+    const y = baseY - (v/100)*plotH;
+    eixoDir += `<text x="${plotRight+8}" y="${y+4}" font-size="10" fill="var(--gold)" text-anchor="start">${v}%</text>`;
+  });
+  const y80 = baseY - (80/100)*plotH;
+  const linha80 = `<line x1="${plotLeft}" y1="${y80}" x2="${plotRight}" y2="${y80}" stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="5,4"/>`;
 
-  const visibleRows = 6;
-  const containerH = visibleRows*(20+10) + 8 + 6;
   document.getElementById('causesWrap').innerHTML = `
-    <div style="max-height:${containerH}px; width:${chartW}px; overflow-y:auto; overflow-x:hidden; display:inline-block; text-align:left;">
-      <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:block;">
+    <div style="overflow-x:auto;">
+      <svg viewBox="0 0 ${chartWidth} 380" width="${chartWidth}" height="380" style="overflow:visible;font-family:'Inter',Arial,sans-serif;">
+        ${eixoEsq}
+        ${linha80}
         ${bars}
-        ${paretoLine}
+        <path d="${linePath}" fill="none" stroke="var(--gold)" stroke-width="2.5"/>
+        ${lineDots}
+        ${eixoDir}
       </svg>
+    </div>
+    <div class="legend" style="margin-top:10px;">
+      <span><i class="dot" style="background:var(--red);border:1px solid var(--red)"></i>Tempo de parada (horas)</span>
+      <span><i class="dot" style="background:var(--gold);border:1px solid var(--gold)"></i>% Acumulado</span>
+      <span style="color:var(--ink-soft);font-size:11.5px;">— tracejado dourado = corte dos 80%</span>
     </div>
   `;
 }
