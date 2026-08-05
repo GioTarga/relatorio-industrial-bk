@@ -1191,9 +1191,8 @@
             <thead>
               <tr>
                 <th>Item</th><th>Unidade</th>
-                <th class="center">Estoque Inicial</th><th class="center">Data</th>
-                <th class="center">Entradas no Período</th>
-                <th class="center">Estoque Final</th><th class="center">Data</th>
+                <th class="center">Quantidade em Estoque</th>
+                <th class="center">Data da Última Contagem</th>
                 <th class="center">Consumo</th>
               </tr>
             </thead>
@@ -6855,32 +6854,28 @@ function EQ_DASH_render(){
   }
 
   // ---------- Tabela de detalhamento ----------
+  // Usa o estoque ATUAL (última contagem de cada item, de qualquer data —
+  // sempre disponível com só 1 contagem) em vez de depender das 2
+  // contagens que o cálculo de Consumo exige. Consumo aparece quando dá
+  // pra calcular, e fica "—" quando ainda não dá — sem travar a tabela
+  // inteira esperando uma 2ª contagem.
   const tbody = document.getElementById('eqDashTbody');
-  if(EQ_DASH_DATA.length === 0){
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum dado nesse período.</td></tr>`;
+  const itensTodos = Object.keys(EQ_DASH_LATEST_CONTAGEM).sort();
+  if(itensTodos.length === 0){
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum dado registrado ainda.</td></tr>`;
     return;
   }
-  const linhas = [...EQ_DASH_DATA].sort((a,b)=>{
-    if(a.status === 'ok' && b.status === 'ok') return b.consumo - a.consumo;
-    if(a.status === 'ok') return -1;
-    if(b.status === 'ok') return 1;
-    return a.item.localeCompare(b.item);
-  });
-  tbody.innerHTML = linhas.map(r=>{
-    if(r.status === 'incompleto'){
-      return `<tr>
-        <td>${r.item}</td><td>${r.unidade||'—'}</td>
-        <td colspan="6" style="color:var(--ink-soft);font-style:italic;">
-          Aguardando 2ª contagem no período (tem ${r.contagensCount} até agora) — ${EQ_DASH_fmtNum(r.entradas)} ${r.unidade||''} de entrada já registrada
-        </td>
-      </tr>`;
-    }
+  const consumoPorItem = {};
+  EQ_DASH_DATA.forEach(r => { if(r.status === 'ok') consumoPorItem[r.item] = r.consumo; });
+
+  tbody.innerHTML = itensTodos.map(item => {
+    const atual = EQ_DASH_LATEST_CONTAGEM[item];
+    const consumo = consumoPorItem[item];
     return `<tr>
-      <td>${r.item}</td><td>${r.unidade||'—'}</td>
-      <td class="center">${EQ_DASH_fmtNum(r.estoqueInicial)}</td><td class="center">${EQ_DASH_fmtDataBR(r.dataInicial)}</td>
-      <td class="center">${EQ_DASH_fmtNum(r.entradas)}</td>
-      <td class="center">${EQ_DASH_fmtNum(r.estoqueFinal)}</td><td class="center">${EQ_DASH_fmtDataBR(r.dataFinal)}</td>
-      <td class="center" style="font-weight:700;color:${r.consumo<0?'var(--good)':'var(--red)'};">${EQ_DASH_fmtNum(r.consumo)}</td>
+      <td>${item}</td><td>${atual.unidade||'—'}</td>
+      <td class="center">${EQ_DASH_fmtNum(atual.quantidade)}</td>
+      <td class="center">${EQ_DASH_fmtDataBR(atual.data)}</td>
+      <td class="center" style="${consumo!=null ? `font-weight:700;color:${consumo<0?'var(--good)':'var(--red)'};` : 'color:var(--ink-soft);'}">${consumo!=null ? EQ_DASH_fmtNum(consumo) : '—'}</td>
     </tr>`;
   }).join('');
 }
