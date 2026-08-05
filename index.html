@@ -1128,7 +1128,7 @@
       <div class="panel">
         <div class="panel-title">⚠ Insumos com Estoque Baixo</div>
         <div style="margin-bottom:14px;">
-          <button type="button" class="lanc-add-item-btn" id="eqMinimosToggleBtn">⚙ Configurar Mínimos por Insumo</button>
+          <button type="button" class="lanc-add-item-btn" id="eqMinimosToggleBtn">⚙ Configurar Mínimo e Máximo por Insumo</button>
         </div>
 
         <div id="eqMinimosPanel" style="display:none;margin-bottom:20px;">
@@ -1136,7 +1136,7 @@
           <div class="table-wrap">
             <table class="detail" id="eqMinimosTable">
               <thead>
-                <tr><th>Item</th><th>Unidade</th><th class="center">Estoque Mínimo Aceitável</th><th class="center">Ações</th></tr>
+                <tr><th>Item</th><th>Unidade</th><th class="center">Estoque Mínimo Aceitável</th><th class="center">Estoque Máximo Aceitável</th><th class="center">Ações</th></tr>
               </thead>
               <tbody id="eqMinimosTbody"></tbody>
             </table>
@@ -1432,7 +1432,25 @@
               </div>
               <div class="lanc-field span-3">
                 <div id="eqContagemItems" class="lanc-items"></div>
-                <button type="button" class="lanc-add-item-btn" id="eqContagemAddBtn">+ Adicionar item</button>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
+                  <button type="button" class="lanc-add-item-btn" id="eqContagemAddBtn">+ Adicionar item</button>
+                  <button type="button" class="lanc-add-item-btn" id="eqContagemImportBtn" style="border-style:solid;background:var(--red-dark);color:#fff;border-color:var(--red-dark);">📥 Carregar Planilha de Contagem</button>
+                  <input type="file" id="eqContagemFile" accept=".xlsx,.xls" style="display:none;">
+                </div>
+                <span class="lanc-feedback" id="eqContagemImportFeedback"></span>
+                <div id="eqContagemImportPreview" style="display:none;margin-top:16px;">
+                  <div class="lanc-item-pendente-note" id="eqContagemImportSummary" style="background:#eef7f0;border-color:#bfe3c9;color:#1f5c3a;"></div>
+                  <div class="table-wrap" style="margin-top:10px;max-height:320px;">
+                    <table class="detail" id="eqContagemImportTable">
+                      <thead><tr><th>Categoria</th><th>Código</th><th>Item</th><th class="center">Quantidade</th><th>Unidade</th></tr></thead>
+                      <tbody id="eqContagemImportTbody"></tbody>
+                    </table>
+                  </div>
+                  <div style="display:flex;gap:10px;margin-top:14px;">
+                    <button type="button" class="lanc-submit-btn" id="eqContagemImportConfirmBtn">Confirmar e Salvar</button>
+                    <button type="button" class="lanc-add-item-btn" id="eqContagemImportCancelBtn">Cancelar</button>
+                  </div>
+                </div>
               </div>
               <div class="lanc-submit-row">
                 <button type="submit" class="lanc-submit-btn" id="eqContagemSubmitBtn">Salvar Lançamento</button>
@@ -6035,6 +6053,150 @@ document.getElementById('eqContagemAddBtn').addEventListener('click', EQ_addCont
 EQ_addContagemItem();
 EQ_setDefaultDate('eqContagemData');
 
+/* ============================================================================
+   IMPORTAR PLANILHA DE CONTAGEM SEMANAL — formato fixo:
+   linha 1 = título, linha 2 (célula B) = data (texto livre tipo
+   "___01___/____08___/____2026___"), linha 3 = cabeçalho (Setor, Código,
+   Descrição Produto, Unid/Kg, Contagem), linha 4+ = dados.
+   Como pode vir muita linha (essa planilha real tem 180+), não populamos
+   um cartão por item — mostramos uma prévia em tabela e salvamos tudo de
+   uma vez só ao confirmar. ============================================================================ */
+let EQ_CONTAGEM_IMPORT_ROWS = [];
+
+function EQ_normalizarUnidadeImport(u){
+  const t = (u||'').trim().toUpperCase();
+  if(t === 'KG') return 'Kg';
+  if(t === 'L' || t === 'LT') return 'Litro';
+  if(t === 'UN' || t === 'UNID') return 'Unid';
+  if(t === 'PCT') return 'Pacote';
+  if(t === 'CX') return 'Caixa';
+  return u ? u.trim() : null;
+}
+
+document.getElementById('eqContagemImportBtn').addEventListener('click', ()=>{
+  document.getElementById('eqContagemFile').click();
+});
+
+document.getElementById('eqContagemFile').addEventListener('change', async (ev)=>{
+  const file = ev.target.files[0];
+  if(!file) return;
+  const feedback = document.getElementById('eqContagemImportFeedback');
+  feedback.textContent = 'Lendo planilha...';
+  feedback.className = 'lanc-feedback';
+  try{
+    if(typeof XLSX === 'undefined') throw new Error('Biblioteca de leitura de Excel não carregou — verifique sua conexão e tente de novo.');
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null });
+
+    // acha a data: procura um texto tipo "dd/mm/aaaa" em qualquer célula
+    let dataEncontrada = null;
+    for(const r of rows){
+      for(const cell of r){
+        if(typeof cell === 'string'){
+          const m = cell.match(/(\d{1,2})\D+(\d{1,2})\D+(\d{4})/);
+          if(m){
+            dataEncontrada = `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+            break;
+          }
+        }
+      }
+      if(dataEncontrada) break;
+    }
+    if(!dataEncontrada) throw new Error('Não encontrei uma data no formato dd/mm/aaaa na planilha.');
+
+    // acha o cabeçalho (linha com "DESCRIÇÃO PRODUTO")
+    let headerIdx = -1;
+    for(let i=0;i<rows.length;i++){
+      if(rows[i].some(c => c && String(c).trim().toUpperCase().includes('DESCRIÇÃO PRODUTO'))){ headerIdx = i; break; }
+    }
+    if(headerIdx === -1) throw new Error('Não encontrei a coluna "Descrição Produto" — confere se é a planilha certa.');
+
+    const itens = [];
+    let brancosSeguidos = 0;
+    for(let i=headerIdx+1; i<rows.length; i++){
+      const r = rows[i] || [];
+      const [categoria, codigo, descricao, unidade, contagem] = r;
+      if(!descricao || String(descricao).trim() === ''){
+        brancosSeguidos++;
+        if(brancosSeguidos >= 3) break;
+        continue;
+      }
+      brancosSeguidos = 0;
+      if(contagem === null || contagem === undefined || contagem === '') continue;
+      itens.push({
+        categoria: categoria ? String(categoria).trim() : null,
+        codigo: (codigo !== null && codigo !== undefined) ? String(codigo).trim() : null,
+        item: String(descricao).trim(),
+        quantidade: Number(contagem),
+        unidade: EQ_normalizarUnidadeImport(unidade),
+      });
+    }
+
+    if(itens.length === 0) throw new Error('Não encontrei nenhum item com quantidade preenchida nessa planilha.');
+
+    EQ_CONTAGEM_IMPORT_ROWS = itens;
+    document.getElementById('eqContagemData').value = dataEncontrada;
+
+    document.getElementById('eqContagemImportSummary').textContent =
+      `${itens.length} itens encontrados, contagem de ${dataEncontrada.split('-').reverse().join('/')}. Confere a lista abaixo e clique em "Confirmar e Salvar".`;
+    document.getElementById('eqContagemImportTbody').innerHTML = itens.map(it => `
+      <tr>
+        <td>${it.categoria||'—'}</td><td>${it.codigo||'—'}</td><td>${it.item}</td>
+        <td class="center">${it.quantidade.toLocaleString('pt-BR')}</td><td>${it.unidade||'—'}</td>
+      </tr>`).join('');
+    document.getElementById('eqContagemImportPreview').style.display = 'block';
+    feedback.textContent = '';
+  }catch(err){
+    console.error('Erro ao importar planilha de contagem:', err);
+    feedback.textContent = '⚠ ' + err.message;
+    feedback.className = 'lanc-feedback err';
+  }finally{
+    ev.target.value = '';
+  }
+});
+
+document.getElementById('eqContagemImportCancelBtn').addEventListener('click', ()=>{
+  EQ_CONTAGEM_IMPORT_ROWS = [];
+  document.getElementById('eqContagemImportPreview').style.display = 'none';
+});
+
+document.getElementById('eqContagemImportConfirmBtn').addEventListener('click', async ()=>{
+  const feedback = document.getElementById('eqContagemImportFeedback');
+  const data = document.getElementById('eqContagemData').value;
+  if(!data){ feedback.textContent = '⚠ Preencha a Data antes de salvar.'; feedback.className = 'lanc-feedback err'; return; }
+  if(EQ_CONTAGEM_IMPORT_ROWS.length === 0) return;
+  const btn = document.getElementById('eqContagemImportConfirmBtn');
+  btn.disabled = true;
+  feedback.textContent = `Salvando ${EQ_CONTAGEM_IMPORT_ROWS.length} itens...`;
+  feedback.className = 'lanc-feedback';
+  try{
+    const payloads = EQ_CONTAGEM_IMPORT_ROWS.map(it => ({
+      data, item: it.item, quantidade: it.quantidade, unidade: it.unidade,
+      codigo: it.codigo, categoria: it.categoria,
+    }));
+    const client = LANC_getClient();
+    // insere em blocos de 200 pra não estourar o payload de uma vez só
+    for(let i=0; i<payloads.length; i+=200){
+      const bloco = payloads.slice(i, i+200);
+      const { error } = await client.from('estoque_contagens').insert(bloco);
+      if(error) throw error;
+    }
+    feedback.textContent = `✓ ${payloads.length} itens da contagem salvos com sucesso!`;
+    feedback.className = 'lanc-feedback ok';
+    document.getElementById('eqContagemImportPreview').style.display = 'none';
+    EQ_CONTAGEM_IMPORT_ROWS = [];
+    EQ_KNOWN_ITEMS = null;
+  }catch(err){
+    console.error('Erro ao salvar contagem importada:', err);
+    feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }finally{
+    btn.disabled = false;
+  }
+});
+
 function EQ_buildContagemPayload(row, data){
   const item = row.querySelector('.eq-item').value.trim();
   const qtdRaw = row.querySelector('.eq-quantidade').value;
@@ -6398,7 +6560,13 @@ async function EQ_DASH_loadData(){
     if(minimosRes.error) console.warn('Tabela estoque_minimos ainda não existe ou deu erro:', minimosRes.error);
 
     const minimos = {};
-    (minimosRes.data || []).forEach(m=>{ minimos[m.item] = { quantidade_minima: Number(m.quantidade_minima), unidade: m.unidade }; });
+    (minimosRes.data || []).forEach(m=>{
+      minimos[m.item] = {
+        quantidade_minima: m.quantidade_minima != null ? Number(m.quantidade_minima) : null,
+        quantidade_maxima: m.quantidade_maxima != null ? Number(m.quantidade_maxima) : null,
+        unidade: m.unidade,
+      };
+    });
     EQ_DASH_MINIMOS = minimos;
 
     // Estado ATUAL de cada item (independe do filtro de período — é sempre
@@ -6563,7 +6731,7 @@ function EQ_DASH_renderLowStock(){
   Object.keys(EQ_DASH_LATEST_CONTAGEM).forEach(item=>{
     const atual = EQ_DASH_LATEST_CONTAGEM[item];
     const minimo = EQ_DASH_MINIMOS[item];
-    if(!minimo) return; // sem mínimo cadastrado, não entra no alerta
+    if(!minimo || minimo.quantidade_minima == null) return; // sem mínimo cadastrado, não entra no alerta
     if(atual.quantidade < minimo.quantidade_minima){
       const pctRestante = minimo.quantidade_minima > 0 ? (atual.quantidade / minimo.quantidade_minima) * 100 : 0;
       linhas.push({
@@ -6598,7 +6766,7 @@ function EQ_DASH_renderMinimosPanel(){
   const visiveis = filtro ? itens.filter(i => i.toLowerCase().includes(filtro)) : itens;
   const tbody = document.getElementById('eqMinimosTbody');
   if(visiveis.length === 0){
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum item encontrado.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum item encontrado.</td></tr>`;
     return;
   }
   tbody.innerHTML = visiveis.map(item=>{
@@ -6608,7 +6776,8 @@ function EQ_DASH_renderMinimosPanel(){
       <tr data-item="${item.replace(/"/g,'&quot;')}">
         <td>${item}</td>
         <td>${(minimo && minimo.unidade) || atual.unidade || '—'}</td>
-        <td class="center"><input type="number" step="0.01" class="eq-minimo-input" style="width:110px;text-align:center;" value="${minimo ? minimo.quantidade_minima : ''}" placeholder="Não definido"></td>
+        <td class="center"><input type="number" step="0.01" class="eq-minimo-input" style="width:110px;text-align:center;" value="${minimo && minimo.quantidade_minima != null ? minimo.quantidade_minima : ''}" placeholder="Não definido"></td>
+        <td class="center"><input type="number" step="0.01" class="eq-maximo-input" style="width:110px;text-align:center;" value="${minimo && minimo.quantidade_maxima != null ? minimo.quantidade_maxima : ''}" placeholder="Não definido"></td>
         <td class="center"><button type="button" class="lanc-hist-btn save" data-save-minimo>Salvar</button></td>
       </tr>`;
   }).join('');
@@ -6616,10 +6785,16 @@ function EQ_DASH_renderMinimosPanel(){
     btn.addEventListener('click', async ()=>{
       const tr = btn.closest('tr');
       const item = tr.dataset.item;
-      const input = tr.querySelector('.eq-minimo-input');
-      const valor = parseFloat(input.value);
-      if(isNaN(valor) || valor < 0){
-        alert('Digite um valor de mínimo válido antes de salvar.');
+      const inputMin = tr.querySelector('.eq-minimo-input');
+      const inputMax = tr.querySelector('.eq-maximo-input');
+      const valorMin = inputMin.value.trim() === '' ? null : parseFloat(inputMin.value);
+      const valorMax = inputMax.value.trim() === '' ? null : parseFloat(inputMax.value);
+      if((inputMin.value.trim() !== '' && (isNaN(valorMin) || valorMin < 0)) || (inputMax.value.trim() !== '' && (isNaN(valorMax) || valorMax < 0))){
+        alert('Digite valores válidos (ou deixe em branco) antes de salvar.');
+        return;
+      }
+      if(valorMin === null && valorMax === null){
+        alert('Preencha pelo menos o mínimo ou o máximo antes de salvar.');
         return;
       }
       const atual = EQ_DASH_LATEST_CONTAGEM[item];
@@ -6627,10 +6802,10 @@ function EQ_DASH_renderMinimosPanel(){
       try{
         const client = LANC_getClient();
         const { error } = await client.from('estoque_minimos').upsert({
-          item, quantidade_minima: valor, unidade: atual.unidade || null, updated_at: new Date().toISOString(),
+          item, quantidade_minima: valorMin, quantidade_maxima: valorMax, unidade: atual.unidade || null, updated_at: new Date().toISOString(),
         });
         if(error) throw error;
-        EQ_DASH_MINIMOS[item] = { quantidade_minima: valor, unidade: atual.unidade || null };
+        EQ_DASH_MINIMOS[item] = { quantidade_minima: valorMin, quantidade_maxima: valorMax, unidade: atual.unidade || null };
         btn.textContent = '✓ Salvo';
         EQ_DASH_renderLowStock();
         setTimeout(()=>{ btn.disabled = false; btn.textContent = 'Salvar'; }, 1200);
