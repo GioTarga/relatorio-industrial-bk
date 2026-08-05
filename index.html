@@ -2753,11 +2753,42 @@ function renderCauses(filteredDates){
       textColor: dur > 0 ? intensityTextColor(dur) : '#8a7a75',
     };
   });
+
+  // ---------- Pareto: % acumulado de TEMPO (não de ocorrência), na mesma
+  // ordem decrescente já usada nas barras. Acha o ponto onde o acumulado
+  // cruza 80% pra marcar visualmente o "corte" (quais causas concentram a
+  // maior parte do tempo perdido). ----------
+  const totalDurPareto = entries.reduce((s,[cat])=> s + (durMinutes[cat]||0), 0);
+  let cumMin = 0;
+  let paretoCutIndex = -1;
+  entries.forEach(([cat], i)=>{
+    cumMin += (durMinutes[cat] || 0);
+    const cumPct = totalDurPareto > 0 ? (cumMin/totalDurPareto*100) : 0;
+    if(durMinutes[cat] > 0){
+      barItems[i].displayText += ` · Acum: ${cumPct.toFixed(0)}%`;
+    }
+    if(paretoCutIndex === -1 && cumPct >= 80 && totalDurPareto > 0){
+      paretoCutIndex = i;
+    }
+  });
+
   const chartW0 = getResponsiveChartW('causesWrap', 820);
   const { bars, chartW, chartH } = buildBarsSvg(barItems, {
     barH:20, gap:10, leftPad:230, rightPad:150, topPad:8, chartW:chartW0,
     labelFontSize:10.5, valueFontSize:10.5, minBarFraction:0.05,
   });
+
+  // Linha tracejada horizontal marcando onde o acumulado cruza 80% —
+  // tudo ACIMA dessa linha já responde por 80% do tempo perdido.
+  let paretoLine = '';
+  if(paretoCutIndex !== -1 && paretoCutIndex < entries.length - 1){
+    const barH = 20, gap = 10, topPad = 8;
+    const yLinha = topPad + (paretoCutIndex+1)*(barH+gap) - gap/2;
+    paretoLine = `
+      <line x1="4" y1="${yLinha}" x2="${chartW-4}" y2="${yLinha}" stroke="#B5640B" stroke-width="1.5" stroke-dasharray="6,4"/>
+      <text x="${chartW-4}" y="${yLinha-5}" font-size="10" font-weight="700" fill="#B5640B" text-anchor="end">80% do tempo perdido está acima dessa linha</text>
+    `;
+  }
 
   const visibleRows = 6;
   const containerH = visibleRows*(20+10) + 8 + 6;
@@ -2765,6 +2796,7 @@ function renderCauses(filteredDates){
     <div style="max-height:${containerH}px; width:${chartW}px; overflow-y:auto; overflow-x:hidden; display:inline-block; text-align:left;">
       <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:block;">
         ${bars}
+        ${paretoLine}
       </svg>
     </div>
   `;
