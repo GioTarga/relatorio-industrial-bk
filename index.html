@@ -733,6 +733,8 @@
         <input type="checkbox" id="logScaleToggle" checked>
         Escala logarítmica (ajuda quando há itens de volume muito diferente)
       </label>
+      <input type="text" id="chartProdutoFiltro" list="chartProdutoFiltroList" placeholder="Buscar produto..." style="padding:7px 12px;border:1px solid var(--line);border-radius:7px;font-size:12.5px;background:var(--cream);min-width:220px;">
+      <datalist id="chartProdutoFiltroList"></datalist>
       <div class="zoom-controls">
         <button id="zoomOut" title="Diminuir zoom">−</button>
         <span class="zoom-pct" id="zoomPct">100%</span>
@@ -755,7 +757,7 @@
   </div>
 
   <div class="panel">
-    <div class="panel-title" id="metaTitle">Atingimento de Meta</div>
+    <div class="panel-title" id="metaTitle">Atendimento de Meta</div>
     <div class="chart-wrap" id="lostProdWrap"></div>
     <div class="legend" id="metaLegend">
       <span><i class="dot" style="background:#f3d9d0;border:1px solid var(--red)"></i>Meta (Planejado)</span>
@@ -2694,7 +2696,7 @@ function buildBarsSvg(items, opts){
     const labelHtml = item.labelTitle ? `${item.label}<title>${item.labelTitle}</title>` : item.label;
     bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="${labelFs}" fill="#2a1a1a" text-anchor="end" font-weight="600">${labelHtml}</text>`;
     // Trilha de fundo (largura total disponível) atrás da barra preenchida —
-    // mesmo padrão visual do gráfico de Atingimento de Meta: trilha clara
+    // mesmo padrão visual do gráfico de Atendimento de Meta: trilha clara
     // com borda, dá contexto de escala e deixa tudo com aparência consistente.
     bars += `<rect x="${leftPad}" y="${y}" width="${barWmax}" height="${barH}" fill="#f3d9d0" stroke="#e0a89a" stroke-width="1" rx="5"/>`;
     bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="${color}" rx="5"/>`;
@@ -2765,7 +2767,14 @@ function renderCauses(filteredDates){
     const corBarra = durMin > 0 ? 'var(--red)' : '#e3d9d4';
 
     bars += `<rect x="${x0}" y="${yBarTop}" width="${barW}" height="${hBar}" fill="${corBarra}" rx="4"/>`;
-    bars += `<text x="${x0+barW/2}" y="${yBarTop-8}" font-size="12" font-weight="700" fill="var(--red)" text-anchor="middle">${durH.toFixed(1)}h</text>`;
+    // Rótulo da hora: dentro da barra (texto branco) quando ela é alta o
+    // suficiente pra caber, senão fica por cima — evita brigar de espaço
+    // com os rótulos da linha de % acumulado, que ficam sempre por cima.
+    if(hBar > 26){
+      bars += `<text x="${x0+barW/2}" y="${yBarTop+18}" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">${durH.toFixed(1)}h</text>`;
+    } else {
+      bars += `<text x="${x0+barW/2}" y="${yBarTop-8}" font-size="12" font-weight="700" fill="var(--red)" text-anchor="middle">${durH.toFixed(1)}h</text>`;
+    }
     bars += `<text x="${x0+barW/2}" y="${baseY+20}" font-size="10.5" fill="#4a3a3a" text-anchor="middle">${truncateProdLabel(cat,16)}<title>${cat}</title></text>`;
 
     linePoints.push({ x: x0+barW/2, y: baseY - (cumPct/100)*plotH, pct: cumPct });
@@ -2773,8 +2782,8 @@ function renderCauses(filteredDates){
 
   const linePath = linePoints.map((p,i)=> `${i===0?'M':'L'} ${p.x} ${p.y}`).join(' ');
   const lineDots = linePoints.map(p => `
-    <circle cx="${p.x}" cy="${p.y}" r="4" fill="var(--gold)"/>
-    <text x="${p.x}" y="${p.y-10}" font-size="10.5" font-weight="700" fill="var(--gold)" text-anchor="middle">${p.pct.toFixed(0)}%</text>
+    <circle cx="${p.x}" cy="${p.y}" r="4" fill="var(--gold)" stroke="#fff" stroke-width="1.5"/>
+    <text x="${p.x}" y="${p.y-12}" font-size="10.5" font-weight="700" fill="var(--gold)" text-anchor="middle" stroke="#FFF8E7" stroke-width="3" paint-order="stroke" stroke-linejoin="round">${p.pct.toFixed(0)}%</text>
   `).join('');
 
   let eixoEsq = '';
@@ -3116,7 +3125,7 @@ function exactGroupBy(items, uniFn, produtoFn, initFn, mergeFn){
 }
 
 
-/* ---------- Atingimento de Meta (Planejado x Real, somado por produto) ----------
+/* ---------- Atendimento de Meta (Planejado x Real, somado por produto) ----------
    Antes era "Ranking de Produção Perdida" (só mostrava o volume perdido).
    Agora mostra os dois números lado a lado numa barra só: uma trilha
    representando a Meta (Planejado) e uma barra sobreposta representando o
@@ -3191,9 +3200,9 @@ function renderLostProduction(filteredDates){
     ? computeMetaAtingimentoPorSetor(filteredDates)
     : computeMetaAtingimento(filteredDates);
 
-  document.getElementById('metaTitle').textContent = isPorSetor ? 'Atingimento de Meta (por Setor)' : 'Atingimento de Meta (por Produto)';
+  document.getElementById('metaTitle').textContent = isPorSetor ? 'Atendimento de Meta (por Setor)' : 'Atendimento de Meta (por Produto)';
   document.getElementById('metaFoot').textContent = isPorSetor
-    ? 'Atingimento médio de meta por Setor (média do Real ÷ Planejado de cada lançamento), no período selecionado. Escolha um setor específico nas abas acima para ver o detalhamento por produto.'
+    ? 'Atendimento médio de meta por Setor, no período selecionado. A % de cada barra é a média do Real ÷ Planejado de cada lançamento daquele setor; o número ao lado é quantos dias tiveram registro. Escolha um setor específico nas abas acima para ver o detalhamento por produto.'
     : 'Comparação entre a quantidade planejada (Meta) e a produzida (Realizado) por produto, somado dentro do período e setor selecionados. Só entram produtos com planejamento cadastrado.';
 
   if(items.length === 0){
@@ -3227,7 +3236,7 @@ function renderLostProduction(filteredDates){
     const label = truncateProdLabel(item.produto, 28);
     const labelHtml = `${label}<title>${item.produto}</title>`;
     const displayText = item.bySetor
-      ? `${pct.toFixed(0)}% de atingimento médio (${item.diasRegistrados} dia${item.diasRegistrados===1?'':'s'} registrado${item.diasRegistrados===1?'':'s'})`
+      ? `${item.diasRegistrados} dia${item.diasRegistrados===1?'':'s'} · ${pct.toFixed(0)}%`
       : `${Math.round(item.real).toLocaleString('pt-BR')} / ${Math.round(item.planejado).toLocaleString('pt-BR')} ${item.uni} (${pct.toFixed(0)}%)`;
 
     bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="10.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${labelHtml}</text>`;
@@ -3708,8 +3717,17 @@ function computeChartRows(filteredDates){
   return groups.sort((a,b)=> b.real - a.real);
 }
 
+let chartProdutoFiltro = '';
+
 function renderDayDetail(filteredDates){
-  const rows = computeChartRows(filteredDates);
+  const rowsTodos = computeChartRows(filteredDates);
+  const rows = chartProdutoFiltro
+    ? rowsTodos.filter(r => r.produto.toLowerCase().includes(chartProdutoFiltro.toLowerCase()))
+    : rowsTodos;
+
+  const filtroList = document.getElementById('chartProdutoFiltroList');
+  filtroList.innerHTML = [...new Set(rowsTodos.map(r=>r.produto))].sort().map(p=>`<option value="${p}">`).join('');
+
   const titleEl = document.getElementById('chartTitle');
   if(filteredDates.length === 1){
     titleEl.textContent = `Comparativo: Produção Prevista × Produção Real — ${DATA[filteredDates[0]].label}`;
@@ -3722,6 +3740,10 @@ function renderDayDetail(filteredDates){
   }
   renderDayChart(rows);
 }
+document.getElementById('chartProdutoFiltro').addEventListener('input', (e)=>{
+  chartProdutoFiltro = e.target.value.trim();
+  if(currentChartFilteredDates) renderDayDetail(currentChartFilteredDates);
+});
 
 /* ---------- Atualiza tudo a partir do período selecionado ---------- */
 function refreshDaySelectOptions(filteredDates){
@@ -6990,7 +7012,9 @@ async function PP_loadData(){
     PP_CORRIDAS_RAW = corridasRes.data || [];
     PP_populateProdutoFilter();
     PP_applyProdutoFilter();
-    if(PP_currentLinha === 'Salgado') await PP_fetchSalgadoMeta(ini, fim);
+    if(PP_currentLinha === 'Salgado'){
+      await PP_ensureCapacidadeData();
+    }
     PP_render();
     infoEl.textContent = `${PP_BATELADAS.length} batelada(s), ${PP_CORRIDAS.length} registro(s) de produção no período`;
   }catch(err){
@@ -7029,50 +7053,128 @@ function PP_fmtDuracao(seg){
 }
 function PP_fmtDataBR(iso){ return iso ? iso.split('-').reverse().join('/') : '—'; }
 
-let PP_SALGADO_ACURACIA = null;
-let PP_SALGADO_ATINGIMENTO = null;
-
-/* Cruza com a Produção Diária (mesmo setor Salgado) pra calcular Acurácia e
-   Atingimento de Meta — a tabela de Produtividade não tem campo de "meta"
-   próprio, então usamos o Planejado x Real que já existe lá, mesma fórmula
-   do Relatório Industrial. Não filtra por produto (nomes de produto entre
-   os dois sistemas não necessariamente batem) — é uma visão do setor
-   inteiro, não só do produto filtrado na tela. */
-async function PP_fetchSalgadoMeta(ini, fim){
-  try{
-    const client = LANC_getClient();
-    const { data, error } = await client.from('producao_diaria')
-      .select('producao_planejada, producao_real').eq('setor', 'SALGADO').gte('data', ini).lte('data', fim);
-    if(error) throw error;
-    const pares = (data || []).map(r=>{
-      const prev = parseNumOrNull(r.producao_planejada);
-      const real = Number(r.producao_real);
-      if(prev === null || prev <= 0 || isNaN(real)) return null;
-      return real/prev;
-    }).filter(v => v !== null);
-    if(pares.length === 0){ PP_SALGADO_ACURACIA = null; PP_SALGADO_ATINGIMENTO = null; return; }
-    const atingimento = (pares.reduce((a,b)=>a+b,0)/pares.length) * 100;
-    PP_SALGADO_ATINGIMENTO = atingimento;
-    PP_SALGADO_ACURACIA = atingimento - 100;
-  }catch(err){
-    console.error('Erro ao calcular Acurácia/Atingimento do Salgado:', err);
-    PP_SALGADO_ACURACIA = null;
-    PP_SALGADO_ATINGIMENTO = null;
-  }
+/* Garante que a lista de capacidade dos equipamentos (página Máquinas)
+   esteja carregada, pra poder cruzar Máquina + Produto e achar a
+   capacidade nominal nos cards do Salgado. */
+async function PP_ensureCapacidadeData(){
+  if(RC_DATA && RC_DATA.length > 0) return;
+  try{ await RC_loadData(false); }
+  catch(err){ console.error('Erro ao carregar capacidade de equipamentos:', err); }
 }
 
 function PP_renderKPIs(){
   const grid = document.getElementById('ppKpiGrid');
 
-  // Salgado tem um conjunto de cards próprio (cruza com a Produção Diária)
+  // Salgado tem um conjunto de cards próprio (métricas operacionais de
+  // velocidade, cruzando com a Capacidade dos Equipamentos quando existe
+  // registro daquela máquina/produto na página Máquinas)
   if(PP_currentLinha === 'Salgado'){
-    const paradas = PP_CORRIDAS.flatMap(c => c.produtividade_paradas || []);
-    const tempoParadoTotal = paradas.reduce((s,p)=> s + (Number(p.duracao_seg)||0), 0);
+    const comProdRecipiente = PP_CORRIDAS.filter(c => c.producao_por_hora != null);
+    const unidadeRecipiente = (comProdRecipiente.find(c=>c.unidade_medida) || {}).unidade_medida || 'Caixas';
+    const mediaRecipiente = comProdRecipiente.length
+      ? comProdRecipiente.reduce((s,c)=>s+Number(c.producao_por_hora),0)/comProdRecipiente.length : null;
+
+    const unidadesHoraValores = PP_CORRIDAS.map(c=>{
+      if(c.unidades_por_hora != null) return Number(c.unidades_por_hora);
+      if(c.producao_por_hora != null && c.unidades_por_recipiente != null) return Number(c.producao_por_hora) * Number(c.unidades_por_recipiente);
+      return null;
+    }).filter(v => v != null);
+    const mediaUnidadesHora = unidadesHoraValores.length ? unidadesHoraValores.reduce((a,b)=>a+b,0)/unidadesHoraValores.length : null;
+
+    const temposMedios = PP_CORRIDAS.map(c=>c.tempo_medio_seg).filter(v => v != null).map(Number);
+    const mediaTempo = temposMedios.length ? temposMedios.reduce((a,b)=>a+b,0)/temposMedios.length : null;
+
+    const capacidades = [];
+    PP_CORRIDAS.forEach(c=>{
+      if(!c.maquina || !c.produto) return;
+      const info = RC_findCapacidadeNominal(c.produto, c.maquina);
+      if(info) capacidades.push(info.valor);
+    });
+    const mediaCapacidade = capacidades.length ? capacidades.reduce((a,b)=>a+b,0)/capacidades.length : null;
+
+    const unidadeSingular = unidadeRecipiente.replace(/s$/i,'');
     const kpis = [
-      { label:'Acurácia', value: PP_SALGADO_ACURACIA != null ? `${PP_SALGADO_ACURACIA>0?'+':''}${PP_SALGADO_ACURACIA.toFixed(1)}%` : '—' },
-      { label:'Atingimento de Meta', value: PP_SALGADO_ATINGIMENTO != null ? `${PP_SALGADO_ATINGIMENTO.toFixed(1)}%` : '—' },
-      { label:'Paradas Totais', value: paradas.length },
-      { label:'Tempo Total Parado', value: PP_fmtDuracao(tempoParadoTotal) },
+      { label:`Produtividade (${unidadeRecipiente}/h)`, value: mediaRecipiente != null ? mediaRecipiente.toLocaleString('pt-BR',{maximumFractionDigits:1}) : '—' },
+      { label:'Unidades/h', value: mediaUnidadesHora != null ? mediaUnidadesHora.toLocaleString('pt-BR',{maximumFractionDigits:0}) : '—' },
+      { label:`Tempo Médio por ${unidadeSingular}`, value: mediaTempo != null ? PP_fmtDuracao(mediaTempo) : '—' },
+      { label:'Capacidade da Máquina (Unid/h)', value: mediaCapacidade != null ? mediaCapacidade.toLocaleString('pt-BR') : 'Sem registro' },
+    ];
+    grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
+    grid.innerHTML = kpis.map(k=>`
+      <div class="kpi-card"><div class="label">${k.label}</div><div class="value">${k.value}</div></div>
+    `).join('');
+    return;
+  }
+
+  // Massa Salgado: os dois produtos dessa linha (Bloco de Massa e Rolos
+  // Laminados) têm ritmos e tempos bem diferentes, então os cards separam
+  // por produto em vez de misturar tudo numa média só.
+  if(PP_currentLinha === 'Massa Salgado'){
+    const blocos = PP_CORRIDAS.filter(c => (c.produto||'').toLowerCase().includes('bloco'));
+    const rolos = PP_CORRIDAS.filter(c => (c.produto||'').toLowerCase().includes('rolo'));
+
+    const taxaBlocos = blocos.map(c => PP_getProdutividadeValor(c)).filter(v => v != null);
+    const taxaRolos = rolos.map(c => PP_getProdutividadeValor(c)).filter(v => v != null);
+    const mediaBlocosHora = taxaBlocos.length ? taxaBlocos.reduce((a,b)=>a+b,0)/taxaBlocos.length : null;
+    const mediaRolosHora = taxaRolos.length ? taxaRolos.reduce((a,b)=>a+b,0)/taxaRolos.length : null;
+
+    const tempoBlocos = blocos.map(c=>c.tempo_medio_seg).filter(v=>v!=null).map(Number);
+    const tempoRolos = rolos.map(c=>c.tempo_medio_seg).filter(v=>v!=null).map(Number);
+    const mediaTempoBlocos = tempoBlocos.length ? tempoBlocos.reduce((a,b)=>a+b,0)/tempoBlocos.length : null;
+    const mediaTempoRolos = tempoRolos.length ? tempoRolos.reduce((a,b)=>a+b,0)/tempoRolos.length : null;
+
+    const kpis = [
+      { label:'Blocos de Massa/hora', value: mediaBlocosHora != null ? mediaBlocosHora.toLocaleString('pt-BR',{maximumFractionDigits:1}) : '—' },
+      { label:'Rolos Laminados/hora', value: mediaRolosHora != null ? mediaRolosHora.toLocaleString('pt-BR',{maximumFractionDigits:1}) : '—' },
+      { label:'Tempo Médio Rolos Laminados', value: mediaTempoRolos != null ? PP_fmtDuracao(mediaTempoRolos) : '—' },
+      { label:'Tempo Médio Blocos de Massa', value: mediaTempoBlocos != null ? PP_fmtDuracao(mediaTempoBlocos) : '—' },
+    ];
+    grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
+    grid.innerHTML = kpis.map(k=>`
+      <div class="kpi-card"><div class="label">${k.label}</div><div class="value">${k.value}</div></div>
+    `).join('');
+    return;
+  }
+
+  // Pão de Queijo e Padaria: linhas de etapas simples — o card principal é
+  // quantas bateladas dá pra fazer por hora (1h ÷ lead time médio) e o
+  // próprio lead time médio.
+  if(PP_currentLinha === 'Pão de Queijo' || PP_currentLinha === 'Padaria'){
+    const leadTimes = PP_BATELADAS
+      .map(b => (b.tempo_processo_etapas||[]).reduce((s,e)=> s + (Number(e.duracao_seg)||0), 0))
+      .filter(v => v > 0);
+    const leadMedio = leadTimes.length ? leadTimes.reduce((a,b)=>a+b,0)/leadTimes.length : null;
+    const bateladasPorHora = (leadMedio != null && leadMedio > 0) ? 3600/leadMedio : null;
+
+    const kpis = [
+      { label:'Batelada/hora', value: bateladasPorHora != null ? bateladasPorHora.toLocaleString('pt-BR',{maximumFractionDigits:2}) : '—' },
+      { label:'Tempo Médio por Batelada', value: leadMedio != null ? PP_fmtDuracao(leadMedio) : '—' },
+    ];
+    grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
+    grid.innerHTML = kpis.map(k=>`
+      <div class="kpi-card"><div class="label">${k.label}</div><div class="value">${k.value}</div></div>
+    `).join('');
+    return;
+  }
+
+  // Pão de Ló e Bolos: mesma lógica de "batelada" (aqui, forma) vinda das
+  // etapas, mais Unidades/hora — essa linha é a única que pode ter os dois
+  // tipos de lançamento (Etapas e Produtividade) ao mesmo tempo, então o
+  // Unidades/hora vem de produtividade_corridas quando existir.
+  if(PP_currentLinha === 'Pão de Ló e Bolos'){
+    const leadTimes = PP_BATELADAS
+      .map(b => (b.tempo_processo_etapas||[]).reduce((s,e)=> s + (Number(e.duracao_seg)||0), 0))
+      .filter(v => v > 0);
+    const leadMedio = leadTimes.length ? leadTimes.reduce((a,b)=>a+b,0)/leadTimes.length : null;
+    const formasPorHora = (leadMedio != null && leadMedio > 0) ? 3600/leadMedio : null;
+
+    const unidadesHoraValores = PP_CORRIDAS.map(c => PP_getProdutividadeValor(c)).filter(v => v != null);
+    const mediaUnidadesHora = unidadesHoraValores.length ? unidadesHoraValores.reduce((a,b)=>a+b,0)/unidadesHoraValores.length : null;
+
+    const kpis = [
+      { label:'Formas/hora', value: formasPorHora != null ? formasPorHora.toLocaleString('pt-BR',{maximumFractionDigits:2}) : '—' },
+      { label:'Tempo Médio/Forma', value: leadMedio != null ? PP_fmtDuracao(leadMedio) : '—' },
+      { label:'Unidades/hora', value: mediaUnidadesHora != null ? mediaUnidadesHora.toLocaleString('pt-BR',{maximumFractionDigits:0}) : '—' },
     ];
     grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
     grid.innerHTML = kpis.map(k=>`
@@ -7222,7 +7324,7 @@ function PP_renderVelocidade(){
     wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">⚡</span>Nenhum dado de produtividade nesse período.</div>`;
   } else {
     // Barra vertical: eixo x = produtos, altura = produtividade média (unidade/h)
-    const barW = 46, gap = 22, baseY = 260, topPad = 40;
+    const barW = 46, gap = 22, baseY = 260, topPad = 90;
     const chartWidth = itens.length*(barW+gap) + 50;
     const maxVal = Math.max(...itens.map(i=>i.media), 1);
     let bars = '';
@@ -7231,10 +7333,10 @@ function PP_renderVelocidade(){
       const h = (it.media/maxVal)*(baseY-topPad);
       const sufixo = it.unidade ? `${it.unidade}/h` : '/h';
       bars += `<rect x="${x0}" y="${baseY-h}" width="${barW}" height="${h}" fill="#B5640B" rx="4"/>`;
-      bars += `<text x="${x0+barW/2}" y="${baseY-h-9}" font-size="10" font-weight="700" fill="#8a4c08" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-h-9})">${it.media.toLocaleString('pt-BR',{maximumFractionDigits:1})} ${sufixo}</text>`;
+      bars += `<text x="${x0+barW/2}" y="${baseY-h-10}" font-size="11.5" font-weight="700" fill="#8a4c08" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-h-10})">${it.media.toLocaleString('pt-BR',{maximumFractionDigits:1})} ${sufixo}</text>`;
       bars += `<text x="${x0+barW/2}" y="${baseY+14}" font-size="9.5" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+14})">${truncateProdLabel(it.produto,22)}<title>${it.produto}</title></text>`;
     });
-    wrap.innerHTML = `<svg viewBox="0 0 ${chartWidth} 340" width="${chartWidth}" height="340" style="overflow:visible;font-family:'Inter',Arial,sans-serif;">${bars}</svg>`;
+    wrap.innerHTML = `<svg viewBox="0 0 ${chartWidth} 380" width="${chartWidth}" height="380" style="overflow:visible;font-family:'Inter',Arial,sans-serif;">${bars}</svg>`;
   }
 
   const porMotivo = {};
