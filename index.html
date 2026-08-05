@@ -1276,7 +1276,7 @@
                     <th>Data</th><th>Setor</th><th>Produto</th><th>Máquina</th>
                     <th class="center">Equipe</th><th class="center">Planejada</th><th class="center">Real</th>
                     <th>Unidade</th><th class="center">Início</th><th class="center">Fim</th>
-                    <th class="center">Duração</th><th>Desvios</th><th class="center">Ações</th>
+                    <th class="center">Duração</th><th>Desvios</th><th class="center">Apontamento Completo?</th><th class="center">Ações</th>
                   </tr>
                 </thead>
                 <tbody id="lpHistTbody"></tbody>
@@ -1353,6 +1353,22 @@
             <div class="lanc-field span-3">
               <label>Observação</label>
               <textarea id="lmObservacao" placeholder="Opcional"></textarea>
+            </div>
+            <div class="lanc-field">
+              <label>Requisitante entregou o Apontamento Completamente Preenchido?</label>
+              <select id="lmApontamentoRequisitante" required>
+                <option value="">Selecione...</option>
+                <option value="true">Sim</option>
+                <option value="false">Não</option>
+              </select>
+            </div>
+            <div class="lanc-field">
+              <label>Executante entregou o Apontamento Completamente Preenchido?</label>
+              <select id="lmApontamentoExecutante" required>
+                <option value="">Selecione...</option>
+                <option value="true">Sim</option>
+                <option value="false">Não</option>
+              </select>
             </div>
             <div class="lanc-submit-row">
               <button type="submit" class="lanc-submit-btn" id="lmSubmitBtn">Salvar Lançamento</button>
@@ -4834,6 +4850,14 @@ function lpCreateItemRow(initial){
         <label>Paradas, Ausências e Desvios de Produção</label>
         <textarea class="lp-paradas" placeholder="Opcional"></textarea>
       </div>
+      <div class="lanc-field span-3">
+        <label>Entregou o Apontamento Completamente Preenchido?</label>
+        <select class="lp-apontamento-completo" required>
+          <option value="">Selecione...</option>
+          <option value="true">Sim</option>
+          <option value="false">Não</option>
+        </select>
+      </div>
     </div>
   `;
   const semPlanejadaEl = row.querySelector('.lp-sem-planejada');
@@ -5115,6 +5139,13 @@ async function LP_saveSingleItem(row){
     return;
   }
 
+  const apontamentoEl = row.querySelector('.lp-apontamento-completo');
+  if(!apontamentoEl.value){
+    globalFeedback.textContent = '⚠ Responda se o apontamento foi entregue completamente preenchido.';
+    globalFeedback.className = 'lanc-feedback err';
+    return;
+  }
+
   const payload = {
     data, setor,
     equipe: row.querySelector('.lp-equipe').value ? parseInt(row.querySelector('.lp-equipe').value, 10) : null,
@@ -5127,6 +5158,7 @@ async function LP_saveSingleItem(row){
     fim_producao: row.querySelector('.lp-fim').value || null,
     paradas_desvios: row.querySelector('.lp-paradas').value.trim() || null,
     duracao_parada: row.querySelector('.lp-duracao').value || null,
+    apontamento_completo: apontamentoEl.value === 'true',
   };
 
   btn.disabled = true;
@@ -5187,6 +5219,12 @@ document.getElementById('lancFormProducao').addEventListener('submit', async (e)
       feedback.className = 'lanc-feedback err';
       return;
     }
+    const apontamentoEl = row.querySelector('.lp-apontamento-completo');
+    if(!apontamentoEl.value){
+      feedback.textContent = '⚠ Responda "Entregou o Apontamento Completamente Preenchido?" no produto "' + produto + '".';
+      feedback.className = 'lanc-feedback err';
+      return;
+    }
     payloads.push({
       data,
       setor,
@@ -5200,6 +5238,7 @@ document.getElementById('lancFormProducao').addEventListener('submit', async (e)
       fim_producao: row.querySelector('.lp-fim').value || null,
       paradas_desvios: row.querySelector('.lp-paradas').value.trim() || null,
       duracao_parada: row.querySelector('.lp-duracao').value || null,
+      apontamento_completo: apontamentoEl.value === 'true',
     });
   }
 
@@ -5338,6 +5377,7 @@ function LP_buildHistRowHtml(row){
       <td class="center">${LP_fmtTime(row.fim_producao)}</td>
       <td class="center">${LP_fmtTime(row.duracao_parada)}</td>
       <td class="lanc-hist-wrap">${row.paradas_desvios||'—'}</td>
+      <td class="center">${row.apontamento_completo===true?'✓ Sim':row.apontamento_completo===false?'✗ Não':'—'}</td>
       <td class="center">
         <button type="button" class="lanc-hist-btn edit">Editar</button>
         <button type="button" class="lanc-hist-btn delete">Excluir</button>
@@ -5360,6 +5400,11 @@ function LP_buildHistEditRowHtml(row){
       <td><input type="time" class="eh-fim" value="${LP_fmtTime(row.fim_producao)==='—'?'':LP_fmtTime(row.fim_producao)}"></td>
       <td><input type="time" step="1" class="eh-duracao" value="${row.duracao_parada||''}"></td>
       <td><input type="text" class="eh-paradas" value="${(row.paradas_desvios||'').replace(/"/g,'&quot;')}"></td>
+      <td><select class="eh-apontamento-completo">
+        <option value="" ${row.apontamento_completo==null?'selected':''}>—</option>
+        <option value="true" ${row.apontamento_completo===true?'selected':''}>Sim</option>
+        <option value="false" ${row.apontamento_completo===false?'selected':''}>Não</option>
+      </select></td>
       <td class="center">
         <button type="button" class="lanc-hist-btn save">Salvar</button>
         <button type="button" class="lanc-hist-btn cancel">Cancelar</button>
@@ -5396,6 +5441,7 @@ async function LP_saveEditRow(id){
     fim_producao: val('eh-fim') || null,
     duracao_parada: val('eh-duracao') || null,
     paradas_desvios: val('eh-paradas').trim() || null,
+    apontamento_completo: val('eh-apontamento-completo') === '' ? null : val('eh-apontamento-completo') === 'true',
   };
   if(!payload.produto || payload.producao_real === null){
     feedback.textContent = '⚠ Produto e Produção Real são obrigatórios.';
@@ -5461,6 +5507,15 @@ document.getElementById('lancFormManutencao').addEventListener('submit', async (
       return d.toISOString();
     }
 
+    const apReqEl = document.getElementById('lmApontamentoRequisitante');
+    const apExecEl = document.getElementById('lmApontamentoExecutante');
+    if(!apReqEl.value || !apExecEl.value){
+      feedback.textContent = '⚠ Responda se o Requisitante e o Executante entregaram o apontamento completamente preenchido.';
+      feedback.className = 'lanc-feedback err';
+      btn.disabled = false;
+      return;
+    }
+
     const payload = {
       requisitante: document.getElementById('lmRequisitante').value.trim() || null,
       executante: document.getElementById('lmExecutante').value.trim() || null,
@@ -5474,6 +5529,8 @@ document.getElementById('lancFormManutencao').addEventListener('submit', async (
       inicio_real: toTimestamp(dataStr, document.getElementById('lmInicioReal').value, false),
       fim_real: toTimestamp(dataStr, document.getElementById('lmFimReal').value, fimVirouDia),
       observacao: document.getElementById('lmObservacao').value.trim() || null,
+      apontamento_completo_requisitante: apReqEl.value === 'true',
+      apontamento_completo_executante: apExecEl.value === 'true',
     };
     const { error } = await client.from('manutencoes').insert(payload);
     if(error) throw error;
@@ -6761,11 +6818,29 @@ function PP_renderLeadTimeChart(){
   wrap.innerHTML = `<svg viewBox="0 0 ${chartWidth} 340" width="${chartWidth}" height="340" style="overflow:visible;font-family:'Inter',Arial,sans-serif;">${bars}</svg>`;
 }
 
+/* Pega a produtividade de uma corrida: usa a taxa já pronta se existir
+   (colunas específicas tipo velocidade_paes_hora), senão calcula a partir
+   de Quantidade ÷ tempo entre Início e Fim — necessário pras linhas que só
+   registram "quantos produziu" sem uma taxa/hora já calculada. */
+function PP_getProdutividadeValor(c){
+  const direta = c.velocidade_paes_hora ?? c.velocidade_prensa ?? c.unidades_por_hora ?? c.producao_por_hora ?? null;
+  if(direta != null) return direta;
+  if(c.quantidade != null && c.inicio && c.fim){
+    const [ih,im] = c.inicio.split(':').map(Number);
+    const [fh,fm] = c.fim.split(':').map(Number);
+    let horas = ((fh*60+fm) - (ih*60+im)) / 60;
+    if(horas < 0) horas += 24;
+    if(horas > 0) return Number(c.quantidade) / horas;
+  }
+  if(c.quantidade != null) return Number(c.quantidade); // sem horário pra calcular taxa — mostra a quantidade bruta mesmo
+  return null;
+}
+
 /* ---------- Bloco Velocidade & Paradas ---------- */
 function PP_renderVelocidade(){
   const porProduto = {};
   PP_CORRIDAS.forEach(c=>{
-    const v = c.velocidade_paes_hora ?? c.velocidade_prensa ?? c.unidades_por_hora ?? c.producao_por_hora ?? null;
+    const v = PP_getProdutividadeValor(c);
     if(v == null) return;
     const key = c.produto || '—';
     if(!porProduto[key]) porProduto[key] = { soma:0, count:0, unidade: c.unidade_medida || '' };
@@ -6835,7 +6910,7 @@ function PP_renderVelocidade(){
   const tbody = document.getElementById('ppTbodyCorridas');
   const linhas = [...PP_CORRIDAS].sort((a,b)=> a.data.localeCompare(b.data));
   tbody.innerHTML = linhas.map(c=>{
-    const veloc = c.velocidade_paes_hora ?? c.velocidade_prensa ?? c.unidades_por_hora ?? c.producao_por_hora ?? c.quantidade ?? null;
+    const veloc = PP_getProdutividadeValor(c);
     const paradas = (c.produtividade_paradas||[]).map(p=>`${p.motivo||'—'} (${PP_fmtDuracao(p.duracao_seg||0)})`).join('; ');
     return `<tr>
       <td>${PP_fmtDataBR(c.data)}</td>
@@ -7281,8 +7356,8 @@ function PPL_renderHistorico(){
       const total = (r.tempo_processo_etapas||[]).reduce((s,e)=> s+(Number(e.duracao_seg)||0), 0);
       resumo = `Lead time: ${PP_fmtDuracao(total)}` + (r.batelada != null ? ` · Batelada #${r.batelada}` : '');
     } else {
-      const v = r.velocidade_paes_hora ?? r.velocidade_prensa ?? r.unidades_por_hora ?? r.producao_por_hora ?? r.quantidade;
-      resumo = v != null ? `Produtividade: ${v}` : '—';
+      const v = PP_getProdutividadeValor(r);
+      resumo = v != null ? `Produtividade: ${v.toLocaleString('pt-BR',{maximumFractionDigits:1})}` : '—';
       const nParadas = (r.produtividade_paradas||[]).length;
       if(nParadas) resumo += ` · ${nParadas} parada(s)`;
     }
