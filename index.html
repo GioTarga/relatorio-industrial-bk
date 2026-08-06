@@ -751,6 +751,12 @@
     </div>
   </div>
 
+  <div class="panel" id="atendimentoTrendPanel" style="display:none;">
+    <div class="panel-title">Histórico de Atendimento % — Meta × Realizado</div>
+    <div class="chart-wrap" id="atendimentoTrendWrap"></div>
+    <div class="trend-foot">% de Atendimento (Real ÷ Planejado) por dia, considerando todos os setores e lançamentos com meta cadastrada no período. A linha de Meta fica sempre em 100%.</div>
+  </div>
+
   <div class="panel">
     <div class="panel-title" id="causesTitle">Ocorrências de Paradas e Atrasos por Causa</div>
     <div class="chart-wrap" id="causesWrap"></div>
@@ -2508,6 +2514,7 @@ function computeTotalKgForPeriod(filteredDates){
    período atual quanto para o período anterior, na comparação de tendência) */
 function aggregateMetrics(dates){
   let belowCount = 0, aboveCount = 0, stopCount = 0, difSum = 0, difN = 0;
+  let naoPlanejadasCount = 0, tempoParadoMin = 0;
   dates.forEach(d=>{
     getDayRows(d).forEach(r=>{
       if(r.dif !== null){
@@ -2516,6 +2523,9 @@ function aggregateMetrics(dates){
         difSum += r.dif; difN++;
       }
       if(r.obs && r.obs.length>0) stopCount++;
+      if(r.prev === null) naoPlanejadasCount++;
+      const min = timeToMinutes(r.duracaoParada);
+      if(min !== null) tempoParadoMin += min;
     });
   });
   return {
@@ -2523,6 +2533,7 @@ function aggregateMetrics(dates){
     avgDif: difN ? difSum/difN : null,
     totalWithPlan: belowCount+aboveCount,
     totalItems: difN + dates.reduce((a,d)=>a + getDayRows(d).filter(r=>r.dif===null).length, 0),
+    naoPlanejadasCount, tempoParadoMin,
   };
 }
 
@@ -2587,24 +2598,49 @@ function renderKPIs(filteredDates){
   }
 
   document.getElementById('kpiGrid').style.gridTemplateColumns = 'repeat(4,1fr)';
-  document.getElementById('kpiGrid').innerHTML = `
-    <div class="kpi-card ${belowClass}">
-      <div class="label">Abaixo do Planejado</div>
-      <div class="value">${belowCount}</div>
-    </div>
-    <div class="kpi-card ${aboveClass}">
-      <div class="label">Igual ou Acima do Planejado</div>
-      <div class="value">${aboveCount}</div>
-    </div>
-    <div class="kpi-card ${stopClass}">
-      <div class="label">Atrasos de Processo</div>
-      <div class="value">${stopCount}</div>
-    </div>
-    <div class="kpi-card ${accClass}">
-      <div class="label">Acurácia de Produção</div>
-      <div class="value">${avgDif>0?'+':''}${avgDif.toFixed(1)}%</div>
-    </div>
-  `;
+
+  if(selectedSector === ''){
+    // Aba Geral: visão de atendimento consolidada, não por status de item
+    const atendimentoPct = avgDif + 100;
+    const atendClass = atendimentoPct >= 100 ? 'sem-good' : atendimentoPct >= 85 ? 'sem-warn' : 'sem-bad';
+    document.getElementById('kpiGrid').innerHTML = `
+      <div class="kpi-card ${atendClass}">
+        <div class="label">Atendimento %</div>
+        <div class="value">${atendimentoPct.toFixed(1)}%</div>
+      </div>
+      <div class="kpi-card warn">
+        <div class="label">Tempo Parado</div>
+        <div class="value" style="font-size:22px;">${TP_fmtDuration(curr.tempoParadoMin*60)}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">Qtd. de Produções Não Planejadas</div>
+        <div class="value">${curr.naoPlanejadasCount}</div>
+      </div>
+      <div class="kpi-card ${accClass}">
+        <div class="label">Acurácia</div>
+        <div class="value">${avgDif>0?'+':''}${avgDif.toFixed(1)}%</div>
+      </div>
+    `;
+  } else {
+    document.getElementById('kpiGrid').innerHTML = `
+      <div class="kpi-card ${belowClass}">
+        <div class="label">Abaixo do Planejado</div>
+        <div class="value">${belowCount}</div>
+      </div>
+      <div class="kpi-card ${aboveClass}">
+        <div class="label">Igual ou Acima do Planejado</div>
+        <div class="value">${aboveCount}</div>
+      </div>
+      <div class="kpi-card ${stopClass}">
+        <div class="label">Atrasos de Processo</div>
+        <div class="value">${stopCount}</div>
+      </div>
+      <div class="kpi-card ${accClass}">
+        <div class="label">Acurácia de Produção</div>
+        <div class="value">${avgDif>0?'+':''}${avgDif.toFixed(1)}%</div>
+      </div>
+    `;
+  }
 
   const extraGridEl = document.getElementById('kpiGridExtra');
   extraGridEl.innerHTML = frituraCardsHtml;
@@ -2913,6 +2949,78 @@ function populateProdutoDetalheFilter(filteredDates){
    avaliado por PAPEL — Requisitante x Executante — em vez de por setor,
    já que os dois preenchem partes diferentes da mesma ficha). ---------- */
 let QA_MANUT_CACHE = { key: null, data: null };
+
+/* ---------- Histórico de Atendimento % — Meta × Realizado (só na aba
+   Geral) — % de atendimento (Real ÷ Planejado) por dia, com uma linha fixa
+   em 100% representando a Meta ao lado da linha do Realizado. ---------- */
+function renderAtendimentoTrend(filteredDates){
+  const panel = document.getElementById('atendimentoTrendPanel');
+  if(selectedSector !== ''){
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = '';
+
+  const points = filteredDates.map(d=>{
+    let difSum = 0, difN = 0;
+    getDayRows(d).forEach(r=>{
+      if(r.prev !== null && r.prev > 0){
+        difSum += (r.real/r.prev)*100;
+        difN++;
+      }
+    });
+    return { date: d, label: shortDayLabel(d), realizado: difN ? difSum/difN : null };
+  });
+
+  const wrap = document.getElementById('atendimentoTrendWrap');
+  if(points.length === 0){
+    wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">📈</span>Nenhum dia no período selecionado.</div>`;
+    return;
+  }
+
+  const w = Math.max(560, points.length*90);
+  const h = 280, padTop = 40, padBottom = 40, padLeft = 50, padRight = 20;
+  const xStep = (w - padLeft - padRight) / Math.max(points.length-1, 1);
+  const valores = points.map(p=>p.realizado).filter(v=>v!==null);
+  const maxVal = Math.max(100, ...valores, 1) * 1.1; // sempre inclui a linha da Meta (100%) com folga
+
+  function xOf(i){ return padLeft + i*xStep; }
+  function yOf(val){ return h - padBottom - (val/maxVal)*(h-padTop-padBottom); }
+
+  const COR_META = '#B5640B', COR_REAL = 'var(--red)';
+
+  const yMeta = yOf(100);
+  const metaPath = `M ${padLeft} ${yMeta} L ${w-padRight} ${yMeta}`;
+
+  let realPath = '', realDots = '', started = false;
+  points.forEach((p,i)=>{
+    if(p.realizado === null){ started = false; return; }
+    const x = xOf(i), y = yOf(p.realizado);
+    realPath += (!started ? 'M' : 'L') + x + ' ' + y + ' ';
+    started = true;
+    realDots += `<circle cx="${x}" cy="${y}" r="4" fill="${COR_REAL}"/>`;
+    realDots += `<text x="${x}" y="${y-10}" font-size="10.5" font-weight="700" fill="${COR_REAL}" text-anchor="middle">${p.realizado.toFixed(0)}%</text>`;
+  });
+
+  let xLabels = '';
+  points.forEach((p,i)=>{
+    xLabels += `<text x="${xOf(i)}" y="${h-14}" font-size="11" fill="#4a3a3a" text-anchor="middle">${p.label}</text>`;
+  });
+
+  wrap.innerHTML = `
+    <div class="legend" style="margin-bottom:8px;">
+      <span><i class="dot" style="background:${COR_REAL};border:1px solid ${COR_REAL}"></i>Realizado</span>
+      <span><i class="dot" style="background:${COR_META};border:1px solid ${COR_META}"></i>Meta (100%)</span>
+    </div>
+    <svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
+      <line x1="${padLeft}" y1="${h-padBottom}" x2="${w-padRight}" y2="${h-padBottom}" stroke="#f0ddc0" stroke-width="1"/>
+      <path d="${metaPath}" fill="none" stroke="${COR_META}" stroke-width="2" stroke-dasharray="6 4"/>
+      <path d="${realPath}" fill="none" stroke="${COR_REAL}" stroke-width="2.5"/>
+      ${realDots}
+      ${xLabels}
+    </svg>
+  `;
+}
 
 function renderQualidadeApontamento(filteredDates){
   const panel = document.getElementById('qualidadeApontamentoPanel');
@@ -3421,12 +3529,13 @@ document.addEventListener('keydown', (e)=>{
 
 /* ---------- Modal: histórico diário de Real x Prevista de 1 produto
    (reaproveita o mesmo modal do Ranking de Produtividade) ---------- */
-function DC_computeProductTrend(produto, filteredDates){
+function DC_computeProductTrend(chave, filteredDates, porSetor){
   const porDia = [];
   filteredDates.forEach(d=>{
     let real = 0, prev = 0, temPrev = false, uni = '';
     getDayRows(d).forEach(r=>{
-      if(r.produto !== produto) return; // exato — evita juntar produto parecido mas diferente
+      const campo = porSetor ? r.setor : r.produto;
+      if(campo !== chave) return; // exato — evita juntar produto/setor parecido mas diferente
       real += r.real;
       if(typeof r.prev === 'number'){ prev += r.prev; temPrev = true; }
       uni = r.uni;
@@ -3438,11 +3547,12 @@ function DC_computeProductTrend(produto, filteredDates){
   return porDia;
 }
 
-function DC_showProductTrend(produto, uniFallback){
+function DC_showProductTrend(chave, uniFallback){
+  const porSetor = selectedSector === '';
   const filteredDates = getFilteredDates();
-  const pontos = DC_computeProductTrend(produto, filteredDates);
+  const pontos = DC_computeProductTrend(chave, filteredDates, porSetor);
 
-  document.getElementById('prTrendModalTitle').textContent = produto;
+  document.getElementById('prTrendModalTitle').textContent = porSetor ? `Setor: ${chave}` : chave;
   const chartEl = document.getElementById('prTrendModalChart');
   const footEl = document.getElementById('prTrendModalFoot');
 
@@ -3701,6 +3811,26 @@ function computeChartRows(filteredDates){
       source.push(r); // todas as produções entram, inclusive fora do planejamento
     });
   });
+
+  if(selectedSector === ''){
+    // Aba Geral: agrupa por SETOR, não por produto — os produtos já
+    // aparecem no detalhe de cada aba de setor. Soma direta de Prevista/
+    // Real por setor (nota: mistura unidades diferentes dentro do mesmo
+    // setor quando ele produz em mais de uma — dá uma visão geral rápida,
+    // não é tão preciso quanto o Atendimento de Meta por Setor, que usa
+    // média de razão pra evitar esse problema).
+    const groups = exactGroupBy(source,
+      () => '',
+      r => r.setor || '—',
+      r => ({ prev: r.prev, real: r.real }),
+      (g, r) => {
+        if(r.prev !== null) g.prev = (g.prev||0) + r.prev;
+        g.real += r.real;
+      }
+    );
+    return groups.sort((a,b)=> b.real - a.real);
+  }
+
   if(filteredDates.length <= 1) return source;
   // Agrupamento EXATO (não fuzzy) — os nomes de produto já foram consolidados
   // direto no banco, então não precisamos mais de similaridade aproximada
@@ -3784,6 +3914,7 @@ function refreshAll(){
   populateProdutoDetalheFilter(filteredDates);
   renderTable(filteredDates);
   renderQualidadeApontamento(filteredDates);
+  renderAtendimentoTrend(filteredDates);
   currentChartFilteredDates = filteredDates;
   if(filteredDates.length > 0){
     renderDayDetail(filteredDates);
