@@ -2865,11 +2865,26 @@ function renderDayChart(rows){
   }
   const maxVal = Math.max(...rows.map(r=>Math.max(r.prev, r.real)));
   const z = zoomLevel; // 0.6 a 2.2
-  const barW = 22*z, groupGap = 16*z;
+  let barW = 22*z, groupGap = 16*z;
   const groupW = barW;
   const baseY = 300, topPad = 70;
-  const chartWidth = rows.length*(groupW+groupGap)+50;
+
+  // Com poucas barras (ex: agrupado por Setor na aba Geral), a largura fixa
+  // deixava tudo espremido num grupinho no meio do card. Aqui, se o espaço
+  // disponível sobra, distribui ele proporcionalmente entre as barras (com
+  // um teto, pra não ficar gigante com só 2-3 itens).
+  const containerEl = document.getElementById('dayChartWrap');
+  const containerWidth = (containerEl && containerEl.clientWidth > 40) ? containerEl.clientWidth : 900;
+  const naturalWidth = rows.length*(groupW+groupGap) + 50;
+  if(naturalWidth < containerWidth){
+    const targetPerSlot = (containerWidth - 60) / rows.length;
+    barW = Math.min(90*z, Math.max(barW, targetPerSlot*0.55));
+    groupGap = Math.min(55*z, Math.max(groupGap, targetPerSlot*0.35));
+  }
+
+  const chartWidth = rows.length*(barW+groupGap)+50;
   const fsVal = Math.max(8, 10*z), fsLab = Math.max(8, 10*z);
+  const porSetor = selectedSector === ''; // agrupado por setor -> mostra % em vez de quantidade
 
   function scaledH(v){
     if(!logScaleOn) return (v/maxVal)*(baseY-topPad);
@@ -2878,7 +2893,7 @@ function renderDayChart(rows){
 
   let bars = '';
   rows.forEach((r,i)=>{
-    const x0 = 36 + i*(groupW+groupGap);
+    const x0 = 36 + i*(barW+groupGap);
     const semMeta = r.prev === null;
     const hP = semMeta ? 0 : scaledH(r.prev); // trilha = Prevista (não desenha se não tem meta)
     const hR = scaledH(r.real); // preenchimento = Real
@@ -2886,9 +2901,15 @@ function renderDayChart(rows){
     const realColor = semMeta ? '#B5640B' : (atingiu ? '#2f7d52' : '#A10101');
     const hTop = Math.max(hP, hR);
     const produtoAttr = r.produto.replace(/"/g,'&quot;');
-    const labelTexto = semMeta
-      ? `${Math.round(r.real).toLocaleString('pt-BR')} (sem meta)`
-      : `${Math.round(r.real).toLocaleString('pt-BR')} / ${Math.round(r.prev).toLocaleString('pt-BR')}`;
+    let labelTexto;
+    if(semMeta){
+      labelTexto = `${Math.round(r.real).toLocaleString('pt-BR')} (sem meta)`;
+    } else if(porSetor){
+      const pct = r.prev > 0 ? (r.real/r.prev)*100 : 0;
+      labelTexto = `${pct.toFixed(0)}%`;
+    } else {
+      labelTexto = `${Math.round(r.real).toLocaleString('pt-BR')} / ${Math.round(r.prev).toLocaleString('pt-BR')}`;
+    }
     bars += `<g class="pr-bar-group" data-produto="${produtoAttr}" data-uni="${(r.uni||'').replace(/"/g,'&quot;')}">`;
     // Trilha = Produção Prevista (só desenha quando existe meta cadastrada)
     if(!semMeta) bars += `<rect x="${x0}" y="${baseY-hP}" width="${barW}" height="${hP}" fill="#f3d9d0" stroke="#A10101" stroke-width="1" rx="4"/>`;
