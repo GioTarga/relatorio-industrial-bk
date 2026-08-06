@@ -3584,10 +3584,14 @@ function DC_showProductTrend(chave, uniFallback){
     return;
   }
 
-  const uni = pontos.find(p=>p.uni)?.uni || uniFallback || '';
+  // % de Atendimento (Real ÷ Prevista) por dia, em vez de quantidade
+  // absoluta — mesma lógica do gráfico "Histórico de Atendimento" da aba
+  // Geral, só que agora recortado pra esse produto/setor específico.
+  const comMeta = pontos.filter(p => p.prev !== null && p.prev > 0);
   const h = 300, padL = 60, padR = 20, padT = 30, padB = 60;
   const chartW = Math.max(780, pontos.length*70);
-  const maxVal = Math.max(...pontos.map(p=>Math.max(p.real, p.prev||0)), 1);
+  const valoresPct = comMeta.map(p => (p.real/p.prev)*100);
+  const maxVal = Math.max(100, ...valoresPct, 1) * 1.1; // sempre inclui a linha da Meta (100%) com folga
   const stepX = pontos.length > 1 ? (chartW-padL-padR)/(pontos.length-1) : 0;
   const xAt = i => padL + i*stepX;
   const yAt = v => h-padB - (v/maxVal)*(h-padT-padB);
@@ -3597,40 +3601,42 @@ function DC_showProductTrend(chave, uniFallback){
     const v = maxVal*g/4;
     const y = yAt(v);
     grid += `<line x1="${padL}" y1="${y}" x2="${chartW-padR}" y2="${y}" stroke="var(--line)" stroke-width="1"/>`;
-    grid += `<text x="${padL-8}" y="${y+4}" font-size="10" fill="var(--ink-soft)" text-anchor="end">${v.toLocaleString('pt-BR',{maximumFractionDigits:0})}</text>`;
+    grid += `<text x="${padL-8}" y="${y+4}" font-size="10" fill="var(--ink-soft)" text-anchor="end">${v.toFixed(0)}%</text>`;
   }
 
-  const temPrev = pontos.some(p => p.prev !== null);
-  let prevPath = '', prevDots = '';
-  if(temPrev){
-    prevPath = pontos.map((p,i)=> `${i===0?'M':'L'} ${xAt(i)} ${yAt(p.prev||0)}`).join(' ');
-    pontos.forEach((p,i)=>{
-      if(p.prev === null) return;
-      prevDots += `<circle cx="${xAt(i)}" cy="${yAt(p.prev)}" r="4" fill="var(--gold)"/>`;
-    });
-  }
-  let realPath = pontos.map((p,i)=> `${i===0?'M':'L'} ${xAt(i)} ${yAt(p.real)}`).join(' ');
-  let realDots = '';
+  const yMeta = yAt(100);
+  const metaPath = `M ${padL} ${yMeta} L ${chartW-padR} ${yMeta}`;
+
+  let realPath = '', realDots = '', started = false;
   pontos.forEach((p,i)=>{
-    realDots += `<circle cx="${xAt(i)}" cy="${yAt(p.real)}" r="4" fill="var(--red)"/>`;
-    realDots += `<text x="${xAt(i)}" y="${yAt(p.real)-10}" font-size="10" fill="var(--red)" font-weight="700" text-anchor="middle">${p.real.toLocaleString('pt-BR',{maximumFractionDigits:1})}</text>`;
-    realDots += `<text x="${xAt(i)}" y="${h-padB+18}" font-size="10" fill="var(--ink-soft)" text-anchor="end" transform="rotate(-40 ${xAt(i)} ${h-padB+18})">${p.label}</text>`;
+    if(p.prev === null || p.prev <= 0){ started = false; return; } // sem meta nesse dia -> buraco na linha
+    const pct = (p.real/p.prev)*100;
+    const x = xAt(i), y = yAt(pct);
+    realPath += (!started ? 'M' : 'L') + x + ' ' + y + ' ';
+    started = true;
+    realDots += `<circle cx="${x}" cy="${y}" r="4" fill="var(--red)"/>`;
+    realDots += `<text x="${x}" y="${y-10}" font-size="10" fill="var(--red)" font-weight="700" text-anchor="middle">${pct.toFixed(0)}%</text>`;
+  });
+  let xLabels = '';
+  pontos.forEach((p,i)=>{
+    xLabels += `<text x="${xAt(i)}" y="${h-padB+18}" font-size="10" fill="var(--ink-soft)" text-anchor="end" transform="rotate(-40 ${xAt(i)} ${h-padB+18})">${p.label}</text>`;
   });
 
   chartEl.innerHTML = `
     <div style="max-width:100%;overflow-x:auto;">
       <svg viewBox="0 0 ${chartW} ${h}" width="${chartW}" height="${h}" style="font-family:'Inter',Arial,sans-serif;">
         ${grid}
-        ${temPrev ? `<path d="${prevPath}" fill="none" stroke="var(--gold)" stroke-width="2" stroke-dasharray="5,4"/>${prevDots}` : ''}
+        <path d="${metaPath}" fill="none" stroke="var(--gold)" stroke-width="2" stroke-dasharray="6,4"/>
         <path d="${realPath}" fill="none" stroke="var(--red)" stroke-width="2.5"/>
         ${realDots}
+        ${xLabels}
       </svg>
     </div>
-    ${temPrev ? `<div class="legend" style="margin-top:8px;">
-      <span><i class="dot" style="background:var(--red);border:1px solid var(--red)"></i>Real</span>
-      <span><i class="dot" style="background:var(--gold);border:1px solid var(--gold)"></i>Prevista</span>
-    </div>` : ''}`;
-  footEl.textContent = `Produção Real${temPrev ? ' e Prevista' : ''} (${uni}) por dia, dentro do período e setor selecionados. ${pontos.length} dia(s) com lançamento desse produto.`;
+    <div class="legend" style="margin-top:8px;">
+      <span><i class="dot" style="background:var(--red);border:1px solid var(--red)"></i>Realizado</span>
+      <span><i class="dot" style="background:var(--gold);border:1px solid var(--gold)"></i>Meta (100%)</span>
+    </div>`;
+  footEl.textContent = `% de Atendimento (Real ÷ Planejado) por dia, dentro do período e setor selecionados. ${comMeta.length} dia(s) com meta cadastrada${pontos.length > comMeta.length ? ` — ${pontos.length - comMeta.length} dia(s) sem meta ficaram fora da linha` : ''}.`;
 
   document.getElementById('prTrendModal').style.display = 'flex';
 }
