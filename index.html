@@ -3349,7 +3349,7 @@ function PR_computeProductTrend(produto, filteredDates){
   filteredDates.forEach(d=>{
     let real = 0, horas = 0, uni = '';
     getDayRows(d).forEach(r=>{
-      if(RC_nameSimilarity(r.produto, produto) < 0.65) return;
+      if(r.produto !== produto) return; // exato — evita juntar produto parecido mas diferente
       const iniMin = timeToMinutes(r.inicio), fimMin = timeToMinutes(r.fim);
       if(iniMin === null || fimMin === null || fimMin <= iniMin) return;
       real += r.real;
@@ -3429,7 +3429,7 @@ function DC_computeProductTrend(produto, filteredDates){
   filteredDates.forEach(d=>{
     let real = 0, prev = 0, temPrev = false, uni = '';
     getDayRows(d).forEach(r=>{
-      if(RC_nameSimilarity(r.produto, produto) < 0.65) return;
+      if(r.produto !== produto) return; // exato — evita juntar produto parecido mas diferente
       real += r.real;
       if(typeof r.prev === 'number'){ prev += r.prev; temPrev = true; }
       uni = r.uni;
