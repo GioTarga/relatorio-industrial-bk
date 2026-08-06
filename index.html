@@ -4742,20 +4742,20 @@ function MN_renderTipoChart(rows){
   const pctReativa = (reativas/total)*100;
   const pctProativa = 100 - pctReativa;
 
-  const cx = 100, cy = 100, r = 62, strokeW = 30;
+  const cx = 130, cy = 130, r = 100, strokeW = 46;
   const circ = 2*Math.PI*r;
   const reativaLen = (pctReativa/100)*circ;
 
   el.innerHTML = `
-    <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap;">
-      <svg viewBox="0 0 200 200" width="200" height="200" style="flex-shrink:0;">
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:300px; padding:10px 0;">
+      <svg viewBox="0 0 260 260" width="260" height="260" style="flex-shrink:0;">
         <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#B5640B" stroke-width="${strokeW}"/>
         <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--red)" stroke-width="${strokeW}"
           stroke-dasharray="${reativaLen} ${circ}" stroke-linecap="butt"
           transform="rotate(-90 ${cx} ${cy})"/>
-        <text x="${cx}" y="${cy+8}" font-size="26" font-weight="700" fill="var(--red)" text-anchor="middle" font-family="Inter,Arial,sans-serif">${pctReativa.toFixed(0)}%</text>
+        <text x="${cx}" y="${cy+13}" font-size="42" font-weight="700" fill="var(--red)" text-anchor="middle" font-family="Inter,Arial,sans-serif">${pctReativa.toFixed(0)}%</text>
       </svg>
-      <div class="legend" style="flex-direction:column;align-items:flex-start;gap:10px;">
+      <div class="legend" style="justify-content:center; gap:28px; margin-top:22px;">
         <span><i class="dot" style="background:var(--red);border:1px solid var(--red)"></i>Reativa — ${reativas} (${pctReativa.toFixed(0)}%)</span>
         <span><i class="dot" style="background:#B5640B;border:1px solid #B5640B"></i>Proativa — ${proativas} (${pctProativa.toFixed(0)}%)</span>
       </div>
@@ -4800,7 +4800,8 @@ function MN_renderMaquinaChart(rows){
       color: '#A10101', textColor: '#A10101',
     };
   });
-  const { bars, chartW, chartH } = buildBarsSvg(barItems, { barH:26, gap:11, leftPad:210, rightPad:150, topPad:10, chartW:820, minPixelWidth:3 });
+  const chartW0 = getResponsiveChartW('mnChartMaquina', 820);
+  const { bars, chartW, chartH } = buildBarsSvg(barItems, { barH:34, gap:16, leftPad:210, rightPad:150, topPad:16, chartW:chartW0, minPixelWidth:3 });
   el.innerHTML = `
     <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       ${bars}
