@@ -3553,16 +3553,27 @@ document.addEventListener('keydown', (e)=>{
 function DC_computeProductTrend(chave, filteredDates, porSetor){
   const porDia = [];
   filteredDates.forEach(d=>{
+    // CORREÇÃO: real e prev precisam vir do MESMO conjunto de linhas — só
+    // as que têm meta numérica cadastrada (r.prev número). Produções "Sem
+    // Quantidade Planejada" e "Fora do plano de produção" não compõem meta
+    // (ver definição acordada no processo de padronização), então não
+    // devem entrar nem no numerador nem no denominador desse %. Antes,
+    // `real` somava TODAS as linhas do dia (inclusive as sem meta) enquanto
+    // `prev` só somava as com meta — isso inflava o % artificialmente
+    // (ex: Fritador 08/07 aparecia como 17575% em vez de 100%).
     let real = 0, prev = 0, temPrev = false, uni = '';
     getDayRows(d).forEach(r=>{
       const campo = porSetor ? r.setor : r.produto;
       if(campo !== chave) return; // exato — evita juntar produto/setor parecido mas diferente
-      real += r.real;
-      if(typeof r.prev === 'number'){ prev += r.prev; temPrev = true; }
-      uni = r.uni;
+      if(typeof r.prev === 'number'){
+        real += r.real;
+        prev += r.prev;
+        temPrev = true;
+        uni = r.uni;
+      }
     });
-    if(real > 0 || temPrev){
-      porDia.push({ data: d, label: d.split('-').reverse().join('/'), real, prev: temPrev ? prev : null, uni });
+    if(temPrev){
+      porDia.push({ data: d, label: d.split('-').reverse().join('/'), real, prev, uni });
     }
   });
   return porDia;
@@ -5259,12 +5270,16 @@ function lpCreateItemRow(initial){
         <input type="number" step="0.01" class="lp-real" required>
       </div>
       <div class="lanc-field">
+        <label>Tipo de Planejamento</label>
+        <select class="lp-tipo-planejamento">
+          <option value="numero">Com meta (número)</option>
+          <option value="sem_qtd">PCP sem quantidade definida ("produz o quanto der")</option>
+          <option value="fora_plano">Fora do planejamento (substituição / improviso)</option>
+        </select>
+      </div>
+      <div class="lanc-field">
         <label>Produção Planejada</label>
-        <input type="text" class="lp-planejada" placeholder="Ex: 4500 ou texto">
-        <span class="lanc-checkbox">
-          <input type="checkbox" class="lp-sem-planejada">
-          <label style="text-transform:none;font-weight:400;">S/ Quantidade Planejada</label>
-        </span>
+        <input type="number" step="0.01" class="lp-planejada" placeholder="Ex: 4500">
       </div>
       <div class="lanc-field">
         <label>Início da Produção</label>
@@ -5289,15 +5304,30 @@ function lpCreateItemRow(initial){
       </div>
     </div>
   `;
-  const semPlanejadaEl = row.querySelector('.lp-sem-planejada');
+  // Textos canônicos — precisam bater exatamente com o que classifyPlan()
+  // reconhece (ver função em cima do arquivo): "Fora do plano de produção"
+  // cai no caso foraDoPlano=true; "Sem Quantidade Planejada" cai no caso
+  // prev=null/foraDoPlano=false (PCP emitiu sem meta numérica). Fixar essas
+  // duas strings aqui evita reabrir a divergência de 12 variações de texto
+  // que existia quando o campo era livre.
+  const TIPO_PLANEJAMENTO_TEXTO = {
+    sem_qtd: 'Sem Quantidade Planejada',
+    fora_plano: 'Fora do plano de produção',
+  };
+  const tipoPlanejamentoEl = row.querySelector('.lp-tipo-planejamento');
   const planejadaEl = row.querySelector('.lp-planejada');
-  semPlanejadaEl.addEventListener('change', ()=>{
-    if(semPlanejadaEl.checked){
-      planejadaEl.value = 'S/ Quantidade Planejada';
-      planejadaEl.disabled = true;
-    } else {
+  tipoPlanejamentoEl.addEventListener('change', ()=>{
+    const tipo = tipoPlanejamentoEl.value;
+    if(tipo === 'numero'){
       planejadaEl.disabled = false;
+      planejadaEl.type = 'number';
       planejadaEl.value = '';
+      planejadaEl.required = true;
+    } else {
+      planejadaEl.type = 'text';
+      planejadaEl.value = TIPO_PLANEJAMENTO_TEXTO[tipo];
+      planejadaEl.disabled = true;
+      planejadaEl.required = false;
     }
   });
   row.querySelector('[data-remove]').addEventListener('click', ()=>{
@@ -5334,7 +5364,23 @@ function lpCreateItemRow(initial){
 
   if(initial.produto) row.querySelector('.lp-produto').value = initial.produto;
   if(initial.unidade) row.querySelector('.lp-unidade').value = initial.unidade;
-  if(initial.planejado) row.querySelector('.lp-planejada').value = initial.planejado;
+  if(initial.planejado){
+    // Reaproveita classifyPlan pra decidir o tipo certo mesmo quando o valor
+    // vem de fora (ex: planilha importada) com uma variação de texto antiga
+    // — assim o formulário sempre normaliza pro texto canônico atual.
+    const { prev, foraDoPlano } = classifyPlan(String(initial.planejado));
+    if(prev !== null){
+      tipoPlanejamentoEl.value = 'numero';
+      planejadaEl.type = 'number';
+      planejadaEl.disabled = false;
+      planejadaEl.value = prev;
+    } else {
+      tipoPlanejamentoEl.value = foraDoPlano ? 'fora_plano' : 'sem_qtd';
+      planejadaEl.type = 'text';
+      planejadaEl.disabled = true;
+      planejadaEl.value = TIPO_PLANEJAMENTO_TEXTO[foraDoPlano ? 'fora_plano' : 'sem_qtd'];
+    }
+  }
 
   return row;
 }
@@ -5825,7 +5871,12 @@ function LP_buildHistEditRowHtml(row){
       <td><input type="text" class="eh-produto" list="lpProdutoList" value="${(row.produto||'').replace(/"/g,'&quot;')}"></td>
       <td><input type="text" class="eh-maquina" list="lpMaquinaList" value="${(row.maquina||'').replace(/"/g,'&quot;')}"></td>
       <td><input type="number" class="eh-equipe" value="${row.equipe ?? ''}"></td>
-      <td><input type="text" class="eh-planejada" value="${(row.producao_planejada||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="text" class="eh-planejada" list="ehPlanejadaCanonica" value="${(row.producao_planejada||'').replace(/"/g,'&quot;')}">
+        <datalist id="ehPlanejadaCanonica">
+          <option value="Sem Quantidade Planejada">
+          <option value="Fora do plano de produção">
+        </datalist>
+      </td>
       <td><input type="number" step="0.01" class="eh-real" value="${row.producao_real ?? ''}"></td>
       <td><input type="text" class="eh-unidade" value="${(row.unidade||'').replace(/"/g,'&quot;')}"></td>
       <td><input type="time" class="eh-inicio" value="${LP_fmtTime(row.inicio_producao)==='—'?'':LP_fmtTime(row.inicio_producao)}"></td>
