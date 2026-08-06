@@ -574,10 +574,10 @@
   .lanc-subtab-btn.active{ background:#fbeed0; color:var(--red-dark); border-color:#e8d3a3; }
   .lanc-hist-filters{ display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; }
   .lanc-hist-filters .lanc-field{ min-width:150px; }
-  #lpHistTable{ font-size:11.5px; }
-  #lpHistTable td, #lpHistTable th{ white-space:nowrap; }
-  #lpHistTable td.lanc-hist-wrap{ white-space:normal; max-width:180px; }
-  #lpHistTable input, #lpHistTable select{
+  #lpHistTable, #mqTable{ font-size:11.5px; }
+  #lpHistTable td, #lpHistTable th, #mqTable td, #mqTable th{ white-space:nowrap; }
+  #lpHistTable td.lanc-hist-wrap, #mqTable td.lanc-hist-wrap{ white-space:normal; max-width:180px; }
+  #lpHistTable input, #lpHistTable select, #mqTable input, #mqTable select{
     width:100%; min-width:70px; border:1px solid #e8d3a3; border-radius:6px; padding:4px 6px;
     font-size:11.5px; font-family:inherit; background:var(--cream);
   }
@@ -932,6 +932,14 @@
           <div class="chart-wrap" id="ppChartVelocidade"></div>
         </div>
 
+        <!-- Só renderizado quando PP_currentLinha === 'Salgado' (ver PP_renderCapacidadeChart).
+             Pedido da gerência: comparar produtividade real (unidades/h) por
+             corrida com a capacidade nominal da máquina que produziu. -->
+        <div class="panel" id="ppPainelCapacidade" style="display:none;">
+          <div class="panel-title">Produtividade Real × Capacidade da Máquina (Unid/h)</div>
+          <div class="chart-wrap" id="ppChartCapacidade"></div>
+        </div>
+
         <div class="panel">
           <div class="panel-title">Paradas por Motivo</div>
           <div class="chart-wrap" id="ppChartParadas"></div>
@@ -1239,6 +1247,7 @@
           <button type="button" class="lanc-tab-btn" data-lanctab="manutencao">Manutenção</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="estoque">Estoque</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="prodproc">Produtividade & Processos</button>
+          <button type="button" class="lanc-tab-btn" data-lanctab="maquinas">Máquinas</button>
         </div>
 
         <!-- Formulário: Produção Diária -->
@@ -1596,6 +1605,74 @@
                 <tbody id="pplHistTbody"></tbody>
               </table>
             </div>
+          </div>
+        </div>
+
+        <!-- Formulário: Máquinas (Capacidade dos Equipamentos) -->
+        <div id="lancPanelMaquinas" class="panel" style="display:none;">
+          <div class="panel-title">Cadastro de Máquinas — Capacidade Nominal</div>
+          <form id="lancFormMaquina" class="lanc-form">
+            <div class="lanc-field">
+              <label>Setor</label>
+              <input type="text" class="mq-setor" list="mqSetorList" required>
+              <datalist id="mqSetorList">
+                <option value="Salgado">
+                <option value="Massa Salgado">
+                <option value="Croissant">
+                <option value="Padaria">
+                <option value="Confeitaria">
+                <option value="Giro-Dia">
+                <option value="Giro-Noite">
+                <option value="Fritador">
+                <option value="Cozinha">
+                <option value="Pão c/ Linguiça">
+                <option value="Pão de Queijo">
+                <option value="Pão de Ló e Bolos">
+              </datalist>
+            </div>
+            <div class="lanc-field">
+              <label>Identificação</label>
+              <input type="text" class="mq-identificacao" placeholder="Ex: Panitec 4" required>
+            </div>
+            <div class="lanc-field">
+              <label>Fabricante / Modelo</label>
+              <input type="text" class="mq-modelo" placeholder="Ex: Panitec LYNEA-480 SUPRA">
+            </div>
+            <div class="lanc-field">
+              <label>Capacidade Nominal</label>
+              <input type="number" step="0.01" class="mq-capacidade" placeholder="Ex: 4000" required>
+            </div>
+            <div class="lanc-field">
+              <label>Unidade</label>
+              <input type="text" class="mq-capacidade-unidade" value="un/h">
+            </div>
+            <div class="lanc-field">
+              <label>Equipe</label>
+              <input type="number" class="mq-equipe" placeholder="Ex: 4">
+            </div>
+            <div class="lanc-field">
+              <label>Parametrão Padrão Velocidade</label>
+              <input type="number" step="0.01" class="mq-param-velocidade">
+            </div>
+            <div class="lanc-field">
+              <label>Parametrão Padrão Prensa</label>
+              <input type="number" step="0.01" class="mq-param-prensa">
+            </div>
+            <div class="lanc-field" style="flex:2 1 320px;">
+              <label>Produtos Produzidos (separados por vírgula)</label>
+              <input type="text" class="mq-produtos" placeholder="Ex: Doguinho, Hamburguinho">
+            </div>
+            <button type="submit" class="lanc-submit-btn">Cadastrar Máquina</button>
+          </form>
+          <span class="lanc-feedback" id="mqFeedback"></span>
+
+          <div class="table-wrap" style="margin-top:18px;">
+            <table class="detail" id="mqTable">
+              <thead>
+                <tr><th>Setor</th><th>Identificação</th><th>Fabricante/Modelo</th><th class="center">Capacidade</th><th class="center">Equipe</th><th class="center">Param. Velocidade</th><th class="center">Param. Prensa</th><th>Produtos</th><th class="center">Ações</th></tr>
+              </thead>
+              <tbody id="mqTbody"></tbody>
+            </table>
           </div>
         </div>
 
@@ -4409,31 +4486,37 @@ function RC_transformCsv(csvText){
   return records;
 }
 
+/* Antes lia de uma planilha do Google Sheets (RC_CSV_URL, ver histórico do
+   arquivo). Agora lê direto da tabela public.maquinas no Supabase — a mesma
+   fonte editada na aba Lançamento > Máquinas — pra não ter duas fontes de
+   verdade divergentes sobre capacidade nominal. */
 async function RC_loadData(isManualRefresh){
-  await loadCsvWithFallback({
-    url: RC_CSV_URL,
-    isManualRefresh,
-    btnId: 'rcBtnRefresh',
-    infoElId: 'rcPeriodInfo',
-    errorLabel: 'Máquinas (capacidade dos equipamentos)',
-    parse: RC_transformCsv,
-    onSuccess: (records) => {
-      RC_DATA = records;
+  const infoEl = document.getElementById('rcPeriodInfo');
+  const btn = document.getElementById('rcBtnRefresh');
+  if(btn){ btn.disabled = true; btn.textContent = '⟳ Verificando...'; }
+  try{
+    const client = LANC_getClient();
+    const { data, error } = await client.from('maquinas').select('*').order('setor').order('identificacao');
+    if(error) throw error;
+    RC_DATA = MQ_explodeToRcFormat(data || []);
+    RC_populateSetorSelect();
+    RC_renderMaquinaMultiSelect();
+    RC_renderProdutoMultiSelect();
+    RC_refreshAll();
+    if(infoEl) infoEl.textContent = (data||[]).length + ' máquina(s) cadastrada(s)';
+  }catch(err){
+    console.error('Erro ao buscar máquinas (Supabase):', err);
+    if(infoEl) infoEl.textContent = '⚠ Erro ao buscar máquinas: ' + (err.message || err);
+    if(RC_DATA.length === 0){
+      RC_DATA = RC_transformCsvFromFallback();
       RC_populateSetorSelect();
       RC_renderMaquinaMultiSelect();
       RC_renderProdutoMultiSelect();
       RC_refreshAll();
-    },
-    hasExistingData: () => RC_DATA.length > 0,
-    fallbackData: RC_transformCsvFromFallback(),
-    onFallback: (fb) => {
-      RC_DATA = fb;
-      RC_populateSetorSelect();
-      RC_renderMaquinaMultiSelect();
-      RC_renderProdutoMultiSelect();
-      RC_refreshAll();
-    },
-  });
+    }
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '⟳ Atualizar'; }
+  }
 }
 
 /* Aplica a mesma explosão por produto nos dados de exemplo (fallback). */
@@ -5098,6 +5181,223 @@ function LANC_setDefaultDates(){
 }
 
 /* ---------- Sub-abas Produção Diária / Manutenção ---------- */
+/* ============================================================================
+   ABA MÁQUINAS — cadastro de capacidade nominal, direto no Supabase
+   (tabela public.maquinas), com o mesmo padrão de CRUD usado no Histórico
+   de Produção Diária: listar, adicionar, editar inline, excluir.
+   ============================================================================ */
+let MQ_DATA = [];
+let MQ_INITED = false;
+
+function MQ_init(){
+  MQ_loadData();
+  if(!MQ_INITED){
+    MQ_INITED = true;
+    document.getElementById('lancFormMaquina').addEventListener('submit', MQ_submitNew);
+  }
+}
+
+async function MQ_loadData(){
+  const tbody = document.getElementById('mqTbody');
+  const feedback = document.getElementById('mqFeedback');
+  feedback.textContent = 'Carregando...';
+  feedback.className = 'lanc-feedback';
+  try{
+    const client = LANC_getClient();
+    const { data, error } = await client.from('maquinas').select('*').order('setor').order('identificacao');
+    if(error) throw error;
+    MQ_DATA = data || [];
+    MQ_renderTable();
+    feedback.textContent = MQ_DATA.length + ' máquina(s) cadastrada(s)';
+    feedback.className = 'lanc-feedback ok';
+    // Recarrega o cruzamento de capacidade usado nos gráficos de Produtividade
+    RC_DATA = MQ_explodeToRcFormat(MQ_DATA);
+  }catch(err){
+    console.error('Erro ao buscar máquinas:', err);
+    feedback.textContent = '⚠ Erro ao buscar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+    tbody.innerHTML = '';
+  }
+}
+
+/* Explode 1 máquina em N linhas (1 por produto), no mesmo formato que
+   RC_findCapacidadeNominal já espera (ver função original, que antes lia
+   isso de uma planilha do Google Sheets). */
+function MQ_explodeToRcFormat(maquinas){
+  const records = [];
+  maquinas.forEach(m=>{
+    const capacidadeStr = m.capacidade_nominal != null
+      ? `${m.capacidade_nominal} ${m.capacidade_unidade || 'un/h'}` : '';
+    const produtos = RC_splitProdutos(m.produtos || '');
+    const base = { identificacao: m.identificacao, capacidade: capacidadeStr, equipe: m.equipe ?? '', paramVelocidade: m.param_velocidade ?? '', paramPrensa: m.param_prensa ?? '', modelo: m.modelo || '', setor: m.setor };
+    if(produtos.length === 0){
+      records.push(Object.assign({ produto: '—' }, base));
+    } else {
+      produtos.forEach(produto => records.push(Object.assign({ produto }, base)));
+    }
+  });
+  return records;
+}
+
+function MQ_renderTable(){
+  const tbody = document.getElementById('mqTbody');
+  if(MQ_DATA.length === 0){
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhuma máquina cadastrada ainda.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = MQ_DATA.map(row => MQ_buildRowHtml(row)).join('');
+  tbody.querySelectorAll('tr').forEach(tr=>{
+    const id = tr.dataset.id;
+    tr.querySelector('.lanc-hist-btn.edit').addEventListener('click', ()=> MQ_startEditRow(id));
+    tr.querySelector('.lanc-hist-btn.delete').addEventListener('click', ()=> MQ_deleteRow(id));
+  });
+}
+
+function MQ_buildRowHtml(row){
+  return `
+    <tr data-id="${row.id}">
+      <td>${row.setor||'—'}</td>
+      <td>${row.identificacao||'—'}</td>
+      <td class="lanc-hist-wrap">${row.modelo||'—'}</td>
+      <td class="center">${row.capacidade_nominal != null ? row.capacidade_nominal.toLocaleString('pt-BR') : '—'} ${row.capacidade_unidade||''}</td>
+      <td class="center">${row.equipe ?? '—'}</td>
+      <td class="center">${row.param_velocidade ?? '—'}</td>
+      <td class="center">${row.param_prensa ?? '—'}</td>
+      <td class="lanc-hist-wrap">${row.produtos||'—'}</td>
+      <td class="center">
+        <button type="button" class="lanc-hist-btn edit">Editar</button>
+        <button type="button" class="lanc-hist-btn delete">Excluir</button>
+      </td>
+    </tr>`;
+}
+
+function MQ_buildEditRowHtml(row){
+  return `
+    <tr data-id="${row.id}">
+      <td><input type="text" class="emq-setor" list="mqSetorList" value="${(row.setor||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="text" class="emq-identificacao" value="${(row.identificacao||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="text" class="emq-modelo" value="${(row.modelo||'').replace(/"/g,'&quot;')}"></td>
+      <td>
+        <input type="number" step="0.01" class="emq-capacidade" style="width:80px;" value="${row.capacidade_nominal ?? ''}">
+        <input type="text" class="emq-capacidade-unidade" style="width:60px;" value="${(row.capacidade_unidade||'').replace(/"/g,'&quot;')}">
+      </td>
+      <td><input type="number" class="emq-equipe" style="width:60px;" value="${row.equipe ?? ''}"></td>
+      <td><input type="number" step="0.01" class="emq-param-velocidade" style="width:70px;" value="${row.param_velocidade ?? ''}"></td>
+      <td><input type="number" step="0.01" class="emq-param-prensa" style="width:70px;" value="${row.param_prensa ?? ''}"></td>
+      <td><input type="text" class="emq-produtos" value="${(row.produtos||'').replace(/"/g,'&quot;')}"></td>
+      <td class="center">
+        <button type="button" class="lanc-hist-btn save">Salvar</button>
+        <button type="button" class="lanc-hist-btn cancel">Cancelar</button>
+      </td>
+    </tr>`;
+}
+
+function MQ_startEditRow(id){
+  const row = MQ_DATA.find(r => String(r.id) === String(id));
+  if(!row) return;
+  const tr = document.querySelector(`#mqTbody tr[data-id="${id}"]`);
+  if(!tr) return;
+  tr.outerHTML = MQ_buildEditRowHtml(row);
+  const newTr = document.querySelector(`#mqTbody tr[data-id="${id}"]`);
+  newTr.querySelector('.lanc-hist-btn.save').addEventListener('click', ()=> MQ_saveEditRow(id));
+  newTr.querySelector('.lanc-hist-btn.cancel').addEventListener('click', MQ_renderTable);
+}
+
+async function MQ_saveEditRow(id){
+  const tr = document.querySelector(`#mqTbody tr[data-id="${id}"]`);
+  if(!tr) return;
+  const feedback = document.getElementById('mqFeedback');
+  const val = cls => tr.querySelector('.'+cls).value;
+  const payload = {
+    setor: val('emq-setor').trim(),
+    identificacao: val('emq-identificacao').trim(),
+    modelo: val('emq-modelo').trim() || null,
+    capacidade_nominal: val('emq-capacidade') !== '' ? parseFloat(val('emq-capacidade')) : null,
+    capacidade_unidade: val('emq-capacidade-unidade').trim() || 'un/h',
+    equipe: val('emq-equipe') !== '' ? parseInt(val('emq-equipe'),10) : null,
+    param_velocidade: val('emq-param-velocidade') !== '' ? parseFloat(val('emq-param-velocidade')) : null,
+    param_prensa: val('emq-param-prensa') !== '' ? parseFloat(val('emq-param-prensa')) : null,
+    produtos: val('emq-produtos').trim() || null,
+    updated_at: new Date().toISOString(),
+  };
+  if(!payload.setor || !payload.identificacao){
+    feedback.textContent = '⚠ Setor e Identificação são obrigatórios.';
+    feedback.className = 'lanc-feedback err';
+    return;
+  }
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from('maquinas').update(payload).eq('id', id);
+    if(error) throw error;
+    const idx = MQ_DATA.findIndex(r => String(r.id) === String(id));
+    if(idx >= 0) MQ_DATA[idx] = Object.assign({}, MQ_DATA[idx], payload);
+    MQ_renderTable();
+    RC_DATA = MQ_explodeToRcFormat(MQ_DATA);
+    feedback.textContent = '✓ Máquina atualizada.';
+    feedback.className = 'lanc-feedback ok';
+  }catch(err){
+    console.error('Erro ao atualizar máquina:', err);
+    feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }
+}
+
+async function MQ_deleteRow(id){
+  if(!confirm('Excluir essa máquina? Essa ação não pode ser desfeita.')) return;
+  const feedback = document.getElementById('mqFeedback');
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from('maquinas').delete().eq('id', id);
+    if(error) throw error;
+    MQ_DATA = MQ_DATA.filter(r => String(r.id) !== String(id));
+    MQ_renderTable();
+    RC_DATA = MQ_explodeToRcFormat(MQ_DATA);
+    feedback.textContent = '✓ Máquina excluída.';
+    feedback.className = 'lanc-feedback ok';
+  }catch(err){
+    console.error('Erro ao excluir máquina:', err);
+    feedback.textContent = '⚠ Erro ao excluir: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }
+}
+
+async function MQ_submitNew(ev){
+  ev.preventDefault();
+  const form = ev.target;
+  const feedback = document.getElementById('mqFeedback');
+  const val = cls => form.querySelector('.'+cls).value;
+  const payload = {
+    setor: val('mq-setor').trim(),
+    identificacao: val('mq-identificacao').trim(),
+    modelo: val('mq-modelo').trim() || null,
+    capacidade_nominal: val('mq-capacidade') !== '' ? parseFloat(val('mq-capacidade')) : null,
+    capacidade_unidade: val('mq-capacidade-unidade').trim() || 'un/h',
+    equipe: val('mq-equipe') !== '' ? parseInt(val('mq-equipe'),10) : null,
+    param_velocidade: val('mq-param-velocidade') !== '' ? parseFloat(val('mq-param-velocidade')) : null,
+    param_prensa: val('mq-param-prensa') !== '' ? parseFloat(val('mq-param-prensa')) : null,
+    produtos: val('mq-produtos').trim() || null,
+  };
+  if(!payload.setor || !payload.identificacao || payload.capacidade_nominal === null){
+    feedback.textContent = '⚠ Setor, Identificação e Capacidade Nominal são obrigatórios.';
+    feedback.className = 'lanc-feedback err';
+    return;
+  }
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from('maquinas').insert([payload]);
+    if(error) throw error;
+    form.reset();
+    form.querySelector('.mq-capacidade-unidade').value = 'un/h';
+    feedback.textContent = '✓ Máquina cadastrada.';
+    feedback.className = 'lanc-feedback ok';
+    MQ_loadData();
+  }catch(err){
+    console.error('Erro ao cadastrar máquina:', err);
+    feedback.textContent = '⚠ Erro ao cadastrar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }
+}
+
 document.querySelectorAll('.lanc-tab-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('.lanc-tab-btn').forEach(b=>b.classList.remove('active'));
@@ -5107,9 +5407,11 @@ document.querySelectorAll('.lanc-tab-btn').forEach(btn=>{
     document.getElementById('lancPanelManutencao').style.display = tab === 'manutencao' ? 'block' : 'none';
     document.getElementById('lancPanelEstoque').style.display = tab === 'estoque' ? 'block' : 'none';
     document.getElementById('lancPanelProdProc').style.display = tab === 'prodproc' ? 'block' : 'none';
+    document.getElementById('lancPanelMaquinas').style.display = tab === 'maquinas' ? 'block' : 'none';
     if(tab === 'estoque') EQ_populateDropdowns();
     if(tab === 'producao') LANC_populateDropdowns();
     if(tab === 'prodproc') PPL_init();
+    if(tab === 'maquinas') MQ_init();
   });
 });
 
@@ -7291,6 +7593,14 @@ function PP_render(){
   PP_renderKPIs();
   if(temEtapas) PP_renderEtapas();
   if(temVelocidade) PP_renderVelocidade();
+
+  const painelCap = document.getElementById('ppPainelCapacidade');
+  if(PP_currentLinha === 'Salgado' && temVelocidade){
+    painelCap.style.display = 'block';
+    PP_renderCapacidadeChart();
+  } else {
+    painelCap.style.display = 'none';
+  }
 }
 
 function PP_fmtDuracao(seg){
@@ -7312,6 +7622,17 @@ async function PP_ensureCapacidadeData(){
   catch(err){ console.error('Erro ao carregar capacidade de equipamentos:', err); }
 }
 
+/* Normaliza produtividade real pra Unid/h — mesma unidade em que a
+   Capacidade Nominal é cadastrada na página Máquinas. Reaproveitado pelo
+   KPI "Capacidade da Máquina" e pelo gráfico Real x Capacidade. */
+function PP_getUnidadesPorHora(c){
+  if(c.unidades_por_hora != null) return Number(c.unidades_por_hora);
+  if(c.producao_por_hora != null && c.unidades_por_recipiente != null){
+    return Number(c.producao_por_hora) * Number(c.unidades_por_recipiente);
+  }
+  return null;
+}
+
 function PP_renderKPIs(){
   const grid = document.getElementById('ppKpiGrid');
 
@@ -7324,11 +7645,7 @@ function PP_renderKPIs(){
     const mediaRecipiente = comProdRecipiente.length
       ? comProdRecipiente.reduce((s,c)=>s+Number(c.producao_por_hora),0)/comProdRecipiente.length : null;
 
-    const unidadesHoraValores = PP_CORRIDAS.map(c=>{
-      if(c.unidades_por_hora != null) return Number(c.unidades_por_hora);
-      if(c.producao_por_hora != null && c.unidades_por_recipiente != null) return Number(c.producao_por_hora) * Number(c.unidades_por_recipiente);
-      return null;
-    }).filter(v => v != null);
+    const unidadesHoraValores = PP_CORRIDAS.map(c=>PP_getUnidadesPorHora(c)).filter(v => v != null);
     const mediaUnidadesHora = unidadesHoraValores.length ? unidadesHoraValores.reduce((a,b)=>a+b,0)/unidadesHoraValores.length : null;
 
     const temposMedios = PP_CORRIDAS.map(c=>c.tempo_medio_seg).filter(v => v != null).map(Number);
@@ -7555,6 +7872,67 @@ function PP_getProdutividadeValor(c){
 }
 
 /* ---------- Bloco Velocidade & Paradas ---------- */
+/* Pedido da gerência: comparar a produtividade REAL (Unid/h) de cada
+   corrida do Salgado com a capacidade NOMINAL da máquina que produziu
+   (cadastrada na página "Capacidade dos Equipamentos"). Corridas sem
+   capacidade cadastrada pra aquele produto/máquina (RC_findCapacidadeNominal
+   retorna null) ficam de fora — não dá pra comparar o que não tem
+   referência, e misturar um "sem dado" com 0 distorceria a leitura. */
+function PP_renderCapacidadeChart(){
+  const wrap = document.getElementById('ppChartCapacidade');
+  const itens = PP_CORRIDAS
+    .map(c=>{
+      const real = PP_getUnidadesPorHora(c);
+      if(real == null || !c.maquina || !c.produto) return null;
+      const cap = RC_findCapacidadeNominal(c.produto, c.maquina);
+      if(!cap) return null;
+      return {
+        label: `${PP_fmtDataBR(c.data)} · ${c.maquina}`,
+        produto: c.produto,
+        real,
+        nominal: cap.valor,
+      };
+    })
+    .filter(Boolean)
+    .sort((a,b) => a.label.localeCompare(b.label));
+
+  if(itens.length === 0){
+    wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">⚙️</span>Nenhuma corrida do período tem capacidade nominal cadastrada pra cruzar com a produtividade real. Cadastre a máquina/produto na página "Máquinas".</div>`;
+    return;
+  }
+
+  const barW = 16, gapDentro = 4, gapGrupo = 26, baseY = 260, topPad = 90;
+  const grupoW = barW*2 + gapDentro;
+  const chartWidth = itens.length*(grupoW+gapGrupo) + 60;
+  const maxVal = Math.max(...itens.map(i=>Math.max(i.real,i.nominal)), 1);
+
+  let bars = '';
+  itens.forEach((it,i)=>{
+    const x0 = 36 + i*(grupoW+gapGrupo);
+    const hReal = (it.real/maxVal)*(baseY-topPad);
+    const hNom = (it.nominal/maxVal)*(baseY-topPad);
+    const corReal = it.real >= it.nominal ? '#2e7d32' : 'var(--red)';
+
+    bars += `<rect x="${x0}" y="${baseY-hReal}" width="${barW}" height="${hReal}" fill="${corReal}" rx="3"><title>${it.produto} — Real: ${it.real.toLocaleString('pt-BR',{maximumFractionDigits:0})} un/h</title></rect>`;
+    bars += `<text x="${x0+barW/2}" y="${baseY-hReal-6}" font-size="9.5" font-weight="700" fill="${corReal}" text-anchor="middle">${it.real.toLocaleString('pt-BR',{maximumFractionDigits:0})}</text>`;
+
+    const xNom = x0+barW+gapDentro;
+    bars += `<rect x="${xNom}" y="${baseY-hNom}" width="${barW}" height="${hNom}" fill="#B5640B" rx="3"><title>${it.produto} — Capacidade nominal: ${it.nominal.toLocaleString('pt-BR')} un/h</title></rect>`;
+    bars += `<text x="${xNom+barW/2}" y="${baseY-hNom-6}" font-size="9.5" font-weight="700" fill="#8a4c08" text-anchor="middle">${it.nominal.toLocaleString('pt-BR')}</text>`;
+
+    bars += `<text x="${x0+grupoW/2}" y="${baseY+14}" font-size="9" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+grupoW/2} ${baseY+14})">${truncateProdLabel(it.label,26)}<title>${it.produto} — ${it.label}</title></text>`;
+  });
+
+  const legenda = `
+    <g transform="translate(36,20)">
+      <rect x="0" y="0" width="12" height="12" fill="#2e7d32" rx="2"/><text x="18" y="10" font-size="11" fill="#2a1a1a">Real ≥ capacidade</text>
+      <rect x="150" y="0" width="12" height="12" fill="var(--red)" rx="2"/><text x="168" y="10" font-size="11" fill="#2a1a1a">Real abaixo da capacidade</text>
+      <rect x="330" y="0" width="12" height="12" fill="#B5640B" rx="2"/><text x="348" y="10" font-size="11" fill="#2a1a1a">Capacidade nominal</text>
+    </g>`;
+
+  wrap.innerHTML = `<svg viewBox="0 0 ${chartWidth} 380" width="${chartWidth}" height="380" style="overflow:visible;font-family:'Inter',Arial,sans-serif;">${legenda}${bars}</svg>`;
+}
+
 function PP_renderVelocidade(){
   const porProduto = {};
   PP_CORRIDAS.forEach(c=>{
