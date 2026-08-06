@@ -4757,7 +4757,7 @@ function MN_renderTipoChart(rows){
   const posProativa = posNoArco(pctReativa, pctProativa);
 
   el.innerHTML = `
-    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:280px; padding:10px 0;">
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:422px; padding:10px 0;">
       <svg viewBox="0 0 260 260" width="260" height="260" style="flex-shrink:0;">
         <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#B5640B" stroke-width="${strokeW}"/>
         <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--red)" stroke-width="${strokeW}"
@@ -4811,10 +4811,14 @@ function MN_renderMaquinaChart(rows){
       color: '#A10101', textColor: '#A10101',
     };
   });
-  const chartW0 = getResponsiveChartW('mnChartMaquina', 820);
+  // Largura real do card (não a genérica com piso de 600px, que nesse
+  // layout lado a lado deixava a barra desenhada mais larga que o espaço
+  // visível de verdade, cortando ela por baixo do pano).
+  const containerEl = document.getElementById('mnChartMaquina');
+  const chartW0 = (containerEl && containerEl.clientWidth > 40) ? Math.round(containerEl.clientWidth * 0.98) : 600;
   const { bars, chartW, chartH } = buildBarsSvg(barItems, { barH:34, gap:16, leftPad:210, rightPad:150, topPad:16, chartW:chartW0, minPixelWidth:3 });
-  const visibleRows = 5;
-  const containerH = visibleRows*(34+16) + 16 + 6; // = 272, ~mesma altura do donut (280px)
+  const visibleRows = 8;
+  const containerH = visibleRows*(34+16) + 16 + 6; // = 422px
   el.innerHTML = `
     <div style="max-height:${containerH}px; overflow-y:auto; overflow-x:hidden;">
       <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="font-family:'Inter',Arial,sans-serif;display:block;">
