@@ -3705,7 +3705,12 @@ function computeChartRows(filteredDates){
     });
   });
   if(filteredDates.length <= 1) return source;
-  const groups = fuzzyGroupBy(source,
+  // Agrupamento EXATO (não fuzzy) — os nomes de produto já foram consolidados
+  // direto no banco, então não precisamos mais de similaridade aproximada
+  // aqui. O fuzzy chegou a juntar por engano produtos diferentes com nome
+  // parecido (ex: "Empada Carne c/ Req BK 4x130g" e "Empada Frango c/ Req BK
+  // 130g" batiam 81% de similaridade e se fundiam num bar só).
+  const groups = exactGroupBy(source,
     r=>r.uni,
     r=>r.produto,
     r=>({ prev: r.prev, real: r.real }),
