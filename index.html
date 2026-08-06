@@ -1530,7 +1530,7 @@
                 <label>Setor / Linha</label>
                 <select id="pplLinha" required>
                   <option value="">Selecione...</option>
-                  <option value="Giro">Giro</option>
+                  <option value="Giro">Giro Dia</option>
                   <option value="Salgado">Salgado</option>
                   <option value="Massa Salgado">Massa Salgado</option>
                   <option value="Pão de Queijo">Pão de Queijo</option>
@@ -1574,7 +1574,7 @@
                 <label>Linha</label>
                 <select id="pplHistLinha">
                   <option value="">Todas</option>
-                  <option value="Giro">Giro</option>
+                  <option value="Giro">Giro Dia</option>
                   <option value="Salgado">Salgado</option>
                   <option value="Massa Salgado">Massa Salgado</option>
                   <option value="Pão de Queijo">Pão de Queijo</option>
@@ -6925,6 +6925,7 @@ function EQ_DASH_fmtDataBR(iso){
    (que só têm um tipo) mostram só o bloco correspondente. */
 let PP_loadedOnce = false;
 const PP_LINHAS = ['Giro','Salgado','Massa Salgado','Pão de Queijo','Padaria','Pão de Ló e Bolos'];
+const PP_LINHA_LABELS = { 'Giro': 'Giro Dia' }; // rótulo de exibição — o valor real (usado nas consultas) continua "Giro"
 let PP_currentLinha = 'Giro';
 let PP_selectedProduto = '';
 let PP_BATELADAS = [];
@@ -6963,7 +6964,7 @@ function PP_init(){
 
 function PP_renderLinhaTabs(){
   const el = document.getElementById('ppLinhaTabs');
-  el.innerHTML = PP_LINHAS.map(l => `<button type="button" class="setor-tab-btn ${l===PP_currentLinha?'active':''}" data-linha="${l}">${l}</button>`).join('');
+  el.innerHTML = PP_LINHAS.map(l => `<button type="button" class="setor-tab-btn ${l===PP_currentLinha?'active':''}" data-linha="${l}">${PP_LINHA_LABELS[l] || l}</button>`).join('');
   el.querySelectorAll('[data-linha]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       PP_currentLinha = btn.dataset.linha;
@@ -7136,10 +7137,11 @@ function PP_renderKPIs(){
     return;
   }
 
-  // Pão de Queijo e Padaria: linhas de etapas simples — o card principal é
-  // quantas bateladas dá pra fazer por hora (1h ÷ lead time médio) e o
-  // próprio lead time médio.
-  if(PP_currentLinha === 'Pão de Queijo' || PP_currentLinha === 'Padaria'){
+  // Pão de Queijo, Padaria e Giro Dia: mesmo tipo de card — quantas
+  // bateladas dá pra fazer por hora (1h ÷ lead time médio) e o próprio
+  // lead time médio. Giro tem dado de Produtividade também, mas os cards
+  // aqui ficam só no lado de Tempo de Processo, como pedido.
+  if(PP_currentLinha === 'Pão de Queijo' || PP_currentLinha === 'Padaria' || PP_currentLinha === 'Giro'){
     const leadTimes = PP_BATELADAS
       .map(b => (b.tempo_processo_etapas||[]).reduce((s,e)=> s + (Number(e.duracao_seg)||0), 0))
       .filter(v => v > 0);
