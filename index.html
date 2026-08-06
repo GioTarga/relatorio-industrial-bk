@@ -1061,20 +1061,17 @@
 
       <div class="kpi-grid" id="mnKpiGrid"></div>
 
-      <div class="panel">
-        <div class="panel-title">Intervenções por Máquina</div>
-        <div class="chart-wrap" id="mnChartMaquina"></div>
-      </div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;">
+        <div class="panel" style="flex:1;min-width:360px;">
+          <div class="panel-title">Tipo de Intervenção e Especialidade</div>
+          <div class="chart-wrap" id="mnChartTipo"></div>
+          <div class="trend-foot" id="mnTipoFoot"></div>
+        </div>
 
-      <div class="panel">
-        <div class="panel-title">Intervenções por Especialidade</div>
-        <div class="chart-wrap" id="mnChartEspecialidade"></div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">Tipo de Intervenção</div>
-        <div class="chart-wrap" id="mnChartTipo"></div>
-        <div class="trend-foot">"Aproveitamento Parada da Produção" = manutenção feita durante uma parada que já ia acontecer (proativa). "Parada para Manutenção" = parada criada especificamente pra manutenção (reativa/não planejada).</div>
+        <div class="panel" style="flex:1;min-width:360px;">
+          <div class="panel-title">Ranking de Equipamentos — Horas em Manutenção</div>
+          <div class="chart-wrap" id="mnChartMaquina"></div>
+        </div>
       </div>
 
       <div class="panel">
@@ -4695,6 +4692,7 @@ function MN_applyFilters(){
 function MN_renderKPIs(){
   const rows = MN_FILTERED;
   const total = rows.length;
+  const diasComRegistro = new Set(rows.map(r=>r.dateISO)).size;
   const comDuracao = rows.filter(r=>r.duracaoMin !== null);
   const mttr = comDuracao.length ? PR_avg(comDuracao.map(r=>r.duracaoMin)) : null;
   const tempoTotal = comDuracao.length ? PR_sum(comDuracao.map(r=>r.duracaoMin)) : 0;
@@ -4702,42 +4700,76 @@ function MN_renderKPIs(){
   const comEspera = rows.filter(r=>r.esperaMin !== null);
   const tempoResposta = comEspera.length ? PR_avg(comEspera.map(r=>r.esperaMin)) : null;
 
-  const porMaquina = {};
-  rows.forEach(r=>{ if(r.maquina) porMaquina[r.maquina] = (porMaquina[r.maquina]||0)+1; });
-  const maquinaTop = Object.entries(porMaquina).sort((a,b)=>b[1]-a[1])[0];
-
-  const reativas = rows.filter(r=> (r.tipoIntervencao||'').toLowerCase().includes('parada para manutenção')).length;
-  const pctReativa = total > 0 ? (reativas/total*100) : null;
-
-  document.getElementById('mnKpiGrid').style.gridTemplateColumns = 'repeat(6,1fr)';
+  document.getElementById('mnKpiGrid').style.gridTemplateColumns = 'repeat(4,1fr)';
   document.getElementById('mnKpiGrid').innerHTML = `
     <div class="kpi-card">
-      <div class="label">Total de Intervenções</div>
       <div class="value">${total}</div>
+      <div class="label">Chamados</div>
+      <div class="trend-foot" style="margin-top:4px;">No período (${diasComRegistro} dia${diasComRegistro===1?'':'s'} com registro)</div>
     </div>
     <div class="kpi-card">
-      <div class="label">Tempo de Resposta</div>
-      <div class="value" style="font-size:22px;">${tempoResposta !== null ? TP_fmtDuration(tempoResposta*60) : '—'}</div>
-    </div>
-    <div class="kpi-card">
-      <div class="label">Tempo Médio de Reparo</div>
       <div class="value" style="font-size:22px;">${mttr !== null ? TP_fmtDuration(mttr*60) : '—'}</div>
+      <div class="label">MTTR</div>
+      <div class="trend-foot" style="margin-top:4px;">Tempo médio de reparo</div>
+    </div>
+    <div class="kpi-card">
+      <div class="value" style="font-size:22px;">${tempoResposta !== null ? TP_fmtDuration(tempoResposta*60) : '—'}</div>
+      <div class="label">Tempo de Resposta</div>
+      <div class="trend-foot" style="margin-top:4px;">Tempo médio até o atendimento</div>
     </div>
     <div class="kpi-card warn">
-      <div class="label">Tempo Total em Manutenção</div>
       <div class="value" style="font-size:22px;">${TP_fmtDuration(tempoTotal*60)}</div>
-    </div>
-    <div class="kpi-card">
-      <div class="label">Máquina Mais Recorrente</div>
-      <div class="value" style="font-size:17px;">${maquinaTop ? maquinaTop[0] : '—'}</div>
-      ${maquinaTop ? `<div class="trend-foot" style="margin-top:4px;">${maquinaTop[1]} intervenção(ões)</div>` : ''}
-    </div>
-    <div class="kpi-card ${pctReativa===null?'':(pctReativa<=30?'sem-good':pctReativa<=60?'sem-warn':'sem-bad')}">
-      <div class="label">Paradas Reativas</div>
-      <div class="value">${pctReativa !== null ? pctReativa.toFixed(0)+'%' : '—'}</div>
-      <div class="trend-foot" style="margin-top:4px;">"Parada para Manutenção" (não planejada)</div>
+      <div class="label">Tempo Parado</div>
+      <div class="trend-foot" style="margin-top:4px;">Total parado no período</div>
     </div>
   `;
+}
+
+/* Donut Reativa x Proativa, com legenda de especialidade embaixo — troca
+   o antigo ranking em barra de "Tipo de Intervenção" por uma visão mais
+   rápida de ler (rateio + causa em uma linha só). */
+function MN_renderTipoChart(rows){
+  const el = document.getElementById('mnChartTipo');
+  const foot = document.getElementById('mnTipoFoot');
+  const total = rows.length;
+  if(total === 0){
+    el.innerHTML = `<div class="empty-state"><span class="empty-icon">🔧</span>Nenhum registro no período selecionado.</div>`;
+    foot.textContent = '';
+    return;
+  }
+  const reativas = rows.filter(r=> (r.tipoIntervencao||'').toLowerCase().includes('parada para manutenção')).length;
+  const proativas = total - reativas;
+  const pctReativa = (reativas/total)*100;
+  const pctProativa = 100 - pctReativa;
+
+  const cx = 100, cy = 100, r = 62, strokeW = 30;
+  const circ = 2*Math.PI*r;
+  const reativaLen = (pctReativa/100)*circ;
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap;">
+      <svg viewBox="0 0 200 200" width="200" height="200" style="flex-shrink:0;">
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#B5640B" stroke-width="${strokeW}"/>
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--red)" stroke-width="${strokeW}"
+          stroke-dasharray="${reativaLen} ${circ}" stroke-linecap="butt"
+          transform="rotate(-90 ${cx} ${cy})"/>
+        <text x="${cx}" y="${cy+8}" font-size="26" font-weight="700" fill="var(--red)" text-anchor="middle" font-family="Inter,Arial,sans-serif">${pctReativa.toFixed(0)}%</text>
+      </svg>
+      <div class="legend" style="flex-direction:column;align-items:flex-start;gap:10px;">
+        <span><i class="dot" style="background:var(--red);border:1px solid var(--red)"></i>Reativa — ${reativas} (${pctReativa.toFixed(0)}%)</span>
+        <span><i class="dot" style="background:#B5640B;border:1px solid #B5640B"></i>Proativa — ${proativas} (${pctProativa.toFixed(0)}%)</span>
+      </div>
+    </div>
+  `;
+
+  const porEspecialidade = {};
+  rows.forEach(r=>{ if(r.especialidade) porEspecialidade[r.especialidade] = (porEspecialidade[r.especialidade]||0)+1; });
+  const especialidadeTxt = Object.entries(porEspecialidade)
+    .sort((a,b)=>b[1]-a[1])
+    .map(([nome,qtd])=>`${nome} ${qtd}`).join(' · ');
+
+  foot.innerHTML = `${pctReativa.toFixed(0)}% dos chamados foram reativos (parada não planejada)`
+    + (especialidadeTxt ? `<br>Especialidade: ${especialidadeTxt}` : '');
 }
 
 /* Gráfico de "Intervenções por Máquina": ordenado pelo tempo total parado
@@ -4775,31 +4807,6 @@ function MN_renderMaquinaChart(rows){
     </svg>`;
 }
 
-function MN_renderRanking(rows, keyFn, elId, color, textColor){
-  const el = document.getElementById(elId);
-  const counts = {};
-  rows.forEach(r=>{
-    const key = keyFn(r);
-    if(!key) return;
-    counts[key] = (counts[key]||0) + 1;
-  });
-  const entries = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
-  if(entries.length === 0){
-    el.innerHTML = `<div class="empty-state"><span class="empty-icon">🔧</span>Nenhum registro no período selecionado.</div>`;
-    return;
-  }
-  const barItems = entries.map(([label,count])=>({
-    label: truncateProdLabel(label, 26), labelTitle: label,
-    value: count, displayText: String(count),
-    color, textColor,
-  }));
-  const { bars, chartW, chartH } = buildBarsSvg(barItems, { barH:26, gap:11, leftPad:210, rightPad:60, topPad:10, chartW:760 });
-  el.innerHTML = `
-    <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
-      ${bars}
-    </svg>`;
-}
-
 function MN_renderTable(){
   const sorted = MN_FILTERED.slice().sort((a,b)=> b.dateISO.localeCompare(a.dateISO));
   document.getElementById('mnTbody').innerHTML = sorted.map(r=>`
@@ -4828,8 +4835,7 @@ function MN_refreshAll(){
   }
   MN_renderKPIs();
   MN_renderMaquinaChart(MN_FILTERED);
-  MN_renderRanking(MN_FILTERED, r=>r.especialidade, 'mnChartEspecialidade', '#B5640B', '#8a4c08');
-  MN_renderRanking(MN_FILTERED, r=>r.tipoIntervencao, 'mnChartTipo', '#2f7d52', '#2f7d52');
+  MN_renderTipoChart(MN_FILTERED);
   MN_renderTable();
 }
 
