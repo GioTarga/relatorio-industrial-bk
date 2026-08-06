@@ -4568,12 +4568,21 @@ function MN_transformSupabaseRows(rows){
     if(!iso) return;
     const dateRaw = iso.split('-').reverse().join('/');
 
-    // inicio_real / fim_real já vêm como timestamptz completo (data + hora),
-    // então a duração é uma subtração direta — sem precisar adivinhar se
-    // cruzou meia-noite (isso já foi resolvido no momento do lançamento).
+    // inicio_real/fim_real vêm do banco com sufixo de fuso (+00), mas esse
+    // sufixo não reflete conversão de verdade — foi só rotulado assim no
+    // banco. Se deixar o JS interpretar como UTC de verdade, ele passa a
+    // discordar da Hora de Comunicação (que é tratada como horário local),
+    // e a conta de Tempo de Resposta sai errada por ~3h em cada registro.
+    // Por isso lê como horário "cru" (sem timezone), igual a hora_comunicacao.
+    function parseHorarioCru(ts){
+      if(!ts) return null;
+      const semFuso = String(ts).replace(/([+-]\d{2}:?\d{2}|Z)\s*$/, '').replace(' ', 'T');
+      return new Date(semFuso);
+    }
+
     let duracaoMin = null;
-    const iniDate = r.inicio_real ? new Date(r.inicio_real) : null;
-    const fimDate = r.fim_real ? new Date(r.fim_real) : null;
+    const iniDate = parseHorarioCru(r.inicio_real);
+    const fimDate = parseHorarioCru(r.fim_real);
     if(iniDate && fimDate && !isNaN(iniDate) && !isNaN(fimDate)){
       duracaoMin = (fimDate - iniDate) / 60000;
     }
