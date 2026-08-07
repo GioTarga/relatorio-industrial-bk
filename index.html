@@ -4535,19 +4535,13 @@ if(btnDownloadDocEl){
   });
 }
 
-/* OL_CSV_URL, OL_FALLBACK_DATA e OL_DATA precisam existir ANTES desta
-   chamada — por isso ficam declaradas aqui em cima, mesmo a lógica de Óleo
-   (OL_transformCsv, OL_loadData etc.) estando definida mais abaixo, junto
-   com o resto da seção "Consumo de Óleo". Funções são hoisted inteiras pelo
-   JS, então tanto faz onde ficam; "const"/"let" não são — ficam bloqueadas
-   ("temporal dead zone") até a linha da declaração rodar de fato. Sem isso,
-   dava ReferenceError: "Cannot access 'OL_CSV_URL' before initialization"
-   assim que a página carregava. */
-const OL_CSV_URL = "https://docs.google.com/spreadsheets/d/1dPOqVznVZ3Z1AueP8o2H8nlu2AaWjIs1nqg47eUUYUg/export?format=csv&gid=238959934";
-const OL_FALLBACK_DATA = {
-  "2026-06-15": { entrada: 740, saida: 612, consumo: 128 },
-};
-let OL_DATA = {}; // { 'YYYY-MM-DD': {entrada, saida, consumo} }, somado por dia
+/* OL_DATA precisa existir ANTES desta chamada — por isso fica declarada
+   aqui em cima, mesmo a lógica de Óleo (OL_loadData etc.) estando definida
+   mais abaixo, junto com o resto da seção "Consumo de Óleo". Funções são
+   hoisted inteiras pelo JS, então tanto faz onde ficam; "let" não é —
+   fica bloqueada ("temporal dead zone") até a linha da declaração rodar de
+   fato. Sem isso, dava ReferenceError assim que a página carregava. */
+let OL_DATA = {}; // { 'YYYY-MM-DD': {consumo, entrada, contagemAnterior, contagemAtual} } — data = data da contagem que FECHOU o intervalo
 
 /* ---------- Inicializa página 1 (Relatório Industrial) ---------- */
 periodInfo.textContent = 'Carregando dados do banco…';
@@ -4943,32 +4937,22 @@ document.getElementById('rcBtnRefresh').addEventListener('click', ()=> RC_loadDa
    fórmula quebrada ou célula vazia).
    ============================================================================ */
 
-/* OL_CSV_URL, OL_FALLBACK_DATA e OL_DATA foram declaradas lá em cima, perto
-   da chamada de inicialização "OL_loadData(false)" — ver comentário lá pra
-   entender por quê (evita ReferenceError de temporal dead zone). */
+/* OL_DATA foi declarada lá em cima, perto da chamada de inicialização
+   "OL_loadData(false)" — ver comentário lá pra entender por quê (evita
+   ReferenceError de temporal dead zone).
 
-function OL_transformCsv(csvText){
-  const rows = parseCSV(csvText).filter(r => r.some(c => c && c.trim() !== ''));
-  const byDate = {};
-  rows.forEach(r=>{
-    // Não confia em número fixo de linhas de cabeçalho — só aceita a linha
-    // se a coluna B tiver uma data válida (assim pula cabeçalho/linha do logo
-    // automaticamente, mesmo que a planilha ganhe/perca uma linha no topo).
-    const iso = parseDataBR((r[1]||'').trim());
-    if(!iso) return;
-    const entrada = parseNumOrNull(r[2]) ?? 0; // coluna C
-    const saida = parseNumOrNull(r[4]) ?? 0;   // coluna E
-    if(!byDate[iso]) byDate[iso] = { entrada:0, saida:0 };
-    byDate[iso].entrada += entrada;
-    byDate[iso].saida += saida;
-  });
-  const result = {};
-  Object.keys(byDate).forEach(iso=>{
-    const { entrada, saida } = byDate[iso];
-    result[iso] = { entrada, saida, consumo: entrada - saida };
-  });
-  return result;
-}
+   Antes lia de uma planilha do Google Sheets, com "entrada"/"saída"
+   lançados manualmente todo dia. Agora lê direto de estoque_entradas e
+   estoque_contagens (mesmas tabelas da aba Lançamento > Estoque) e calcula
+   o consumo entre cada par de contagens consecutivas de Óleo de Algodão:
+
+     Consumo = Contagem anterior + Entradas no intervalo − Contagem atual
+
+   O consumo de um intervalo fica atribuído à DATA DA CONTAGEM QUE FECHOU
+   ele — então o gráfico mostra pontos nos dias em que houve contagem, não
+   um valor por dia corrido. Sem pelo menos 2 contagens registradas, não dá
+   pra calcular nenhum consumo (fica vazio até isso acontecer). */
+const OL_ITEM = 'OLEO DE ALGODAO';
 
 /* Soma o consumo de óleo (L) nas datas do período filtrado. */
 function OL_getConsumoForPeriod(filteredDates){
@@ -4979,17 +4963,42 @@ function OL_getConsumoForPeriod(filteredDates){
 
 async function OL_loadData(isManualRefresh){
   const refreshIfReportLoaded = () => { if(Object.keys(DATA).length > 0) refreshAll(); };
-  await loadCsvWithFallback({
-    url: OL_CSV_URL,
-    isManualRefresh,
-    errorLabel: 'Consumo de Óleo',
-    parse: OL_transformCsv,
-    isEmpty: () => false, // planilha sem lançamentos ainda é um estado válido (não é erro)
-    onSuccess: (parsed) => { OL_DATA = parsed; refreshIfReportLoaded(); },
-    hasExistingData: () => Object.keys(OL_DATA).length > 0,
-    fallbackData: OL_FALLBACK_DATA,
-    onFallback: (fb) => { OL_DATA = fb; refreshIfReportLoaded(); },
-  });
+  try{
+    const client = LANC_getClient();
+    const [{ data: contagens, error: errC }, { data: entradas, error: errE }] = await Promise.all([
+      client.from('estoque_contagens').select('data, quantidade').eq('item', OL_ITEM).order('data', { ascending: true }),
+      client.from('estoque_entradas').select('data, quantidade').eq('item', OL_ITEM).order('data', { ascending: true }),
+    ]);
+    if(errC) throw errC;
+    if(errE) throw errE;
+
+    const result = {};
+    const lista = contagens || [];
+    for(let i = 1; i < lista.length; i++){
+      const anterior = lista[i-1];
+      const atual = lista[i];
+      const entradasNoIntervalo = (entradas || [])
+        .filter(e => e.data > anterior.data && e.data <= atual.data)
+        .reduce((s, e) => s + Number(e.quantidade || 0), 0);
+      const consumo = Number(anterior.quantidade) + entradasNoIntervalo - Number(atual.quantidade);
+      result[atual.data] = {
+        consumo,
+        entrada: entradasNoIntervalo,
+        contagemAnterior: Number(anterior.quantidade),
+        contagemAtual: Number(atual.quantidade),
+      };
+    }
+    OL_DATA = result;
+    if(isManualRefresh){
+      const infoEl = document.getElementById('oleoInfo');
+      if(infoEl) infoEl.textContent = lista.length < 2
+        ? '⚠ Só há uma contagem de Óleo de Algodão registrada — ainda não dá pra calcular consumo entre intervalos.'
+        : `${Object.keys(result).length} intervalo(s) de consumo calculado(s) a partir de ${lista.length} contagens.`;
+    }
+    refreshIfReportLoaded();
+  }catch(err){
+    console.error('Erro ao calcular consumo de óleo (Supabase):', err);
+  }
 }
 
 /* ============================================================================
