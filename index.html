@@ -7973,7 +7973,10 @@ function PP_renderLeadTimeChart(){
    de Quantidade ÷ tempo entre Início e Fim — necessário pras linhas que só
    registram "quantos produziu" sem uma taxa/hora já calculada. */
 function PP_getProdutividadeValor(c){
-  const direta = c.velocidade_paes_hora ?? c.velocidade_prensa ?? c.unidades_por_hora ?? c.producao_por_hora ?? null;
+  // velocidade_paes_hora e velocidade_prensa são parâmetros de como a
+  // máquina está PROGRAMADA (esteira/prensa), não produção real — não
+  // entram no cálculo de produtividade. Confirmado com a operação.
+  const direta = c.unidades_por_hora ?? c.producao_por_hora ?? null;
   if(direta != null) return direta;
   if(c.quantidade != null && c.inicio && c.fim){
     const [ih,im] = c.inicio.split(':').map(Number);
@@ -8096,14 +8099,14 @@ function PP_renderVelocidade(){
   const tbody = document.getElementById('ppTbodyCorridas');
   const linhas = [...PP_CORRIDAS].sort((a,b)=> a.data.localeCompare(b.data));
   tbody.innerHTML = linhas.map(c=>{
-    const veloc = PP_getProdutividadeValor(c);
+    const veloc = ehSalgado ? PP_getUnidadesPorHora(c) : PP_getProdutividadeValor(c);
     return `<tr>
       <td>${PP_fmtDataBR(c.data)}</td>
       <td>${c.produto ?? '—'}</td>
       <td>${c.maquina || c.masseira || '—'}</td>
       <td class="center">${(c.inicio||c.hora_massa||'—').toString().slice(0,5)}</td>
       <td class="center">${(c.fim||'—').toString().slice(0,5)}</td>
-      <td class="center">${veloc != null ? veloc.toLocaleString('pt-BR',{maximumFractionDigits:1}) : '—'}</td>
+      <td class="center">${veloc != null ? veloc.toLocaleString('pt-BR',{maximumFractionDigits:1}) + (ehSalgado ? ' Unid/h' : '') : '—'}</td>
     </tr>`;
   }).join('');
 }
