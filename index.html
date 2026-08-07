@@ -575,6 +575,9 @@
   .lanc-hist-filters{ display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; }
   .lanc-hist-filters .lanc-field{ min-width:150px; }
   #lpHistTable, #mqTable{ font-size:11.5px; }
+  .comparativo-row{ display:flex; gap:16px; align-items:stretch; }
+  .comparativo-row .panel{ margin:0; }
+  @media (max-width: 900px){ .comparativo-row{ flex-direction:column; } #podioPanel{ flex-basis:auto !important; } }
   #lpHistTable td, #lpHistTable th, #mqTable td, #mqTable th{ white-space:nowrap; }
   #lpHistTable td.lanc-hist-wrap, #mqTable td.lanc-hist-wrap{ white-space:normal; max-width:180px; }
   #lpHistTable input, #lpHistTable select, #mqTable input, #mqTable select{
@@ -725,31 +728,44 @@
     <div class="chart-wrap" id="oleoChartWrap"></div>
   </div>
 
-  <div class="panel">
-    <select id="daySelect" style="display:none;"></select>
-    <div class="panel-title" id="chartTitle">Comparativo: Produção Prevista × Produção Real</div>
-    <div class="chart-toolbar">
-      <label class="scale-toggle">
-        <input type="checkbox" id="logScaleToggle" checked>
-        Escala logarítmica (ajuda quando há itens de volume muito diferente)
-      </label>
-      <input type="text" id="chartProdutoFiltro" list="chartProdutoFiltroList" placeholder="Buscar produto..." style="padding:7px 12px;border:1px solid var(--line);border-radius:7px;font-size:12.5px;background:var(--cream);min-width:220px;">
-      <datalist id="chartProdutoFiltroList"></datalist>
-      <div class="zoom-controls">
-        <button id="zoomOut" title="Diminuir zoom">−</button>
-        <span class="zoom-pct" id="zoomPct">100%</span>
-        <button id="zoomIn" title="Aumentar zoom">+</button>
-        <button id="zoomReset" title="Restaurar zoom">⟳</button>
+  <div class="comparativo-row" id="comparativoRow">
+    <div class="panel" id="comparativoPanel" style="flex:1 1 auto;min-width:0;">
+      <select id="daySelect" style="display:none;"></select>
+      <div class="panel-title" id="chartTitle">Comparativo: Produção Prevista × Produção Real</div>
+      <div class="chart-toolbar">
+        <label class="scale-toggle">
+          <input type="checkbox" id="logScaleToggle" checked>
+          Escala logarítmica (ajuda quando há itens de volume muito diferente)
+        </label>
+        <input type="text" id="chartProdutoFiltro" list="chartProdutoFiltroList" placeholder="Buscar produto..." style="padding:7px 12px;border:1px solid var(--line);border-radius:7px;font-size:12.5px;background:var(--cream);min-width:220px;">
+        <datalist id="chartProdutoFiltroList"></datalist>
+        <div class="zoom-controls">
+          <button id="zoomOut" title="Diminuir zoom">−</button>
+          <span class="zoom-pct" id="zoomPct">100%</span>
+          <button id="zoomIn" title="Aumentar zoom">+</button>
+          <button id="zoomReset" title="Restaurar zoom">⟳</button>
+        </div>
+      </div>
+      <div class="chart-wrap" id="dayChartWrap"></div>
+      <div class="legend">
+        <span><i class="dot" style="background:#f3d9d0;border:1px solid var(--red)"></i>Prevista (Meta)</span>
+        <span><i class="dot" style="background:var(--red);border:1px solid var(--red)"></i>Real (abaixo da meta)</span>
+        <span><i class="dot" style="background:var(--good);border:1px solid var(--good)"></i>Real (meta atingida)</span>
+        <span><i class="dot" style="background:#B5640B;border:1px solid #B5640B"></i>Real (sem meta / fora do planejamento)</span>
       </div>
     </div>
-    <div class="chart-wrap" id="dayChartWrap"></div>
-    <div class="legend">
-      <span><i class="dot" style="background:#f3d9d0;border:1px solid var(--red)"></i>Prevista (Meta)</span>
-      <span><i class="dot" style="background:var(--red);border:1px solid var(--red)"></i>Real (abaixo da meta)</span>
-      <span><i class="dot" style="background:var(--good);border:1px solid var(--good)"></i>Real (meta atingida)</span>
-      <span><i class="dot" style="background:#B5640B;border:1px solid #B5640B"></i>Real (sem meta / fora do planejamento)</span>
+
+    <!-- Pódio dos 3 setores com melhor % de atendimento no período — só faz
+         sentido na Aba Geral (onde o gráfico ao lado agrupa por setor).
+         Ver renderPodioSetores(). Cozinha fica fora (sem coleta de dados
+         ainda) e setores "sem meta" não entram no ranking (não há % pra
+         comparar). -->
+    <div class="panel" id="podioPanel" style="flex:0 0 260px;display:none;">
+      <div class="panel-title">Pódio — Melhores em Atendimento</div>
+      <div id="podioWrap"></div>
     </div>
   </div>
+
 
   <div class="panel" id="atendimentoTrendPanel" style="display:none;">
     <div class="panel-title">Histórico de Atendimento % — Meta × Realizado</div>
@@ -2935,6 +2951,31 @@ function renderCauses(filteredDates){
 
 /* ---------- Gráfico comparativo: recebe as linhas já prontas (1 dia, ou
    somadas do período inteiro — ver computeChartRows) ---------- */
+/* Pódio dos 3 setores com melhor % de atendimento (Real/Prevista) no
+   período filtrado — reaproveita o mesmo grupo já calculado pro gráfico da
+   Aba Geral (rows já vem com .pct calculado, Cozinha já excluída, sem-meta
+   já marcados com pct=null). Só entram setores com meta cadastrada, porque
+   sem meta não há % pra rankear. */
+function renderPodioSetores(rows){
+  const wrap = document.getElementById('podioWrap');
+  const ranking = rows.filter(r => r.pct != null).slice(0, 3);
+  if(ranking.length === 0){
+    wrap.innerHTML = `<div class="empty-state" style="padding:20px 10px;"><span class="empty-icon">🏆</span>Nenhum setor com meta cadastrada nesse período.</div>`;
+    return;
+  }
+  const medalhas = ['🥇','🥈','🥉'];
+  const cores = ['#B5640B','#8a8a8a','#a05a2c'];
+  wrap.innerHTML = ranking.map((r,i) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 8px;${i<ranking.length-1 ? 'border-bottom:1px solid var(--line);' : ''}">
+      <div style="font-size:26px;line-height:1;">${medalhas[i]}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:13px;color:#2a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.produto}">${i+1}º — ${r.produto}</div>
+        <div style="font-size:18px;font-weight:800;color:${cores[i]};">${Math.round(r.pct*100)}%</div>
+      </div>
+    </div>
+  `).join('');
+}
+
 function renderDayChart(rows){
   if(rows.length === 0){
     document.getElementById('dayChartWrap').innerHTML = `
@@ -2946,26 +2987,36 @@ function renderDayChart(rows){
   }
   const maxVal = Math.max(...rows.map(r=>Math.max(r.prev, r.real)));
   const z = zoomLevel; // 0.6 a 2.2
+  const porSetor = selectedSector === ''; // agrupado por setor -> mostra % em vez de quantidade
   let barW = 22*z, groupGap = 16*z;
   const groupW = barW;
   const baseY = 300, topPad = 70;
 
-  // Com poucas barras (ex: agrupado por Setor na aba Geral), a largura fixa
-  // deixava tudo espremido num grupinho no meio do card. Aqui, se o espaço
-  // disponível sobra, distribui ele proporcionalmente entre as barras (com
-  // um teto, pra não ficar gigante com só 2-3 itens).
   const containerEl = document.getElementById('dayChartWrap');
   const containerWidth = (containerEl && containerEl.clientWidth > 40) ? containerEl.clientWidth : 900;
-  const naturalWidth = rows.length*(groupW+groupGap) + 50;
-  if(naturalWidth < containerWidth){
-    const targetPerSlot = (containerWidth - 60) / rows.length;
+
+  if(porSetor){
+    // Aba Geral: exatamente 5 barras visíveis por vez, o resto rola
+    // horizontalmente (.chart-wrap já tem overflow-x:auto) — não estica
+    // pra caber tudo, ao contrário do comportamento padrão abaixo.
+    const targetPerSlot = (containerWidth - 60) / 5;
     barW = Math.min(90*z, Math.max(barW, targetPerSlot*0.55));
     groupGap = Math.min(55*z, Math.max(groupGap, targetPerSlot*0.35));
+  } else {
+    // Com poucas barras (ex: visão por produto com poucos itens), a largura
+    // fixa deixava tudo espremido num grupinho no meio do card. Aqui, se o
+    // espaço disponível sobra, distribui ele proporcionalmente entre as
+    // barras (com um teto, pra não ficar gigante com só 2-3 itens).
+    const naturalWidth = rows.length*(groupW+groupGap) + 50;
+    if(naturalWidth < containerWidth){
+      const targetPerSlot = (containerWidth - 60) / rows.length;
+      barW = Math.min(90*z, Math.max(barW, targetPerSlot*0.55));
+      groupGap = Math.min(55*z, Math.max(groupGap, targetPerSlot*0.35));
+    }
   }
 
   const chartWidth = rows.length*(barW+groupGap)+50;
   const fsVal = Math.max(8, 10*z), fsLab = Math.max(8, 10*z);
-  const porSetor = selectedSector === ''; // agrupado por setor -> mostra % em vez de quantidade
 
   function scaledH(v){
     if(!logScaleOn) return (v/maxVal)*(baseY-topPad);
@@ -4037,7 +4088,8 @@ function computeChartRows(filteredDates){
     // setor quando ele produz em mais de uma — dá uma visão geral rápida,
     // não é tão preciso quanto o Atendimento de Meta por Setor, que usa
     // média de razão pra evitar esse problema).
-    const groups = exactGroupBy(source,
+    // Cozinha fica fora: ainda não tem coleta de dados estruturada.
+    const groups = exactGroupBy(source.filter(r => r.setor !== 'COZINHA'),
       () => '',
       r => r.setor || '—',
       r => ({ prev: r.prev, real: r.real }),
@@ -4046,7 +4098,16 @@ function computeChartRows(filteredDates){
         g.real += r.real;
       }
     );
-    return groups.sort((a,b)=> b.real - a.real);
+    // Decrescente por % de atendimento (Real/Prevista), 100% pro topo,
+    // menores depois; setores sem meta cadastrada (sem % pra comparar)
+    // ficam sempre por último, entre si ordenados por volume real.
+    groups.forEach(g => { g.pct = (g.prev != null && g.prev > 0) ? g.real / g.prev : null; });
+    return groups.sort((a, b) => {
+      if(a.pct === null && b.pct === null) return b.real - a.real;
+      if(a.pct === null) return 1;
+      if(b.pct === null) return -1;
+      return b.pct - a.pct;
+    });
   }
 
   if(filteredDates.length <= 1) return source;
@@ -4089,6 +4150,14 @@ function renderDayDetail(filteredDates){
     titleEl.textContent = 'Comparativo: Produção Prevista × Produção Real';
   }
   renderDayChart(rows);
+
+  const podioPanel = document.getElementById('podioPanel');
+  if(selectedSector === ''){
+    podioPanel.style.display = 'block';
+    renderPodioSetores(rows);
+  } else {
+    podioPanel.style.display = 'none';
+  }
 }
 document.getElementById('chartProdutoFiltro').addEventListener('input', (e)=>{
   chartProdutoFiltro = e.target.value.trim();
