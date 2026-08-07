@@ -936,7 +936,7 @@
 
       <!-- Bloco Velocidade & Paradas — só aparece se a linha tiver esse tipo de dado -->
       <div id="ppBlocoVelocidade" style="display:none;">
-        <div class="panel">
+        <div class="panel" id="ppPainelVelocidadeSimples">
           <div class="panel-title">Produtividade</div>
           <div class="chart-wrap" id="ppChartVelocidade"></div>
         </div>
@@ -7712,11 +7712,17 @@ function PP_render(){
   if(temEtapas) PP_renderEtapas();
   if(temVelocidade) PP_renderVelocidade();
 
+  const painelVelSimples = document.getElementById('ppPainelVelocidadeSimples');
   const painelCap = document.getElementById('ppPainelCapacidade');
   if(PP_currentLinha === 'Salgado' && temVelocidade){
+    // Salgado tem os dois eixos (Real e Capacidade Nominal); o painel
+    // "Produtividade" simples ficaria redundante e com rótulo de unidade
+    // inconsistente — só mostra o comparativo Real x Capacidade.
+    painelVelSimples.style.display = 'none';
     painelCap.style.display = 'block';
     PP_renderCapacidadeChart();
   } else {
+    painelVelSimples.style.display = '';
     painelCap.style.display = 'none';
   }
 }
@@ -7998,20 +8004,19 @@ function PP_getProdutividadeValor(c){
    referência, e misturar um "sem dado" com 0 distorceria a leitura. */
 function PP_renderCapacidadeChart(){
   const wrap = document.getElementById('ppChartCapacidade');
-  const itens = PP_CORRIDAS
-    .map(c=>{
-      const real = PP_getUnidadesPorHora(c);
-      if(real == null || !c.maquina || !c.produto) return null;
-      const cap = RC_findCapacidadeNominal(c.produto, c.maquina);
-      if(!cap) return null;
-      return {
-        label: `${PP_fmtDataBR(c.data)} · ${c.maquina}`,
-        produto: c.produto,
-        real,
-        nominal: cap.valor,
-      };
-    })
-    .filter(Boolean)
+  const porMaquinaProduto = {};
+  PP_CORRIDAS.forEach(c=>{
+    const real = PP_getUnidadesPorHora(c);
+    if(real == null || !c.maquina || !c.produto) return;
+    const cap = RC_findCapacidadeNominal(c.produto, c.maquina);
+    if(!cap) return;
+    const key = c.maquina + '|' + c.produto;
+    if(!porMaquinaProduto[key]) porMaquinaProduto[key] = { maquina: c.maquina, produto: c.produto, somaReal: 0, count: 0, nominal: cap.valor };
+    porMaquinaProduto[key].somaReal += real;
+    porMaquinaProduto[key].count += 1;
+  });
+  const itens = Object.values(porMaquinaProduto)
+    .map(g => ({ label: `${g.maquina} - ${g.produto}`, produto: g.produto, real: g.somaReal/g.count, nominal: g.nominal }))
     .sort((a,b) => a.label.localeCompare(b.label));
 
   if(itens.length === 0){
@@ -8031,14 +8036,14 @@ function PP_renderCapacidadeChart(){
     const hNom = (it.nominal/maxVal)*(baseY-topPad);
     const corReal = it.real >= it.nominal ? '#2e7d32' : 'var(--red)';
 
-    bars += `<rect x="${x0}" y="${baseY-hReal}" width="${barW}" height="${hReal}" fill="${corReal}" rx="3"><title>${it.produto} — Real: ${it.real.toLocaleString('pt-BR',{maximumFractionDigits:0})} un/h</title></rect>`;
-    bars += `<text x="${x0+barW/2}" y="${baseY-hReal-6}" font-size="9.5" font-weight="700" fill="${corReal}" text-anchor="middle">${it.real.toLocaleString('pt-BR',{maximumFractionDigits:0})}</text>`;
+    bars += `<rect x="${x0}" y="${baseY-hReal}" width="${barW}" height="${hReal}" fill="${corReal}" rx="3"><title>${it.label} — Real: ${it.real.toLocaleString('pt-BR',{maximumFractionDigits:0})} Unid/h</title></rect>`;
+    bars += `<text x="${x0+barW/2}" y="${baseY-hReal-6}" font-size="9" font-weight="700" fill="${corReal}" text-anchor="middle">${it.real.toLocaleString('pt-BR',{maximumFractionDigits:0})} Unid/h</text>`;
 
     const xNom = x0+barW+gapDentro;
-    bars += `<rect x="${xNom}" y="${baseY-hNom}" width="${barW}" height="${hNom}" fill="#B5640B" rx="3"><title>${it.produto} — Capacidade nominal: ${it.nominal.toLocaleString('pt-BR')} un/h</title></rect>`;
-    bars += `<text x="${xNom+barW/2}" y="${baseY-hNom-6}" font-size="9.5" font-weight="700" fill="#8a4c08" text-anchor="middle">${it.nominal.toLocaleString('pt-BR')}</text>`;
+    bars += `<rect x="${xNom}" y="${baseY-hNom}" width="${barW}" height="${hNom}" fill="#B5640B" rx="3"><title>${it.label} — Capacidade nominal: ${it.nominal.toLocaleString('pt-BR')} Unid/h</title></rect>`;
+    bars += `<text x="${xNom+barW/2}" y="${baseY-hNom-6}" font-size="9" font-weight="700" fill="#8a4c08" text-anchor="middle">${it.nominal.toLocaleString('pt-BR')} Unid/h</text>`;
 
-    bars += `<text x="${x0+grupoW/2}" y="${baseY+14}" font-size="9" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+grupoW/2} ${baseY+14})">${truncateProdLabel(it.label,26)}<title>${it.produto} — ${it.label}</title></text>`;
+    bars += `<text x="${x0+grupoW/2}" y="${baseY+14}" font-size="9" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+grupoW/2} ${baseY+14})">${truncateProdLabel(it.label,26)}<title>${it.label}</title></text>`;
   });
 
   const legenda = `
@@ -8052,15 +8057,23 @@ function PP_renderCapacidadeChart(){
 }
 
 function PP_renderVelocidade(){
+  const ehSalgado = PP_currentLinha === 'Salgado';
   const porProduto = {};
   PP_CORRIDAS.forEach(c=>{
-    const v = PP_getProdutividadeValor(c);
+    // Na linha Salgado, o valor já vem convertido pra Unid/h na maioria dos
+    // registros (campo unidades_por_hora, populado direto ou via
+    // unidades_por_recipiente) — só que o rótulo usava unidade_medida
+    // (Caixas, Telas), a unidade de CONTAGEM, não a de produtividade
+    // exibida. Isso mostrava "3.217 Caixas/h" quando o número já era
+    // unidades. Forçamos Unid/h aqui e descartamos o que não converte, em
+    // vez de rotular errado.
+    const v = ehSalgado ? PP_getUnidadesPorHora(c) : PP_getProdutividadeValor(c);
     if(v == null) return;
     const key = c.produto || '—';
-    if(!porProduto[key]) porProduto[key] = { soma:0, count:0, unidade: c.unidade_medida || '' };
+    if(!porProduto[key]) porProduto[key] = { soma:0, count:0, unidade: ehSalgado ? 'Unid' : (c.unidade_medida || '') };
     porProduto[key].soma += Number(v);
     porProduto[key].count += 1;
-    if(!porProduto[key].unidade && c.unidade_medida) porProduto[key].unidade = c.unidade_medida;
+    if(!ehSalgado && !porProduto[key].unidade && c.unidade_medida) porProduto[key].unidade = c.unidade_medida;
   });
   const itens = Object.keys(porProduto)
     .map(p => ({ produto:p, media: porProduto[p].soma/porProduto[p].count, unidade: porProduto[p].unidade }))
