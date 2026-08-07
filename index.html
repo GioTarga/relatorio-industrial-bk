@@ -791,6 +791,16 @@
       </div>
       <div id="prTrendModalChart" class="chart-wrap" style="margin-top:14px;"></div>
       <div class="trend-foot" id="prTrendModalFoot" style="margin-top:10px;"></div>
+
+      <!-- Só populado/exibido quando o modal é do Setor: Salgado (ver
+           DC_renderCapacidadeSalgado). Produtividade real (Unid/h, calculada
+           a partir de início/fim + produção real lançados) x capacidade
+           nominal da máquina cadastrada na aba Máquinas. -->
+      <div id="prCapacidadeBlock" style="display:none;margin-top:22px;border-top:1px solid var(--line);padding-top:16px;">
+        <div class="panel-title" style="margin-bottom:8px;">Produtividade Real × Capacidade da Máquina (Unid/h)</div>
+        <div id="prCapacidadeChart" class="chart-wrap"></div>
+        <div class="trend-foot" id="prCapacidadeFoot" style="margin-top:8px;"></div>
+      </div>
     </div>
   </div>
 
@@ -3656,6 +3666,85 @@ function DC_computeProductTrend(chave, filteredDates, porSetor){
   return porDia;
 }
 
+/* Pedido da gerência: dentro do modal "Setor: Salgado" do Relatório
+   Industrial, comparar a produtividade REAL (Unid/h) calculada a partir do
+   que já é lançado em Produção Diária — início, fim e produção real — com
+   a capacidade NOMINAL da máquina (cadastrada na aba Lançamento > Máquinas
+   / tabela public.maquinas). Só entram linhas em Unidades: misturar Kg ou
+   Caixas com a capacidade nominal (que é em un/h) reproduziria o mesmo tipo
+   de erro de unidade que já corrigimos no cálculo de atingimento de meta. */
+function DC_computeCapacidadeSalgado(filteredDates){
+  const itens = [];
+  filteredDates.forEach(d=>{
+    (DATA[d] ? DATA[d].rows : []).forEach(r=>{
+      if(r.setor !== 'SALGADO') return;
+      if(!r.maquina || !r.produto || !r.real) return;
+      if(normalizeUnitDisplay(r.uni) !== 'Unid') return; // evita misturar Kg/Caixas com un/h
+      const iniMin = timeToMinutes(r.inicio);
+      const fimMin = timeToMinutes(r.fim);
+      if(iniMin === null || fimMin === null) return;
+      let horas = (fimMin - iniMin) / 60;
+      if(horas <= 0) horas += 24; // produção que atravessou meia-noite
+      if(horas <= 0) return;
+      const cap = RC_findCapacidadeNominal(r.produto, r.maquina);
+      if(!cap) return;
+      itens.push({
+        label: `${d.split('-').reverse().join('/')} · ${r.maquina}`,
+        produto: r.produto,
+        real: r.real / horas,
+        nominal: cap.valor,
+      });
+    });
+  });
+  return itens.sort((a,b)=> a.label.localeCompare(b.label));
+}
+
+function DC_renderCapacidadeSalgado(filteredDates){
+  const block = document.getElementById('prCapacidadeBlock');
+  const chartEl = document.getElementById('prCapacidadeChart');
+  const footEl = document.getElementById('prCapacidadeFoot');
+  block.style.display = 'block';
+
+  const itens = DC_computeCapacidadeSalgado(filteredDates);
+  if(itens.length === 0){
+    chartEl.innerHTML = `<div class="empty-state"><span class="empty-icon">⚙️</span>Nenhum lançamento do período tem início, fim e máquina completos com capacidade nominal cadastrada pra calcular Unid/h.</div>`;
+    footEl.textContent = '';
+    return;
+  }
+
+  const barW = 16, gapDentro = 4, gapGrupo = 26, baseY = 260, topPad = 90;
+  const grupoW = barW*2 + gapDentro;
+  const chartWidth = Math.max(780, itens.length*(grupoW+gapGrupo) + 60);
+  const maxVal = Math.max(...itens.map(i=>Math.max(i.real,i.nominal)), 1);
+
+  let bars = '';
+  itens.forEach((it,i)=>{
+    const x0 = 36 + i*(grupoW+gapGrupo);
+    const hReal = (it.real/maxVal)*(baseY-topPad);
+    const hNom = (it.nominal/maxVal)*(baseY-topPad);
+    const corReal = it.real >= it.nominal ? '#2e7d32' : 'var(--red)';
+
+    bars += `<rect x="${x0}" y="${baseY-hReal}" width="${barW}" height="${hReal}" fill="${corReal}" rx="3"><title>${it.produto} — Real: ${it.real.toLocaleString('pt-BR',{maximumFractionDigits:0})} un/h</title></rect>`;
+    bars += `<text x="${x0+barW/2}" y="${baseY-hReal-6}" font-size="9.5" font-weight="700" fill="${corReal}" text-anchor="middle">${it.real.toLocaleString('pt-BR',{maximumFractionDigits:0})}</text>`;
+
+    const xNom = x0+barW+gapDentro;
+    bars += `<rect x="${xNom}" y="${baseY-hNom}" width="${barW}" height="${hNom}" fill="#B5640B" rx="3"><title>${it.produto} — Capacidade nominal: ${it.nominal.toLocaleString('pt-BR')} un/h</title></rect>`;
+    bars += `<text x="${xNom+barW/2}" y="${baseY-hNom-6}" font-size="9.5" font-weight="700" fill="#8a4c08" text-anchor="middle">${it.nominal.toLocaleString('pt-BR')}</text>`;
+
+    bars += `<text x="${x0+grupoW/2}" y="${baseY+14}" font-size="9" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+grupoW/2} ${baseY+14})">${truncateProdLabel(it.label,26)}<title>${it.produto} — ${it.label}</title></text>`;
+  });
+
+  const legenda = `
+    <g transform="translate(36,20)">
+      <rect x="0" y="0" width="12" height="12" fill="#2e7d32" rx="2"/><text x="18" y="10" font-size="11" fill="#2a1a1a">Real ≥ capacidade</text>
+      <rect x="150" y="0" width="12" height="12" fill="var(--red)" rx="2"/><text x="168" y="10" font-size="11" fill="#2a1a1a">Real abaixo da capacidade</text>
+      <rect x="330" y="0" width="12" height="12" fill="#B5640B" rx="2"/><text x="348" y="10" font-size="11" fill="#2a1a1a">Capacidade nominal</text>
+    </g>`;
+
+  chartEl.innerHTML = `<div style="max-width:100%;overflow-x:auto;"><svg viewBox="0 0 ${chartWidth} 380" width="${chartWidth}" height="380" style="overflow:visible;font-family:'Inter',Arial,sans-serif;">${legenda}${bars}</svg></div>`;
+  footEl.textContent = `Produtividade real calculada como Produção Real ÷ (Fim − Início) de cada lançamento, comparada à capacidade nominal cadastrada da máquina. ${itens.length} lançamento(s) com dado completo pra esse cálculo no período.`;
+}
+
 function DC_showProductTrend(chave, uniFallback){
   const porSetor = selectedSector === '';
   const filteredDates = getFilteredDates();
@@ -3664,6 +3753,10 @@ function DC_showProductTrend(chave, uniFallback){
   document.getElementById('prTrendModalTitle').textContent = porSetor ? `Setor: ${chave}` : chave;
   const chartEl = document.getElementById('prTrendModalChart');
   const footEl = document.getElementById('prTrendModalFoot');
+  const capBlock = document.getElementById('prCapacidadeBlock');
+
+  const ehSetorSalgado = porSetor && normalizeSector(chave) === 'SALGADO';
+  if(!ehSetorSalgado) capBlock.style.display = 'none';
 
   if(pontos.length === 0){
     chartEl.innerHTML = `<div class="empty-state"><span class="empty-icon">📦</span>Sem lançamentos desse produto no período selecionado.</div>`;
@@ -3725,6 +3818,15 @@ function DC_showProductTrend(chave, uniFallback){
       <span><i class="dot" style="background:var(--gold);border:1px solid var(--gold)"></i>Meta (100%)</span>
     </div>`;
   footEl.textContent = `% de Atendimento (Real ÷ Planejado) por dia, dentro do período e setor selecionados. ${comMeta.length} dia(s) com meta cadastrada${pontos.length > comMeta.length ? ` — ${pontos.length - comMeta.length} dia(s) sem meta ficaram fora da linha` : ''}.`;
+
+  if(ehSetorSalgado){
+    // RC_DATA (capacidade nominal) só é carregado quando a aba "Máquinas" é
+    // visitada — como esse modal pode ser aberto sem isso ter acontecido,
+    // garante o carregamento aqui antes de calcular o gráfico.
+    document.getElementById('prCapacidadeChart').innerHTML = `<div class="empty-state">Carregando capacidade das máquinas...</div>`;
+    document.getElementById('prCapacidadeFoot').textContent = '';
+    PP_ensureCapacidadeData().then(()=> DC_renderCapacidadeSalgado(filteredDates));
+  }
 
   document.getElementById('prTrendModal').style.display = 'flex';
 }
