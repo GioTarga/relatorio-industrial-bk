@@ -950,16 +950,11 @@
         </div>
 
         <div class="panel">
-          <div class="panel-title">Paradas por Motivo</div>
-          <div class="chart-wrap" id="ppChartParadas"></div>
-        </div>
-
-        <div class="panel">
           <div class="panel-title">Registros de Produção (Produtividade)</div>
           <div class="table-wrap">
             <table class="detail" id="ppTableCorridas">
               <thead>
-                <tr><th>Data</th><th>Produto</th><th>Máquina/Masseira</th><th class="center">Início</th><th class="center">Fim</th><th class="center">Produtividade</th><th>Paradas</th></tr>
+                <tr><th>Data</th><th>Produto</th><th>Máquina/Masseira</th><th class="center">Início</th><th class="center">Fim</th><th class="center">Produtividade</th></tr>
               </thead>
               <tbody id="ppTbodyCorridas"></tbody>
             </table>
@@ -7886,10 +7881,6 @@ function PP_renderKPIs(){
   }
   if(PP_CORRIDAS.length > 0){
     kpis.push({ label:'Registros de Produção', value: PP_CORRIDAS.length });
-    const paradas = PP_CORRIDAS.flatMap(c => c.produtividade_paradas || []);
-    kpis.push({ label:'Paradas Registradas', value: paradas.length });
-    const tempoParadoTotal = paradas.reduce((s,p)=> s + (Number(p.duracao_seg)||0), 0);
-    kpis.push({ label:'Tempo Total Parado', value: PP_fmtDuracao(tempoParadoTotal) });
   }
   grid.style.gridTemplateColumns = `repeat(${Math.max(kpis.length,1)},1fr)`;
   grid.innerHTML = kpis.map(k=>`
@@ -8024,7 +8015,7 @@ function PP_renderCapacidadeChart(){
     return;
   }
 
-  const barW = 16, gapDentro = 4, gapGrupo = 26, baseY = 260, topPad = 90;
+  const barW = 22, gapDentro = 6, gapGrupo = 54, baseY = 260, topPad = 120;
   const grupoW = barW*2 + gapDentro;
   const chartWidth = itens.length*(grupoW+gapGrupo) + 60;
   const maxVal = Math.max(...itens.map(i=>Math.max(i.real,i.nominal)), 1);
@@ -8036,14 +8027,17 @@ function PP_renderCapacidadeChart(){
     const hNom = (it.nominal/maxVal)*(baseY-topPad);
     const corReal = it.real >= it.nominal ? '#2e7d32' : 'var(--red)';
 
+    // Rótulo na vertical (mesmo padrão dos outros gráficos do app) — evita
+    // que o texto "X.XXX Unid/h" (mais largo que a barra) vaze por cima do
+    // grupo vizinho, como acontecia na horizontal.
     bars += `<rect x="${x0}" y="${baseY-hReal}" width="${barW}" height="${hReal}" fill="${corReal}" rx="3"><title>${it.label} — Real: ${it.real.toLocaleString('pt-BR',{maximumFractionDigits:0})} Unid/h</title></rect>`;
-    bars += `<text x="${x0+barW/2}" y="${baseY-hReal-6}" font-size="9" font-weight="700" fill="${corReal}" text-anchor="middle">${it.real.toLocaleString('pt-BR',{maximumFractionDigits:0})} Unid/h</text>`;
+    bars += `<text x="${x0+barW/2}" y="${baseY-hReal-8}" font-size="10" font-weight="700" fill="${corReal}" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-hReal-8})">${it.real.toLocaleString('pt-BR',{maximumFractionDigits:0})} Unid/h</text>`;
 
     const xNom = x0+barW+gapDentro;
     bars += `<rect x="${xNom}" y="${baseY-hNom}" width="${barW}" height="${hNom}" fill="#B5640B" rx="3"><title>${it.label} — Capacidade nominal: ${it.nominal.toLocaleString('pt-BR')} Unid/h</title></rect>`;
-    bars += `<text x="${xNom+barW/2}" y="${baseY-hNom-6}" font-size="9" font-weight="700" fill="#8a4c08" text-anchor="middle">${it.nominal.toLocaleString('pt-BR')} Unid/h</text>`;
+    bars += `<text x="${xNom+barW/2}" y="${baseY-hNom-8}" font-size="10" font-weight="700" fill="#8a4c08" text-anchor="start" transform="rotate(-90 ${xNom+barW/2} ${baseY-hNom-8})">${it.nominal.toLocaleString('pt-BR')} Unid/h</text>`;
 
-    bars += `<text x="${x0+grupoW/2}" y="${baseY+14}" font-size="9" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+grupoW/2} ${baseY+14})">${truncateProdLabel(it.label,26)}<title>${it.label}</title></text>`;
+    bars += `<text x="${x0+grupoW/2}" y="${baseY+16}" font-size="10" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+grupoW/2} ${baseY+16})">${truncateProdLabel(it.label,22)}<title>${it.label}</title></text>`;
   });
 
   const legenda = `
@@ -8099,46 +8093,10 @@ function PP_renderVelocidade(){
     wrap.innerHTML = `<svg viewBox="0 0 ${chartWidth} 380" width="${chartWidth}" height="380" style="overflow:visible;font-family:'Inter',Arial,sans-serif;">${bars}</svg>`;
   }
 
-  const porMotivo = {};
-  PP_CORRIDAS.forEach(c=>{
-    (c.produtividade_paradas||[]).forEach(p=>{
-      const key = p.motivo || 'Sem motivo informado';
-      if(!porMotivo[key]) porMotivo[key] = { count:0, dur:0 };
-      porMotivo[key].count += 1;
-      porMotivo[key].dur += Number(p.duracao_seg)||0;
-    });
-  });
-  const motivos = Object.keys(porMotivo)
-    .map(m => ({ motivo:m, count: porMotivo[m].count, dur: porMotivo[m].dur }))
-    .sort((a,b) => b.dur - a.dur); // decrescente: maior duração primeiro (topo da lista)
-
-  const wrap2 = document.getElementById('ppChartParadas');
-  if(motivos.length === 0){
-    wrap2.innerHTML = `<div class="empty-state"><span class="empty-icon">✓</span>Nenhuma parada registrada nesse período.</div>`;
-  } else {
-    const barH=20, gap=10, leftPad=230, rightPad=150, topPad=8;
-    const chartW = getResponsiveChartW('ppChartParadas', 820);
-    const barWmax = chartW-leftPad-rightPad;
-    const chartH = motivos.length*(barH+gap)+topPad;
-    const maxVal = Math.max(...motivos.map(m=>m.dur), 1);
-    let bars = '';
-    motivos.forEach((m,i)=>{
-      const y = topPad + i*(barH+gap);
-      const w = (m.dur/maxVal)*barWmax;
-      bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="10.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${truncateProdLabel(m.motivo,28)}<title>${m.motivo}</title></text>`;
-      bars += `<rect x="${leftPad}" y="${y}" width="${barWmax}" height="${barH}" fill="#f3d9d0" stroke="#e0a89a" stroke-width="1" rx="5"/>`;
-      bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="var(--red)" rx="5"/>`;
-      bars += `<text x="${leftPad+w+8}" y="${y+barH/2+4}" font-size="10.5" fill="var(--red)" font-weight="700">${m.count}x · ${PP_fmtDuracao(m.dur)}</text>`;
-    });
-    const visibleRows=6, containerH=visibleRows*(barH+gap)+topPad+6;
-    wrap2.innerHTML = `<div style="max-height:${containerH}px;width:${chartW}px;overflow-y:auto;overflow-x:hidden;display:inline-block;text-align:left;"><svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="font-family:'Inter',Arial,sans-serif;display:block;">${bars}</svg></div>`;
-  }
-
   const tbody = document.getElementById('ppTbodyCorridas');
   const linhas = [...PP_CORRIDAS].sort((a,b)=> a.data.localeCompare(b.data));
   tbody.innerHTML = linhas.map(c=>{
     const veloc = PP_getProdutividadeValor(c);
-    const paradas = (c.produtividade_paradas||[]).map(p=>`${p.motivo||'—'} (${PP_fmtDuracao(p.duracao_seg||0)})`).join('; ');
     return `<tr>
       <td>${PP_fmtDataBR(c.data)}</td>
       <td>${c.produto ?? '—'}</td>
@@ -8146,7 +8104,6 @@ function PP_renderVelocidade(){
       <td class="center">${(c.inicio||c.hora_massa||'—').toString().slice(0,5)}</td>
       <td class="center">${(c.fim||'—').toString().slice(0,5)}</td>
       <td class="center">${veloc != null ? veloc.toLocaleString('pt-BR',{maximumFractionDigits:1}) : '—'}</td>
-      <td style="font-size:11px;color:var(--ink-soft);">${paradas || '—'}</td>
     </tr>`;
   }).join('');
 }
