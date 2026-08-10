@@ -6307,16 +6307,10 @@ async function LP_handleExcelImport(ev){
     }
 
     const itens = [];
-    let brancosSeguidos = 0;
     for(let i=headerIdx+2; i<rows.length; i++){
       const r = rows[i] || [];
       const produtoRaw = r[1];
-      if(!produtoRaw || !String(produtoRaw).trim()){
-        brancosSeguidos++;
-        if(brancosSeguidos >= 3) break;
-        continue;
-      }
-      brancosSeguidos = 0;
+      if(!produtoRaw || !String(produtoRaw).trim()) continue; // linha em branco no meio da lista — pula, não interrompe a leitura
       itens.push(LP_parseExcelRow(String(produtoRaw).trim(), r[2], r[3]));
     }
 
@@ -7289,16 +7283,10 @@ document.getElementById('eqContagemFile').addEventListener('change', async (ev)=
     if(headerIdx === -1) throw new Error('Não encontrei a coluna "Descrição Produto" — confere se é a planilha certa.');
 
     const itens = [];
-    let brancosSeguidos = 0;
     for(let i=headerIdx+1; i<rows.length; i++){
       const r = rows[i] || [];
       const [categoria, codigo, descricao, unidade, contagem] = r;
-      if(!descricao || String(descricao).trim() === ''){
-        brancosSeguidos++;
-        if(brancosSeguidos >= 3) break;
-        continue;
-      }
-      brancosSeguidos = 0;
+      if(!descricao || String(descricao).trim() === '') continue; // linha em branco no meio da lista — pula, não interrompe a leitura
       if(contagem === null || contagem === undefined || contagem === '') continue;
       itens.push({
         categoria: categoria ? String(categoria).trim() : null,
