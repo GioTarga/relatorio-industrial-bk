@@ -1169,25 +1169,6 @@
     <div class="container">
 
       <div class="panel">
-        <div class="panel-title">Saldo de Estoque Atual</div>
-        <div class="trend-foot" style="margin-bottom:12px;">Saldo = Última Contagem + Entradas lançadas depois − Requisições lançadas depois. Itens sem nenhuma contagem ainda partem de 0 (menos confiável — cadastre uma contagem inicial assim que possível).</div>
-        <input type="text" id="eqSaldoFiltro" placeholder="Buscar produto..." style="max-width:320px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--cream);margin-bottom:10px;">
-        <div class="table-wrap" style="max-height:400px;">
-          <table class="detail" id="eqSaldoTable">
-            <thead>
-              <tr>
-                <th>Item</th><th>Unidade</th>
-                <th class="center">Última Contagem</th><th class="center">Data da Contagem</th>
-                <th class="center">+ Entradas Depois</th><th class="center">− Requisições Depois</th>
-                <th class="center">= Saldo Atual</th>
-              </tr>
-            </thead>
-            <tbody id="eqSaldoTbody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="panel">
         <div class="panel-title">⚠ Insumos com Estoque Baixo</div>
         <div style="margin-bottom:14px;">
           <button type="button" class="lanc-add-item-btn" id="eqMinimosToggleBtn">⚙ Configurar Mínimo e Máximo por Insumo</button>
@@ -1216,49 +1197,26 @@
       </div>
 
       <div class="panel">
-        <div class="panel-title">Saldo Atual em Estoque por Produto</div>
-        <div class="eq-selector-wrap">
-          <div class="eq-dropdown" id="eqDropdown">
-            <button type="button" class="eq-dropdown-btn" id="eqDropdownBtn">
-              <span id="eqDropdownLabel">Selecione os produtos...</span>
-              <span class="eq-dropdown-arrow">▾</span>
-            </button>
-            <div class="eq-dropdown-panel" id="eqDropdownPanel" style="display:none;">
-              <input type="text" id="eqProdutoFiltro" placeholder="Buscar produto...">
-              <div class="eq-selector-actions">
-                <button type="button" class="lanc-add-item-btn" id="eqSelAllBtn">Marcar todos</button>
-                <button type="button" class="lanc-add-item-btn" id="eqSelNoneBtn">Desmarcar todos</button>
-              </div>
-              <div id="eqProdutoChecklist" class="eq-checklist"></div>
-            </div>
-          </div>
-        </div>
-        <label class="scale-toggle" style="margin-top:14px;">
-          <input type="checkbox" id="eqQtyLogScale" checked>
-          Escala logarítmica (ajuda quando há itens de volume muito diferente)
-        </label>
-        <div class="chart-wrap" id="eqQtyChartWrap" style="margin-top:10px;"></div>
-      </div>
-
-      <div class="panel">
         <div class="panel-title">Ranking de Consumo por Insumo</div>
         <div class="chart-wrap" id="eqDashChartWrap"></div>
         <div class="trend-foot">Consumo = Estoque na 1ª contagem do período + Entradas lançadas no meio + Estoque na última contagem do período. Só entram itens com pelo menos 2 contagens dentro do período selecionado.</div>
       </div>
 
       <div class="panel">
-        <div class="panel-title">Detalhamento por Item</div>
-        <div class="table-wrap">
-          <table class="detail" id="eqDashTable">
+        <div class="panel-title">Saldo de Estoque Atual</div>
+        <div class="trend-foot" style="margin-bottom:12px;">Saldo = Última Contagem + Entradas lançadas depois − Requisições lançadas depois. Itens sem nenhuma contagem ainda partem de 0 (menos confiável — cadastre uma contagem inicial assim que possível).</div>
+        <input type="text" id="eqSaldoFiltro" placeholder="Buscar produto..." style="max-width:320px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--cream);margin-bottom:10px;">
+        <div class="table-wrap" style="max-height:400px;">
+          <table class="detail" id="eqSaldoTable">
             <thead>
               <tr>
                 <th>Item</th><th>Unidade</th>
-                <th class="center">Quantidade em Estoque</th>
-                <th class="center">Data da Última Contagem</th>
-                <th class="center">Consumo</th>
+                <th class="center">Última Contagem</th><th class="center">Data da Contagem</th>
+                <th class="center">+ Entradas Depois</th><th class="center">− Requisições Depois</th>
+                <th class="center">= Saldo Atual</th>
               </tr>
             </thead>
-            <tbody id="eqDashTbody"></tbody>
+            <tbody id="eqSaldoTbody"></tbody>
           </table>
         </div>
       </div>
@@ -7763,7 +7721,6 @@ let EQ_DASH_LATEST_CONTAGEM = {}; // item -> {data, quantidade, unidade} — mai
 let EQ_DASH_LATEST_ENTRADA = {};  // idem, pra última entrada
 let EQ_DASH_SALDO_ATUAL = {};     // item -> {saldo, unidade, baseData, baseQtd, entradasDepois, requisicoesDepois} — ver EQ_DASH_loadData
 let EQ_DASH_MINIMOS = {}; // item -> {quantidade_minima, unidade} — cadastrado manualmente pelo usuário
-let EQ_DASH_SELECTED_ITEMS = null; // Set — null até carregar pela 1ª vez (aí seleciona tudo por padrão)
 
 function EQ_DASH_init(){
   const hoje = new Date();
@@ -7775,37 +7732,12 @@ function EQ_DASH_init(){
     document.getElementById('eqDashDataIni').value = d.toISOString().slice(0,10);
   }
   document.getElementById('eqDashBtnRefresh').addEventListener('click', EQ_DASH_loadData);
-  document.getElementById('eqProdutoFiltro').addEventListener('input', EQ_DASH_renderChecklist);
-  document.getElementById('eqSelAllBtn').addEventListener('click', ()=>{
-    EQ_DASH_SELECTED_ITEMS = new Set(Object.keys(EQ_DASH_LATEST_CONTAGEM));
-    EQ_DASH_renderChecklist(); EQ_DASH_renderQtyChart(); EQ_DASH_updateDropdownLabel();
-  });
-  document.getElementById('eqSelNoneBtn').addEventListener('click', ()=>{
-    EQ_DASH_SELECTED_ITEMS = new Set();
-    EQ_DASH_renderChecklist(); EQ_DASH_renderQtyChart(); EQ_DASH_updateDropdownLabel();
-  });
-  document.getElementById('eqDropdownBtn').addEventListener('click', (e)=>{
-    e.stopPropagation();
-    const panel = document.getElementById('eqDropdownPanel');
-    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-  });
-  document.getElementById('eqDropdownPanel').addEventListener('click', (e)=> e.stopPropagation());
-  document.addEventListener('click', ()=>{
-    document.getElementById('eqDropdownPanel').style.display = 'none';
-  });
   document.getElementById('eqMinimosToggleBtn').addEventListener('click', ()=>{
     const panel = document.getElementById('eqMinimosPanel');
     panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
   });
   document.getElementById('eqMinimosFiltro').addEventListener('input', EQ_DASH_renderMinimosPanel);
-  document.getElementById('eqQtyLogScale').addEventListener('change', EQ_DASH_renderQtyChart);
   EQ_DASH_loadData();
-}
-
-function EQ_DASH_updateDropdownLabel(){
-  const n = EQ_DASH_SELECTED_ITEMS ? EQ_DASH_SELECTED_ITEMS.size : 0;
-  document.getElementById('eqDropdownLabel').textContent =
-    n === 0 ? 'Nenhum produto selecionado' : n === 1 ? '1 produto selecionado' : `${n} produtos selecionados`;
 }
 
 async function EQ_DASH_loadData(){
@@ -7886,18 +7818,6 @@ async function EQ_DASH_loadData(){
       };
     });
     EQ_DASH_SALDO_ATUAL = saldoAtual;
-    const itensAtuais = Object.keys(latestContagem);
-    if(EQ_DASH_SELECTED_ITEMS === null){
-      EQ_DASH_SELECTED_ITEMS = new Set(itensAtuais);
-    } else {
-      // Remove da seleção itens que sumiram da base (ex: troca de dado
-      // fictício por dado real). Se isso esvaziar a seleção por completo,
-      // volta a marcar tudo — melhor do que o seletor parecer "vazio".
-      EQ_DASH_SELECTED_ITEMS = new Set([...EQ_DASH_SELECTED_ITEMS].filter(i => latestContagem[i]));
-      if(EQ_DASH_SELECTED_ITEMS.size === 0 && itensAtuais.length > 0){
-        EQ_DASH_SELECTED_ITEMS = new Set(itensAtuais);
-      }
-    }
 
     // Consumo — esse sim respeita o período selecionado no topo.
     const porItem = {};
@@ -7941,8 +7861,6 @@ async function EQ_DASH_loadData(){
 
     EQ_DASH_DATA = resultado;
     EQ_DASH_render();
-    EQ_DASH_renderChecklist();
-    EQ_DASH_renderQtyChart();
     EQ_DASH_renderLowStock();
     EQ_DASH_renderMinimosPanel();
     EQ_DASH_renderSaldoAtual();
@@ -7955,69 +7873,6 @@ async function EQ_DASH_loadData(){
 }
 
 /* ---------- Seletor de produtos (checklist) ---------- */
-function EQ_DASH_renderChecklist(){
-  const filtro = (document.getElementById('eqProdutoFiltro').value || '').toLowerCase().trim();
-  const itens = Object.keys(EQ_DASH_LATEST_CONTAGEM).sort();
-  const container = document.getElementById('eqProdutoChecklist');
-  const visiveis = filtro ? itens.filter(i => i.toLowerCase().includes(filtro)) : itens;
-  if(visiveis.length === 0){
-    container.innerHTML = `<span style="color:var(--ink-soft);font-size:12.5px;">Nenhum item encontrado.</span>`;
-    return;
-  }
-  container.innerHTML = visiveis.map(item => `
-    <label>
-      <input type="checkbox" class="eq-check-item" value="${item.replace(/"/g,'&quot;')}" ${EQ_DASH_SELECTED_ITEMS.has(item) ? 'checked' : ''}>
-      ${item}
-    </label>
-  `).join('');
-  container.querySelectorAll('.eq-check-item').forEach(cb=>{
-    cb.addEventListener('change', ()=>{
-      if(cb.checked) EQ_DASH_SELECTED_ITEMS.add(cb.value);
-      else EQ_DASH_SELECTED_ITEMS.delete(cb.value);
-      EQ_DASH_renderQtyChart();
-      EQ_DASH_updateDropdownLabel();
-    });
-  });
-  EQ_DASH_updateDropdownLabel();
-}
-
-/* ---------- Gráfico vertical de quantidade em estoque ---------- */
-function EQ_DASH_renderQtyChart(){
-  const wrap = document.getElementById('eqQtyChartWrap');
-  const selecionados = Object.keys(EQ_DASH_SALDO_ATUAL)
-    .filter(item => EQ_DASH_SELECTED_ITEMS.has(item))
-    .map(item => ({ item, quantidade: EQ_DASH_SALDO_ATUAL[item].saldo, unidade: EQ_DASH_SALDO_ATUAL[item].unidade }))
-    .sort((a,b)=> b.quantidade - a.quantidade);
-
-  if(selecionados.length === 0){
-    wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">📦</span>Marque pelo menos 1 produto na lista acima pra ver o gráfico.</div>`;
-    return;
-  }
-
-  const maxVal = Math.max(...selecionados.map(r=>r.quantidade), 1);
-  const barW = 34, gap = 20, baseY = 300, topPad = 90;
-  const chartWidth = selecionados.length*(barW+gap) + 50;
-  const logOn = document.getElementById('eqQtyLogScale').checked;
-  function alturaBarra(v){
-    if(!logOn) return (v/maxVal) * (baseY-topPad);
-    return (Math.log10(v+1)/Math.log10(maxVal+1)) * (baseY-topPad);
-  }
-
-  let bars = '';
-  selecionados.forEach((r,i)=>{
-    const x0 = 36 + i*(barW+gap);
-    const h = alturaBarra(r.quantidade);
-    bars += `<rect x="${x0}" y="${baseY-h}" width="${barW}" height="${h}" fill="var(--red)" rx="4"/>`;
-    bars += `<text x="${x0+barW/2}" y="${baseY-h-9}" font-size="11" font-weight="700" fill="var(--red)" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-h-9})">${EQ_DASH_fmtNum(r.quantidade)} ${r.unidade||''}</text>`;
-    bars += `<text x="${x0+barW/2}" y="${baseY+16}" font-size="10.5" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+16})">${r.item}<title>${r.item} (${r.unidade||''})</title></text>`;
-  });
-
-  wrap.innerHTML = `
-    <svg viewBox="0 0 ${chartWidth} 550" width="${chartWidth}" height="550" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
-      ${bars}
-    </svg>`;
-}
-
 /* ---------- Saldo de Estoque Atual (tabela detalhada) ---------- */
 function EQ_DASH_renderSaldoAtual(){
   const filtro = (document.getElementById('eqSaldoFiltro').value || '').toLowerCase().trim();
@@ -8184,39 +8039,10 @@ function EQ_DASH_render(){
         </svg>
       </div>`;
   }
-
-  // ---------- Tabela de detalhamento ----------
-  // Usa o estoque ATUAL (última contagem de cada item, de qualquer data —
-  // sempre disponível com só 1 contagem) em vez de depender das 2
-  // contagens que o cálculo de Consumo exige. Consumo aparece quando dá
-  // pra calcular, e fica "—" quando ainda não dá — sem travar a tabela
-  // inteira esperando uma 2ª contagem.
-  const tbody = document.getElementById('eqDashTbody');
-  const itensTodos = Object.keys(EQ_DASH_LATEST_CONTAGEM).sort();
-  if(itensTodos.length === 0){
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum dado registrado ainda.</td></tr>`;
-    return;
-  }
-  const consumoPorItem = {};
-  EQ_DASH_DATA.forEach(r => { if(r.status === 'ok') consumoPorItem[r.item] = r.consumo; });
-
-  tbody.innerHTML = itensTodos.map(item => {
-    const atual = EQ_DASH_LATEST_CONTAGEM[item];
-    const consumo = consumoPorItem[item];
-    return `<tr>
-      <td>${item}</td><td>${atual.unidade||'—'}</td>
-      <td class="center">${EQ_DASH_fmtNum(atual.quantidade)}</td>
-      <td class="center">${EQ_DASH_fmtDataBR(atual.data)}</td>
-      <td class="center" style="${consumo!=null ? `font-weight:700;color:${consumo<0?'var(--good)':'var(--red)'};` : 'color:var(--ink-soft);'}">${consumo!=null ? EQ_DASH_fmtNum(consumo) : '—'}</td>
-    </tr>`;
-  }).join('');
 }
 
 function EQ_DASH_fmtNum(v){
   return Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
-}
-function EQ_DASH_fmtDataBR(iso){
-  return iso ? iso.split('-').reverse().join('/') : '—';
 }
 
 /* ============================================================================
