@@ -1327,7 +1327,7 @@
                     <th>Data</th><th>Setor</th><th>Produto</th><th>Máquina</th>
                     <th class="center">Equipe</th><th class="center">Planejada</th><th class="center">Real</th>
                     <th>Unidade</th><th class="center">Início</th><th class="center">Fim</th>
-                    <th class="center">Duração</th><th>Desvios</th><th>Observação</th><th class="center">Apontamento Completo?</th><th class="center">Ações</th>
+                    <th class="center">Duração</th><th>Desvios</th><th>Observação</th><th class="center">Recheio (cx)</th><th class="center">Apontamento Completo?</th><th class="center">Ações</th>
                   </tr>
                 </thead>
                 <tbody id="lpHistTbody"></tbody>
@@ -2677,7 +2677,7 @@ function renderKPIs(filteredDates){
   if(showFrituraCards){
     const totalKg = computeTotalKgForPeriod(filteredDates);
     const totalOleoL = OL_getConsumoForPeriod(filteredDates);
-    const indicador = totalOleoL > 0 ? totalKg / totalOleoL : null;
+    const indicador = (totalOleoL != null && totalOleoL > 0) ? totalKg / totalOleoL : null;
     frituraCardsHtml = `
       <div class="kpi-card">
         <div class="label">Kg Fritura</div>
@@ -2685,7 +2685,7 @@ function renderKPIs(filteredDates){
       </div>
       <div class="kpi-card">
         <div class="label">Consumo de Óleo (L)</div>
-        <div class="value">${totalOleoL.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} L</div>
+        <div class="value">${totalOleoL === null ? '—' : totalOleoL.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' L'}</div>
       </div>
       <div class="kpi-card">
         <div class="label">Fritura (Kg) / Litro de Óleo</div>
@@ -4944,21 +4944,25 @@ document.getElementById('rcBtnRefresh').addEventListener('click', ()=> RC_loadDa
    Antes lia de uma planilha do Google Sheets, com "entrada"/"saída"
    lançados manualmente todo dia. Agora lê direto de estoque_entradas e
    estoque_contagens (mesmas tabelas da aba Lançamento > Estoque) e calcula
-   o consumo entre cada par de contagens consecutivas de Óleo de Algodão:
+   o consumo de Óleo de Algodão, por intervalo entre contagens consecutivas:
 
-     Consumo = Contagem anterior + Entradas no intervalo − Contagem atual
+     Consumo = Entradas no intervalo − Contagem atual
 
-   O consumo de um intervalo fica atribuído à DATA DA CONTAGEM QUE FECHOU
-   ele — então o gráfico mostra pontos nos dias em que houve contagem, não
-   um valor por dia corrido. Sem pelo menos 2 contagens registradas, não dá
-   pra calcular nenhum consumo (fica vazio até isso acontecer). */
+   Entradas no intervalo = tudo que entrou entre a contagem anterior
+   (exclusive) e a contagem atual (inclusive); pra primeira contagem, conta
+   tudo que entrou até aquela data. O consumo de um intervalo fica atribuído
+   à DATA DA CONTAGEM QUE FECHOU ele. */
 const OL_ITEM = 'OLEO DE ALGODAO';
 
-/* Soma o consumo de óleo (L) nas datas do período filtrado. */
+/* Soma o consumo de óleo (L) nas datas do período filtrado. Retorna null
+   (não 0) quando não há nenhum intervalo de contagem calculado no período —
+   "sem dado" e "consumo zero" são coisas diferentes, e mostrar 0,00 L
+   quando na verdade falta contagem/entrada pra fechar a conta confunde
+   quem lê o painel. */
 function OL_getConsumoForPeriod(filteredDates){
-  let total = 0;
-  filteredDates.forEach(d=>{ if(OL_DATA[d]) total += OL_DATA[d].consumo; });
-  return total;
+  let total = 0, temDado = false;
+  filteredDates.forEach(d=>{ if(OL_DATA[d]){ total += OL_DATA[d].consumo; temDado = true; } });
+  return temDado ? total : null;
 }
 
 async function OL_loadData(isManualRefresh){
@@ -4974,26 +4978,29 @@ async function OL_loadData(isManualRefresh){
 
     const result = {};
     const lista = contagens || [];
-    for(let i = 1; i < lista.length; i++){
-      const anterior = lista[i-1];
-      const atual = lista[i];
+    lista.forEach((atual, i) => {
+      // Entrada no mesmo dia de uma contagem aconteceu DEPOIS dela (a
+      // contagem registra o que tinha antes da entrada chegar) — por isso
+      // o limite inferior é INCLUSIVO na data da contagem anterior, e o
+      // superior é EXCLUSIVO na data da contagem atual (a entrada do dia
+      // da contagem atual, se houver, só entra no próximo intervalo).
+      const dataInicioIntervalo = i > 0 ? lista[i-1].data : null; // null = sem contagem anterior pra comparar (1º intervalo sempre fica sem baseline)
       const entradasNoIntervalo = (entradas || [])
-        .filter(e => e.data > anterior.data && e.data <= atual.data)
+        .filter(e => (dataInicioIntervalo === null || e.data >= dataInicioIntervalo) && e.data < atual.data)
         .reduce((s, e) => s + Number(e.quantidade || 0), 0);
-      const consumo = Number(anterior.quantidade) + entradasNoIntervalo - Number(atual.quantidade);
+      const consumo = entradasNoIntervalo - Number(atual.quantidade);
       result[atual.data] = {
         consumo,
         entrada: entradasNoIntervalo,
-        contagemAnterior: Number(anterior.quantidade),
         contagemAtual: Number(atual.quantidade),
       };
-    }
+    });
     OL_DATA = result;
     if(isManualRefresh){
       const infoEl = document.getElementById('oleoInfo');
-      if(infoEl) infoEl.textContent = lista.length < 2
-        ? '⚠ Só há uma contagem de Óleo de Algodão registrada — ainda não dá pra calcular consumo entre intervalos.'
-        : `${Object.keys(result).length} intervalo(s) de consumo calculado(s) a partir de ${lista.length} contagens.`;
+      if(infoEl) infoEl.textContent = lista.length === 0
+        ? '⚠ Nenhuma contagem de Óleo de Algodão registrada ainda.'
+        : `${Object.keys(result).length} intervalo(s) de consumo calculado(s) a partir de ${lista.length} contagem(ns).`;
     }
     refreshIfReportLoaded();
   }catch(err){
@@ -5709,6 +5716,7 @@ function LP_addParadaRow(itemRow){
     </div>`;
   paradaRow.querySelector('[data-remove-parada]').addEventListener('click', ()=> paradaRow.remove());
   container.appendChild(paradaRow);
+  return paradaRow;
 }
 
 /* Junta as paradas de um cartão em texto (motivo | motivo | ...) e soma as
@@ -5802,6 +5810,10 @@ function lpCreateItemRow(initial){
         <label>Fim da Produção</label>
         <input type="time" class="lp-fim">
       </div>
+      <div class="lanc-field lp-recheio-wrap" style="display:none;">
+        <label>Recheio Consumido (caixas)</label>
+        <input type="number" step="0.01" class="lp-recheio" placeholder="Ex: 12">
+      </div>
       <div class="lanc-field span-3">
         <label>Paradas, Ausências e Desvios de Produção</label>
         <div class="lp-paradas-container lanc-items"></div>
@@ -5850,6 +5862,7 @@ function lpCreateItemRow(initial){
   row.querySelector('[data-remove]').addEventListener('click', ()=>{
     row.remove();
     lpUpdateItemNumbers();
+    LP_saveDraftToStorage();
   });
   row.querySelector('[data-save]').addEventListener('click', ()=> LP_saveSingleItem(row));
   row.querySelector('.lp-add-parada-btn').addEventListener('click', ()=> LP_addParadaRow(row));
@@ -5876,8 +5889,10 @@ function lpCreateItemRow(initial){
       if(setorEl.value) LP_LAST_SETOR = setorEl.value;
     }
     lpUpdateRowProdutoMaquinaList(row, uid);
+    LP_toggleRecheioField(row, setorEl.value);
   });
   lpUpdateRowProdutoMaquinaList(row, uid);
+  LP_toggleRecheioField(row, setorEl.value);
 
   if(initial.produto) row.querySelector('.lp-produto').value = initial.produto;
   if(initial.unidade) row.querySelector('.lp-unidade').value = initial.unidade;
@@ -5899,12 +5914,41 @@ function lpCreateItemRow(initial){
     }
   }
 
+  // Campos extras, usados só pra restaurar um rascunho salvo (ver
+  // LP_saveDraftToStorage/LP_restoreDraftFromStorage) — o Excel só traz
+  // produto/unidade/planejado/setor, então esses ficam undefined nesse caso
+  // e não fazem nada.
+  if(initial.maquina) row.querySelector('.lp-maquina').value = initial.maquina;
+  if(initial.equipe != null) row.querySelector('.lp-equipe').value = initial.equipe;
+  if(initial.real != null) row.querySelector('.lp-real').value = initial.real;
+  if(initial.inicio) row.querySelector('.lp-inicio').value = initial.inicio;
+  if(initial.fim) row.querySelector('.lp-fim').value = initial.fim;
+  if(initial.observacao) row.querySelector('.lp-observacao').value = initial.observacao;
+  if(initial.recheio != null) row.querySelector('.lp-recheio').value = initial.recheio;
+  if(initial.apontamentoCompleto) row.querySelector('.lp-apontamento-completo').value = initial.apontamentoCompleto;
+  if(Array.isArray(initial.paradas)){
+    initial.paradas.forEach(p => {
+      const paradaRow = LP_addParadaRow(row);
+      if(p.motivo) paradaRow.querySelector('.lp-parada-motivo').value = p.motivo;
+      if(p.duracao) paradaRow.querySelector('.lp-parada-duracao').value = p.duracao;
+    });
+  }
+
   return row;
 }
 
 /* Filtra o datalist de Produto/Máquina desse item específico pelo setor
    selecionado NESSE item (cada item tem seu próprio par de datalists,
    diferente do resto do formulário, porque o setor agora varia por linha). */
+/* Recheio Consumido (caixas) só faz sentido pro setor Salgado — some/
+   reaparece conforme o Setor selecionado em cada linha do lançamento. */
+function LP_toggleRecheioField(row, setorValue){
+  const wrap = row.querySelector('.lp-recheio-wrap');
+  if(!wrap) return;
+  wrap.style.display = setorValue === 'SALGADO' ? '' : 'none';
+  if(setorValue !== 'SALGADO') row.querySelector('.lp-recheio').value = '';
+}
+
 function lpUpdateRowProdutoMaquinaList(row, uid){
   const { produtosPorSetor, maquinasPorSetor, produtosTodos, maquinasTodos } = LANC_getKnownValues();
   const setorEl = row.querySelector('.lp-item-setor');
@@ -5923,15 +5967,86 @@ function lpUpdateItemNumbers(){
   });
 }
 
+/* ============================================================================
+   RASCUNHO DO LANÇAMENTO — mantém os cards de Produção Diária na tela
+   mesmo se a página for recarregada, até cada um ser Salvo ou Removido.
+   Fica em localStorage (por navegador/dispositivo — não é multiusuário,
+   é só pra não perder o que já foi digitado/importado do Excel numa queda
+   de conexão ou F5 sem querer). ============================================================================ */
+const LP_DRAFT_KEY = 'lp_draft_producao_diaria_v1';
+let LP_RESTORING_DRAFT = false; // trava salvamentos redundantes durante a própria restauração
+
+function LP_collectDraftState(){
+  const itens = [...document.querySelectorAll('#lpItems .lanc-item')].map(row => {
+    const setorSel = row.querySelector('.lp-item-setor').value;
+    const setor = setorSel === '__outro__' ? row.querySelector('.lp-item-setor-outro').value : setorSel;
+    const paradas = [...row.querySelectorAll('.lp-paradas-container .lanc-item')].map(p => ({
+      motivo: p.querySelector('.lp-parada-motivo').value,
+      duracao: p.querySelector('.lp-parada-duracao').value,
+    }));
+    return {
+      setor,
+      produto: row.querySelector('.lp-produto').value,
+      maquina: row.querySelector('.lp-maquina').value,
+      equipe: row.querySelector('.lp-equipe').value,
+      unidade: row.querySelector('.lp-unidade').value,
+      real: row.querySelector('.lp-real').value,
+      planejado: row.querySelector('.lp-planejada').value,
+      inicio: row.querySelector('.lp-inicio').value,
+      fim: row.querySelector('.lp-fim').value,
+      observacao: row.querySelector('.lp-observacao').value,
+      recheio: row.querySelector('.lp-recheio').value,
+      apontamentoCompleto: row.querySelector('.lp-apontamento-completo').value,
+      paradas,
+    };
+  });
+  return { data: document.getElementById('lpData').value, itens };
+}
+
+function LP_saveDraftToStorage(){
+  if(LP_RESTORING_DRAFT) return;
+  try{
+    const state = LP_collectDraftState();
+    if(state.itens.length === 0){ localStorage.removeItem(LP_DRAFT_KEY); return; }
+    localStorage.setItem(LP_DRAFT_KEY, JSON.stringify(state));
+  }catch(e){ console.error('Erro ao salvar rascunho do lançamento:', e); }
+}
+
+function LP_clearDraftFromStorage(){
+  try{ localStorage.removeItem(LP_DRAFT_KEY); }catch(e){}
+}
+
+/* Roda uma vez, no carregamento da página — se houver rascunho salvo,
+   recria os cards exatamente como estavam; senão, começa com 1 vazio
+   (comportamento de sempre). */
+function LP_restoreDraftOrStartEmpty(){
+  let state = null;
+  try{ state = JSON.parse(localStorage.getItem(LP_DRAFT_KEY) || 'null'); }catch(e){}
+  if(!state || !Array.isArray(state.itens) || state.itens.length === 0){ lpAddItem(); return; }
+  LP_RESTORING_DRAFT = true;
+  if(state.data) document.getElementById('lpData').value = state.data;
+  state.itens.forEach(it => lpAddItem(it));
+  LP_RESTORING_DRAFT = false;
+}
+
+// Qualquer alteração num campo dentro de #lpItems (inclusive dentro das
+// paradas) já regrava o rascunho — delegado no container pra pegar campos
+// criados dinamicamente (novos produtos, novas paradas) sem precisar de
+// listener por campo.
+['input','change'].forEach(evt=>{
+  document.getElementById('lpItems').addEventListener(evt, ()=> LP_saveDraftToStorage());
+});
+document.getElementById('lpData').addEventListener('change', ()=> LP_saveDraftToStorage());
+
 function lpAddItem(initial){
   const container = document.getElementById('lpItems');
   container.appendChild(lpCreateItemRow(initial));
   lpUpdateItemNumbers();
-
+  LP_saveDraftToStorage();
 }
 
 document.getElementById('lpAddItemBtn').addEventListener('click', ()=> lpAddItem());
-lpAddItem(); // começa com 1 produto pronto pra preencher
+LP_restoreDraftOrStartEmpty(); // restaura rascunho salvo, ou começa com 1 produto pronto pra preencher
 
 /* ============================================================================
    LANÇAR PLANEJAMENTO — importa o arquivo Excel "FOR-PCP-029" (Ordem de
@@ -6153,6 +6268,7 @@ async function LP_saveSingleItem(row){
     paradas_desvios: paradasCombinadas.paradas_desvios,
     duracao_parada: paradasCombinadas.duracao_parada,
     observacao: row.querySelector('.lp-observacao').value.trim() || null,
+    recheio_consumido_caixas: row.querySelector('.lp-recheio').value.trim() ? parseFloat(row.querySelector('.lp-recheio').value) : null,
     apontamento_completo: apontamentoEl.value === 'true',
   };
 
@@ -6165,6 +6281,7 @@ async function LP_saveSingleItem(row){
     row.remove();
     lpUpdateItemNumbers();
     if(document.querySelectorAll('#lpItems .lanc-item').length === 0) lpAddItem();
+    LP_saveDraftToStorage();
     globalFeedback.textContent = `✓ "${produto}" salvo. ` + document.querySelectorAll('#lpItems .lanc-item').length + ' produto(s) ainda na lista.';
     globalFeedback.className = 'lanc-feedback ok';
     LANC_populateDropdowns();
@@ -6235,6 +6352,7 @@ document.getElementById('lancFormProducao').addEventListener('submit', async (e)
       paradas_desvios: paradasCombinadasLote.paradas_desvios,
       duracao_parada: paradasCombinadasLote.duracao_parada,
       observacao: row.querySelector('.lp-observacao').value.trim() || null,
+      recheio_consumido_caixas: row.querySelector('.lp-recheio').value.trim() ? parseFloat(row.querySelector('.lp-recheio').value) : null,
       apontamento_completo: apontamentoEl.value === 'true',
     });
   }
@@ -6250,6 +6368,7 @@ document.getElementById('lancFormProducao').addEventListener('submit', async (e)
     feedback.className = 'lanc-feedback ok';
     document.getElementById('lpItems').innerHTML = '';
     lpAddItem();
+    LP_clearDraftFromStorage();
     LANC_setDefaultDates();
     LANC_populateDropdowns();
   }catch(err){
@@ -6375,6 +6494,7 @@ function LP_buildHistRowHtml(row){
       <td class="center">${LP_fmtTime(row.duracao_parada)}</td>
       <td class="lanc-hist-wrap">${row.paradas_desvios||'—'}</td>
       <td class="lanc-hist-wrap">${row.observacao||'—'}</td>
+      <td class="center">${row.recheio_consumido_caixas != null ? Number(row.recheio_consumido_caixas).toLocaleString('pt-BR') : '—'}</td>
       <td class="center">${row.apontamento_completo===true?'✓ Sim':row.apontamento_completo===false?'✗ Não':'—'}</td>
       <td class="center">
         <button type="button" class="lanc-hist-btn edit">Editar</button>
@@ -6404,6 +6524,7 @@ function LP_buildHistEditRowHtml(row){
       <td><input type="time" step="1" class="eh-duracao" value="${row.duracao_parada||''}"></td>
       <td><input type="text" class="eh-paradas" value="${(row.paradas_desvios||'').replace(/"/g,'&quot;')}"></td>
       <td><input type="text" class="eh-observacao" value="${(row.observacao||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="number" step="0.01" class="eh-recheio" value="${row.recheio_consumido_caixas ?? ''}"></td>
       <td><select class="eh-apontamento-completo">
         <option value="" ${row.apontamento_completo==null?'selected':''}>—</option>
         <option value="true" ${row.apontamento_completo===true?'selected':''}>Sim</option>
@@ -6446,6 +6567,7 @@ async function LP_saveEditRow(id){
     duracao_parada: val('eh-duracao') || null,
     paradas_desvios: val('eh-paradas').trim() || null,
     observacao: val('eh-observacao').trim() || null,
+    recheio_consumido_caixas: val('eh-recheio') !== '' ? parseFloat(val('eh-recheio')) : null,
     apontamento_completo: val('eh-apontamento-completo') === '' ? null : val('eh-apontamento-completo') === 'true',
   };
   if(!payload.produto || payload.producao_real === null){
