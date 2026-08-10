@@ -1169,6 +1169,25 @@
     <div class="container">
 
       <div class="panel">
+        <div class="panel-title">Saldo de Estoque Atual</div>
+        <div class="trend-foot" style="margin-bottom:12px;">Saldo = Última Contagem + Entradas lançadas depois − Requisições lançadas depois. Itens sem nenhuma contagem ainda partem de 0 (menos confiável — cadastre uma contagem inicial assim que possível).</div>
+        <input type="text" id="eqSaldoFiltro" placeholder="Buscar produto..." style="max-width:320px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--cream);margin-bottom:10px;">
+        <div class="table-wrap" style="max-height:400px;">
+          <table class="detail" id="eqSaldoTable">
+            <thead>
+              <tr>
+                <th>Item</th><th>Unidade</th>
+                <th class="center">Última Contagem</th><th class="center">Data da Contagem</th>
+                <th class="center">+ Entradas Depois</th><th class="center">− Requisições Depois</th>
+                <th class="center">= Saldo Atual</th>
+              </tr>
+            </thead>
+            <tbody id="eqSaldoTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
         <div class="panel-title">⚠ Insumos com Estoque Baixo</div>
         <div style="margin-bottom:14px;">
           <button type="button" class="lanc-add-item-btn" id="eqMinimosToggleBtn">⚙ Configurar Mínimo e Máximo por Insumo</button>
@@ -1197,7 +1216,7 @@
       </div>
 
       <div class="panel">
-        <div class="panel-title">Quantidade em Estoque por Produto</div>
+        <div class="panel-title">Saldo Atual em Estoque por Produto</div>
         <div class="eq-selector-wrap">
           <div class="eq-dropdown" id="eqDropdown">
             <button type="button" class="eq-dropdown-btn" id="eqDropdownBtn">
@@ -1443,6 +1462,7 @@
           <div class="lanc-subtabs">
             <button type="button" class="lanc-subtab-btn active" data-eqview="entrada">Lançar Entrada</button>
             <button type="button" class="lanc-subtab-btn" data-eqview="contagem">Lançar Contagem</button>
+            <button type="button" class="lanc-subtab-btn" data-eqview="requisicao">Lançar Requisição</button>
             <button type="button" class="lanc-subtab-btn" data-eqview="historico">Histórico</button>
           </div>
 
@@ -1502,6 +1522,54 @@
             </form>
           </div>
 
+          <!-- Lançar Requisição — retirada de matéria-prima/insumos do
+               estoque, conforme formulário em papel FOR-SG-01. O líder
+               retira mediante requisição assinada; no fim do dia essas
+               requisições são lançadas aqui, uma por uma. -->
+          <div id="eqViewRequisicao" style="display:none;">
+            <div class="panel-title">Nova Requisição de Retirada (FOR-SG-01)</div>
+            <form id="eqFormRequisicao" class="lanc-form">
+              <div class="lanc-field">
+                <label>Data da Retirada</label>
+                <input type="date" id="eqRequisicaoData" required>
+              </div>
+              <div class="lanc-field">
+                <label>Data de Emissão</label>
+                <input type="date" id="eqRequisicaoDataEmissao">
+              </div>
+              <div class="lanc-field">
+                <label>Setor</label>
+                <input type="text" id="eqRequisicaoSetor" list="lpSetorListEstoque" placeholder="Setor que solicitou">
+                <datalist id="lpSetorListEstoque">
+                  <option value="Salgado">
+                  <option value="Massa Salgado">
+                  <option value="Croissant">
+                  <option value="Padaria">
+                  <option value="Confeitaria">
+                  <option value="Giro-Dia">
+                  <option value="Giro-Noite">
+                  <option value="Fritador">
+                  <option value="Cozinha">
+                  <option value="Pão c/ Linguiça">
+                  <option value="Pão de Queijo">
+                  <option value="Pão de Ló e Bolos">
+                </datalist>
+              </div>
+              <div class="lanc-field">
+                <label>Líder</label>
+                <input type="text" id="eqRequisicaoLider" placeholder="Nome de quem assinou/retirou">
+              </div>
+              <div class="lanc-field span-3">
+                <div id="eqRequisicaoItems" class="lanc-items"></div>
+                <button type="button" class="lanc-add-item-btn" id="eqRequisicaoAddBtn">+ Adicionar item</button>
+              </div>
+              <div class="lanc-submit-row">
+                <button type="submit" class="lanc-submit-btn" id="eqRequisicaoSubmitBtn">Salvar Lançamento</button>
+                <span class="lanc-feedback" id="eqRequisicaoFeedback"></span>
+              </div>
+            </form>
+          </div>
+
           <!-- Histórico (Entradas + Contagens) -->
           <div id="eqViewHistorico" style="display:none;">
             <div class="panel-title">Histórico de Estoque</div>
@@ -1519,6 +1587,7 @@
                 <select id="eqHistTipo">
                   <option value="entrada">Entradas</option>
                   <option value="contagem">Contagens</option>
+                  <option value="requisicao">Requisições</option>
                 </select>
               </div>
               <button type="button" class="lanc-add-item-btn" id="eqHistBuscarBtn" style="align-self:flex-end;">Buscar</button>
@@ -1544,6 +1613,16 @@
                   <tr><th>Data</th><th>Item</th><th class="center">Quantidade Contada</th><th>Unidade</th><th>Observação</th><th class="center">Ações</th></tr>
                 </thead>
                 <tbody id="eqHistTbodyContagem"></tbody>
+              </table>
+              <table class="detail" id="eqHistTableRequisicao" style="display:none;">
+                <thead>
+                  <tr>
+                    <th>Data Retirada</th><th class="center">Emissão</th><th>Setor</th><th>Líder</th>
+                    <th>Item</th><th>Unidade</th><th class="center">Qtd. Solicitada</th><th class="center">Qtd. Liberada</th>
+                    <th>Observação</th><th class="center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="eqHistTbodyRequisicao"></tbody>
               </table>
             </div>
           </div>
@@ -6777,13 +6856,15 @@ async function EQ_fetchKnownItems(){
   if(EQ_KNOWN_ITEMS) return EQ_KNOWN_ITEMS;
   try{
     const client = LANC_getClient();
-    const [entradas, contagens] = await Promise.all([
+    const [entradas, contagens, requisicoes] = await Promise.all([
       client.from('estoque_entradas').select('item, unidade').limit(5000),
       client.from('estoque_contagens').select('item, unidade').limit(5000),
+      client.from('estoque_requisicoes').select('item, unidade').limit(5000),
     ]);
     const itens = new Set(), unidades = new Set();
     (entradas.data || []).forEach(r=>{ if(r.item) itens.add(r.item); if(r.unidade) unidades.add(r.unidade); });
     (contagens.data || []).forEach(r=>{ if(r.item) itens.add(r.item); if(r.unidade) unidades.add(r.unidade); });
+    (requisicoes.data || []).forEach(r=>{ if(r.item) itens.add(r.item); if(r.unidade) unidades.add(r.unidade); });
     EQ_KNOWN_ITEMS = { itens: [...itens].sort(), unidades: [...unidades].sort() };
   }catch(err){
     console.error('Erro ao buscar itens de estoque conhecidos:', err);
@@ -6814,6 +6895,7 @@ document.querySelectorAll('[data-eqview]').forEach(btn=>{
     const view = btn.dataset.eqview;
     document.getElementById('eqViewEntrada').style.display = view === 'entrada' ? 'block' : 'none';
     document.getElementById('eqViewContagem').style.display = view === 'contagem' ? 'block' : 'none';
+    document.getElementById('eqViewRequisicao').style.display = view === 'requisicao' ? 'block' : 'none';
     document.getElementById('eqViewHistorico').style.display = view === 'historico' ? 'block' : 'none';
     if(view === 'historico') EQ_loadHistorico();
   });
@@ -7004,6 +7086,138 @@ document.getElementById('eqFormEntrada').addEventListener('submit', async (e)=>{
     EQ_KNOWN_ITEMS = null;
   }catch(err){
     console.error('Erro ao salvar entradas:', err);
+    feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+/* ---------- Cartões de item: Requisição (retirada) ---------- */
+let EQ_REQUISICAO_UID = 0;
+function EQ_createRequisicaoRow(){
+  const uid = ++EQ_REQUISICAO_UID;
+  const row = document.createElement('div');
+  row.className = 'lanc-item';
+  row.innerHTML = `
+    <div class="lanc-item-header">
+      <span class="lanc-item-title">Item</span>
+      <span style="display:flex;gap:14px;align-items:center;">
+        <button type="button" class="lanc-hist-btn save" data-save>Salvar este item</button>
+        <button type="button" class="lanc-item-remove" data-remove>Remover</button>
+      </span>
+    </div>
+    <div class="lanc-item-grid">
+      <div class="lanc-field span-2">
+        <label>Item</label>
+        <input type="text" class="eq-req-item" list="eqItemList" placeholder="Nome do insumo" required>
+      </div>
+      <div class="lanc-field">
+        <label>Unidade</label>
+        <input type="text" class="eq-req-unidade" list="lpUnidadeListEstoque" placeholder="Ex: Kg, Litro, Pacote">
+      </div>
+      <div class="lanc-field">
+        <label>Qtd. Solicitada</label>
+        <input type="number" step="0.01" class="eq-req-qtd-solicitada" placeholder="Opcional">
+      </div>
+      <div class="lanc-field">
+        <label>Qtd. Liberada</label>
+        <input type="number" step="0.01" class="eq-req-qtd-liberada" required>
+      </div>
+      <div class="lanc-field span-3">
+        <label>Observação</label>
+        <textarea class="eq-req-obs" placeholder="Opcional"></textarea>
+      </div>
+    </div>
+  `;
+  row.querySelector('[data-remove]').addEventListener('click', ()=>{ row.remove(); EQ_updateItemNumbers('eqRequisicaoItems'); });
+  row.querySelector('[data-save]').addEventListener('click', ()=> EQ_saveSingleRequisicao(row));
+  return row;
+}
+function EQ_addRequisicaoItem(){
+  document.getElementById('eqRequisicaoItems').appendChild(EQ_createRequisicaoRow());
+  EQ_updateItemNumbers('eqRequisicaoItems');
+}
+document.getElementById('eqRequisicaoAddBtn').addEventListener('click', EQ_addRequisicaoItem);
+EQ_addRequisicaoItem();
+EQ_setDefaultDate('eqRequisicaoData');
+EQ_setDefaultDate('eqRequisicaoDataEmissao');
+
+function EQ_buildRequisicaoPayload(row, data, dataEmissao, setor, lider){
+  const item = row.querySelector('.eq-req-item').value.trim();
+  const qtdLiberadaRaw = row.querySelector('.eq-req-qtd-liberada').value;
+  if(!item || qtdLiberadaRaw === '') return null;
+  const qtdSolicitadaRaw = row.querySelector('.eq-req-qtd-solicitada').value;
+  return {
+    data, data_emissao: dataEmissao || null, setor: setor || null, lider: lider || null,
+    item,
+    unidade: normalizeUnitDisplay(row.querySelector('.eq-req-unidade').value) || null,
+    quantidade_solicitada: qtdSolicitadaRaw !== '' ? parseFloat(qtdSolicitadaRaw) : null,
+    quantidade_liberada: parseFloat(qtdLiberadaRaw),
+    observacao: row.querySelector('.eq-req-obs').value.trim() || null,
+  };
+}
+
+async function EQ_saveSingleRequisicao(row){
+  const feedback = document.getElementById('eqRequisicaoFeedback');
+  const data = document.getElementById('eqRequisicaoData').value;
+  const btn = row.querySelector('[data-save]');
+  if(!data){ feedback.textContent = '⚠ Preencha a Data da Retirada antes de salvar.'; feedback.className = 'lanc-feedback err'; return; }
+  const dataEmissao = document.getElementById('eqRequisicaoDataEmissao').value;
+  const setor = document.getElementById('eqRequisicaoSetor').value.trim();
+  const lider = document.getElementById('eqRequisicaoLider').value.trim();
+  const payload = EQ_buildRequisicaoPayload(row, data, dataEmissao, setor, lider);
+  if(!payload){ feedback.textContent = '⚠ Preencha Item e Qtd. Liberada antes de salvar.'; feedback.className = 'lanc-feedback err'; return; }
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from('estoque_requisicoes').insert([payload]);
+    if(error) throw error;
+    row.remove();
+    EQ_updateItemNumbers('eqRequisicaoItems');
+    if(document.querySelectorAll('#eqRequisicaoItems .lanc-item').length === 0) EQ_addRequisicaoItem();
+    feedback.textContent = `✓ "${payload.item}" salvo.`;
+    feedback.className = 'lanc-feedback ok';
+    EQ_KNOWN_ITEMS = null;
+  }catch(err){
+    console.error('Erro ao salvar requisição:', err);
+    btn.disabled = false; btn.textContent = 'Salvar este item';
+    feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }
+}
+
+document.getElementById('eqFormRequisicao').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const feedback = document.getElementById('eqRequisicaoFeedback');
+  const btn = document.getElementById('eqRequisicaoSubmitBtn');
+  const data = document.getElementById('eqRequisicaoData').value;
+  if(!data){ feedback.textContent = '⚠ Preencha a Data da Retirada antes de salvar.'; feedback.className = 'lanc-feedback err'; return; }
+  const dataEmissao = document.getElementById('eqRequisicaoDataEmissao').value;
+  const setor = document.getElementById('eqRequisicaoSetor').value.trim();
+  const lider = document.getElementById('eqRequisicaoLider').value.trim();
+  const rows = [...document.querySelectorAll('#eqRequisicaoItems .lanc-item')];
+  if(rows.length === 0){ feedback.textContent = '⚠ Adicione pelo menos 1 item.'; feedback.className = 'lanc-feedback err'; return; }
+  const payloads = [];
+  for(const row of rows){
+    const p = EQ_buildRequisicaoPayload(row, data, dataEmissao, setor, lider);
+    if(!p){ feedback.textContent = '⚠ Cada item precisa ter Item e Qtd. Liberada preenchidos.'; feedback.className = 'lanc-feedback err'; return; }
+    payloads.push(p);
+  }
+  btn.disabled = true;
+  feedback.textContent = 'Salvando ' + payloads.length + ' item(ns)...';
+  feedback.className = 'lanc-feedback';
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from('estoque_requisicoes').insert(payloads);
+    if(error) throw error;
+    feedback.textContent = `✓ ${payloads.length} item(ns) salvos com sucesso!`;
+    feedback.className = 'lanc-feedback ok';
+    document.getElementById('eqRequisicaoItems').innerHTML = '';
+    EQ_addRequisicaoItem();
+    EQ_KNOWN_ITEMS = null;
+  }catch(err){
+    console.error('Erro ao salvar requisições:', err);
     feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
     feedback.className = 'lanc-feedback err';
   }finally{
@@ -7289,11 +7503,12 @@ function EQ_initHistFiltersIfEmpty(){
 async function EQ_loadHistorico(){
   EQ_initHistFiltersIfEmpty();
   const tipo = document.getElementById('eqHistTipo').value;
-  const tabela = tipo === 'entrada' ? 'estoque_entradas' : 'estoque_contagens';
+  const tabela = tipo === 'entrada' ? 'estoque_entradas' : tipo === 'contagem' ? 'estoque_contagens' : 'estoque_requisicoes';
   const feedback = document.getElementById('eqHistFeedback');
   feedback.textContent = 'Buscando...'; feedback.className = 'lanc-feedback';
   document.getElementById('eqHistTableEntrada').style.display = tipo === 'entrada' ? 'table' : 'none';
   document.getElementById('eqHistTableContagem').style.display = tipo === 'contagem' ? 'table' : 'none';
+  document.getElementById('eqHistTableRequisicao').style.display = tipo === 'requisicao' ? 'table' : 'none';
   try{
     const client = LANC_getClient();
     const ini = document.getElementById('eqHistDataIni').value;
@@ -7317,9 +7532,9 @@ async function EQ_loadHistorico(){
 function EQ_fmtDataBR(iso){ return iso ? iso.split('-').reverse().join('/') : '—'; }
 
 function EQ_renderHistTable(tipo){
-  const tbodyId = tipo === 'entrada' ? 'eqHistTbodyEntrada' : 'eqHistTbodyContagem';
+  const tbodyId = tipo === 'entrada' ? 'eqHistTbodyEntrada' : tipo === 'contagem' ? 'eqHistTbodyContagem' : 'eqHistTbodyRequisicao';
   const tbody = document.getElementById(tbodyId);
-  const colspan = tipo === 'entrada' ? 18 : 6;
+  const colspan = tipo === 'entrada' ? 18 : tipo === 'contagem' ? 6 : 10;
   if(EQ_HIST_DATA.length === 0){
     tbody.innerHTML = `<tr><td colspan="${colspan}" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum registro nesse filtro.</td></tr>`;
     return;
@@ -7343,6 +7558,18 @@ function EQ_buildHistRowHtml(row, tipo){
       <td>${row.peso_peca||'—'}</td><td>${row.sif||'—'}</td>
       <td class="center">${row.temperatura_veiculo ?? '—'}</td><td class="center">${row.temperatura_produto ?? '—'}</td>
       <td>${row.tipo_armazenamento||'—'}</td><td class="center">${aprovadoTxt}</td><td>${row.nome_recebedor||'—'}</td>
+      <td>${row.observacao||'—'}</td>
+      <td class="center">
+        <button type="button" class="lanc-hist-btn edit">Editar</button>
+        <button type="button" class="lanc-hist-btn delete">Excluir</button>
+      </td></tr>`;
+  }
+  if(tipo === 'requisicao'){
+    return `<tr data-id="${row.id}">
+      <td>${EQ_fmtDataBR(row.data)}</td><td class="center">${EQ_fmtDataBR(row.data_emissao)}</td>
+      <td>${row.setor||'—'}</td><td>${row.lider||'—'}</td>
+      <td>${row.item||'—'}</td><td>${row.unidade||'—'}</td>
+      <td class="center">${row.quantidade_solicitada ?? '—'}</td><td class="center">${row.quantidade_liberada ?? '—'}</td>
       <td>${row.observacao||'—'}</td>
       <td class="center">
         <button type="button" class="lanc-hist-btn edit">Editar</button>
@@ -7392,6 +7619,22 @@ function EQ_buildHistEditRowHtml(row, tipo){
         <button type="button" class="lanc-hist-btn cancel">Cancelar</button>
       </td></tr>`;
   }
+  if(tipo === 'requisicao'){
+    return `<tr data-id="${row.id}">
+      <td><input type="date" class="erqh-data" value="${row.data||''}"></td>
+      <td><input type="date" class="erqh-data-emissao" value="${row.data_emissao||''}"></td>
+      <td><input type="text" class="erqh-setor" list="lpSetorListEstoque" value="${(row.setor||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="text" class="erqh-lider" value="${(row.lider||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="text" class="erqh-item" list="eqItemList" value="${(row.item||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="text" class="erqh-unidade" list="lpUnidadeListEstoque" value="${(row.unidade||'').replace(/"/g,'&quot;')}"></td>
+      <td><input type="number" step="0.01" class="erqh-qtd-solicitada" value="${row.quantidade_solicitada ?? ''}"></td>
+      <td><input type="number" step="0.01" class="erqh-qtd-liberada" value="${row.quantidade_liberada ?? ''}"></td>
+      <td><input type="text" class="erqh-obs" value="${(row.observacao||'').replace(/"/g,'&quot;')}"></td>
+      <td class="center">
+        <button type="button" class="lanc-hist-btn save">Salvar</button>
+        <button type="button" class="lanc-hist-btn cancel">Cancelar</button>
+      </td></tr>`;
+  }
   return `<tr data-id="${row.id}">
     <td><input type="date" class="ech-data" value="${row.data||''}"></td>
     <td><input type="text" class="ech-item" list="eqItemList" value="${(row.item||'').replace(/"/g,'&quot;')}"></td>
@@ -7407,7 +7650,7 @@ function EQ_buildHistEditRowHtml(row, tipo){
 function EQ_startEditRow(id, tipo){
   const row = EQ_HIST_DATA.find(r => String(r.id) === String(id));
   if(!row) return;
-  const tbodyId = tipo === 'entrada' ? 'eqHistTbodyEntrada' : 'eqHistTbodyContagem';
+  const tbodyId = tipo === 'entrada' ? 'eqHistTbodyEntrada' : tipo === 'contagem' ? 'eqHistTbodyContagem' : 'eqHistTbodyRequisicao';
   const tr = document.querySelector(`#${tbodyId} tr[data-id="${id}"]`);
   if(!tr) return;
   tr.outerHTML = EQ_buildHistEditRowHtml(row, tipo);
@@ -7417,39 +7660,61 @@ function EQ_startEditRow(id, tipo){
 }
 
 async function EQ_saveEditRow(id, tipo){
-  const tabela = tipo === 'entrada' ? 'estoque_entradas' : 'estoque_contagens';
-  const tbodyId = tipo === 'entrada' ? 'eqHistTbodyEntrada' : 'eqHistTbodyContagem';
-  const pfx = tipo === 'entrada' ? 'eeh' : 'ech';
+  const tabela = tipo === 'entrada' ? 'estoque_entradas' : tipo === 'contagem' ? 'estoque_contagens' : 'estoque_requisicoes';
+  const tbodyId = tipo === 'entrada' ? 'eqHistTbodyEntrada' : tipo === 'contagem' ? 'eqHistTbodyContagem' : 'eqHistTbodyRequisicao';
   const tr = document.querySelector(`#${tbodyId} tr[data-id="${id}"]`);
   if(!tr) return;
   const feedback = document.getElementById('eqHistFeedback');
   const val = cls => tr.querySelector('.'+cls).value;
-  const payload = {
-    data: val(pfx+'-data') || null,
-    item: val(pfx+'-item').trim(),
-    quantidade: val(pfx+'-quantidade') !== '' ? parseFloat(val(pfx+'-quantidade')) : null,
-    unidade: normalizeUnitDisplay(val(pfx+'-unidade')) || null,
-    observacao: val(pfx+'-obs').trim() || null,
-  };
-  if(tipo === 'entrada'){
-    payload.fornecedor = val('eeh-fornecedor').trim() || null;
-    payload.nota_fiscal = val('eeh-nf').trim() || null;
-    payload.lote = val('eeh-lote').trim() || null;
-    payload.data_fabricacao = val('eeh-data-fab') || null;
-    payload.data_validade = val('eeh-data-val') || null;
-    payload.peso_peca = val('eeh-peso-peca').trim() || null;
-    payload.sif = val('eeh-sif').trim() || null;
-    payload.temperatura_veiculo = val('eeh-temp-veiculo') !== '' ? parseFloat(val('eeh-temp-veiculo')) : null;
-    payload.temperatura_produto = val('eeh-temp-produto') !== '' ? parseFloat(val('eeh-temp-produto')) : null;
-    payload.tipo_armazenamento = val('eeh-tipo-arm') || null;
-    payload.aprovado = val('eeh-aprovado') === '' ? null : val('eeh-aprovado') === 'true';
-    payload.nome_recebedor = val('eeh-recebedor').trim() || null;
+
+  let payload;
+  if(tipo === 'requisicao'){
+    payload = {
+      data: val('erqh-data') || null,
+      data_emissao: val('erqh-data-emissao') || null,
+      setor: val('erqh-setor').trim() || null,
+      lider: val('erqh-lider').trim() || null,
+      item: val('erqh-item').trim(),
+      unidade: normalizeUnitDisplay(val('erqh-unidade')) || null,
+      quantidade_solicitada: val('erqh-qtd-solicitada') !== '' ? parseFloat(val('erqh-qtd-solicitada')) : null,
+      quantidade_liberada: val('erqh-qtd-liberada') !== '' ? parseFloat(val('erqh-qtd-liberada')) : null,
+      observacao: val('erqh-obs').trim() || null,
+    };
+    if(!payload.item || payload.quantidade_liberada === null){
+      feedback.textContent = '⚠ Item e Qtd. Liberada são obrigatórios.';
+      feedback.className = 'lanc-feedback err';
+      return;
+    }
+  } else {
+    const pfx = tipo === 'entrada' ? 'eeh' : 'ech';
+    payload = {
+      data: val(pfx+'-data') || null,
+      item: val(pfx+'-item').trim(),
+      quantidade: val(pfx+'-quantidade') !== '' ? parseFloat(val(pfx+'-quantidade')) : null,
+      unidade: normalizeUnitDisplay(val(pfx+'-unidade')) || null,
+      observacao: val(pfx+'-obs').trim() || null,
+    };
+    if(tipo === 'entrada'){
+      payload.fornecedor = val('eeh-fornecedor').trim() || null;
+      payload.nota_fiscal = val('eeh-nf').trim() || null;
+      payload.lote = val('eeh-lote').trim() || null;
+      payload.data_fabricacao = val('eeh-data-fab') || null;
+      payload.data_validade = val('eeh-data-val') || null;
+      payload.peso_peca = val('eeh-peso-peca').trim() || null;
+      payload.sif = val('eeh-sif').trim() || null;
+      payload.temperatura_veiculo = val('eeh-temp-veiculo') !== '' ? parseFloat(val('eeh-temp-veiculo')) : null;
+      payload.temperatura_produto = val('eeh-temp-produto') !== '' ? parseFloat(val('eeh-temp-produto')) : null;
+      payload.tipo_armazenamento = val('eeh-tipo-arm') || null;
+      payload.aprovado = val('eeh-aprovado') === '' ? null : val('eeh-aprovado') === 'true';
+      payload.nome_recebedor = val('eeh-recebedor').trim() || null;
+    }
+    if(!payload.item || payload.quantidade === null){
+      feedback.textContent = '⚠ Item e Quantidade são obrigatórios.';
+      feedback.className = 'lanc-feedback err';
+      return;
+    }
   }
-  if(!payload.item || payload.quantidade === null){
-    feedback.textContent = '⚠ Item e Quantidade são obrigatórios.';
-    feedback.className = 'lanc-feedback err';
-    return;
-  }
+
   try{
     const client = LANC_getClient();
     const { error } = await client.from(tabela).update(payload).eq('id', id);
@@ -7468,7 +7733,7 @@ async function EQ_saveEditRow(id, tipo){
 
 async function EQ_deleteRow(id, tipo){
   if(!confirm('Excluir esse registro? Essa ação não pode ser desfeita.')) return;
-  const tabela = tipo === 'entrada' ? 'estoque_entradas' : 'estoque_contagens';
+  const tabela = tipo === 'entrada' ? 'estoque_entradas' : tipo === 'contagem' ? 'estoque_contagens' : 'estoque_requisicoes';
   const feedback = document.getElementById('eqHistFeedback');
   try{
     const client = LANC_getClient();
@@ -7496,6 +7761,7 @@ let EQ_DASH_loadedOnce = false;
 let EQ_DASH_DATA = [];
 let EQ_DASH_LATEST_CONTAGEM = {}; // item -> {data, quantidade, unidade} — mais recente de TODOS os tempos, não só do período
 let EQ_DASH_LATEST_ENTRADA = {};  // idem, pra última entrada
+let EQ_DASH_SALDO_ATUAL = {};     // item -> {saldo, unidade, baseData, baseQtd, entradasDepois, requisicoesDepois} — ver EQ_DASH_loadData
 let EQ_DASH_MINIMOS = {}; // item -> {quantidade_minima, unidade} — cadastrado manualmente pelo usuário
 let EQ_DASH_SELECTED_ITEMS = null; // Set — null até carregar pela 1ª vez (aí seleciona tudo por padrão)
 
@@ -7549,17 +7815,19 @@ async function EQ_DASH_loadData(){
   infoEl.textContent = 'Carregando...';
   try{
     const client = LANC_getClient();
-    const [entradasPeriodoRes, contagensPeriodoRes, entradasTodasRes, contagensTodasRes, minimosRes] = await Promise.all([
+    const [entradasPeriodoRes, contagensPeriodoRes, entradasTodasRes, contagensTodasRes, requisicoesTodasRes, minimosRes] = await Promise.all([
       client.from('estoque_entradas').select('*').gte('data', ini).lte('data', fim).order('data'),
       client.from('estoque_contagens').select('*').gte('data', ini).lte('data', fim).order('data'),
       client.from('estoque_entradas').select('*').order('data', { ascending:false }).limit(3000),
       client.from('estoque_contagens').select('*').order('data', { ascending:false }).limit(3000),
+      client.from('estoque_requisicoes').select('*').order('data', { ascending:false }).limit(3000),
       client.from('estoque_minimos').select('*'),
     ]);
     if(entradasPeriodoRes.error) throw entradasPeriodoRes.error;
     if(contagensPeriodoRes.error) throw contagensPeriodoRes.error;
     if(entradasTodasRes.error) throw entradasTodasRes.error;
     if(contagensTodasRes.error) throw contagensTodasRes.error;
+    if(requisicoesTodasRes.error) console.warn('Tabela estoque_requisicoes ainda não existe ou deu erro:', requisicoesTodasRes.error);
     if(minimosRes.error) console.warn('Tabela estoque_minimos ainda não existe ou deu erro:', minimosRes.error);
 
     const minimos = {};
@@ -7585,6 +7853,39 @@ async function EQ_DASH_loadData(){
     });
     EQ_DASH_LATEST_CONTAGEM = latestContagem;
     EQ_DASH_LATEST_ENTRADA = latestEntrada;
+
+    // Saldo de Estoque Atual — a última contagem sozinha fica desatualizada
+    // assim que uma entrada ou requisição acontece depois dela. Aqui a
+    // contagem mais recente vira o "ponto zero" confiável (ela corrige
+    // qualquer perda/erro invisível), e rolamos pra frente somando entradas
+    // e subtraindo requisições lançadas depois dessa data. Itens sem
+    // nenhuma contagem ainda usam 0 como ponto de partida (menos confiável,
+    // mas melhor que não mostrar nada).
+    const requisicoesTodas = requisicoesTodasRes.data || [];
+    const todosItens = new Set([
+      ...Object.keys(latestContagem),
+      ...(entradasTodasRes.data || []).map(e=>e.item),
+      ...requisicoesTodas.map(r=>r.item),
+    ]);
+    const saldoAtual = {};
+    todosItens.forEach(item=>{
+      const base = latestContagem[item];
+      const baseData = base ? base.data : null;
+      const baseQtd = base ? base.quantidade : 0;
+      const entradasDepois = (entradasTodasRes.data || [])
+        .filter(e => e.item === item && (baseData === null || e.data > baseData))
+        .reduce((s,e)=> s + Number(e.quantidade||0), 0);
+      const requisicoesDepois = requisicoesTodas
+        .filter(r => r.item === item && (baseData === null || r.data > baseData))
+        .reduce((s,r)=> s + Number(r.quantidade_liberada||0), 0);
+      const unidade = (base && base.unidade) || latestEntrada[item]?.unidade || '';
+      saldoAtual[item] = {
+        saldo: baseQtd + entradasDepois - requisicoesDepois,
+        unidade, baseData, baseQtd, entradasDepois, requisicoesDepois,
+        semContagem: !base,
+      };
+    });
+    EQ_DASH_SALDO_ATUAL = saldoAtual;
     const itensAtuais = Object.keys(latestContagem);
     if(EQ_DASH_SELECTED_ITEMS === null){
       EQ_DASH_SELECTED_ITEMS = new Set(itensAtuais);
@@ -7644,6 +7945,7 @@ async function EQ_DASH_loadData(){
     EQ_DASH_renderQtyChart();
     EQ_DASH_renderLowStock();
     EQ_DASH_renderMinimosPanel();
+    EQ_DASH_renderSaldoAtual();
     infoEl.textContent = `${resultado.length} insumo(s) no período`;
   }catch(err){
     console.error('Erro ao carregar painel de estoque:', err);
@@ -7682,9 +7984,9 @@ function EQ_DASH_renderChecklist(){
 /* ---------- Gráfico vertical de quantidade em estoque ---------- */
 function EQ_DASH_renderQtyChart(){
   const wrap = document.getElementById('eqQtyChartWrap');
-  const selecionados = Object.keys(EQ_DASH_LATEST_CONTAGEM)
+  const selecionados = Object.keys(EQ_DASH_SALDO_ATUAL)
     .filter(item => EQ_DASH_SELECTED_ITEMS.has(item))
-    .map(item => ({ item, ...EQ_DASH_LATEST_CONTAGEM[item] }))
+    .map(item => ({ item, quantidade: EQ_DASH_SALDO_ATUAL[item].saldo, unidade: EQ_DASH_SALDO_ATUAL[item].unidade }))
     .sort((a,b)=> b.quantidade - a.quantidade);
 
   if(selecionados.length === 0){
@@ -7716,6 +8018,32 @@ function EQ_DASH_renderQtyChart(){
     </svg>`;
 }
 
+/* ---------- Saldo de Estoque Atual (tabela detalhada) ---------- */
+function EQ_DASH_renderSaldoAtual(){
+  const filtro = (document.getElementById('eqSaldoFiltro').value || '').toLowerCase().trim();
+  const tbody = document.getElementById('eqSaldoTbody');
+  let itens = Object.keys(EQ_DASH_SALDO_ATUAL).sort();
+  if(filtro) itens = itens.filter(i => i.toLowerCase().includes(filtro));
+  if(itens.length === 0){
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum item encontrado.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = itens.map(item=>{
+    const s = EQ_DASH_SALDO_ATUAL[item];
+    return `
+    <tr>
+      <td style="font-weight:600;">${item}${s.semContagem ? ' <span title="Sem contagem cadastrada — saldo parte de 0" style="color:var(--red);">⚠</span>' : ''}</td>
+      <td>${s.unidade||'—'}</td>
+      <td class="center">${s.semContagem ? '—' : EQ_DASH_fmtNum(s.baseQtd)}</td>
+      <td class="center">${s.semContagem ? '—' : EQ_fmtDataBR(s.baseData)}</td>
+      <td class="center" style="color:#1f5c3a;">${s.entradasDepois > 0 ? '+' + EQ_DASH_fmtNum(s.entradasDepois) : '—'}</td>
+      <td class="center" style="color:var(--red);">${s.requisicoesDepois > 0 ? '−' + EQ_DASH_fmtNum(s.requisicoesDepois) : '—'}</td>
+      <td class="center" style="font-weight:800;font-size:14px;">${EQ_DASH_fmtNum(s.saldo)}</td>
+    </tr>`;
+  }).join('');
+}
+document.getElementById('eqSaldoFiltro').addEventListener('input', EQ_DASH_renderSaldoAtual);
+
 /* ---------- Alerta de estoque baixo ---------- */
 function EQ_heatColor(pct){
   // Quanto menor o % restante, mais intenso o vermelho da linha.
@@ -7731,14 +8059,14 @@ function EQ_heatColor(pct){
 function EQ_DASH_renderLowStock(){
   const tbody = document.getElementById('eqLowStockTbody');
   const linhas = [];
-  Object.keys(EQ_DASH_LATEST_CONTAGEM).forEach(item=>{
-    const atual = EQ_DASH_LATEST_CONTAGEM[item];
+  Object.keys(EQ_DASH_SALDO_ATUAL).forEach(item=>{
+    const atual = EQ_DASH_SALDO_ATUAL[item];
     const minimo = EQ_DASH_MINIMOS[item];
     if(!minimo || minimo.quantidade_minima == null) return; // sem mínimo cadastrado, não entra no alerta
-    if(atual.quantidade < minimo.quantidade_minima){
-      const pctRestante = minimo.quantidade_minima > 0 ? (atual.quantidade / minimo.quantidade_minima) * 100 : 0;
+    if(atual.saldo < minimo.quantidade_minima){
+      const pctRestante = minimo.quantidade_minima > 0 ? (atual.saldo / minimo.quantidade_minima) * 100 : 0;
       linhas.push({
-        item, unidade: atual.unidade || minimo.unidade || '', atual: atual.quantidade,
+        item, unidade: atual.unidade || minimo.unidade || '', atual: atual.saldo,
         minimo: minimo.quantidade_minima, pctRestante,
       });
     }
