@@ -804,6 +804,16 @@
     <div class="trend-foot" id="capacidadeSalgadoFoot"></div>
   </div>
 
+  <!-- Visível só na aba de setor "Salgado" — mesmo padrão do painel de
+       capacidade acima. Ver renderConsumoRecheioSalgado. Usa o campo
+       Recheio Consumido (caixas), lançado por produto/máquina em Produção
+       Diária, junto com início/fim daquele lançamento. -->
+  <div class="panel" id="recheioSalgadoPanel" style="display:none;">
+    <div class="panel-title">Consumo de Recheio (Caixas/hora) por Máquina e Produto</div>
+    <div class="chart-wrap" id="recheioSalgadoChart"></div>
+    <div class="trend-foot" id="recheioSalgadoFoot"></div>
+  </div>
+
   <div id="prTrendModal" class="pr-trend-modal" style="display:none;">
     <div class="pr-trend-modal-backdrop" id="prTrendModalBackdrop"></div>
     <div class="pr-trend-modal-box">
@@ -2456,9 +2466,10 @@ function transformSupabaseRowsToData(rows){
     const obs = r.paradas_desvios || '';
     const duracaoParada = r.duracao_parada || '';
     const apontamentoCompleto = (r.apontamento_completo === true || r.apontamento_completo === false) ? r.apontamento_completo : null;
+    const recheio = (r.recheio_consumido_caixas !== null && r.recheio_consumido_caixas !== undefined) ? Number(r.recheio_consumido_caixas) : null;
 
     if(!byDate[dateISO]) byDate[dateISO] = [];
-    byDate[dateISO].push({ setor, equipe, maquina, produto, prev, foraDoPlano, real, uni, dif, obs, inicio, fim, duracaoParada, apontamentoCompleto });
+    byDate[dateISO].push({ setor, equipe, maquina, produto, prev, foraDoPlano, real, uni, dif, obs, inicio, fim, duracaoParada, apontamentoCompleto, recheio });
   });
 
   const result = {};
@@ -3825,6 +3836,83 @@ function renderCapacidadeSalgado(filteredDates){
   footEl.textContent = `Produtividade real calculada como Produção Real ÷ (Fim − Início) de cada lançamento, comparada à capacidade nominal cadastrada da máquina. ${itens.length} lançamento(s) com dado completo pra esse cálculo no período.`;
 }
 
+/* Consumo de Recheio (Caixas/hora), por Máquina e Produto — pedido da
+   gerência pro Relatório Industrial > Salgado. Usa o campo "Recheio
+   Consumido (caixas)" lançado por produto em Produção Diária (só existe
+   pro setor Salgado), dividido pelas horas trabalhadas daquele mesmo
+   lançamento (Fim − Início). Diferente do gráfico de Capacidade logo
+   acima, este não depende do cadastro de Máquinas — só do que já é
+   lançado na Produção Diária. */
+function computeConsumoRecheioSalgado(filteredDates){
+  const itens = [];
+  filteredDates.forEach(d=>{
+    (DATA[d] ? DATA[d].rows : []).forEach(r=>{
+      if(r.setor !== 'SALGADO') return;
+      if(!r.maquina || !r.produto || r.recheio == null || r.recheio <= 0) return;
+      const iniMin = timeToMinutes(r.inicio);
+      const fimMin = timeToMinutes(r.fim);
+      if(iniMin === null || fimMin === null) return;
+      let horas = (fimMin - iniMin) / 60;
+      if(horas <= 0) horas += 24; // produção que atravessou meia-noite
+      if(horas <= 0) return;
+      itens.push({
+        label: `${r.maquina} - ${r.produto}`,
+        maquina: r.maquina,
+        produto: r.produto,
+        consumoHora: r.recheio / horas,
+      });
+    });
+  });
+  // Agrega por Máquina+Produto (média), igual ao gráfico de Produtividade
+  // & Processos — evita uma barra por lançamento individual quando o mesmo
+  // par se repete em vários dias do período.
+  const porChave = {};
+  itens.forEach(it=>{
+    const key = it.maquina + '|' + it.produto;
+    if(!porChave[key]) porChave[key] = { maquina: it.maquina, produto: it.produto, soma: 0, count: 0 };
+    porChave[key].soma += it.consumoHora;
+    porChave[key].count += 1;
+  });
+  return Object.values(porChave)
+    .map(g => ({ label: `${g.maquina} - ${g.produto}`, maquina: g.maquina, produto: g.produto, consumoHora: g.soma/g.count }))
+    .sort((a,b) => b.consumoHora - a.consumoHora);
+}
+
+function renderConsumoRecheioSalgado(filteredDates){
+  const panel = document.getElementById('recheioSalgadoPanel');
+  if(selectedSector !== 'SALGADO'){
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = '';
+
+  const chartEl = document.getElementById('recheioSalgadoChart');
+  const footEl = document.getElementById('recheioSalgadoFoot');
+  const itens = computeConsumoRecheioSalgado(filteredDates);
+  if(itens.length === 0){
+    chartEl.innerHTML = `<div class="empty-state"><span class="empty-icon">📦</span>Nenhum lançamento do período tem Início, Fim e Recheio Consumido preenchidos. Esse campo é lançado por produto em Produção Diária.</div>`;
+    footEl.textContent = '';
+    return;
+  }
+
+  const barW = 26, gapGrupo = 40, baseY = 260, topPad = 100;
+  const chartWidth = Math.max(780, itens.length*(barW+gapGrupo) + 60);
+  const maxVal = Math.max(...itens.map(i=>i.consumoHora), 1) * 1.15;
+
+  let bars = '';
+  itens.forEach((it,i)=>{
+    const x0 = 36 + i*(barW+gapGrupo);
+    const h = (it.consumoHora/maxVal)*(baseY-topPad);
+
+    bars += `<rect x="${x0}" y="${baseY-h}" width="${barW}" height="${h}" fill="#B5640B" rx="4"><title>${it.label} — ${it.consumoHora.toLocaleString('pt-BR',{maximumFractionDigits:2})} Caixas/h</title></rect>`;
+    bars += `<text x="${x0+barW/2}" y="${baseY-h-8}" font-size="10" font-weight="700" fill="#8a4c08" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-h-8})">${it.consumoHora.toLocaleString('pt-BR',{maximumFractionDigits:2})} Cx/h</text>`;
+    bars += `<text x="${x0+barW/2}" y="${baseY+16}" font-size="10" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+16})">${truncateProdLabel(it.label,22)}<title>${it.label}</title></text>`;
+  });
+
+  chartEl.innerHTML = `<div style="max-width:100%;overflow-x:auto;"><svg viewBox="0 0 ${chartWidth} 380" width="${chartWidth}" height="380" style="overflow:visible;font-family:'Inter',Arial,sans-serif;">${bars}</svg></div>`;
+  footEl.textContent = `Consumo = Recheio Consumido (caixas) ÷ (Fim − Início) de cada lançamento, com média por Máquina + Produto quando o mesmo par se repete no período. ${itens.length} combinação(ões) de máquina/produto com dado completo.`;
+}
+
 function DC_showProductTrend(chave, uniFallback){
   const porSetor = selectedSector === '';
   const filteredDates = getFilteredDates();
@@ -4227,6 +4315,7 @@ function refreshAll(){
   renderTrend(filteredDates);
   renderOleoChart(filteredDates);
   renderCapacidadeSalgado(filteredDates);
+  renderConsumoRecheioSalgado(filteredDates);
   refreshDaySelectOptions(filteredDates);
   populateProdutoDetalheFilter(filteredDates);
   renderTable(filteredDates);
