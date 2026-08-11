@@ -8670,8 +8670,7 @@ function MC_render(){
   board.querySelectorAll('.mc-card-edit-btn').forEach(btn=>{
     btn.addEventListener('click', (e)=>{
       e.preventDefault(); // não deixa o clique fechar o <details>
-      const it = MC_DATA.find(x => String(x.id) === String(btn.dataset.id));
-      if(it) MC_openForm(it);
+      MC_startCardEdit(btn.dataset.id);
     });
   });
   board.querySelectorAll('.mc-card-status-quick').forEach(sel=>{
@@ -8728,6 +8727,109 @@ function MC_buildCardHtml(it){
         </div>
       </div>
     </details>`;
+}
+
+/* Versão editável do card, aberta no lugar da versão de leitura quando se
+   clica em "Editar" — tudo dentro do próprio card, sem modal. */
+function MC_buildCardEditHtml(it){
+  const sel = (id, atual, opcoes) => `<select id="${id}" style="width:100%;">` +
+    opcoes.map(o => `<option value="${o}" ${o===(atual||'')?'selected':''}>${o || 'Selecione...'}</option>`).join('') + `</select>`;
+  return `
+    <details data-id="${it.id}" open style="background:#fff;border:2px solid var(--gold);border-radius:10px;padding:12px 14px;">
+      <summary style="cursor:pointer;list-style:none;font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.04em;">Editando #${it.numero||''}</summary>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:10px;">
+        <div>
+          <label style="font-size:10.5px;font-weight:700;color:#6b5c5c;">Atividade</label>
+          <input type="text" id="mcCardAtividade_${it.id}" value="${(it.atividade||'').replace(/"/g,'&quot;')}" style="width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:12.5px;font-family:inherit;">
+        </div>
+        <div>
+          <label style="font-size:10.5px;font-weight:700;color:#6b5c5c;">Descrição</label>
+          <textarea id="mcCardDescricao_${it.id}" style="width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:12.5px;font-family:inherit;min-height:52px;">${it.descricao||''}</textarea>
+        </div>
+        <div>
+          <label style="font-size:10.5px;font-weight:700;color:#6b5c5c;">Próximos Passos</label>
+          <textarea id="mcCardProximosPassos_${it.id}" style="width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:12.5px;font-family:inherit;min-height:44px;">${it.proximos_passos||''}</textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div><label style="font-size:10.5px;font-weight:700;color:#6b5c5c;">Área</label><input type="text" id="mcCardArea_${it.id}" value="${(it.area||'').replace(/"/g,'&quot;')}" style="width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:12.5px;font-family:inherit;"></div>
+          <div><label style="font-size:10.5px;font-weight:700;color:#6b5c5c;">Prazo</label><input type="date" id="mcCardPrazo_${it.id}" value="${it.prazo||''}" style="width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:12.5px;font-family:inherit;"></div>
+          <div><label style="font-size:10.5px;font-weight:700;color:#6b5c5c;">Prioridade</label>${sel(`mcCardPrioridade_${it.id}`, it.prioridade, ['','Baixa','Média','Alta'])}</div>
+          <div><label style="font-size:10.5px;font-weight:700;color:#6b5c5c;">Status</label>${sel(`mcCardStatus_${it.id}`, it.status, ['Não Iniciado','Em Andamento','Atrasado','Concluído'])}</div>
+          <div><label style="font-size:10.5px;font-weight:700;color:#6b5c5c;">Complexidade</label>${sel(`mcCardComplexidade_${it.id}`, it.complexidade, ['','Baixa','Média','Alta'])}</div>
+          <div><label style="font-size:10.5px;font-weight:700;color:#6b5c5c;">Investimento</label>${sel(`mcCardInvestimento_${it.id}`, it.investimento, ['','Baixa','Média','Alta'])}</div>
+          <div><label style="font-size:10.5px;font-weight:700;color:#6b5c5c;">Timing</label>${sel(`mcCardTiming_${it.id}`, it.timing, ['','Curto Prazo','Médio Prazo','Longo Prazo'])}</div>
+          <div><label style="font-size:10.5px;font-weight:700;color:#6b5c5c;">Ganho Esperado</label>${sel(`mcCardGanho_${it.id}`, it.ganho||'NA', ['NA','Baixo','Médio','Alto'])}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button type="button" class="lanc-submit-btn mc-card-save-btn" data-id="${it.id}" style="margin:0;padding:8px 16px;">Salvar</button>
+          <button type="button" class="lanc-hist-btn cancel mc-card-cancel-btn" data-id="${it.id}">Cancelar</button>
+          <button type="button" class="lanc-hist-btn delete mc-card-delete-btn" data-id="${it.id}" style="margin-left:auto;">Excluir</button>
+          <span class="lanc-feedback" id="mcCardFeedback_${it.id}"></span>
+        </div>
+      </div>
+    </details>`;
+}
+
+function MC_startCardEdit(id){
+  const it = MC_DATA.find(x => String(x.id) === String(id));
+  if(!it) return;
+  const el = document.querySelector(`#mcBoard details[data-id="${id}"]`);
+  if(!el) return;
+  el.outerHTML = MC_buildCardEditHtml(it);
+  MC_wireCardEdit(id);
+}
+
+function MC_wireCardEdit(id){
+  document.querySelector(`.mc-card-cancel-btn[data-id="${id}"]`).addEventListener('click', (e)=>{ e.preventDefault(); MC_render(); });
+  document.querySelector(`.mc-card-save-btn[data-id="${id}"]`).addEventListener('click', async (e)=>{
+    e.preventDefault();
+    const feedback = document.getElementById(`mcCardFeedback_${id}`);
+    const v = suf => document.getElementById(`mcCard${suf}_${id}`).value;
+    const atividade = v('Atividade').trim();
+    if(!atividade){
+      feedback.textContent = '⚠ Atividade é obrigatória.';
+      feedback.className = 'lanc-feedback err';
+      return;
+    }
+    const payload = {
+      atividade,
+      descricao: v('Descricao').trim() || null,
+      proximos_passos: v('ProximosPassos').trim() || null,
+      area: v('Area').trim() || null,
+      prazo: v('Prazo') || null,
+      prioridade: v('Prioridade') || null,
+      status: v('Status'),
+      complexidade: v('Complexidade') || null,
+      investimento: v('Investimento') || null,
+      timing: v('Timing') || null,
+      ganho: v('Ganho') || 'NA',
+      updated_at: new Date().toISOString(),
+    };
+    try{
+      const client = LANC_getClient();
+      const { error } = await client.from('melhoria_continua').update(payload).eq('id', id);
+      if(error) throw error;
+      await MC_loadData();
+    }catch(err){
+      console.error('Erro ao salvar iniciativa:', err);
+      feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
+      feedback.className = 'lanc-feedback err';
+    }
+  });
+  document.querySelector(`.mc-card-delete-btn[data-id="${id}"]`).addEventListener('click', async (e)=>{
+    e.preventDefault();
+    if(!confirm('Excluir essa iniciativa? Essa ação não pode ser desfeita.')) return;
+    try{
+      const client = LANC_getClient();
+      const { error } = await client.from('melhoria_continua').delete().eq('id', id);
+      if(error) throw error;
+      await MC_loadData();
+    }catch(err){
+      console.error('Erro ao excluir iniciativa:', err);
+      document.getElementById(`mcCardFeedback_${id}`).textContent = '⚠ Erro ao excluir: ' + (err.message || err);
+      document.getElementById(`mcCardFeedback_${id}`).className = 'lanc-feedback err';
+    }
+  });
 }
 
 /* ---------- Modal de criar/editar/excluir, usado direto na página de
