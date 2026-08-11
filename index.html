@@ -8721,6 +8721,14 @@ function MC_computeScores(it){
   return { esforco, valor };
 }
 
+/* Bucket de 0-6 em 3 faixas (Baixo/Médio/Alto) — usado nos dois eixos. */
+function MC_bucket(score, max){
+  const terco = max/3;
+  if(score <= terco) return 0;
+  if(score <= terco*2) return 1;
+  return 2;
+}
+
 function MC_renderMatriz(itens){
   const wrap = document.getElementById('mcMatrizWrap');
   const comDados = itens.filter(it => it.complexidade && it.investimento && it.timing);
@@ -8729,68 +8737,71 @@ function MC_renderMatriz(itens){
     return;
   }
 
-  const W = 640, H = 460, pad = 56;
-  const plotW = W - pad*2, plotH = H - pad*2;
-  const escalaX = v => pad + (v/6)*plotW; // esforço: 0 (fácil) -> 6 (difícil), esquerda pra direita
-  const escalaY = v => pad + plotH - (v/6)*plotH; // valor: 0 (baixo) -> 6 (alto), embaixo pra cima
-
-  // 3 faixas por eixo (Baixo/Médio/Alto), pra colorir o fundo em zonas
-  const zonas = [
-    { x0:0, x1:2, y0:4, y1:6, cor:'#e6f4ec', label:'🎯 Prioridade Máxima' },
-    { x0:2, x1:4, y0:4, y1:6, cor:'#fdf3e6', label:'📈 Planejar' },
-    { x0:4, x1:6, y0:4, y1:6, cor:'#fbeaea', label:'🔍 Avaliar com cautela' },
-    { x0:0, x1:2, y0:2, y1:4, cor:'#eef7f1', label:'⚡ Ganho Rápido' },
-    { x0:2, x1:4, y0:2, y1:4, cor:'#fbf6ea', label:'Avaliar' },
-    { x0:4, x1:6, y0:2, y1:4, cor:'#f7e9e9', label:'Baixa Prioridade' },
-    { x0:0, x1:2, y0:0, y1:2, cor:'#f2f2ea', label:'Fácil, baixo retorno' },
-    { x0:2, x1:4, y0:0, y1:2, cor:'#f5efe9', label:'Baixa Prioridade' },
-    { x0:4, x1:6, y0:0, y1:2, cor:'#f0e5e5', label:'🗑 Descartar' },
+  // Grade discreta 3×3 — com só 3 níveis por campo de entrada (Baixa/Média/
+  // Alta, Curto/Médio/Longo), um scatter contínuo dava falsa precisão e
+  // empilhava tudo quase no mesmo pixel. Uma grade fixa, com o nome de cada
+  // iniciativa dentro da célula certa, é o que realmente responde "onde
+  // isso cai" de forma legível.
+  const ROTULOS = [
+    ['🎯 Prioridade Máxima', '📈 Planejar', '🔍 Avaliar com Cautela'],
+    ['⚡ Ganho Rápido', 'Avaliar', 'Baixa Prioridade'],
+    ['Fácil, Baixo Retorno', 'Baixa Prioridade', '🗑 Descartar'],
+  ];
+  const CORES = [
+    ['#e6f4ec', '#fdf3e6', '#fbeaea'],
+    ['#eef7f1', '#fbf6ea', '#f7e9e9'],
+    ['#f2f2ea', '#f5efe9', '#f0e5e5'],
   ];
 
-  let zonasSvg = zonas.map(z => `<rect x="${escalaX(z.x0)}" y="${escalaY(z.y1)}" width="${escalaX(z.x1)-escalaX(z.x0)}" height="${escalaY(z.y0)-escalaY(z.y1)}" fill="${z.cor}" stroke="#fff" stroke-width="1"/>`).join('');
-
-  // Agrupa iniciativas que caem exatamente no mesmo ponto, pra espalhar em
-  // leque (senão ficam empilhadas e escondem uma a outra).
-  const porPonto = {};
+  // celulas[linhaValor][colunaEsforco] — linha 0 = Valor Alto (topo),
+  // coluna 0 = Esforço Baixo (esquerda), igual um gráfico normal.
+  const celulas = [[[],[],[]],[[],[],[]],[[],[],[]]];
   comDados.forEach(it=>{
     const { esforco, valor } = MC_computeScores(it);
-    const key = esforco+'|'+valor;
-    if(!porPonto[key]) porPonto[key] = [];
-    porPonto[key].push(it);
+    const colEsforco = MC_bucket(esforco, 6);
+    const linhaValor = 2 - MC_bucket(valor, 6); // inverte: valor alto fica em cima
+    celulas[linhaValor][colEsforco].push(it);
   });
 
-  let pontosSvg = '';
-  Object.values(porPonto).forEach(grupo=>{
-    const { esforco, valor } = MC_computeScores(grupo[0]);
-    const cx = escalaX(esforco), cy = escalaY(valor);
-    grupo.forEach((it,i)=>{
-      const offset = grupo.length > 1 ? (i - (grupo.length-1)/2) * 9 : 0;
-      const cor = MC_STATUS_COR[it.status] || '#8a8a8a';
-      pontosSvg += `<circle cx="${cx+offset}" cy="${cy}" r="7" fill="${cor}" stroke="#fff" stroke-width="1.5"><title>${it.numero ? `#${it.numero} — ` : ''}${it.atividade} (${it.status})</title></circle>`;
-    });
-  });
+  const legenda = Object.keys(MC_STATUS_COR).map(status =>
+    `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#2a1a1a;margin-right:14px;"><span style="width:8px;height:8px;border-radius:50%;background:${MC_STATUS_COR[status]};display:inline-block;"></span>${status}</span>`
+  ).join('');
 
-  const eixos = `
-    <line x1="${pad}" y1="${escalaY(0)}" x2="${W-pad+10}" y2="${escalaY(0)}" stroke="#8a7a6a" stroke-width="1.5" marker-end="url(#mcArrow)"/>
-    <line x1="${pad}" y1="${escalaY(0)}" x2="${pad}" y2="${pad-10}" stroke="#8a7a6a" stroke-width="1.5" marker-end="url(#mcArrow)"/>
-    <text x="${W/2}" y="${H-14}" font-size="12" fill="#6b5c5c" text-anchor="middle" font-weight="600">Esforço (Complexidade + Investimento) →</text>
-    <text x="16" y="${H/2}" font-size="12" fill="#6b5c5c" text-anchor="middle" font-weight="600" transform="rotate(-90 16 ${H/2})">Valor (Timing + Ganho) →</text>`;
+  wrap.innerHTML = `
+    <div style="margin-bottom:10px;">${legenda}</div>
+    <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;align-items:stretch;">
+      <div></div>
+      <div style="text-align:center;font-size:11px;font-weight:700;color:#6b5c5c;">Esforço Baixo</div>
+      <div style="text-align:center;font-size:11px;font-weight:700;color:#6b5c5c;">Esforço Médio</div>
+      <div style="text-align:center;font-size:11px;font-weight:700;color:#6b5c5c;">Esforço Alto</div>
 
-  const legenda = Object.keys(MC_STATUS_COR).map((status,i)=>
-    `<g transform="translate(${pad + i*150},20)">
-      <circle cx="6" cy="0" r="6" fill="${MC_STATUS_COR[status]}"/>
-      <text x="16" y="4" font-size="11" fill="#2a1a1a">${status}</text>
-    </g>`).join('');
+      <div style="display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#6b5c5c;writing-mode:vertical-rl;transform:rotate(180deg);">Valor Alto</div>
+      ${[0].map(l => [0,1,2].map(c => `<div id="mcCell_${l}_${c}"></div>`).join('')).join('')}
 
-  wrap.innerHTML = `<div style="max-width:100%;overflow-x:auto;">
-    <svg viewBox="0 0 ${W} ${H}" width="${Math.min(W,760)}" height="${H}" style="font-family:'Inter',Arial,sans-serif;">
-      <defs><marker id="mcArrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#8a7a6a"/></marker></defs>
-      ${zonasSvg}
-      ${eixos}
-      ${pontosSvg}
-      ${legenda}
-    </svg>
-  </div>`;
+      <div style="display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#6b5c5c;writing-mode:vertical-rl;transform:rotate(180deg);">Valor Médio</div>
+      ${[1].map(l => [0,1,2].map(c => `<div id="mcCell_${l}_${c}"></div>`).join('')).join('')}
+
+      <div style="display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#6b5c5c;writing-mode:vertical-rl;transform:rotate(180deg);">Valor Baixo</div>
+      ${[2].map(l => [0,1,2].map(c => `<div id="mcCell_${l}_${c}"></div>`).join('')).join('')}
+    </div>`;
+
+  // Preenche cada célula depois (mais simples que montar o grid-template com
+  // rowspan de rótulo lateral inline no template acima).
+  for(let l=0; l<3; l++){
+    for(let c=0; c<3; c++){
+      const lista = celulas[l][c];
+      const chips = lista.map(it => {
+        const cor = MC_STATUS_COR[it.status] || '#8a8a8a';
+        const nomeCurto = it.atividade.length > 34 ? it.atividade.slice(0,32)+'…' : it.atividade;
+        return `<span style="display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:20px;padding:3px 10px 3px 6px;font-size:11px;color:#2a1a1a;margin:2px;" title="${it.atividade} (${it.status})"><span style="width:7px;height:7px;border-radius:50%;background:${cor};flex-shrink:0;"></span>${it.numero ? `#${it.numero} ` : ''}${nomeCurto}</span>`;
+      }).join('');
+      document.getElementById(`mcCell_${l}_${c}`).outerHTML = `
+        <div style="background:${CORES[l][c]};border-radius:10px;padding:10px;min-height:100px;">
+          <div style="font-size:11px;font-weight:700;color:#4a3a3a;margin-bottom:6px;">${ROTULOS[l][c]}</div>
+          <div style="display:flex;flex-wrap:wrap;">${chips || '<span style="font-size:11px;color:var(--ink-soft);">—</span>'}</div>
+        </div>`;
+    }
+  }
 }
 
 async function MC_loadData(){
