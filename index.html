@@ -1244,7 +1244,10 @@
       </div>
 
       <div class="panel">
-        <div class="panel-title">Iniciativas</div>
+        <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>Iniciativas</span>
+          <button type="button" class="lanc-add-item-btn" id="mcNovaBtn" style="margin:0;">+ Nova Iniciativa</button>
+        </div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
           <input type="text" id="mcFiltro" placeholder="Buscar atividade, área..." style="flex:1 1 240px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--cream);">
           <select id="mcFiltroStatus" style="padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--cream);">
@@ -1260,6 +1263,104 @@
 
     </div>
   </div> <!-- /page-melhoria -->
+
+  <!-- Modal de criar/editar iniciativa, usado direto na página de visão
+       (Melhoria Contínua) — mesmos campos do formulário de Lançamento, ver
+       MC_openForm/MC_submitForm. -->
+  <div id="mcModal" class="pr-trend-modal" style="display:none;">
+    <div class="pr-trend-modal-backdrop" id="mcModalBackdrop"></div>
+    <div class="pr-trend-modal-box" style="max-width:640px;">
+      <div class="pr-trend-modal-header">
+        <div>
+          <div class="eyebrow" style="color:var(--gold);">Melhoria Contínua</div>
+          <h3 id="mcModalTitle" style="margin:2px 0 0;font-family:var(--font-display);color:var(--red);font-size:20px;">Nova Iniciativa</h3>
+        </div>
+        <button type="button" id="mcModalClose" class="pr-trend-modal-close">✕</button>
+      </div>
+      <form id="mcModalForm" class="lanc-form" style="margin-top:14px;">
+        <input type="hidden" id="mcModalId" value="">
+        <div class="lanc-field" style="flex:2 1 320px;">
+          <label>Atividade</label>
+          <input type="text" id="mcModalAtividade" required>
+        </div>
+        <div class="lanc-field" style="flex:2 1 320px;">
+          <label>Descrição</label>
+          <textarea id="mcModalDescricao"></textarea>
+        </div>
+        <div class="lanc-field">
+          <label>Área</label>
+          <input type="text" id="mcModalArea">
+        </div>
+        <div class="lanc-field">
+          <label>Prioridade</label>
+          <select id="mcModalPrioridade">
+            <option value="">Selecione...</option>
+            <option value="Baixa">Baixa</option>
+            <option value="Média">Média</option>
+            <option value="Alta">Alta</option>
+          </select>
+        </div>
+        <div class="lanc-field">
+          <label>Status</label>
+          <select id="mcModalStatus" required>
+            <option value="Não Iniciado">Não Iniciado</option>
+            <option value="Em Andamento">Em Andamento</option>
+            <option value="Atrasado">Atrasado</option>
+            <option value="Concluído">Concluído</option>
+          </select>
+        </div>
+        <div class="lanc-field">
+          <label>Prazo</label>
+          <input type="date" id="mcModalPrazo">
+        </div>
+        <div class="lanc-field">
+          <label>Complexidade</label>
+          <select id="mcModalComplexidade">
+            <option value="">Selecione...</option>
+            <option value="Baixa">Baixa</option>
+            <option value="Média">Média</option>
+            <option value="Alta">Alta</option>
+          </select>
+        </div>
+        <div class="lanc-field">
+          <label>Investimento</label>
+          <select id="mcModalInvestimento">
+            <option value="">Selecione...</option>
+            <option value="Baixa">Baixa</option>
+            <option value="Média">Média</option>
+            <option value="Alta">Alta</option>
+          </select>
+        </div>
+        <div class="lanc-field">
+          <label>Timing</label>
+          <select id="mcModalTiming">
+            <option value="">Selecione...</option>
+            <option value="Curto Prazo">Curto Prazo</option>
+            <option value="Médio Prazo">Médio Prazo</option>
+            <option value="Longo Prazo">Longo Prazo</option>
+          </select>
+        </div>
+        <div class="lanc-field">
+          <label>Ganho Esperado</label>
+          <select id="mcModalGanho">
+            <option value="NA">NA (não estimado)</option>
+            <option value="Baixo">Baixo</option>
+            <option value="Médio">Médio</option>
+            <option value="Alto">Alto</option>
+          </select>
+        </div>
+        <div class="lanc-field" style="flex:2 1 320px;">
+          <label>Próximos Passos</label>
+          <textarea id="mcModalProximosPassos"></textarea>
+        </div>
+        <div class="lanc-submit-row">
+          <button type="submit" class="lanc-submit-btn" id="mcModalSubmitBtn">Salvar</button>
+          <button type="button" class="lanc-hist-btn delete" id="mcModalDeleteBtn" style="display:none;">Excluir</button>
+          <span class="lanc-feedback" id="mcModalFeedback"></span>
+        </div>
+      </form>
+    </div>
+  </div>
 
 
   <!-- ============================================================ PÁGINA LANÇAMENTO ============================================================ -->
@@ -1294,7 +1395,6 @@
           <button type="button" class="lanc-tab-btn" data-lanctab="prodproc">Produtividade & Processos</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="maquinas">Máquinas</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="produtos">Produtos</button>
-          <button type="button" class="lanc-tab-btn" data-lanctab="melhoria">Melhoria Contínua</button>
         </div>
 
         <!-- Formulário: Produção Diária -->
@@ -1812,105 +1912,6 @@
                 <tr><th class="center">Código</th><th>Descrição</th><th class="center">Ações</th></tr>
               </thead>
               <tbody id="prTbody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Cadastro de iniciativas de Melhoria Contínua — aparece também
-             na página lateral "Melhoria Contínua" (view da Gerente), ver
-             MC_*. Aqui é onde se cria/edita/exclui cada iniciativa. -->
-        <div id="lancPanelMelhoria" class="panel" style="display:none;">
-          <div class="panel-title">Cadastro de Iniciativa — Melhoria Contínua</div>
-          <form id="lancFormMelhoria" class="lanc-form">
-            <div class="lanc-field" style="flex:2 1 320px;">
-              <label>Atividade</label>
-              <input type="text" class="mc-atividade" placeholder="Ex: Mapeamento de Máquinas no setor do Salgado" required>
-            </div>
-            <div class="lanc-field" style="flex:2 1 320px;">
-              <label>Descrição</label>
-              <textarea class="mc-descricao" placeholder="O que é essa iniciativa, em detalhe"></textarea>
-            </div>
-            <div class="lanc-field">
-              <label>Área</label>
-              <input type="text" class="mc-area" placeholder="Ex: Produção | Salgado">
-            </div>
-            <div class="lanc-field">
-              <label>Prioridade</label>
-              <select class="mc-prioridade">
-                <option value="">Selecione...</option>
-                <option value="Baixa">Baixa</option>
-                <option value="Média">Média</option>
-                <option value="Alta">Alta</option>
-              </select>
-            </div>
-            <div class="lanc-field">
-              <label>Status</label>
-              <select class="mc-status" required>
-                <option value="Não Iniciado">Não Iniciado</option>
-                <option value="Em Andamento">Em Andamento</option>
-                <option value="Atrasado">Atrasado</option>
-                <option value="Concluído">Concluído</option>
-              </select>
-            </div>
-            <div class="lanc-field">
-              <label>Prazo</label>
-              <input type="date" class="mc-prazo">
-            </div>
-            <div class="lanc-field">
-              <label>Complexidade</label>
-              <select class="mc-complexidade">
-                <option value="">Selecione...</option>
-                <option value="Baixa">Baixa</option>
-                <option value="Média">Média</option>
-                <option value="Alta">Alta</option>
-              </select>
-            </div>
-            <div class="lanc-field">
-              <label>Investimento</label>
-              <select class="mc-investimento">
-                <option value="">Selecione...</option>
-                <option value="Baixa">Baixa</option>
-                <option value="Média">Média</option>
-                <option value="Alta">Alta</option>
-              </select>
-            </div>
-            <div class="lanc-field">
-              <label>Timing</label>
-              <select class="mc-timing">
-                <option value="">Selecione...</option>
-                <option value="Curto Prazo">Curto Prazo</option>
-                <option value="Médio Prazo">Médio Prazo</option>
-                <option value="Longo Prazo">Longo Prazo</option>
-              </select>
-            </div>
-            <div class="lanc-field">
-              <label>Ganho Esperado</label>
-              <select class="mc-ganho">
-                <option value="NA">NA (não estimado)</option>
-                <option value="Baixo">Baixo</option>
-                <option value="Médio">Médio</option>
-                <option value="Alto">Alto</option>
-              </select>
-            </div>
-            <div class="lanc-field" style="flex:2 1 320px;">
-              <label>Próximos Passos</label>
-              <textarea class="mc-proximos-passos" placeholder="O que precisa acontecer pra avançar"></textarea>
-            </div>
-            <button type="submit" class="lanc-submit-btn">Cadastrar Iniciativa</button>
-          </form>
-          <span class="lanc-feedback" id="mcFormFeedback"></span>
-
-          <input type="text" id="mcLancFiltro" placeholder="Buscar atividade..." style="max-width:320px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--cream);margin:16px 0 10px;">
-
-          <div class="table-wrap" style="max-height:520px;">
-            <table class="detail" id="mcLancTable">
-              <thead>
-                <tr>
-                  <th class="center">Nº</th><th>Atividade</th><th>Área</th><th>Prioridade</th>
-                  <th>Status</th><th class="center">Prazo</th><th class="center">Ações</th>
-                </tr>
-              </thead>
-              <tbody id="mcLancTbody"></tbody>
             </table>
           </div>
         </div>
@@ -6102,214 +6103,6 @@ async function PR_submitNew(ev){
   }
 }
 
-/* ============================================================================
-   ABA MELHORIA CONTÍNUA (Lançamento) — cadastro/edição/exclusão de
-   iniciativas (public.melhoria_continua), mesmo padrão de CRUD de Produtos
-   e Máquinas. Alimenta a página lateral "Melhoria Contínua" (ver MC_*).
-   ============================================================================ */
-let MCL_DATA = [];
-let MCL_INITED = false;
-
-function MCL_init(){
-  MCL_loadData();
-  if(!MCL_INITED){
-    MCL_INITED = true;
-    document.getElementById('lancFormMelhoria').addEventListener('submit', MCL_submitNew);
-    document.getElementById('mcLancFiltro').addEventListener('input', MCL_renderTable);
-  }
-}
-
-/* Se a página de visão (Melhoria Contínua, menu lateral) já tiver sido
-   aberta antes, recarrega ela também — assim qualquer cadastro feito aqui
-   aparece na hora pra quem estiver com a outra página aberta. */
-function MCL_refreshViewPage(){
-  if(typeof MC_loadedOnce !== 'undefined' && MC_loadedOnce) MC_loadData();
-}
-
-async function MCL_loadData(){
-  const tbody = document.getElementById('mcLancTbody');
-  const feedback = document.getElementById('mcFormFeedback');
-  feedback.textContent = 'Carregando...';
-  feedback.className = 'lanc-feedback';
-  try{
-    const client = LANC_getClient();
-    const { data, error } = await client.from('melhoria_continua').select('*').order('numero');
-    if(error) throw error;
-    MCL_DATA = data || [];
-    MCL_renderTable();
-    feedback.textContent = MCL_DATA.length + ' iniciativa(s) cadastrada(s)';
-    feedback.className = 'lanc-feedback ok';
-  }catch(err){
-    console.error('Erro ao buscar iniciativas:', err);
-    feedback.textContent = '⚠ Erro ao buscar: ' + (err.message || err);
-    feedback.className = 'lanc-feedback err';
-    tbody.innerHTML = '';
-  }
-}
-
-function MCL_renderTable(){
-  const filtro = (document.getElementById('mcLancFiltro').value || '').toLowerCase().trim();
-  const tbody = document.getElementById('mcLancTbody');
-  let itens = MCL_DATA;
-  if(filtro) itens = itens.filter(it => (it.atividade||'').toLowerCase().includes(filtro) || (it.area||'').toLowerCase().includes(filtro));
-  if(itens.length === 0){
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhuma iniciativa encontrada.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = itens.map(row => MCL_buildRowHtml(row)).join('');
-  tbody.querySelectorAll('tr').forEach(tr=>{
-    const id = tr.dataset.id;
-    tr.querySelector('.lanc-hist-btn.edit').addEventListener('click', ()=> MCL_startEditRow(id));
-    tr.querySelector('.lanc-hist-btn.delete').addEventListener('click', ()=> MCL_deleteRow(id));
-  });
-}
-
-function MCL_buildRowHtml(row){
-  return `
-    <tr data-id="${row.id}">
-      <td class="center">${row.numero ?? '—'}</td>
-      <td class="lanc-hist-wrap">${row.atividade}</td>
-      <td class="lanc-hist-wrap">${row.area||'—'}</td>
-      <td class="center">${row.prioridade||'—'}</td>
-      <td class="center">${row.status}</td>
-      <td class="center">${row.prazo ? row.prazo.split('-').reverse().join('/') : '—'}</td>
-      <td class="center">
-        <button type="button" class="lanc-hist-btn edit">Editar</button>
-        <button type="button" class="lanc-hist-btn delete">Excluir</button>
-      </td>
-    </tr>`;
-}
-
-function MCL_selectHtml(cls, atual, opcoes){
-  return `<select class="${cls}">` + opcoes.map(o=>`<option value="${o}" ${o===atual?'selected':''}>${o||'Selecione...'}</option>`).join('') + `</select>`;
-}
-
-function MCL_buildEditRowHtml(row){
-  return `
-    <tr data-id="${row.id}">
-      <td><input type="number" class="emc-numero" style="width:60px;" value="${row.numero ?? ''}"></td>
-      <td style="min-width:220px;"><input type="text" class="emc-atividade" value="${(row.atividade||'').replace(/"/g,'&quot;')}"></td>
-      <td><input type="text" class="emc-area" value="${(row.area||'').replace(/"/g,'&quot;')}"></td>
-      <td>${MCL_selectHtml('emc-prioridade', row.prioridade, ['','Baixa','Média','Alta'])}</td>
-      <td>${MCL_selectHtml('emc-status', row.status, ['Não Iniciado','Em Andamento','Atrasado','Concluído'])}</td>
-      <td><input type="date" class="emc-prazo" style="width:135px;" value="${row.prazo||''}"></td>
-      <td class="center">
-        <button type="button" class="lanc-hist-btn save">Salvar</button>
-        <button type="button" class="lanc-hist-btn cancel">Cancelar</button>
-      </td>
-    </tr>`;
-}
-
-function MCL_startEditRow(id){
-  const row = MCL_DATA.find(r => String(r.id) === String(id));
-  if(!row) return;
-  const tr = document.querySelector(`#mcLancTbody tr[data-id="${id}"]`);
-  if(!tr) return;
-  tr.outerHTML = MCL_buildEditRowHtml(row);
-  const newTr = document.querySelector(`#mcLancTbody tr[data-id="${id}"]`);
-  newTr.querySelector('.lanc-hist-btn.save').addEventListener('click', ()=> MCL_saveEditRow(id));
-  newTr.querySelector('.lanc-hist-btn.cancel').addEventListener('click', MCL_renderTable);
-}
-
-async function MCL_saveEditRow(id){
-  const tr = document.querySelector(`#mcLancTbody tr[data-id="${id}"]`);
-  if(!tr) return;
-  const feedback = document.getElementById('mcFormFeedback');
-  const val = cls => tr.querySelector('.'+cls).value;
-  const payload = {
-    numero: val('emc-numero') !== '' ? parseInt(val('emc-numero'),10) : null,
-    atividade: val('emc-atividade').trim(),
-    area: val('emc-area').trim() || null,
-    prioridade: val('emc-prioridade') || null,
-    status: val('emc-status'),
-    prazo: val('emc-prazo') || null,
-    updated_at: new Date().toISOString(),
-  };
-  if(!payload.atividade){
-    feedback.textContent = '⚠ Atividade é obrigatória.';
-    feedback.className = 'lanc-feedback err';
-    return;
-  }
-  try{
-    const client = LANC_getClient();
-    const { error } = await client.from('melhoria_continua').update(payload).eq('id', id);
-    if(error) throw error;
-    const idx = MCL_DATA.findIndex(r => String(r.id) === String(id));
-    if(idx >= 0) MCL_DATA[idx] = Object.assign({}, MCL_DATA[idx], payload);
-    MCL_renderTable();
-    MCL_refreshViewPage();
-    feedback.textContent = '✓ Iniciativa atualizada. (Pra editar Descrição, Complexidade, Investimento, Timing, Ganho ou Próximos Passos, exclua e recadastre com os dados corretos, ou peça ajuste direto no banco.)';
-    feedback.className = 'lanc-feedback ok';
-  }catch(err){
-    console.error('Erro ao atualizar iniciativa:', err);
-    feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
-    feedback.className = 'lanc-feedback err';
-  }
-}
-
-async function MCL_deleteRow(id){
-  if(!confirm('Excluir essa iniciativa? Essa ação não pode ser desfeita.')) return;
-  const feedback = document.getElementById('mcFormFeedback');
-  try{
-    const client = LANC_getClient();
-    const { error } = await client.from('melhoria_continua').delete().eq('id', id);
-    if(error) throw error;
-    MCL_DATA = MCL_DATA.filter(r => String(r.id) !== String(id));
-    MCL_renderTable();
-    MCL_refreshViewPage();
-    feedback.textContent = '✓ Iniciativa excluída.';
-    feedback.className = 'lanc-feedback ok';
-  }catch(err){
-    console.error('Erro ao excluir iniciativa:', err);
-    feedback.textContent = '⚠ Erro ao excluir: ' + (err.message || err);
-    feedback.className = 'lanc-feedback err';
-  }
-}
-
-async function MCL_submitNew(ev){
-  ev.preventDefault();
-  const form = ev.target;
-  const feedback = document.getElementById('mcFormFeedback');
-  const val = cls => form.querySelector('.'+cls).value;
-  const atividade = val('mc-atividade').trim();
-  if(!atividade){
-    feedback.textContent = '⚠ Atividade é obrigatória.';
-    feedback.className = 'lanc-feedback err';
-    return;
-  }
-  // Próximo número sequencial, só pra manter a ordenação visual da planilha
-  // original — não é chave, só numeração de exibição.
-  const proximoNumero = MCL_DATA.reduce((max,r)=> Math.max(max, r.numero||0), 0) + 1;
-  const payload = {
-    numero: proximoNumero,
-    atividade,
-    descricao: val('mc-descricao').trim() || null,
-    area: val('mc-area').trim() || null,
-    prioridade: val('mc-prioridade') || null,
-    status: val('mc-status') || 'Não Iniciado',
-    prazo: val('mc-prazo') || null,
-    complexidade: val('mc-complexidade') || null,
-    investimento: val('mc-investimento') || null,
-    timing: val('mc-timing') || null,
-    ganho: val('mc-ganho').trim() || null,
-    proximos_passos: val('mc-proximos-passos').trim() || null,
-  };
-  try{
-    const client = LANC_getClient();
-    const { error } = await client.from('melhoria_continua').insert([payload]);
-    if(error) throw error;
-    form.reset();
-    feedback.textContent = '✓ Iniciativa cadastrada.';
-    feedback.className = 'lanc-feedback ok';
-    MCL_loadData();
-    MCL_refreshViewPage();
-  }catch(err){
-    console.error('Erro ao cadastrar iniciativa:', err);
-    feedback.textContent = '⚠ Erro ao cadastrar: ' + (err.message || err);
-    feedback.className = 'lanc-feedback err';
-  }
-}
-
 document.querySelectorAll('.lanc-tab-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('.lanc-tab-btn').forEach(b=>b.classList.remove('active'));
@@ -6321,13 +6114,11 @@ document.querySelectorAll('.lanc-tab-btn').forEach(btn=>{
     document.getElementById('lancPanelProdProc').style.display = tab === 'prodproc' ? 'block' : 'none';
     document.getElementById('lancPanelMaquinas').style.display = tab === 'maquinas' ? 'block' : 'none';
     document.getElementById('lancPanelProdutos').style.display = tab === 'produtos' ? 'block' : 'none';
-    document.getElementById('lancPanelMelhoria').style.display = tab === 'melhoria' ? 'block' : 'none';
     if(tab === 'estoque') EQ_populateDropdowns();
     if(tab === 'producao') LANC_populateDropdowns();
     if(tab === 'prodproc') PPL_init();
     if(tab === 'maquinas') MQ_init();
     if(tab === 'produtos') PR_init();
-    if(tab === 'melhoria') MCL_init();
   });
 });
 
@@ -8694,7 +8485,8 @@ function EQ_DASH_fmtNum(v){
    PÁGINA MELHORIA CONTÍNUA — visão da Gerente sobre o que o time de
    Gestão & Controles fez, está fazendo e vai fazer. Migrado da planilha
    "Controle de Gestão" (aba Iniciativas Estratégicas). Lançamento (criar/
-   editar/excluir) fica na aba Lançamento > Melhoria Contínua (ver MCL_*).
+   editar/excluir) fica direto nesta mesma página (ver MC_openForm), sem
+   precisar ir na aba Lançamento.
    ============================================================================ */
 let MC_DATA = [];
 const MC_STATUS_ORDEM = ['Em Andamento', 'Atrasado', 'Não Iniciado', 'Concluído'];
@@ -8875,13 +8667,38 @@ function MC_render(){
   }).join('');
 
   board.innerHTML = `<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;">${colunas}</div>`;
+  board.querySelectorAll('.mc-card-edit-btn').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.preventDefault(); // não deixa o clique fechar o <details>
+      const it = MC_DATA.find(x => String(x.id) === String(btn.dataset.id));
+      if(it) MC_openForm(it);
+    });
+  });
+  board.querySelectorAll('.mc-card-status-quick').forEach(sel=>{
+    sel.addEventListener('click', e => e.stopPropagation()); // não deixa abrir/fechar o <details> ao clicar no dropdown
+    sel.addEventListener('change', async ()=>{
+      const id = sel.dataset.id;
+      const novoStatus = sel.value;
+      sel.disabled = true;
+      try{
+        const client = LANC_getClient();
+        const { error } = await client.from('melhoria_continua').update({ status: novoStatus, updated_at: new Date().toISOString() }).eq('id', id);
+        if(error) throw error;
+        await MC_loadData(); // recarrega tudo — o card muda de coluna, então precisa redesenhar o quadro inteiro
+      }catch(err){
+        console.error('Erro ao mudar status:', err);
+        alert('Erro ao mudar status: ' + (err.message || err));
+        sel.disabled = false;
+      }
+    });
+  });
 }
 
 function MC_buildCardHtml(it){
   const corPrior = MC_PRIORIDADE_COR[it.prioridade] || '#8a8a8a';
   const prazoTxt = it.prazo ? it.prazo.split('-').reverse().join('/') : 'sem prazo';
   return `
-    <details style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;">
+    <details data-id="${it.id}" style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;">
       <summary style="cursor:pointer;list-style:none;">
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
           <span style="font-weight:700;font-size:13px;color:#2a1a1a;line-height:1.35;">${it.numero ? `#${it.numero} — ` : ''}${it.atividade}</span>
@@ -8900,9 +8717,123 @@ function MC_buildCardHtml(it){
           ${it.investimento ? `<span>Investimento: <b>${it.investimento}</b></span>` : ''}
           ${it.timing ? `<span>Timing: <b>${it.timing}</b></span>` : ''}
         </div>
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:center;">
+          <button type="button" class="lanc-hist-btn edit mc-card-edit-btn" data-id="${it.id}">Editar</button>
+          <select class="mc-card-status-quick" data-id="${it.id}" style="font-size:11px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--cream);font-family:inherit;" title="Mudar status rapidamente, sem abrir o formulário completo">
+            <option value="Não Iniciado" ${it.status==='Não Iniciado'?'selected':''}>Não Iniciado</option>
+            <option value="Em Andamento" ${it.status==='Em Andamento'?'selected':''}>Em Andamento</option>
+            <option value="Atrasado" ${it.status==='Atrasado'?'selected':''}>Atrasado</option>
+            <option value="Concluído" ${it.status==='Concluído'?'selected':''}>Concluído</option>
+          </select>
+        </div>
       </div>
     </details>`;
 }
+
+/* ---------- Modal de criar/editar/excluir, usado direto na página de
+   visão (sem precisar ir na aba Lançamento). Mesma tabela, mesmos campos —
+   só uma segunda porta de entrada pro mesmo CRUD. ---------- */
+function MC_openForm(it){
+  const form = document.getElementById('mcModalForm');
+  form.reset();
+  document.getElementById('mcModalId').value = it ? it.id : '';
+  document.getElementById('mcModalTitle').textContent = it ? 'Editar Iniciativa' : 'Nova Iniciativa';
+  document.getElementById('mcModalDeleteBtn').style.display = it ? '' : 'none';
+  document.getElementById('mcModalFeedback').textContent = '';
+  if(it){
+    document.getElementById('mcModalAtividade').value = it.atividade || '';
+    document.getElementById('mcModalDescricao').value = it.descricao || '';
+    document.getElementById('mcModalArea').value = it.area || '';
+    document.getElementById('mcModalPrioridade').value = it.prioridade || '';
+    document.getElementById('mcModalStatus').value = it.status || 'Não Iniciado';
+    document.getElementById('mcModalPrazo').value = it.prazo || '';
+    document.getElementById('mcModalComplexidade').value = it.complexidade || '';
+    document.getElementById('mcModalInvestimento').value = it.investimento || '';
+    document.getElementById('mcModalTiming').value = it.timing || '';
+    document.getElementById('mcModalGanho').value = it.ganho || 'NA';
+    document.getElementById('mcModalProximosPassos').value = it.proximos_passos || '';
+  } else {
+    document.getElementById('mcModalGanho').value = 'NA';
+  }
+  document.getElementById('mcModal').style.display = 'flex';
+}
+
+function MC_closeForm(){
+  document.getElementById('mcModal').style.display = 'none';
+}
+
+document.getElementById('mcNovaBtn').addEventListener('click', ()=> MC_openForm(null));
+document.getElementById('mcModalClose').addEventListener('click', MC_closeForm);
+document.getElementById('mcModalBackdrop').addEventListener('click', MC_closeForm);
+
+document.getElementById('mcModalForm').addEventListener('submit', async (ev)=>{
+  ev.preventDefault();
+  const feedback = document.getElementById('mcModalFeedback');
+  const btn = document.getElementById('mcModalSubmitBtn');
+  const id = document.getElementById('mcModalId').value;
+  const atividade = document.getElementById('mcModalAtividade').value.trim();
+  if(!atividade){
+    feedback.textContent = '⚠ Atividade é obrigatória.';
+    feedback.className = 'lanc-feedback err';
+    return;
+  }
+  const payload = {
+    atividade,
+    descricao: document.getElementById('mcModalDescricao').value.trim() || null,
+    area: document.getElementById('mcModalArea').value.trim() || null,
+    prioridade: document.getElementById('mcModalPrioridade').value || null,
+    status: document.getElementById('mcModalStatus').value || 'Não Iniciado',
+    prazo: document.getElementById('mcModalPrazo').value || null,
+    complexidade: document.getElementById('mcModalComplexidade').value || null,
+    investimento: document.getElementById('mcModalInvestimento').value || null,
+    timing: document.getElementById('mcModalTiming').value || null,
+    ganho: document.getElementById('mcModalGanho').value || 'NA',
+    proximos_passos: document.getElementById('mcModalProximosPassos').value.trim() || null,
+  };
+  btn.disabled = true;
+  feedback.textContent = 'Salvando...';
+  feedback.className = 'lanc-feedback';
+  try{
+    const client = LANC_getClient();
+    if(id){
+      payload.updated_at = new Date().toISOString();
+      const { error } = await client.from('melhoria_continua').update(payload).eq('id', id);
+      if(error) throw error;
+    } else {
+      // Próximo número sequencial, só pra manter a numeração visual — não é
+      // chave, só ordenação de exibição (mesma lógica do Lançamento).
+      payload.numero = MC_DATA.reduce((max,r)=> Math.max(max, r.numero||0), 0) + 1;
+      const { error } = await client.from('melhoria_continua').insert([payload]);
+      if(error) throw error;
+    }
+    MC_closeForm();
+    await MC_loadData();
+  }catch(err){
+    console.error('Erro ao salvar iniciativa:', err);
+    feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('mcModalDeleteBtn').addEventListener('click', async ()=>{
+  const id = document.getElementById('mcModalId').value;
+  if(!id) return;
+  if(!confirm('Excluir essa iniciativa? Essa ação não pode ser desfeita.')) return;
+  const feedback = document.getElementById('mcModalFeedback');
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from('melhoria_continua').delete().eq('id', id);
+    if(error) throw error;
+    MC_closeForm();
+    await MC_loadData();
+  }catch(err){
+    console.error('Erro ao excluir iniciativa:', err);
+    feedback.textContent = '⚠ Erro ao excluir: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }
+});
 
 document.getElementById('mcFiltro').addEventListener('input', MC_render);
 document.getElementById('mcFiltroStatus').addEventListener('change', MC_render);
