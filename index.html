@@ -1238,6 +1238,12 @@
       <div class="kpi-grid" id="mcKpiGrid"></div>
 
       <div class="panel">
+        <div class="panel-title">Matriz de Priorização</div>
+        <div class="trend-foot" style="margin-bottom:12px;">Posição = Esforço (Complexidade + Investimento) × Valor (Timing + Ganho Esperado). Cor do ponto = Status. Passe o mouse sobre um ponto pra ver qual iniciativa é.</div>
+        <div class="chart-wrap" id="mcMatrizWrap"></div>
+      </div>
+
+      <div class="panel">
         <div class="panel-title">Iniciativas</div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
           <input type="text" id="mcFiltro" placeholder="Buscar atividade, área..." style="flex:1 1 240px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--cream);">
@@ -1879,7 +1885,12 @@
             </div>
             <div class="lanc-field">
               <label>Ganho Esperado</label>
-              <input type="text" class="mc-ganho" placeholder="Ex: Redução de retrabalho">
+              <select class="mc-ganho">
+                <option value="NA">NA (não estimado)</option>
+                <option value="Baixo">Baixo</option>
+                <option value="Médio">Médio</option>
+                <option value="Alto">Alto</option>
+              </select>
             </div>
             <div class="lanc-field" style="flex:2 1 320px;">
               <label>Próximos Passos</label>
@@ -8695,6 +8706,93 @@ const MC_STATUS_COR = {
 };
 const MC_PRIORIDADE_COR = { 'Alta': '#A10101', 'Média': '#B5640B', 'Baixa': '#2f7d52' };
 
+/* ---------- Matriz de Priorização (Esforço × Valor) ----------
+   Esforço = Complexidade + Investimento (2 a 6) — quanto maior, mais
+   difícil/caro de fazer. Valor = Timing + Ganho (0 a 6) — quanto maior,
+   mais rápido e mais valioso é o retorno. Mesmos campos já preenchidos no
+   cadastro, sem precisar de dado novo. */
+const MC_NIVEL_SCORE = { 'Baixa': 1, 'Média': 2, 'Alta': 3 };
+const MC_TIMING_SCORE = { 'Curto Prazo': 3, 'Médio Prazo': 2, 'Longo Prazo': 1 };
+const MC_GANHO_SCORE = { 'Alto': 3, 'Médio': 2, 'Baixo': 1, 'NA': 0 };
+
+function MC_computeScores(it){
+  const esforco = (MC_NIVEL_SCORE[it.complexidade] || 0) + (MC_NIVEL_SCORE[it.investimento] || 0); // 0 a 6
+  const valor = (MC_TIMING_SCORE[it.timing] || 0) + (MC_GANHO_SCORE[it.ganho] || 0); // 0 a 6
+  return { esforco, valor };
+}
+
+function MC_renderMatriz(itens){
+  const wrap = document.getElementById('mcMatrizWrap');
+  const comDados = itens.filter(it => it.complexidade && it.investimento && it.timing);
+  if(comDados.length === 0){
+    wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">🎯</span>Nenhuma iniciativa com Complexidade, Investimento e Timing preenchidos pra posicionar na matriz.</div>`;
+    return;
+  }
+
+  const W = 640, H = 460, pad = 56;
+  const plotW = W - pad*2, plotH = H - pad*2;
+  const escalaX = v => pad + (v/6)*plotW; // esforço: 0 (fácil) -> 6 (difícil), esquerda pra direita
+  const escalaY = v => pad + plotH - (v/6)*plotH; // valor: 0 (baixo) -> 6 (alto), embaixo pra cima
+
+  // 3 faixas por eixo (Baixo/Médio/Alto), pra colorir o fundo em zonas
+  const zonas = [
+    { x0:0, x1:2, y0:4, y1:6, cor:'#e6f4ec', label:'🎯 Prioridade Máxima' },
+    { x0:2, x1:4, y0:4, y1:6, cor:'#fdf3e6', label:'📈 Planejar' },
+    { x0:4, x1:6, y0:4, y1:6, cor:'#fbeaea', label:'🔍 Avaliar com cautela' },
+    { x0:0, x1:2, y0:2, y1:4, cor:'#eef7f1', label:'⚡ Ganho Rápido' },
+    { x0:2, x1:4, y0:2, y1:4, cor:'#fbf6ea', label:'Avaliar' },
+    { x0:4, x1:6, y0:2, y1:4, cor:'#f7e9e9', label:'Baixa Prioridade' },
+    { x0:0, x1:2, y0:0, y1:2, cor:'#f2f2ea', label:'Fácil, baixo retorno' },
+    { x0:2, x1:4, y0:0, y1:2, cor:'#f5efe9', label:'Baixa Prioridade' },
+    { x0:4, x1:6, y0:0, y1:2, cor:'#f0e5e5', label:'🗑 Descartar' },
+  ];
+
+  let zonasSvg = zonas.map(z => `<rect x="${escalaX(z.x0)}" y="${escalaY(z.y1)}" width="${escalaX(z.x1)-escalaX(z.x0)}" height="${escalaY(z.y0)-escalaY(z.y1)}" fill="${z.cor}" stroke="#fff" stroke-width="1"/>`).join('');
+
+  // Agrupa iniciativas que caem exatamente no mesmo ponto, pra espalhar em
+  // leque (senão ficam empilhadas e escondem uma a outra).
+  const porPonto = {};
+  comDados.forEach(it=>{
+    const { esforco, valor } = MC_computeScores(it);
+    const key = esforco+'|'+valor;
+    if(!porPonto[key]) porPonto[key] = [];
+    porPonto[key].push(it);
+  });
+
+  let pontosSvg = '';
+  Object.values(porPonto).forEach(grupo=>{
+    const { esforco, valor } = MC_computeScores(grupo[0]);
+    const cx = escalaX(esforco), cy = escalaY(valor);
+    grupo.forEach((it,i)=>{
+      const offset = grupo.length > 1 ? (i - (grupo.length-1)/2) * 9 : 0;
+      const cor = MC_STATUS_COR[it.status] || '#8a8a8a';
+      pontosSvg += `<circle cx="${cx+offset}" cy="${cy}" r="7" fill="${cor}" stroke="#fff" stroke-width="1.5"><title>${it.numero ? `#${it.numero} — ` : ''}${it.atividade} (${it.status})</title></circle>`;
+    });
+  });
+
+  const eixos = `
+    <line x1="${pad}" y1="${escalaY(0)}" x2="${W-pad+10}" y2="${escalaY(0)}" stroke="#8a7a6a" stroke-width="1.5" marker-end="url(#mcArrow)"/>
+    <line x1="${pad}" y1="${escalaY(0)}" x2="${pad}" y2="${pad-10}" stroke="#8a7a6a" stroke-width="1.5" marker-end="url(#mcArrow)"/>
+    <text x="${W/2}" y="${H-14}" font-size="12" fill="#6b5c5c" text-anchor="middle" font-weight="600">Esforço (Complexidade + Investimento) →</text>
+    <text x="16" y="${H/2}" font-size="12" fill="#6b5c5c" text-anchor="middle" font-weight="600" transform="rotate(-90 16 ${H/2})">Valor (Timing + Ganho) →</text>`;
+
+  const legenda = Object.keys(MC_STATUS_COR).map((status,i)=>
+    `<g transform="translate(${pad + i*150},20)">
+      <circle cx="6" cy="0" r="6" fill="${MC_STATUS_COR[status]}"/>
+      <text x="16" y="4" font-size="11" fill="#2a1a1a">${status}</text>
+    </g>`).join('');
+
+  wrap.innerHTML = `<div style="max-width:100%;overflow-x:auto;">
+    <svg viewBox="0 0 ${W} ${H}" width="${Math.min(W,760)}" height="${H}" style="font-family:'Inter',Arial,sans-serif;">
+      <defs><marker id="mcArrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#8a7a6a"/></marker></defs>
+      ${zonasSvg}
+      ${eixos}
+      ${pontosSvg}
+      ${legenda}
+    </svg>
+  </div>`;
+}
+
 async function MC_loadData(){
   const board = document.getElementById('mcBoard');
   board.innerHTML = `<div class="empty-state">Carregando...</div>`;
@@ -8743,8 +8841,10 @@ function MC_render(){
   const board = document.getElementById('mcBoard');
   if(itens.length === 0){
     board.innerHTML = `<div class="empty-state"><span class="empty-icon">🔍</span>Nenhuma iniciativa encontrada.</div>`;
+    MC_renderMatriz([]);
     return;
   }
+  MC_renderMatriz(itens);
 
   const colunas = MC_STATUS_ORDEM.map(status => {
     const doStatus = itens.filter(it => it.status === status).sort((a,b)=> (a.numero||0)-(b.numero||0));
