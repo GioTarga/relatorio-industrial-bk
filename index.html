@@ -1255,6 +1255,7 @@
           <button type="button" class="lanc-tab-btn" data-lanctab="estoque">Estoque</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="prodproc">Produtividade & Processos</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="maquinas">Máquinas</button>
+          <button type="button" class="lanc-tab-btn" data-lanctab="produtos">Produtos</button>
         </div>
 
         <!-- Formulário: Produção Diária -->
@@ -1739,6 +1740,39 @@
                 <tr><th>Setor</th><th>Identificação</th><th>Fabricante/Modelo</th><th class="center">Capacidade</th><th class="center">Equipe</th><th class="center">Param. Velocidade</th><th class="center">Param. Prensa</th><th>Produtos</th><th class="center">Ações</th></tr>
               </thead>
               <tbody id="mqTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Catálogo de Produtos (produtos_producao) — código + descrição.
+             É a fonte que trava o campo Produto em Produção Diária e
+             Produtividade & Processos (ver PRODCAT_*). Cadastrar um
+             produto novo aqui já libera ele pra ser lançado nos outros
+             formulários. -->
+        <div id="lancPanelProdutos" class="panel" style="display:none;">
+          <div class="panel-title">Cadastro de Produtos — Catálogo de Produção</div>
+          <div class="trend-foot" style="margin-bottom:12px;">Esse catálogo trava o campo Produto no Lançamento (Produção Diária e Produtividade & Processos) — só nomes cadastrados aqui podem ser lançados. Isso evita o mesmo produto entrar no sistema com nomes digitados de forma diferente.</div>
+          <form id="lancFormProduto" class="lanc-form">
+            <div class="lanc-field">
+              <label>Código</label>
+              <input type="text" class="pr-codigo" placeholder="Ex: 7192" required>
+            </div>
+            <div class="lanc-field" style="flex:2 1 320px;">
+              <label>Descrição do Produto</label>
+              <input type="text" class="pr-descricao" placeholder="Ex: MINI PASTEL NATA CARNE BK 35G PCT 600G - CX C/18 UNID" required>
+            </div>
+            <button type="submit" class="lanc-submit-btn">Cadastrar Produto</button>
+          </form>
+          <span class="lanc-feedback" id="prFeedback"></span>
+
+          <input type="text" id="prFiltro" placeholder="Buscar produto ou código..." style="max-width:320px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--cream);margin:16px 0 10px;">
+
+          <div class="table-wrap" style="max-height:520px;">
+            <table class="detail" id="prTable">
+              <thead>
+                <tr><th class="center">Código</th><th>Descrição</th><th class="center">Ações</th></tr>
+              </thead>
+              <tbody id="prTbody"></tbody>
             </table>
           </div>
         </div>
@@ -5742,6 +5776,188 @@ async function MQ_submitNew(ev){
   }
 }
 
+/* ============================================================================
+   ABA PRODUTOS — cadastro do catálogo de produtos de produção
+   (public.produtos_producao), mesmo padrão de CRUD de Máquinas. Esse
+   catálogo é a fonte que trava o campo Produto em Produção Diária e
+   Produtividade & Processos (ver PRODCAT_* mais acima) — cadastrar aqui
+   já libera o produto pra ser lançado nos outros formulários, e qualquer
+   edição/exclusão precisa invalidar o cache do PRODCAT pra refletir na
+   hora, sem precisar recarregar a página.
+   ============================================================================ */
+let PR_DATA = [];
+let PR_INITED = false;
+
+function PR_init(){
+  PR_loadData();
+  if(!PR_INITED){
+    PR_INITED = true;
+    document.getElementById('lancFormProduto').addEventListener('submit', PR_submitNew);
+    document.getElementById('prFiltro').addEventListener('input', PR_renderTable);
+  }
+}
+
+/* Invalida e recarrega o cache travado usado pelos formulários de
+   lançamento — sem isso, um produto cadastrado/editado aqui só apareceria
+   como opção depois de um F5. */
+async function PR_refreshCatalogCache(){
+  PRODCAT_LISTA = null;
+  PRODCAT_POR_NOME = null;
+  await PRODCAT_load();
+  PRODCAT_preencherDatalist(document.getElementById('lpProdutoList'));
+  PRODCAT_preencherDatalist(document.getElementById('pplProdutoList'));
+}
+
+async function PR_loadData(){
+  const tbody = document.getElementById('prTbody');
+  const feedback = document.getElementById('prFeedback');
+  feedback.textContent = 'Carregando...';
+  feedback.className = 'lanc-feedback';
+  try{
+    const client = LANC_getClient();
+    const { data, error } = await client.from('produtos_producao').select('*').order('descricao');
+    if(error) throw error;
+    PR_DATA = data || [];
+    PR_renderTable();
+    feedback.textContent = PR_DATA.length + ' produto(s) cadastrado(s)';
+    feedback.className = 'lanc-feedback ok';
+  }catch(err){
+    console.error('Erro ao buscar produtos:', err);
+    feedback.textContent = '⚠ Erro ao buscar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+    tbody.innerHTML = '';
+  }
+}
+
+function PR_renderTable(){
+  const filtro = (document.getElementById('prFiltro').value || '').toLowerCase().trim();
+  const tbody = document.getElementById('prTbody');
+  let itens = PR_DATA;
+  if(filtro) itens = itens.filter(p => p.codigo.toLowerCase().includes(filtro) || p.descricao.toLowerCase().includes(filtro));
+  if(itens.length === 0){
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum produto encontrado.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = itens.map(row => PR_buildRowHtml(row)).join('');
+  tbody.querySelectorAll('tr').forEach(tr=>{
+    const codigo = tr.dataset.codigo;
+    tr.querySelector('.lanc-hist-btn.edit').addEventListener('click', ()=> PR_startEditRow(codigo));
+    tr.querySelector('.lanc-hist-btn.delete').addEventListener('click', ()=> PR_deleteRow(codigo));
+  });
+}
+
+function PR_buildRowHtml(row){
+  return `
+    <tr data-codigo="${row.codigo.replace(/"/g,'&quot;')}">
+      <td class="center" style="font-weight:600;">${row.codigo}</td>
+      <td>${row.descricao}</td>
+      <td class="center">
+        <button type="button" class="lanc-hist-btn edit">Editar</button>
+        <button type="button" class="lanc-hist-btn delete">Excluir</button>
+      </td>
+    </tr>`;
+}
+
+function PR_buildEditRowHtml(row){
+  return `
+    <tr data-codigo="${row.codigo.replace(/"/g,'&quot;')}">
+      <td class="center"><input type="text" class="epr-codigo" style="width:100px;" value="${row.codigo.replace(/"/g,'&quot;')}" disabled title="Código não pode ser editado — exclua e cadastre de novo se precisar trocar."></td>
+      <td><input type="text" class="epr-descricao" value="${row.descricao.replace(/"/g,'&quot;')}"></td>
+      <td class="center">
+        <button type="button" class="lanc-hist-btn save">Salvar</button>
+        <button type="button" class="lanc-hist-btn cancel">Cancelar</button>
+      </td>
+    </tr>`;
+}
+
+function PR_startEditRow(codigo){
+  const row = PR_DATA.find(r => r.codigo === codigo);
+  if(!row) return;
+  const tr = document.querySelector(`#prTbody tr[data-codigo="${CSS.escape(codigo)}"]`);
+  if(!tr) return;
+  tr.outerHTML = PR_buildEditRowHtml(row);
+  const newTr = document.querySelector(`#prTbody tr[data-codigo="${CSS.escape(codigo)}"]`);
+  newTr.querySelector('.lanc-hist-btn.save').addEventListener('click', ()=> PR_saveEditRow(codigo));
+  newTr.querySelector('.lanc-hist-btn.cancel').addEventListener('click', PR_renderTable);
+}
+
+async function PR_saveEditRow(codigo){
+  const tr = document.querySelector(`#prTbody tr[data-codigo="${CSS.escape(codigo)}"]`);
+  if(!tr) return;
+  const feedback = document.getElementById('prFeedback');
+  const descricao = tr.querySelector('.epr-descricao').value.trim();
+  if(!descricao){
+    feedback.textContent = '⚠ Descrição é obrigatória.';
+    feedback.className = 'lanc-feedback err';
+    return;
+  }
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from('produtos_producao').update({ descricao, updated_at: new Date().toISOString() }).eq('codigo', codigo);
+    if(error) throw error;
+    const idx = PR_DATA.findIndex(r => r.codigo === codigo);
+    if(idx >= 0) PR_DATA[idx].descricao = descricao;
+    PR_renderTable();
+    await PR_refreshCatalogCache();
+    feedback.textContent = '✓ Produto atualizado.';
+    feedback.className = 'lanc-feedback ok';
+  }catch(err){
+    console.error('Erro ao atualizar produto:', err);
+    feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }
+}
+
+async function PR_deleteRow(codigo){
+  if(!confirm(`Excluir o produto "${codigo}"? Lançamentos já feitos com ele continuam no histórico, mas ele deixa de aparecer na lista pra novos lançamentos.`)) return;
+  const feedback = document.getElementById('prFeedback');
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from('produtos_producao').delete().eq('codigo', codigo);
+    if(error) throw error;
+    PR_DATA = PR_DATA.filter(r => r.codigo !== codigo);
+    PR_renderTable();
+    await PR_refreshCatalogCache();
+    feedback.textContent = '✓ Produto excluído.';
+    feedback.className = 'lanc-feedback ok';
+  }catch(err){
+    console.error('Erro ao excluir produto:', err);
+    feedback.textContent = '⚠ Erro ao excluir: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }
+}
+
+async function PR_submitNew(ev){
+  ev.preventDefault();
+  const form = ev.target;
+  const feedback = document.getElementById('prFeedback');
+  const codigo = form.querySelector('.pr-codigo').value.trim();
+  const descricao = form.querySelector('.pr-descricao').value.trim();
+  if(!codigo || !descricao){
+    feedback.textContent = '⚠ Código e Descrição são obrigatórios.';
+    feedback.className = 'lanc-feedback err';
+    return;
+  }
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from('produtos_producao').insert([{ codigo, descricao }]);
+    if(error) throw error;
+    form.reset();
+    feedback.textContent = '✓ Produto cadastrado.';
+    feedback.className = 'lanc-feedback ok';
+    PR_loadData();
+    await PR_refreshCatalogCache();
+  }catch(err){
+    console.error('Erro ao cadastrar produto:', err);
+    // Código duplicado (já existe) é o erro mais provável aqui — a tabela
+    // tem codigo como chave primária, então isso já é a própria proteção
+    // contra duplicidade que motivou o catálogo inteiro.
+    const msg = (err.message||'').includes('duplicate') ? `Já existe um produto com o código "${codigo}".` : (err.message || err);
+    feedback.textContent = '⚠ Erro ao cadastrar: ' + msg;
+    feedback.className = 'lanc-feedback err';
+  }
+}
+
 document.querySelectorAll('.lanc-tab-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('.lanc-tab-btn').forEach(b=>b.classList.remove('active'));
@@ -5752,10 +5968,12 @@ document.querySelectorAll('.lanc-tab-btn').forEach(btn=>{
     document.getElementById('lancPanelEstoque').style.display = tab === 'estoque' ? 'block' : 'none';
     document.getElementById('lancPanelProdProc').style.display = tab === 'prodproc' ? 'block' : 'none';
     document.getElementById('lancPanelMaquinas').style.display = tab === 'maquinas' ? 'block' : 'none';
+    document.getElementById('lancPanelProdutos').style.display = tab === 'produtos' ? 'block' : 'none';
     if(tab === 'estoque') EQ_populateDropdowns();
     if(tab === 'producao') LANC_populateDropdowns();
     if(tab === 'prodproc') PPL_init();
     if(tab === 'maquinas') MQ_init();
+    if(tab === 'produtos') PR_init();
   });
 });
 
@@ -5798,10 +6016,68 @@ function LANC_getKnownValues(){
   };
 }
 
+/* ============================================================================
+   CATÁLOGO DE PRODUTOS (produtos_producao) — trava o campo Produto pra
+   evitar o mesmo item entrando no banco com nomes digitados de forma
+   diferente (ex: "PAO CIABATTA 120G" vs "Pão Ciabatta BK 120g"). A pessoa
+   ainda digita o NOME (não o código — ninguém decora código de produto),
+   mas só pode salvar um nome que já exista no catálogo. O código
+   (produtos_producao.codigo) só serve de identificador único por trás dos
+   panos, pra nunca duplicar o mesmo produto com descrição diferente.
+   ============================================================================ */
+let PRODCAT_LISTA = null;      // [{codigo, descricao}], null até carregar
+let PRODCAT_POR_NOME = null;   // Map: descricao normalizada (maiúsc/trim) -> {codigo, descricao}
+
+function PRODCAT_normalizar(s){
+  return (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+}
+
+async function PRODCAT_load(){
+  if(PRODCAT_LISTA) return PRODCAT_LISTA; // já carregado — cache simples, não recarrega sozinho
+  try{
+    const client = LANC_getClient();
+    const { data, error } = await client.from('produtos_producao').select('codigo, descricao').order('descricao');
+    if(error) throw error;
+    PRODCAT_LISTA = data || [];
+    PRODCAT_POR_NOME = new Map();
+    PRODCAT_LISTA.forEach(p => PRODCAT_POR_NOME.set(PRODCAT_normalizar(p.descricao), p));
+  }catch(err){
+    console.error('Erro ao carregar catálogo de produtos:', err);
+    PRODCAT_LISTA = [];
+    PRODCAT_POR_NOME = new Map();
+  }
+  return PRODCAT_LISTA;
+}
+
+/* Retorna o produto do catálogo (com a descrição CANÔNICA, corrigindo
+   diferença de maiúsculo/espaço) se o nome digitado bater exatamente com
+   algum item — ou null se não achar. Não faz correspondência aproximada de
+   propósito: aproximação é exatamente o que gerava nome inconsistente. */
+function PRODCAT_validar(nomeDigitado){
+  if(!PRODCAT_POR_NOME) return null;
+  return PRODCAT_POR_NOME.get(PRODCAT_normalizar(nomeDigitado)) || null;
+}
+
+/* Preenche um <datalist> com todas as descrições do catálogo. */
+function PRODCAT_preencherDatalist(el){
+  if(!el || !PRODCAT_LISTA) return;
+  el.innerHTML = PRODCAT_LISTA.map(p => `<option value="${p.descricao.replace(/"/g,'&quot;')}">`).join('');
+}
+
 function LANC_populateDropdowns(){
   const { setores } = LANC_getKnownValues();
 
   lpUpdateProdutoMaquinaList();
+  PRODCAT_load().then(()=>{
+    PRODCAT_preencherDatalist(document.getElementById('lpProdutoList'));
+    // Re-popula também os datalists por-cartão já existentes na tela (ex:
+    // se o catálogo ainda não tinha carregado quando os cartões foram
+    // criados no restore do rascunho).
+    document.querySelectorAll('#lpItems .lanc-item').forEach(row=>{
+      const uid = row.dataset.uid;
+      if(uid) PRODCAT_preencherDatalist(row.querySelector(`#lpProdutoList_${uid}`));
+    });
+  });
 }
 
 /* Popula os datalists globais de Produto e Máquina (usados na edição inline
@@ -5875,6 +6151,7 @@ function lpCreateItemRow(initial){
   const uid = ++LP_ITEM_UID;
   const row = document.createElement('div');
   row.className = 'lanc-item';
+  row.dataset.uid = uid;
   if(initial.pendente) row.classList.add('lanc-item-pendente');
   row.innerHTML = `
     <div class="lanc-item-header">
@@ -6076,14 +6353,13 @@ function LP_toggleRecheioField(row, setorValue){
 }
 
 function lpUpdateRowProdutoMaquinaList(row, uid){
-  const { produtosPorSetor, maquinasPorSetor, produtosTodos, maquinasTodos } = LANC_getKnownValues();
+  const { maquinasPorSetor, maquinasTodos } = LANC_getKnownValues();
   const setorEl = row.querySelector('.lp-item-setor');
   const setorAtual = setorEl.value;
-  const produtos = (setorAtual && produtosPorSetor[setorAtual]) ? [...produtosPorSetor[setorAtual]].sort() : produtosTodos;
   const maquinas = (setorAtual && maquinasPorSetor[setorAtual]) ? [...maquinasPorSetor[setorAtual]].sort() : maquinasTodos;
   const prodList = row.querySelector(`#lpProdutoList_${uid}`);
   const maqList = row.querySelector(`#lpMaquinaList_${uid}`);
-  if(prodList) prodList.innerHTML = produtos.map(p=>`<option value="${p}">`).join('');
+  PRODCAT_preencherDatalist(prodList); // produto vem do catálogo travado, não mais do histórico digitado
   if(maqList) maqList.innerHTML = maquinas.map(m=>`<option value="${m}">`).join('');
 }
 
@@ -6255,17 +6531,24 @@ function LP_matchProdutoHistorico(produtoLimpo){
 function LP_parseExcelRow(produtoRaw, qtdC, qtdD){
   const parsed = LP_parseQuantidadeExcel(qtdC) || LP_parseQuantidadeExcel(qtdD);
   const produtoLimpo = LP_limparNomeProdutoExcel(produtoRaw);
-  const match = LP_matchProdutoHistorico(produtoLimpo);
+  const match = LP_matchProdutoHistorico(produtoLimpo); // só usado pra sugerir o Setor
+  // O nome do produto só é aceito automaticamente se bater exatamente (ou
+  // via correspondência de histórico já normalizada) com o catálogo
+  // produtos_producao — senão fica pendente de revisão manual, pra não
+  // deixar entrar uma variação nova de nome sem querer.
+  const candidatoNome = match ? match.produto : produtoLimpo;
+  const produtoCatalogo = PRODCAT_validar(candidatoNome);
   let motivo = '';
-  if(!parsed && !match) motivo = 'Sem quantidade clara nesta linha e produto não encontrado no histórico — confira Planejado e Setor.';
+  if(!parsed && !produtoCatalogo) motivo = 'Sem quantidade clara nesta linha e produto não está no catálogo padrão — confira Planejado e Produto.';
   else if(!parsed) motivo = `Sem quantidade numérica clara ("${qtdC || qtdD || ''}") — confira o Planejado.`;
-  else if(!match) motivo = 'Produto não encontrado no histórico — confira o Setor.';
+  else if(!produtoCatalogo) motivo = 'Produto não está no catálogo padrão — escolha o nome certo na lista.';
+  else if(!match) motivo = 'Produto reconhecido no catálogo, mas Setor não identificado no histórico — confira o Setor.';
   return {
-    produto: match ? match.produto : produtoLimpo,
+    produto: produtoCatalogo ? produtoCatalogo.descricao : produtoLimpo,
     unidade: parsed ? parsed.unidade : '',
     planejado: parsed ? String(parsed.valor) : '',
     setor: match ? match.setor : '',
-    pendente: !parsed || !match,
+    pendente: !parsed || !produtoCatalogo || !match,
     pendenteMotivo: motivo,
   };
 }
@@ -6277,6 +6560,7 @@ async function LP_handleExcelImport(ev){
   feedback.textContent = 'Lendo arquivo...';
   feedback.className = 'lanc-feedback';
   try{
+    await PRODCAT_load(); // garante o catálogo carregado antes de validar cada linha
     if(typeof XLSX === 'undefined') throw new Error('Biblioteca de leitura de Excel não carregou — verifique sua conexão e tente de novo.');
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, { type: 'array', cellDates: true });
@@ -6366,6 +6650,12 @@ async function LP_saveSingleItem(row){
     globalFeedback.className = 'lanc-feedback err';
     return;
   }
+  const produtoCat = PRODCAT_validar(produto);
+  if(!produtoCat){
+    globalFeedback.textContent = `⚠ "${produto}" não está no catálogo de produtos. Escolha um item da lista (comece a digitar pra ver as sugestões), ou peça pra cadastrar esse produto no catálogo antes de lançar.`;
+    globalFeedback.className = 'lanc-feedback err';
+    return;
+  }
 
   const apontamentoEl = row.querySelector('.lp-apontamento-completo');
   if(!apontamentoEl.value){
@@ -6379,7 +6669,7 @@ async function LP_saveSingleItem(row){
     data, setor,
     equipe: row.querySelector('.lp-equipe').value ? parseInt(row.querySelector('.lp-equipe').value, 10) : null,
     maquina: row.querySelector('.lp-maquina').value.trim() || null,
-    produto,
+    produto: produtoCat.descricao,
     producao_planejada: row.querySelector('.lp-planejada').value.trim() || null,
     producao_real: parseFloat(realRaw),
     unidade: normalizeUnitDisplay(row.querySelector('.lp-unidade').value) || null,
@@ -6451,6 +6741,12 @@ document.getElementById('lancFormProducao').addEventListener('submit', async (e)
       feedback.className = 'lanc-feedback err';
       return;
     }
+    const produtoCatLote = PRODCAT_validar(produto);
+    if(!produtoCatLote){
+      feedback.textContent = `⚠ "${produto}" não está no catálogo de produtos. Escolha um item da lista, ou peça pra cadastrar esse produto antes de lançar.`;
+      feedback.className = 'lanc-feedback err';
+      return;
+    }
     const apontamentoEl = row.querySelector('.lp-apontamento-completo');
     if(!apontamentoEl.value){
       feedback.textContent = '⚠ Responda "Entregou o Apontamento Completamente Preenchido?" no produto "' + produto + '".';
@@ -6463,7 +6759,7 @@ document.getElementById('lancFormProducao').addEventListener('submit', async (e)
       setor,
       equipe: row.querySelector('.lp-equipe').value ? parseInt(row.querySelector('.lp-equipe').value, 10) : null,
       maquina: row.querySelector('.lp-maquina').value.trim() || null,
-      produto,
+      produto: produtoCatLote.descricao,
       producao_planejada: row.querySelector('.lp-planejada').value.trim() || null,
       producao_real: parseFloat(realRaw),
       unidade: normalizeUnitDisplay(row.querySelector('.lp-unidade').value) || null,
@@ -6695,6 +6991,13 @@ async function LP_saveEditRow(id){
     feedback.className = 'lanc-feedback err';
     return;
   }
+  const produtoCatEdit = PRODCAT_validar(payload.produto);
+  if(!produtoCatEdit){
+    feedback.textContent = `⚠ "${payload.produto}" não está no catálogo de produtos. Escolha um item da lista.`;
+    feedback.className = 'lanc-feedback err';
+    return;
+  }
+  payload.produto = produtoCatEdit.descricao;
   try{
     const client = LANC_getClient();
     const { error } = await client.from('producao_diaria').update(payload).eq('id', id);
@@ -8650,19 +8953,8 @@ function PPL_setDefaultDate(){
 }
 
 async function PPL_populateProdutoList(){
-  try{
-    const client = LANC_getClient();
-    const [bat, cor] = await Promise.all([
-      client.from('tempo_processo_bateladas').select('produto').limit(2000),
-      client.from('produtividade_corridas').select('produto').limit(2000),
-    ]);
-    const produtos = new Set();
-    (bat.data||[]).forEach(r=>{ if(r.produto) produtos.add(r.produto); });
-    (cor.data||[]).forEach(r=>{ if(r.produto) produtos.add(r.produto); });
-    document.getElementById('pplProdutoList').innerHTML = [...produtos].sort().map(p=>`<option value="${p}">`).join('');
-  }catch(err){
-    console.error('Erro ao buscar produtos de Produtividade & Processos:', err);
-  }
+  await PRODCAT_load();
+  PRODCAT_preencherDatalist(document.getElementById('pplProdutoList'));
 }
 
 /* Tipo agora está sempre disponível nas duas opções, pra qualquer linha —
@@ -8846,6 +9138,14 @@ async function PPL_handleSubmit(e){
     feedback.className = 'lanc-feedback err';
     return;
   }
+  await PRODCAT_load();
+  const pplProdutoCat = PRODCAT_validar(produto);
+  if(!pplProdutoCat){
+    feedback.textContent = `⚠ "${produto}" não está no catálogo de produtos. Escolha um item da lista.`;
+    feedback.className = 'lanc-feedback err';
+    return;
+  }
+  const produtoFinal = pplProdutoCat.descricao;
   btn.disabled = true;
   feedback.textContent = 'Salvando...';
   feedback.className = 'lanc-feedback';
@@ -8859,7 +9159,7 @@ async function PPL_handleSubmit(e){
       const paradaDurEl = document.getElementById('pplParadaDuracao');
 
       const bateladaPayload = {
-        linha, data, produto,
+        linha, data, produto: produtoFinal,
         batelada: bateladaEl && bateladaEl.value ? parseFloat(bateladaEl.value) : null,
         masseira: masseiraEl && masseiraEl.value.trim() ? masseiraEl.value.trim() : null,
         retencao_seg: retencaoEl ? PPL_timeToSeconds(retencaoEl.value) : null,
@@ -8908,7 +9208,7 @@ async function PPL_handleSubmit(e){
       }
     } else {
       const cfg = PPL_VELOCIDADE_CONFIG[linha] || { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] };
-      const corridaPayload = { linha, data, produto };
+      const corridaPayload = { linha, data, produto: produtoFinal };
       cfg.campos.forEach(campo=>{
         const meta = PPL_CAMPO_META[campo];
         const coluna = meta.coluna || campo; // alguns campos têm nome de exibição diferente da coluna real
