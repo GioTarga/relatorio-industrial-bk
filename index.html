@@ -6242,7 +6242,14 @@ function PRODCAT_wireCodigoLookup(inputEl){
   inputEl.dataset.codigoLookupWired = '1';
   inputEl.addEventListener('input', ()=>{
     if(!PRODCAT_POR_CODIGO) return;
-    const match = PRODCAT_POR_CODIGO.get(inputEl.value.trim());
+    const digitado = inputEl.value.trim();
+    // Tenta o valor exato primeiro (cobre códigos não-numéricos, tipo
+    // "REC-P&D-001") e, se não achar e for só dígitos, tenta de novo sem
+    // zeros à esquerda — os códigos no catálogo foram salvos sem eles
+    // (ex: "6234", não "006234"), mas nas planilhas/etiquetas de origem
+    // costumam aparecer com zero à esquerda.
+    const semZeros = /^\d+$/.test(digitado) ? digitado.replace(/^0+/, '') || '0' : digitado;
+    const match = PRODCAT_POR_CODIGO.get(digitado) || PRODCAT_POR_CODIGO.get(semZeros);
     if(match) inputEl.value = match.descricao;
   });
 }
