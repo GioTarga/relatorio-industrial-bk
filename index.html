@@ -2373,10 +2373,13 @@ function classifyPlan(planRaw){
   if(num !== null) return { prev: num, foraDoPlano: false };
   const norm = (planRaw||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   // Aceita tanto o texto original da planilha ("Produção não planejada")
-  // quanto o texto padronizado usado na migração pro Supabase e no
-  // formulário de Lançamento ("Fora do plano de produção") — os dois
-  // precisam ser reconhecidos como a mesma coisa.
-  const foraDoPlano = norm.includes('nao planejada') || norm.includes('fora do plano');
+  // quanto os textos padronizados usados no formulário de Lançamento
+  // ("Fora do plano de produção", "Produção Não Apontada", "Desvio Não
+  // Justificado") — todos precisam ser reconhecidos como "sem meta
+  // numérica" pro cálculo de % de atendimento (nenhum deles compete por
+  // uma meta, então nenhum entra no denominador).
+  const foraDoPlano = norm.includes('nao planejada') || norm.includes('fora do plano')
+    || norm.includes('nao apontada') || norm.includes('nao justificado');
   return { prev: null, foraDoPlano };
 }
 
@@ -2679,7 +2682,13 @@ function transformSupabaseRowsToData(rows){
     const uni = normalizeUnitDisplay(r.unidade || '');
     const inicio = r.inicio_producao || '';
     const fim = r.fim_producao || '';
-    const obs = r.paradas_desvios || '';
+    // "Causa" (motivo de parada, estruturado) e "Observação" (nota livre,
+    // ex: produção não apontada) são campos diferentes no banco — juntos
+    // aqui pra alimentar a mesma coluna "Observações e Causa" do relatório,
+    // sem perder nenhum dos dois quando só um estiver preenchido.
+    const causa = r.paradas_desvios || '';
+    const observacaoLivre = r.observacao || '';
+    const obs = [causa, observacaoLivre].filter(Boolean).join(' — ');
     const duracaoParada = r.duracao_parada || '';
     const apontamentoCompleto = (r.apontamento_completo === true || r.apontamento_completo === false) ? r.apontamento_completo : null;
     const recheio = (r.recheio_consumido_caixas !== null && r.recheio_consumido_caixas !== undefined) ? Number(r.recheio_consumido_caixas) : null;
@@ -6172,6 +6181,7 @@ function LANC_getKnownValues(){
    ============================================================================ */
 let PRODCAT_LISTA = null;      // [{codigo, descricao}], null até carregar
 let PRODCAT_POR_NOME = null;   // Map: descricao normalizada (maiúsc/trim) -> {codigo, descricao}
+let PRODCAT_POR_CODIGO = null; // Map: codigo exato -> {codigo, descricao} — permite buscar produto pelo código
 
 function PRODCAT_normalizar(s){
   return (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
@@ -6185,11 +6195,16 @@ async function PRODCAT_load(){
     if(error) throw error;
     PRODCAT_LISTA = data || [];
     PRODCAT_POR_NOME = new Map();
-    PRODCAT_LISTA.forEach(p => PRODCAT_POR_NOME.set(PRODCAT_normalizar(p.descricao), p));
+    PRODCAT_POR_CODIGO = new Map();
+    PRODCAT_LISTA.forEach(p => {
+      PRODCAT_POR_NOME.set(PRODCAT_normalizar(p.descricao), p);
+      PRODCAT_POR_CODIGO.set(p.codigo, p);
+    });
   }catch(err){
     console.error('Erro ao carregar catálogo de produtos:', err);
     PRODCAT_LISTA = [];
     PRODCAT_POR_NOME = new Map();
+    PRODCAT_POR_CODIGO = new Map();
   }
   return PRODCAT_LISTA;
 }
@@ -6206,7 +6221,30 @@ function PRODCAT_validar(nomeDigitado){
 /* Preenche um <datalist> com todas as descrições do catálogo. */
 function PRODCAT_preencherDatalist(el){
   if(!el || !PRODCAT_LISTA) return;
-  el.innerHTML = PRODCAT_LISTA.map(p => `<option value="${p.descricao.replace(/"/g,'&quot;')}">`).join('');
+  // Cada produto vira 2 opções: uma pelo nome (o que já existia) e outra
+  // pelo código — assim o navegador sugere o produto tanto quando a pessoa
+  // digita o nome quanto quando digita o código. Selecionar a opção do
+  // código deixa o campo com o código escrito; PRODCAT_wireCodigoLookup
+  // troca isso pelo nome completo automaticamente (ver mais abaixo), pra
+  // manter a validação sempre pela descrição.
+  el.innerHTML = PRODCAT_LISTA.map(p =>
+    `<option value="${p.descricao.replace(/"/g,'&quot;')}">` +
+    `<option value="${p.codigo.replace(/"/g,'&quot;')}">${p.descricao.replace(/"/g,'&quot;')}</option>`
+  ).join('');
+}
+
+/* Liga um campo de Produto (input com list=datalist) pra reconhecer quando
+   a pessoa digitou/selecionou um CÓDIGO em vez do nome — e já troca
+   automaticamente pela descrição completa, sem precisar apertar Enter nem
+   nada. Assim buscar por código ou por nome dá no mesmo resultado salvo. */
+function PRODCAT_wireCodigoLookup(inputEl){
+  if(!inputEl || inputEl.dataset.codigoLookupWired) return;
+  inputEl.dataset.codigoLookupWired = '1';
+  inputEl.addEventListener('input', ()=>{
+    if(!PRODCAT_POR_CODIGO) return;
+    const match = PRODCAT_POR_CODIGO.get(inputEl.value.trim());
+    if(match) inputEl.value = match.descricao;
+  });
 }
 
 function LANC_populateDropdowns(){
@@ -6344,6 +6382,8 @@ function lpCreateItemRow(initial){
           <option value="numero">Planejado</option>
           <option value="sem_qtd">S/ Quantidade Meta</option>
           <option value="fora_plano">Fora do Planejamento</option>
+          <option value="nao_apontada">Produção Não Apontada</option>
+          <option value="desvio_nao_justificado">Desvio Não Justificado</option>
         </select>
       </div>
       <div class="lanc-field">
@@ -6390,6 +6430,8 @@ function lpCreateItemRow(initial){
   const TIPO_PLANEJAMENTO_TEXTO = {
     sem_qtd: 'Sem Quantidade Planejada',
     fora_plano: 'Fora do plano de produção',
+    nao_apontada: 'Produção Não Apontada',
+    desvio_nao_justificado: 'Desvio Não Justificado',
   };
   const tipoPlanejamentoEl = row.querySelector('.lp-tipo-planejamento');
   const planejadaEl = row.querySelector('.lp-planejada');
@@ -6441,15 +6483,23 @@ function lpCreateItemRow(initial){
   });
   lpUpdateRowProdutoMaquinaList(row, uid);
   LP_toggleRecheioField(row, setorEl.value);
+  PRODCAT_wireCodigoLookup(row.querySelector('.lp-produto'));
 
   if(initial.produto) row.querySelector('.lp-produto').value = initial.produto;
   if(initial.unidade) row.querySelector('.lp-unidade').value = initial.unidade;
   if(initial.planejado){
-    // Reaproveita classifyPlan pra decidir o tipo certo mesmo quando o valor
-    // vem de fora (ex: planilha importada) com uma variação de texto antiga
-    // — assim o formulário sempre normaliza pro texto canônico atual.
+    // Tenta achar o tipo certo por correspondência exata com o texto
+    // canônico primeiro (cobre os 4 tipos, inclusive os 2 novos) — só cai
+    // pro classifyPlan (que só distingue 2) quando o valor vem de fora com
+    // uma variação de texto antiga (ex: planilha importada).
+    const tipoExato = Object.keys(TIPO_PLANEJAMENTO_TEXTO).find(k => TIPO_PLANEJAMENTO_TEXTO[k] === initial.planejado);
     const { prev, foraDoPlano } = classifyPlan(String(initial.planejado));
-    if(prev !== null){
+    if(tipoExato){
+      tipoPlanejamentoEl.value = tipoExato;
+      planejadaEl.type = 'text';
+      planejadaEl.disabled = true;
+      planejadaEl.value = TIPO_PLANEJAMENTO_TEXTO[tipoExato];
+    } else if(prev !== null){
       tipoPlanejamentoEl.value = 'numero';
       planejadaEl.type = 'number';
       planejadaEl.disabled = false;
@@ -7076,6 +7126,8 @@ function LP_buildHistEditRowHtml(row){
         <datalist id="ehPlanejadaCanonica">
           <option value="Sem Quantidade Planejada">
           <option value="Fora do plano de produção">
+          <option value="Produção Não Apontada">
+          <option value="Desvio Não Justificado">
         </datalist>
       </td>
       <td><input type="number" step="0.01" class="eh-real" value="${row.producao_real ?? ''}"></td>
@@ -7107,6 +7159,7 @@ function LP_startEditRow(id){
   const newTr = document.querySelector(`#lpHistTbody tr[data-id="${id}"]`);
   newTr.querySelector('.lanc-hist-btn.save').addEventListener('click', ()=> LP_saveEditRow(id));
   newTr.querySelector('.lanc-hist-btn.cancel').addEventListener('click', LP_renderHistTable);
+  PRODCAT_wireCodigoLookup(newTr.querySelector('.eh-produto'));
 }
 
 async function LP_saveEditRow(id){
@@ -9559,6 +9612,7 @@ function PPL_setDefaultDate(){
 async function PPL_populateProdutoList(){
   await PRODCAT_load();
   PRODCAT_preencherDatalist(document.getElementById('pplProdutoList'));
+  PRODCAT_wireCodigoLookup(document.getElementById('pplProduto'));
 }
 
 /* Tipo agora está sempre disponível nas duas opções, pra qualquer linha —
