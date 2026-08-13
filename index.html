@@ -9095,7 +9095,7 @@ async function PP_loadData(){
     const [bateladasRes, corridasRes] = await Promise.all([
       client.from('tempo_processo_bateladas').select('*, tempo_processo_etapas(*)')
         .eq('linha', PP_currentLinha).gte('data', ini).lte('data', fim).order('data'),
-      client.from('produtividade_corridas').select('*, produtividade_paradas(*)')
+      client.from('produtividade_corridas').select('*, produtividade_paradas(*), produtividade_tempos_massa(*)')
         .eq('linha', PP_currentLinha).gte('data', ini).lte('data', fim).order('data'),
     ]);
     if(bateladasRes.error) throw bateladasRes.error;
@@ -9269,9 +9269,9 @@ function PP_renderKPIs(){
     return;
   }
 
-  // Giro: Tempo Médio/Massa vem do que é digitado manualmente no campo
-  // "Tempo Médio" de cada lançamento de Produtividade (não é mais
-  // calculado a partir de Início/Fim — ver PPL_renderCamposVelocidade).
+  // Giro: Tempo Médio/Massa vem da MÉDIA de todas as leituras individuais
+  // de cronômetro coletadas no período (uma por masseira/leitura, ver
+  // PPL_addTempoMassaRow) — não é mais um valor único por lançamento.
   // Card de Batelada/hora (vindo das Etapas, se houver) continua também,
   // são lançamentos independentes.
   if(PP_currentLinha === 'Giro'){
@@ -9282,7 +9282,8 @@ function PP_renderKPIs(){
     const bateladasPorHora = (leadMedio != null && leadMedio > 0) ? 3600/leadMedio : null;
 
     const tempoMedioValores = PP_CORRIDAS
-      .map(c => (c.tempo_medio_seg != null) ? Number(c.tempo_medio_seg) : null)
+      .flatMap(c => c.produtividade_tempos_massa || [])
+      .map(t => Number(t.tempo_seg))
       .filter(v => v != null && v > 0);
     const tempoMedioMassa = tempoMedioValores.length ? tempoMedioValores.reduce((a,b)=>a+b,0)/tempoMedioValores.length : null;
     const massaPorHora = (tempoMedioMassa != null && tempoMedioMassa > 0) ? 3600/tempoMedioMassa : null;
@@ -9292,6 +9293,7 @@ function PP_renderKPIs(){
       { label:'Tempo Médio/Massa', value: tempoMedioMassa != null ? PP_fmtDuracao(tempoMedioMassa) : '—' },
       { label:'Batelada/hora', value: bateladasPorHora != null ? bateladasPorHora.toLocaleString('pt-BR',{maximumFractionDigits:2}) : '—' },
       { label:'Tempo Médio por Batelada', value: leadMedio != null ? PP_fmtDuracao(leadMedio) : '—' },
+      { label:'Leituras Coletadas', value: tempoMedioValores.length },
     ];
     grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
     grid.innerHTML = kpis.map(k=>`
@@ -9586,7 +9588,11 @@ const PPL_VELOCIDADE_CONFIG = {
   // cálculo automático de Massa/hora a partir de Início/Fim (ver KPIs de
   // Giro em PP_renderKPIs). Masseira fica pra conferir se o rodízio
   // (1,2,3,4) está sendo seguido direito.
-  'Giro': { campos:['masseira','inicio','fim','tempo_medio_seg','peso_massa_kg','produtividade_paes_hora','tamanho_pao_g'] },
+  // Giro: Masseira e Tempo não ficam mais aqui em cima — cada leitura de
+  // cronômetro (Tempo + Masseira) vira uma linha na lista "Tempos
+  // Coletados", repetível igual Paradas (ver PPL_addTempoMassaRow). Peso
+  // da Massa saiu — não é informação que costuma ser coletada.
+  'Giro': { campos:['inicio','fim','produtividade_paes_hora','tamanho_pao_g'] },
   'Salgado': { campos:['maquina','inicio','fim','produtividade_prensa','qtd_colaboradores','unidades_por_hora','producao_por_hora','tempo_medio_seg','unidade_medida','unidades_por_recipiente','duracao_rolo_seg'] },
   'Massa Salgado': { campos:['inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
   'Pão de Queijo': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
@@ -9788,12 +9794,43 @@ function PPL_renderCamposVelocidade(linha){
     html += `<div class="lanc-field"><label>${meta.label}</label><input type="${inputType}"${step} id="pplCampo_${campo}"></div>`;
   });
   html += '</div>';
+  if(linha === 'Giro'){
+    html += `<div style="margin-top:16px;">
+      <label style="display:block;font-size:11px;font-weight:700;color:#6b5c5c;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">Tempos Coletados (cronômetro, um por masseira/leitura)</label>
+      <div id="pplTemposMassaContainer" class="lanc-items"></div>
+      <button type="button" class="lanc-add-item-btn" id="pplAddTempoMassaBtn">+ Adicionar tempo</button>
+    </div>`;
+  }
   html += `<div style="margin-top:16px;">
     <div id="pplParadasContainer" class="lanc-items"></div>
     <button type="button" class="lanc-add-item-btn" id="pplAddParadaBtn">+ Adicionar parada (opcional)</button>
   </div>`;
   container.innerHTML = html;
   document.getElementById('pplAddParadaBtn').addEventListener('click', PPL_addParadaRow);
+  if(linha === 'Giro'){
+    document.getElementById('pplAddTempoMassaBtn').addEventListener('click', PPL_addTempoMassaRow);
+    PPL_addTempoMassaRow(); // já começa com 1 pronto pra preencher, já que é sempre necessário nessa linha
+  }
+}
+
+/* Cada leitura de cronômetro (Tempo + Masseira) do Giro — repetível, igual
+   Paradas. O Tempo Médio/Massa do setor é calculado como a MÉDIA de todas
+   essas leituras do período (ver PP_renderKPIs), não digitado à mão. */
+function PPL_addTempoMassaRow(){
+  const container = document.getElementById('pplTemposMassaContainer');
+  const row = document.createElement('div');
+  row.className = 'lanc-item';
+  row.innerHTML = `
+    <div class="lanc-item-header">
+      <span class="lanc-item-title">Leitura</span>
+      <button type="button" class="lanc-item-remove" data-remove>Remover</button>
+    </div>
+    <div class="lanc-item-grid">
+      <div class="lanc-field"><label>Tempo (hh:mm:ss)</label><input type="time" step="1" class="ppl-tempo-massa-valor"></div>
+      <div class="lanc-field"><label>Masseira</label><input type="text" class="ppl-tempo-massa-masseira" placeholder="Ex: 1"></div>
+    </div>`;
+  row.querySelector('[data-remove]').addEventListener('click', ()=> row.remove());
+  container.appendChild(row);
 }
 
 
@@ -9939,6 +9976,17 @@ async function PPL_handleSubmit(e){
         const { error: parErr } = await client.from('produtividade_paradas').insert(paradasPayload);
         if(parErr) throw parErr;
       }
+
+      const temposMassaPayload = [];
+      document.querySelectorAll('#pplTemposMassaContainer .lanc-item').forEach(row=>{
+        const tempoSeg = PPL_timeToSeconds(row.querySelector('.ppl-tempo-massa-valor').value);
+        const masseira = row.querySelector('.ppl-tempo-massa-masseira').value.trim();
+        if(tempoSeg !== null) temposMassaPayload.push({ corrida_id: corInserted.id, tempo_seg: tempoSeg, masseira: masseira || null });
+      });
+      if(temposMassaPayload.length > 0){
+        const { error: tmErr } = await client.from('produtividade_tempos_massa').insert(temposMassaPayload);
+        if(tmErr) throw tmErr;
+      }
     }
     feedback.textContent = '✓ Lançamento salvo com sucesso!';
     feedback.className = 'lanc-feedback ok';
@@ -9975,7 +10023,7 @@ async function PPL_loadHistorico(){
   try{
     const client = LANC_getClient();
     let qBat = client.from('tempo_processo_bateladas').select('*, tempo_processo_etapas(*)').order('data', { ascending:false }).limit(300);
-    let qCor = client.from('produtividade_corridas').select('*, produtividade_paradas(*)').order('data', { ascending:false }).limit(300);
+    let qCor = client.from('produtividade_corridas').select('*, produtividade_paradas(*), produtividade_tempos_massa(*)').order('data', { ascending:false }).limit(300);
     if(ini){ qBat = qBat.gte('data', ini); qCor = qCor.gte('data', ini); }
     if(fim){ qBat = qBat.lte('data', fim); qCor = qCor.lte('data', fim); }
     if(linha){ qBat = qBat.eq('linha', linha); qCor = qCor.eq('linha', linha); }
@@ -10013,6 +10061,11 @@ function PPL_renderHistorico(){
       resumo = v != null ? `Produtividade: ${v.toLocaleString('pt-BR',{maximumFractionDigits:1})}` : '—';
       const nParadas = (r.produtividade_paradas||[]).length;
       if(nParadas) resumo += ` · ${nParadas} parada(s)`;
+      const temposMassa = r.produtividade_tempos_massa || [];
+      if(temposMassa.length){
+        const media = temposMassa.reduce((s,t)=> s+(Number(t.tempo_seg)||0), 0) / temposMassa.length;
+        resumo = `${temposMassa.length} leitura(s), média ${PP_fmtDuracao(media)}` + (nParadas ? ` · ${nParadas} parada(s)` : '');
+      }
     }
     return `<tr data-id="${r.id}" data-tipo="${r.tipo}">
       <td>${dataFmt}</td><td>${r.linha}</td><td>${tipoLabel}</td><td>${r.produto||'—'}</td>
