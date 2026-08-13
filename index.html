@@ -9249,11 +9249,9 @@ function PP_renderKPIs(){
     return;
   }
 
-  // Pão de Queijo, Padaria e Giro Dia: mesmo tipo de card — quantas
-  // bateladas dá pra fazer por hora (1h ÷ lead time médio) e o próprio
-  // lead time médio. Giro tem dado de Produtividade também, mas os cards
-  // aqui ficam só no lado de Tempo de Processo, como pedido.
-  if(PP_currentLinha === 'Pão de Queijo' || PP_currentLinha === 'Padaria' || PP_currentLinha === 'Giro'){
+  // Pão de Queijo e Padaria: card de quantas bateladas dá pra fazer por
+  // hora (1h ÷ lead time médio das Etapas) e o próprio lead time médio.
+  if(PP_currentLinha === 'Pão de Queijo' || PP_currentLinha === 'Padaria'){
     const leadTimes = PP_BATELADAS
       .map(b => (b.tempo_processo_etapas||[]).reduce((s,e)=> s + (Number(e.duracao_seg)||0), 0))
       .filter(v => v > 0);
@@ -9261,6 +9259,36 @@ function PP_renderKPIs(){
     const bateladasPorHora = (leadMedio != null && leadMedio > 0) ? 3600/leadMedio : null;
 
     const kpis = [
+      { label:'Batelada/hora', value: bateladasPorHora != null ? bateladasPorHora.toLocaleString('pt-BR',{maximumFractionDigits:2}) : '—' },
+      { label:'Tempo Médio por Batelada', value: leadMedio != null ? PP_fmtDuracao(leadMedio) : '—' },
+    ];
+    grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
+    grid.innerHTML = kpis.map(k=>`
+      <div class="kpi-card"><div class="label">${k.label}</div><div class="value">${k.value}</div></div>
+    `).join('');
+    return;
+  }
+
+  // Giro: produtividade é medida em Massa/hora, calculada a partir do
+  // Início/Fim de cada lançamento de Produtividade (não é mais digitada à
+  // mão — ver PPL_VELOCIDADE_CONFIG.Giro). Card de Batelada/hora (vindo das
+  // Etapas, se houver) continua também, são lançamentos independentes.
+  if(PP_currentLinha === 'Giro'){
+    const leadTimes = PP_BATELADAS
+      .map(b => (b.tempo_processo_etapas||[]).reduce((s,e)=> s + (Number(e.duracao_seg)||0), 0))
+      .filter(v => v > 0);
+    const leadMedio = leadTimes.length ? leadTimes.reduce((a,b)=>a+b,0)/leadTimes.length : null;
+    const bateladasPorHora = (leadMedio != null && leadMedio > 0) ? 3600/leadMedio : null;
+
+    const duracoesMassa = PP_CORRIDAS
+      .map(c => (c.inicio && c.fim) ? PPL_calcDuracao(c.inicio.slice(0,5), c.fim.slice(0,5)) : null)
+      .filter(v => v != null && v > 0);
+    const tempoMedioMassa = duracoesMassa.length ? duracoesMassa.reduce((a,b)=>a+b,0)/duracoesMassa.length : null;
+    const massaPorHora = (tempoMedioMassa != null && tempoMedioMassa > 0) ? 3600/tempoMedioMassa : null;
+
+    const kpis = [
+      { label:'Massa/hora', value: massaPorHora != null ? massaPorHora.toLocaleString('pt-BR',{maximumFractionDigits:2}) : '—' },
+      { label:'Tempo Médio/Massa', value: tempoMedioMassa != null ? PP_fmtDuracao(tempoMedioMassa) : '—' },
       { label:'Batelada/hora', value: bateladasPorHora != null ? bateladasPorHora.toLocaleString('pt-BR',{maximumFractionDigits:2}) : '—' },
       { label:'Tempo Médio por Batelada', value: leadMedio != null ? PP_fmtDuracao(leadMedio) : '—' },
     ];
@@ -9552,7 +9580,12 @@ function PP_renderVelocidade(){
 // Recipiente" (só relevante quando a unidade é Caixa/Carrinho/Tela) agora
 // entram em TODA linha, além dos campos específicos que já existiam.
 const PPL_VELOCIDADE_CONFIG = {
-  'Giro': { campos:['masseira','hora_massa','produtividade_paes_hora','unidade_medida','unidades_por_recipiente','peso_massa_kg'] },
+  // Giro: unidade de medida é sempre "Massa" (não pergunta, grava fixo — ver
+  // PPL_handleSubmit) e produtividade não é mais digitada à mão — vira
+  // cálculo automático de Massa/hora a partir de Início/Fim (ver KPIs de
+  // Giro em PP_renderKPIs). Masseira fica pra conferir se o rodízio
+  // (1,2,3,4) está sendo seguido direito.
+  'Giro': { campos:['masseira','inicio','fim','peso_massa_kg'] },
   'Salgado': { campos:['maquina','inicio','fim','produtividade_prensa','qtd_colaboradores','unidades_por_hora','producao_por_hora','tempo_medio_seg','unidade_medida','unidades_por_recipiente','duracao_rolo_seg'] },
   'Massa Salgado': { campos:['inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
   'Pão de Queijo': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
@@ -9874,6 +9907,7 @@ async function PPL_handleSubmit(e){
     } else {
       const cfg = PPL_VELOCIDADE_CONFIG[linha] || { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] };
       const corridaPayload = { linha, data, produto: produtoFinal };
+      if(linha === 'Giro') corridaPayload.unidade_medida = 'Massa'; // fixo — não tem campo no formulário pra essa linha
       cfg.campos.forEach(campo=>{
         const meta = PPL_CAMPO_META[campo];
         const coluna = meta.coluna || campo; // alguns campos têm nome de exibição diferente da coluna real
