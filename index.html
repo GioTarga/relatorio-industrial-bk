@@ -9269,10 +9269,11 @@ function PP_renderKPIs(){
     return;
   }
 
-  // Giro: produtividade é medida em Massa/hora, calculada a partir do
-  // Início/Fim de cada lançamento de Produtividade (não é mais digitada à
-  // mão — ver PPL_VELOCIDADE_CONFIG.Giro). Card de Batelada/hora (vindo das
-  // Etapas, se houver) continua também, são lançamentos independentes.
+  // Giro: Tempo Médio/Massa vem do que é digitado manualmente no campo
+  // "Tempo Médio" de cada lançamento de Produtividade (não é mais
+  // calculado a partir de Início/Fim — ver PPL_renderCamposVelocidade).
+  // Card de Batelada/hora (vindo das Etapas, se houver) continua também,
+  // são lançamentos independentes.
   if(PP_currentLinha === 'Giro'){
     const leadTimes = PP_BATELADAS
       .map(b => (b.tempo_processo_etapas||[]).reduce((s,e)=> s + (Number(e.duracao_seg)||0), 0))
@@ -9280,10 +9281,10 @@ function PP_renderKPIs(){
     const leadMedio = leadTimes.length ? leadTimes.reduce((a,b)=>a+b,0)/leadTimes.length : null;
     const bateladasPorHora = (leadMedio != null && leadMedio > 0) ? 3600/leadMedio : null;
 
-    const duracoesMassa = PP_CORRIDAS
-      .map(c => (c.inicio && c.fim) ? PPL_calcDuracao(c.inicio.slice(0,5), c.fim.slice(0,5)) : null)
+    const tempoMedioValores = PP_CORRIDAS
+      .map(c => (c.tempo_medio_seg != null) ? Number(c.tempo_medio_seg) : null)
       .filter(v => v != null && v > 0);
-    const tempoMedioMassa = duracoesMassa.length ? duracoesMassa.reduce((a,b)=>a+b,0)/duracoesMassa.length : null;
+    const tempoMedioMassa = tempoMedioValores.length ? tempoMedioValores.reduce((a,b)=>a+b,0)/tempoMedioValores.length : null;
     const massaPorHora = (tempoMedioMassa != null && tempoMedioMassa > 0) ? 3600/tempoMedioMassa : null;
 
     const kpis = [
@@ -9793,37 +9794,6 @@ function PPL_renderCamposVelocidade(linha){
   </div>`;
   container.innerHTML = html;
   document.getElementById('pplAddParadaBtn').addEventListener('click', PPL_addParadaRow);
-  PPL_wireTempoMedioAuto(cfg);
-}
-
-/* Se a linha tem os 3 campos (Início, Fim e Tempo Médio) juntos, o Tempo
-   Médio se preenche sozinho e trava assim que Início e Fim estiverem
-   preenchidos — evita divergência entre o valor calculado e o digitado.
-   Se Início ou Fim ficarem vazios (ex: não deu pra cronometrar), o campo
-   destrava e volta a aceitar digitação manual normalmente. */
-function PPL_wireTempoMedioAuto(cfg){
-  if(!cfg.campos.includes('inicio') || !cfg.campos.includes('fim') || !cfg.campos.includes('tempo_medio_seg')) return;
-  const iniEl = document.getElementById('pplCampo_inicio');
-  const fimEl = document.getElementById('pplCampo_fim');
-  const tempoEl = document.getElementById('pplCampo_tempo_medio_seg');
-  if(!iniEl || !fimEl || !tempoEl) return;
-  const sync = ()=>{
-    if(iniEl.value && fimEl.value){
-      const seg = PPL_calcDuracao(iniEl.value, fimEl.value);
-      const h = String(Math.floor(seg/3600)).padStart(2,'0');
-      const m = String(Math.floor((seg%3600)/60)).padStart(2,'0');
-      const s = String(Math.floor(seg%60)).padStart(2,'0');
-      tempoEl.value = `${h}:${m}:${s}`;
-      tempoEl.disabled = true;
-      tempoEl.title = 'Calculado automaticamente a partir de Início e Fim.';
-    } else {
-      tempoEl.disabled = false;
-      tempoEl.title = 'Sem Início/Fim preenchidos — pode digitar direto.';
-    }
-  };
-  iniEl.addEventListener('input', sync);
-  fimEl.addEventListener('input', sync);
-  sync();
 }
 
 
