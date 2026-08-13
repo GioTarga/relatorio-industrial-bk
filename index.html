@@ -1649,6 +1649,7 @@
                   <option value="Fritador">
                   <option value="Cozinha">
                   <option value="Pão c/ Linguiça">
+                  <option value="Pão de Queijo">
                   <option value="Pão de Ló e Bolos">
                 </datalist>
               </div>
@@ -1751,6 +1752,7 @@
                   <option value="Giro">Giro Dia</option>
                   <option value="Salgado">Salgado</option>
                   <option value="Massa Salgado">Massa Salgado</option>
+                  <option value="Pão de Queijo">Pão de Queijo</option>
                   <option value="Padaria">Padaria</option>
                   <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
                 </select>
@@ -1794,6 +1796,7 @@
                   <option value="Giro">Giro Dia</option>
                   <option value="Salgado">Salgado</option>
                   <option value="Massa Salgado">Massa Salgado</option>
+                  <option value="Pão de Queijo">Pão de Queijo</option>
                   <option value="Padaria">Padaria</option>
                   <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
                 </select>
@@ -1830,6 +1833,7 @@
                 <option value="Fritador">
                 <option value="Cozinha">
                 <option value="Pão c/ Linguiça">
+                <option value="Pão de Queijo">
                 <option value="Pão de Ló e Bolos">
               </datalist>
             </div>
@@ -2079,6 +2083,8 @@ const FALLBACK_DATA = {
       {setor:"PADARIA", produto:"Mini Baguete Rústica Trad BK 50g", prev:1, real:1, uni:"massa", dif:0, obs:""},
       {setor:"PADARIA", produto:"Baguete Rústica Trad BK 145gx2", prev:1, real:1, uni:"massa", dif:0, obs:""},
       {setor:"PADARIA", produto:"Pão Francês Pré Assado Ultracongelado 4x70g", prev:3, real:3, uni:"massas", dif:0, obs:""},
+      {setor:"PADARIA", produto:"Massa P/ Pão de Queijo Trad BK 50g", prev:15, real:16, uni:"massas", dif:7, obs:""},
+      {setor:"PADARIA", produto:"Massa P/ Pão Queijo c/ Bacon 30g", prev:1, real:1, uni:"massa", dif:0, obs:""},
       {setor:"PADARIA", produto:"Massa P/ Pão Massinha Doce s/Farofa BK 70g", prev:20, real:17, uni:"massas", dif:-15, obs:"Produção atrasada por falta de insumo (canela)"},
       {setor:"PADARIA", produto:"Massa P/ Pãozinho Doce BK 70g", prev:20, real:17, uni:"massas", dif:-15, obs:""},
       {setor:"PADARIA", produto:"Massa P/ Pão Francês Mini Sesi 30g", prev:12, real:8, uni:"massas", dif:-33, obs:""},
@@ -2118,15 +2124,17 @@ const FALLBACK_DATA = {
       {setor:"PADARIA", produto:"Massa P/ Pão Caseirinho/Sovadinho 65g", prev:30, real:30, uni:"Massas", dif:0, obs:""},
       {setor:"PADARIA", produto:"Mini Baguete Rústica Trad BK 50g", prev:2, real:2, uni:"Massas", dif:0, obs:""},
       {setor:"PADARIA", produto:"Baguete Rústica Trad BK 145gx2", prev:2, real:2, uni:"Massas", dif:0, obs:""},
-      {setor:"PADARIA", produto:"Pão Francês Pré Assado Ultracongelado 4x70g", prev:3, real:2, uni:"Massas", dif:-33, obs:"Produção reduzida — Prioridade transferida para Giro"},
+      {setor:"PADARIA", produto:"Pão Francês Pré Assado Ultracongelado 4x70g", prev:3, real:2, uni:"Massas", dif:-33, obs:"Produção reduzida para priorizar Produção fora do plano (Pão de queijo)"},
       {setor:"PADARIA", produto:"Pão Mini Francês Pré Assado BK 40g", prev:4, real:4, uni:"Massas", dif:0, obs:""},
       {setor:"PADARIA", produto:"Pão Mini Sovadinho Pré Assado BK 40g", prev:3, real:2, uni:"Massas", dif:-33, obs:""},
       {setor:"PADARIA", produto:"Pão Mini Massinha Doce Pré Assada BK 45g", prev:1, real:0, uni:"Massa", dif:-100, obs:"Sem Carrinho"},
       {setor:"PADARIA", produto:"Massa P/ Chipa c/ Gotas de Chocolate 400g", prev:1, real:0, uni:"Massa", dif:-100, obs:"Sem Carrinho"},
+      {setor:"PADARIA", produto:"Massa P/ Pão de Queijo Mini Tradicional BK 15g", prev:4, real:0, uni:"Massas", dif:-100, obs:"Sem Carrinho"},
+      {setor:"PADARIA", produto:"Massa P/ Pão de Queijo Trad BK 75g", prev:2, real:0, uni:"Massas", dif:-100, obs:"Sem Carrinho"},
       {setor:"PADARIA", produto:"Massa P/ Pão Superfofo BK 50g", prev:10, real:8, uni:"Massas", dif:-20, obs:""},
       {setor:"PADARIA", produto:"Massa P/ Sonho Americano BK 55g", prev:10, real:8, uni:"Massas", dif:-20, obs:""},
       {setor:"PADARIA", produto:"Massa P/ Pão Hambúrguer BK 80g", prev:5, real:4, uni:"Massas", dif:-20, obs:""},
-      {setor:"PADARIA", produto:"Massa P/ Pão Francês ou de Sal 6H Nutri BK 65g", prev:40, real:10, uni:"Massas", dif:-75, obs:"Produção reduzida — Prioridade transferida para Giro"},
+      {setor:"PADARIA", produto:"Massa P/ Pão Francês ou de Sal 6H Nutri BK 65g", prev:40, real:10, uni:"Massas", dif:-75, obs:"Produção reduzida para priorizar Produção fora do plano (Pão de queijo)"},
       {setor:"SALGADO", produto:"Hambúrgão Carne c/ Cheddar BK 170g", prev:1500, real:880, uni:"Unid", dif:-41, obs:"4 Colab."},
       {setor:"SALGADO", produto:"Doguinho Salsicha e Requeijão BK 4x170g", prev:2500, real:0, uni:"Unid", dif:-100, obs:"Não produzido para priorizar Produção fora do plano (croquetes de requeijão)"},
       {setor:"SALGADO", produto:"Pastel p/ Fritar Queijo BK 130g", prev:3000, real:1553, uni:"Unid", dif:-48, obs:"2 Colab."},
@@ -2141,6 +2149,7 @@ const FALLBACK_DATA = {
       {setor:"FRITADOR", produto:"Massa para Churros", prev:3, real:3, uni:"Massas", dif:0, obs:""},
       {setor:"CROISSANT", produto:"Mini Croissant Frango BK 50g", prev:null, real:1, uni:"Massas", dif:null, obs:""},
       {setor:"CROISSANT", produto:"Mini Croissant Goiabada BK 50g", prev:null, real:1, uni:"Massas", dif:null, obs:""},
+      {setor:"PADARIA", produto:"Massa P/ Pão de Queijo Trad Mini BK 15g", prev:null, real:8, uni:"Massas", dif:null, obs:""},
       {setor:"SALGADO", produto:"Mini Pastel Nata Chocolate Pto BK 35g", prev:null, real:179, uni:"Caixas", dif:null, obs:"3 Colab."},
       {setor:"SALGADO", produto:"Pastel Fritar Queijo BK 130g", prev:null, real:1553, uni:"Caixas", dif:null, obs:"Falta de Caixas | Falta de Carrinhos | 3 Colab."},
       {setor:"SALGADO", produto:"Pastel de Nata (Belém) BK 60g", prev:null, real:1543, uni:"Unid", dif:null, obs:"2 Colab."},
@@ -2171,7 +2180,11 @@ const FALLBACK_DATA = {
       {setor:"GIRO-DIA", produto:"Pão Mini Francês Pré Assado BK 40g", prev:4, real:4, uni:"Massas", dif:0, obs:""},
       {setor:"GIRO-DIA", produto:"Pão Mini Sovadinho Pré Assado BK 40g", prev:3, real:3, uni:"Massas", dif:0, obs:""},
       {setor:"GIRO-DIA", produto:"Pão Mini Massinha Doce Pré Assada BK 45g", prev:1, real:1, uni:"Massa", dif:0, obs:""},
+      {setor:"GIRO-DIA", produto:"Massa P/ Pão de Queijo Trad BK 75g", prev:15, real:11, uni:"Massas", dif:-27, obs:""},
       {setor:"GIRO-DIA", produto:"Massa P/ Chipa Tradicional BK 40g", prev:6, real:3, uni:"Massas", dif:-50, obs:""},
+      {setor:"GIRO-DIA", produto:"Massa P/ Pão de Queijo Trad BK 30g", prev:10, real:6, uni:"Massas", dif:-40, obs:"Mudança de Prioridade - P. Queijo 50g"},
+      {setor:"GIRO-DIA", produto:"Massa P/ Pão de Queijo Trad BK 50g", prev:5, real:10, uni:"Massas", dif:100, obs:""},
+      {setor:"GIRO-DIA", produto:"Massa P/ Pão de Queijo Mini Tradicional BK 15g", prev:6, real:4, uni:"Massas", dif:-33, obs:"Mudança de Prioridade - P. Queijo 50g"},
       {setor:"SALGADO", produto:"Hambúrgão Carne c/ Cheddar BK 170g", prev:1500, real:1820, uni:"Unid", dif:21, obs:""},
       {setor:"SALGADO", produto:"Doguinho Salsicha e Requeijão BK 4x170g", prev:2500, real:1700, uni:"Unid", dif:-32, obs:"Atraso na produção da Massa"},
       {setor:"SALGADO", produto:"Pastel p/ Fritar Frango e Req BK 130g", prev:3000, real:0, uni:"Unid", dif:-100, obs:""},
@@ -4846,6 +4859,11 @@ let OL_DATA = {}; // { 'YYYY-MM-DD': {consumo, entrada, contagemAnterior, contag
 
 /* ---------- Inicializa página 1 (Relatório Industrial) ---------- */
 periodInfo.textContent = 'Carregando dados do banco…';
+// Força recarga de dados frescos (limpa cache)
+PRODCAT_LISTA = null;
+PRODCAT_POR_NOME = null;
+PRODCAT_POR_CODIGO = null;
+DATA = {};
 loadData(false);
 OL_loadData(false);
 
@@ -6174,8 +6192,8 @@ function PRODCAT_normalizar(s){
   return (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
 }
 
-async function PRODCAT_load(){
-  if(PRODCAT_LISTA) return PRODCAT_LISTA; // já carregado — cache simples, não recarrega sozinho
+async function PRODCAT_load(forceRefresh = false){
+  if(PRODCAT_LISTA && !forceRefresh) return PRODCAT_LISTA; // já carregado — cache simples, não recarrega sozinho
   try{
     const client = LANC_getClient();
     const { data, error } = await client.from('produtos_producao').select('codigo, descricao').order('descricao');
@@ -6245,7 +6263,7 @@ function LANC_populateDropdowns(){
   const { setores } = LANC_getKnownValues();
 
   lpUpdateProdutoMaquinaList();
-  PRODCAT_load().then(()=>{
+  PRODCAT_load(true).then(()=>{ // forceRefresh = true para garantir dados frescos
     PRODCAT_preencherDatalist(document.getElementById('lpProdutoList'));
     // Re-popula também os datalists por-cartão já existentes na tela (ex:
     // se o catálogo ainda não tinha carregado quando os cartões foram
@@ -8995,17 +9013,14 @@ document.getElementById('mcFiltroStatus').addEventListener('change', MC_render);
    estudo de "Pão de Ló e Bolos" era do mesmo tipo dos estudos de etapas do
    processo, só que morava na aba errada).
 
-   Cada linha (Giro, Salgado, Massa Salgado, Padaria, Pão de
+   Cada linha (Giro, Salgado, Massa Salgado, Pão de Queijo, Padaria, Pão de
    Ló e Bolos) pode ter dois tipos de dado — "etapas" (tempo_processo_*) e/ou
    "velocidade" (produtividade_*). A página busca os dois e só mostra os
    painéis do tipo que realmente tiver dado pra aquela linha no período —
    por isso o Giro (que tem os dois tipos) mostra tudo, e as outras linhas
-   (que só têm um tipo) mostram só o bloco correspondente.
-
-   NOTA: "Pão de Queijo" foi removido desta lista — é um produto, não uma linha de produção,
-   e todos os dados foram transferidos para o setor "Giro". */
+   (que só têm um tipo) mostram só o bloco correspondente. */
 let PP_loadedOnce = false;
-const PP_LINHAS = ['Giro','Salgado','Massa Salgado','Padaria','Pão de Ló e Bolos'];
+const PP_LINHAS = ['Giro','Salgado','Massa Salgado','Pão de Queijo','Padaria','Pão de Ló e Bolos'];
 const PP_LINHA_LABELS = { 'Giro': 'Giro Dia' }; // rótulo de exibição — o valor real (usado nas consultas) continua "Giro"
 let PP_currentLinha = 'Giro';
 let PP_selectedProduto = '';
@@ -9239,9 +9254,9 @@ function PP_renderKPIs(){
     return;
   }
 
-  // Padaria: card de quantas bateladas dá pra fazer por
+  // Pão de Queijo e Padaria: card de quantas bateladas dá pra fazer por
   // hora (1h ÷ lead time médio das Etapas) e o próprio lead time médio.
-  if(PP_currentLinha === 'Padaria'){
+  if(PP_currentLinha === 'Pão de Queijo' || PP_currentLinha === 'Padaria'){
     const leadTimes = PP_BATELADAS
       .map(b => (b.tempo_processo_etapas||[]).reduce((s,e)=> s + (Number(e.duracao_seg)||0), 0))
       .filter(v => v > 0);
@@ -9586,6 +9601,7 @@ const PPL_VELOCIDADE_CONFIG = {
   'Giro': { campos:['inicio','fim','produtividade_paes_hora','tamanho_pao_g'] },
   'Salgado': { campos:['maquina','inicio','fim','produtividade_prensa','qtd_colaboradores','unidades_por_hora','producao_por_hora','tempo_medio_seg','unidade_medida','unidades_por_recipiente','duracao_rolo_seg'] },
   'Massa Salgado': { campos:['inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
+  'Pão de Queijo': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
   'Padaria': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
   'Pão de Ló e Bolos': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
 };
@@ -9621,7 +9637,7 @@ let PPL_initialized = false;
 
 async function PPL_init(){
   PPL_setDefaultDate();
-  PPL_populateProdutoList();
+  PPL_populateProdutoList(true); // forceRefresh = true para garantir dados frescos do banco
   if(!PPL_initialized){
     document.getElementById('pplLinha').addEventListener('change', PPL_updateTipoOptions);
     document.getElementById('pplTipo').addEventListener('change', PPL_renderCamposDinamicos);
@@ -9652,8 +9668,8 @@ function PPL_setDefaultDate(){
   }
 }
 
-async function PPL_populateProdutoList(){
-  await PRODCAT_load();
+async function PPL_populateProdutoList(forceRefresh = false){
+  await PRODCAT_load(forceRefresh);
   PRODCAT_preencherDatalist(document.getElementById('pplProdutoList'));
   PRODCAT_wireCodigoLookup(document.getElementById('pplProduto'));
 }
