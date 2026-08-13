@@ -9585,7 +9585,7 @@ const PPL_VELOCIDADE_CONFIG = {
   // cálculo automático de Massa/hora a partir de Início/Fim (ver KPIs de
   // Giro em PP_renderKPIs). Masseira fica pra conferir se o rodízio
   // (1,2,3,4) está sendo seguido direito.
-  'Giro': { campos:['masseira','inicio','fim','peso_massa_kg'] },
+  'Giro': { campos:['masseira','inicio','fim','tempo_medio_seg','peso_massa_kg','produtividade_paes_hora','tamanho_pao_g'] },
   'Salgado': { campos:['maquina','inicio','fim','produtividade_prensa','qtd_colaboradores','unidades_por_hora','producao_por_hora','tempo_medio_seg','unidade_medida','unidades_por_recipiente','duracao_rolo_seg'] },
   'Massa Salgado': { campos:['inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
   'Pão de Queijo': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
@@ -9601,7 +9601,13 @@ const PPL_CAMPO_META = {
   hora_massa: { label:'Hora da Massa', type:'time' },
   inicio: { label:'Início', type:'time' },
   fim: { label:'Fim', type:'time' },
-  produtividade_paes_hora: { label:'Produtividade (pães/hora)', type:'number', coluna:'velocidade_paes_hora' },
+  // "Parâmetro Configurado da GA" — é como a máquina está PROGRAMADA, não
+  // produção medida (ver comentário em PP_getProdutividadeValor). Existe
+  // aqui só de referência, pra comparar depois com o Massa/hora real
+  // (calculado a partir de Início/Fim) — não entra em nenhum cálculo de
+  // produtividade.
+  produtividade_paes_hora: { label:'GA — Pães/Hora (parâmetro configurado)', type:'number', coluna:'velocidade_paes_hora' },
+  tamanho_pao_g: { label:'GA — Tamanho do Pão (g, parâmetro configurado)', type:'number' },
   produtividade_prensa: { label:'Produtividade da Prensa (unid/hora)', type:'number', coluna:'velocidade_prensa' },
   peso_massa_kg: { label:'Peso da Massa (kg)', type:'number' },
   qtd_colaboradores: { label:'Qtd. Colaboradores', type:'number' },
@@ -9787,6 +9793,37 @@ function PPL_renderCamposVelocidade(linha){
   </div>`;
   container.innerHTML = html;
   document.getElementById('pplAddParadaBtn').addEventListener('click', PPL_addParadaRow);
+  PPL_wireTempoMedioAuto(cfg);
+}
+
+/* Se a linha tem os 3 campos (Início, Fim e Tempo Médio) juntos, o Tempo
+   Médio se preenche sozinho e trava assim que Início e Fim estiverem
+   preenchidos — evita divergência entre o valor calculado e o digitado.
+   Se Início ou Fim ficarem vazios (ex: não deu pra cronometrar), o campo
+   destrava e volta a aceitar digitação manual normalmente. */
+function PPL_wireTempoMedioAuto(cfg){
+  if(!cfg.campos.includes('inicio') || !cfg.campos.includes('fim') || !cfg.campos.includes('tempo_medio_seg')) return;
+  const iniEl = document.getElementById('pplCampo_inicio');
+  const fimEl = document.getElementById('pplCampo_fim');
+  const tempoEl = document.getElementById('pplCampo_tempo_medio_seg');
+  if(!iniEl || !fimEl || !tempoEl) return;
+  const sync = ()=>{
+    if(iniEl.value && fimEl.value){
+      const seg = PPL_calcDuracao(iniEl.value, fimEl.value);
+      const h = String(Math.floor(seg/3600)).padStart(2,'0');
+      const m = String(Math.floor((seg%3600)/60)).padStart(2,'0');
+      const s = String(Math.floor(seg%60)).padStart(2,'0');
+      tempoEl.value = `${h}:${m}:${s}`;
+      tempoEl.disabled = true;
+      tempoEl.title = 'Calculado automaticamente a partir de Início e Fim.';
+    } else {
+      tempoEl.disabled = false;
+      tempoEl.title = 'Sem Início/Fim preenchidos — pode digitar direto.';
+    }
+  };
+  iniEl.addEventListener('input', sync);
+  fimEl.addEventListener('input', sync);
+  sync();
 }
 
 
