@@ -4859,11 +4859,6 @@ let OL_DATA = {}; // { 'YYYY-MM-DD': {consumo, entrada, contagemAnterior, contag
 
 /* ---------- Inicializa página 1 (Relatório Industrial) ---------- */
 periodInfo.textContent = 'Carregando dados do banco…';
-// Força recarga de dados frescos (limpa cache)
-PRODCAT_LISTA = null;
-PRODCAT_POR_NOME = null;
-PRODCAT_POR_CODIGO = null;
-DATA = {};
 loadData(false);
 OL_loadData(false);
 
@@ -6192,8 +6187,8 @@ function PRODCAT_normalizar(s){
   return (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
 }
 
-async function PRODCAT_load(forceRefresh = false){
-  if(PRODCAT_LISTA && !forceRefresh) return PRODCAT_LISTA; // já carregado — cache simples, não recarrega sozinho
+async function PRODCAT_load(){
+  if(PRODCAT_LISTA) return PRODCAT_LISTA; // já carregado — cache simples, não recarrega sozinho
   try{
     const client = LANC_getClient();
     const { data, error } = await client.from('produtos_producao').select('codigo, descricao').order('descricao');
@@ -6263,7 +6258,7 @@ function LANC_populateDropdowns(){
   const { setores } = LANC_getKnownValues();
 
   lpUpdateProdutoMaquinaList();
-  PRODCAT_load(true).then(()=>{ // forceRefresh = true para garantir dados frescos
+  PRODCAT_load().then(()=>{
     PRODCAT_preencherDatalist(document.getElementById('lpProdutoList'));
     // Re-popula também os datalists por-cartão já existentes na tela (ex:
     // se o catálogo ainda não tinha carregado quando os cartões foram
@@ -9637,7 +9632,11 @@ let PPL_initialized = false;
 
 async function PPL_init(){
   PPL_setDefaultDate();
-  PPL_populateProdutoList(true); // forceRefresh = true para garantir dados frescos do banco
+  // Força recarga do catálogo para pegar dados frescos do banco
+  PRODCAT_LISTA = null;
+  PRODCAT_POR_NOME = null;
+  PRODCAT_POR_CODIGO = null;
+  PPL_populateProdutoList();
   if(!PPL_initialized){
     document.getElementById('pplLinha').addEventListener('change', PPL_updateTipoOptions);
     document.getElementById('pplTipo').addEventListener('change', PPL_renderCamposDinamicos);
@@ -9668,8 +9667,8 @@ function PPL_setDefaultDate(){
   }
 }
 
-async function PPL_populateProdutoList(forceRefresh = false){
-  await PRODCAT_load(forceRefresh);
+async function PPL_populateProdutoList(){
+  await PRODCAT_load();
   PRODCAT_preencherDatalist(document.getElementById('pplProdutoList'));
   PRODCAT_wireCodigoLookup(document.getElementById('pplProduto'));
 }
