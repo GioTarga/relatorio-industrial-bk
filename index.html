@@ -5303,7 +5303,12 @@ async function OL_loadData(isManualRefresh){
       const entradasNoIntervalo = (entradas || [])
         .filter(e => (dataInicioIntervalo === null || e.data >= dataInicioIntervalo) && e.data < atual.data)
         .reduce((s, e) => s + Number(e.quantidade || 0), 0);
-      const consumo = entradasNoIntervalo - Number(atual.quantidade);
+      // Consumo = Estoque Inicial (contagem anterior) + Entradas no meio −
+      // Estoque Final (contagem atual). O 1º intervalo (i=0) não tem
+      // contagem anterior pra usar de base, então fica sem esse termo —
+      // mesma limitação já assumida antes, documentada no comentário acima.
+      const anteriorQtd = i > 0 ? Number(lista[i-1].quantidade) : 0;
+      const consumo = anteriorQtd + entradasNoIntervalo - Number(atual.quantidade);
       result[atual.data] = {
         consumo,
         entrada: entradasNoIntervalo,
