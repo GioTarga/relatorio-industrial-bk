@@ -1218,6 +1218,7 @@
                 <th class="center">Última Contagem</th><th class="center">Data da Contagem</th>
                 <th class="center">+ Entradas Depois</th><th class="center">− Requisições Depois</th>
                 <th class="center">= Saldo Atual</th>
+                <th class="center">Consumo no Período</th>
               </tr>
             </thead>
             <tbody id="eqSaldoTbody"></tbody>
@@ -8376,11 +8377,17 @@ function EQ_DASH_renderSaldoAtual(){
   let itens = Object.keys(EQ_DASH_SALDO_ATUAL).sort();
   if(filtro) itens = itens.filter(i => i.toLowerCase().includes(filtro));
   if(itens.length === 0){
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum item encontrado.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum item encontrado.</td></tr>`;
     return;
   }
+  // Reaproveita o cálculo de Consumo já feito pro painel "Ranking de
+  // Consumo por Insumo" (mesmo período selecionado no topo da página).
+  const consumoPorItem = {};
+  (EQ_DASH_DATA || []).forEach(r => { if(r.status === 'ok') consumoPorItem[r.item] = r.consumo; });
+
   tbody.innerHTML = itens.map(item=>{
     const s = EQ_DASH_SALDO_ATUAL[item];
+    const consumo = consumoPorItem[item];
     return `
     <tr>
       <td style="font-weight:600;">${item}${s.semContagem ? ' <span title="Sem contagem cadastrada — saldo parte de 0" style="color:var(--red);">⚠</span>' : ''}</td>
@@ -8390,6 +8397,7 @@ function EQ_DASH_renderSaldoAtual(){
       <td class="center" style="color:#1f5c3a;">${s.entradasDepois > 0 ? '+' + EQ_DASH_fmtNum(s.entradasDepois) : '—'}</td>
       <td class="center" style="color:var(--red);">${s.requisicoesDepois > 0 ? '−' + EQ_DASH_fmtNum(s.requisicoesDepois) : '—'}</td>
       <td class="center" style="font-weight:800;font-size:14px;">${EQ_DASH_fmtNum(s.saldo)}</td>
+      <td class="center" style="${consumo!=null ? `font-weight:700;color:${consumo<0?'var(--good)':'var(--red)'};` : 'color:var(--ink-soft);'}">${consumo!=null ? EQ_DASH_fmtNum(consumo) : '—'}</td>
     </tr>`;
   }).join('');
 }
