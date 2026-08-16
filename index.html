@@ -5313,14 +5313,14 @@ async function OL_loadData(isManualRefresh){
     const result = {};
     const lista = contagens || [];
     lista.forEach((atual, i) => {
-      // Entrada no mesmo dia de uma contagem aconteceu DEPOIS dela (a
-      // contagem registra o que tinha antes da entrada chegar) — por isso
-      // o limite inferior é INCLUSIVO na data da contagem anterior, e o
-      // superior é EXCLUSIVO na data da contagem atual (a entrada do dia
-      // da contagem atual, se houver, só entra no próximo intervalo).
-      const dataInicioIntervalo = i > 0 ? lista[i-1].data : null; // null = sem contagem anterior pra comparar (1º intervalo sempre fica sem baseline)
+      // Premissa corrigida: quando entrada e contagem caem no mesmo dia, a
+      // entrada chegou ANTES da contagem (recebe → conta). Por isso o filtro
+      // é INCLUSIVO na data da contagem atual (e.data <= atual.data).
+      // O limite inferior exclui a data da contagem anterior (e.data > lista[i-1].data)
+      // para não duplicar entradas entre intervalos consecutivos.
+      const dataInicioIntervalo = i > 0 ? lista[i-1].data : null;
       const entradasNoIntervalo = (entradas || [])
-        .filter(e => (dataInicioIntervalo === null || e.data >= dataInicioIntervalo) && e.data < atual.data)
+        .filter(e => (dataInicioIntervalo === null || e.data > dataInicioIntervalo) && e.data <= atual.data)
         .reduce((s, e) => s + Number(e.quantidade || 0), 0);
       // Consumo = Estoque Inicial (contagem anterior) + Entradas no meio −
       // Estoque Final (contagem atual). O 1º intervalo (i=0) não tem
