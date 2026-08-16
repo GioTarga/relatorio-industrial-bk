@@ -4290,7 +4290,17 @@ function renderOleoChart(filteredDates){
   }
   panel.style.display = '';
 
-  const points = filteredDates.map(d=>{
+  // Monta o conjunto de datas do gráfico: todas as datas de produção no período
+  // MAIS qualquer data de contagem de óleo que caia no range mas não seja dia de
+  // produção (ex: contagem de 08/08 quando Fritador não produziu naquele dia).
+  const start = filteredDates[0] || null;
+  const end   = filteredDates[filteredDates.length - 1] || null;
+  const extraOleoDates = start && end
+    ? Object.keys(OL_DATA).filter(d => d >= start && d <= end && !filteredDates.includes(d))
+    : [];
+  const allChartDates = [...filteredDates, ...extraOleoDates].sort();
+
+  const points = allChartDates.map(d=>{
     const kg = computeTotalKgForPeriod([d]);
     const litros = OL_DATA[d] ? OL_DATA[d].consumo : null;
     const indicador = (litros !== null && litros > 0) ? kg / litros : null;
@@ -5275,8 +5285,17 @@ const OL_ITEM = 'OLEO DE ALGODAO';
    quando na verdade falta contagem/entrada pra fechar a conta confunde
    quem lê o painel. */
 function OL_getConsumoForPeriod(filteredDates){
+  // Corrigido: itera sobre todos os intervalos de contagem dentro do range de
+  // datas (filteredDates[0]…filteredDates[last]), independente de haver produção
+  // do Fritador naquela data. Antes, contagens em dias sem produção (ex: 08/08)
+  // eram ignoradas, distorcendo o total do período.
+  if(!filteredDates.length) return null;
+  const start = filteredDates[0];
+  const end   = filteredDates[filteredDates.length - 1];
   let total = 0, temDado = false;
-  filteredDates.forEach(d=>{ if(OL_DATA[d]){ total += OL_DATA[d].consumo; temDado = true; } });
+  Object.keys(OL_DATA).forEach(d => {
+    if(d >= start && d <= end){ total += OL_DATA[d].consumo; temDado = true; }
+  });
   return temDado ? total : null;
 }
 
