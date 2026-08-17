@@ -10639,13 +10639,12 @@ async function PPL_renderCamposEtapas(linha){
   // 1ª prioridade: referências cadastradas (pp_etapas_referencia) — contém os tempos meta
   const refData = await PPL_buscarEtapasReferencia(linha, produto);
   if(refData && refData.length > 0){
-    let html = base + `<p style="color:var(--good);margin:10px 0 4px;font-size:12px;">✓ Etapas de referência encontradas para "${produto}" — preencha o horário real de cada uma.</p>`;
+    let html = base + `<p style="color:var(--good);margin:10px 0 4px;font-size:12px;">✓ Etapas de referência encontradas para "${produto}" — lance a duração de cada uma (hh:mm:ss).</p>`;
     html += '<div class="lanc-item-grid">';
     refData.forEach((ref, i)=>{
       const nomeAttr = ref.etapa.replace(/"/g,'&quot;');
-      const metaLabel = ref.tempo_meta_seg ? ` <span style="color:var(--gold);font-weight:600;">(ref: ${PP_fmtDuracao ? PP_fmtDuracao(ref.tempo_meta_seg) : ref.tempo_meta_seg+'s'})</span>` : '';
-      html += `<div class="lanc-field"><label>${ref.etapa} — Início${metaLabel}</label><input type="time" class="ppl-etapa-ini" data-etapa="${nomeAttr}" data-ordem="${i+1}"></div>`;
-      html += `<div class="lanc-field"><label>${ref.etapa} — Fim</label><input type="time" class="ppl-etapa-fim" data-etapa="${nomeAttr}" data-ordem="${i+1}"></div>`;
+      const metaLabel = ref.tempo_meta_seg ? ` <span style="color:var(--gold);font-weight:600;">(meta: ${PP_fmtDuracao ? PP_fmtDuracao(ref.tempo_meta_seg) : ref.tempo_meta_seg+'s'})</span>` : '';
+      html += `<div class="lanc-field"><label>${ref.etapa}${metaLabel}</label><input type="time" step="1" class="ppl-etapa-dur" data-etapa="${nomeAttr}" data-ordem="${i+1}" title="Duração da etapa (hh:mm:ss)"></div>`;
     });
     html += '</div>' + PPL_paradaUnicaHtml();
     container.innerHTML = html;
@@ -10655,12 +10654,11 @@ async function PPL_renderCamposEtapas(linha){
   // 2ª prioridade: histórico de bateladas anteriores
   const etapasExistentes = await PPL_buscarEtapasHistoricas(linha, produto);
   if(etapasExistentes && etapasExistentes.length > 0){
-    let html = base + `<p style="color:var(--good);margin:10px 0 4px;font-size:12px;">✓ Encontramos o padrão de etapas já usado pra "${produto}" — é só preencher os horários.</p>`;
+    let html = base + `<p style="color:var(--good);margin:10px 0 4px;font-size:12px;">✓ Encontramos o padrão de etapas já usado pra "${produto}" — lance a duração de cada uma (hh:mm:ss).</p>`;
     html += '<div class="lanc-item-grid">';
     etapasExistentes.forEach((nome, i)=>{
       const nomeAttr = nome.replace(/"/g,'&quot;');
-      html += `<div class="lanc-field"><label>${nome} — Início</label><input type="time" class="ppl-etapa-ini" data-etapa="${nomeAttr}" data-ordem="${i+1}"></div>`;
-      html += `<div class="lanc-field"><label>${nome} — Fim</label><input type="time" class="ppl-etapa-fim" data-etapa="${nomeAttr}" data-ordem="${i+1}"></div>`;
+      html += `<div class="lanc-field"><label>${nome}</label><input type="time" step="1" class="ppl-etapa-dur" data-etapa="${nomeAttr}" data-ordem="${i+1}" title="Duração da etapa (hh:mm:ss)"></div>`;
     });
     html += '</div>' + PPL_paradaUnicaHtml();
     container.innerHTML = html;
@@ -10688,8 +10686,7 @@ function PPL_gerarCamposEtapasNovas(){
   let html = '<div class="lanc-item-grid">';
   for(let i=1; i<=qtd; i++){
     html += `<div class="lanc-field"><label>Nome da Etapa ${i}</label><input type="text" class="ppl-etapa-nome-nova" data-ordem="${i}" placeholder="Ex: Bater na Masseira"></div>`;
-    html += `<div class="lanc-field"><label>Início</label><input type="time" class="ppl-etapa-ini-nova" data-ordem="${i}"></div>`;
-    html += `<div class="lanc-field"><label>Fim</label><input type="time" class="ppl-etapa-fim-nova" data-ordem="${i}"></div>`;
+    html += `<div class="lanc-field"><label>Duração (hh:mm:ss)</label><input type="time" step="1" class="ppl-etapa-dur-nova" data-ordem="${i}" title="Duração da etapa (hh:mm:ss)"></div>`;
   }
   html += '</div>';
   wrap.innerHTML = html + PPL_paradaUnicaHtml();
@@ -10832,35 +10829,31 @@ async function PPL_handleSubmit(e){
       if(batErr) throw batErr;
 
       const etapasPayload = [];
-      // Caminho A: produto já tinha etapas mapeadas (nomes fixos, campo .ppl-etapa-ini/.ppl-etapa-fim)
-      const etapasExistentesEls = document.querySelectorAll('#pplCamposDinamicos .ppl-etapa-ini');
-      if(etapasExistentesEls.length > 0){
-        etapasExistentesEls.forEach(iniEl=>{
-          const nome = iniEl.dataset.etapa;
-          const ordem = parseInt(iniEl.dataset.ordem, 10);
-          const fimEl = document.querySelector(`#pplCamposDinamicos .ppl-etapa-fim[data-etapa="${CSS.escape(nome)}"]`);
-          const ini = iniEl.value, fim = fimEl ? fimEl.value : '';
-          if(ini || fim){
+      // Caminho A: produto com etapas mapeadas (referência ou histórico) — campo .ppl-etapa-dur
+      const etapasDurEls = document.querySelectorAll('#pplCamposDinamicos .ppl-etapa-dur');
+      if(etapasDurEls.length > 0){
+        etapasDurEls.forEach(durEl=>{
+          const nome = durEl.dataset.etapa;
+          const ordem = parseInt(durEl.dataset.ordem, 10);
+          const dur = PPL_timeToSeconds(durEl.value);
+          if(dur !== null){
             etapasPayload.push({
               batelada_id: batInserted.id, etapa: nome, ordem,
-              inicio: ini ? ini+':00' : null, fim: fim ? fim+':00' : null,
-              duracao_seg: (ini && fim) ? PPL_calcDuracao(ini, fim) : null,
+              inicio: null, fim: null, duracao_seg: dur,
             });
           }
         });
       } else {
-        // Caminho B: mapeamento novo (nome digitado pelo usuário, campo .ppl-etapa-nome-nova)
+        // Caminho B: mapeamento novo (nome digitado pelo usuário) — campo .ppl-etapa-dur-nova
         document.querySelectorAll('#pplCamposDinamicos .ppl-etapa-nome-nova').forEach(nomeEl=>{
           const ordem = nomeEl.dataset.ordem;
           const nome = nomeEl.value.trim();
           if(!nome) return;
-          const iniEl = document.querySelector(`.ppl-etapa-ini-nova[data-ordem="${ordem}"]`);
-          const fimEl = document.querySelector(`.ppl-etapa-fim-nova[data-ordem="${ordem}"]`);
-          const ini = iniEl ? iniEl.value : '', fim = fimEl ? fimEl.value : '';
+          const durEl = document.querySelector(`.ppl-etapa-dur-nova[data-ordem="${ordem}"]`);
+          const dur = durEl ? PPL_timeToSeconds(durEl.value) : null;
           etapasPayload.push({
             batelada_id: batInserted.id, etapa: nome, ordem: parseInt(ordem,10),
-            inicio: ini ? ini+':00' : null, fim: fim ? fim+':00' : null,
-            duracao_seg: (ini && fim) ? PPL_calcDuracao(ini, fim) : null,
+            inicio: null, fim: null, duracao_seg: dur,
           });
         });
       }
