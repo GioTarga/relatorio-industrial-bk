@@ -10472,7 +10472,7 @@ const PPL_VELOCIDADE_CONFIG = {
   'Pão de Queijo': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
   'Padaria': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
   'Confeitaria': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
-  'Pão de Ló e Bolos': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
+  'Pão de Ló e Bolos': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_batelada_massa'] },
 };
 
 const PPL_TIPO_LABELS = { etapas:'Tempo de Processo (Etapas)', velocidade:'Produtividade' };
@@ -10496,6 +10496,7 @@ const PPL_CAMPO_META = {
   unidades_por_hora: { label:'Unidades por Hora', type:'number' },
   producao_por_hora: { label:'Produção por Hora (caixa/telas)', type:'number' },
   tempo_medio_seg: { label:'Tempo Médio (hh:mm:ss)', type:'timesec' },
+  tempo_batelada_massa: { label:'Tempo da Batelada de Massa (hh:mm:ss)', type:'timesec', coluna:'tempo_medio_seg' },
   unidade_medida: { label:'Unidade de Medida (Massa, Kg, Telas, Carrinhos, Caixas...)', type:'text_datalist' },
   unidades_por_recipiente: { label:'Quantas unidades cabem em 1 recipiente? (só se a Unidade acima for Caixa/Carrinho/Tela)', type:'number' },
   duracao_rolo_seg: { label:'Duração do Rolo (hh:mm:ss)', type:'timesec' },
