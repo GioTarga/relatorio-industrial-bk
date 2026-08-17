@@ -1290,6 +1290,24 @@
         <div id="mcBoard"></div>
       </div>
 
+    <!-- Radar de Cobertura: mostra por setor quais produtos têm
+         Produtividade, Processo lançado e Referência cadastrada. -->
+    <div class="panel" id="mcRadarPanel" style="margin-top:0;">
+      <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+        <span>📡 Radar de Cobertura — Produtividade &amp; Processos</span>
+        <button type="button" class="btn-refresh" id="mcRadarRefreshBtn" title="Atualizar radar" style="padding:6px 14px;font-size:12px;">Atualizar</button>
+      </div>
+      <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 14px;">
+        Por setor, mostra quais produtos já têm coleta realizada e quais ainda estão pendentes.
+        Um produto está <strong style="color:var(--good);">100% mapeado</strong> quando tem
+        Produtividade lançada, Tempo de Processo lançado <em>e</em> Referência de tempo cadastrada.
+      </p>
+      <div id="mcRadarKpis" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px;"></div>
+      <div id="mcRadarGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">
+        <div class="empty-state" style="grid-column:1/-1;">Carregando radar...</div>
+      </div>
+    </div>
+
     </div>
   </div> <!-- /page-melhoria -->
 
@@ -8725,6 +8743,180 @@ function MC_renderMatriz(itens){
   }
 }
 
+/* ===== RADAR DE COBERTURA — Produtividade & Processos =====
+   Varre as 3 fontes de dados (sem filtro de data) e monta um mapa
+   linha → produto → { corridas, bateladas, referencia } para exibir
+   quais produtos ainda precisam de coleta em cada setor. */
+
+let MC_RADAR = null; // cache do último carregamento
+
+/* Sectores rastreados pelo radar — mesmo conjunto do módulo PP */
+const MC_RADAR_LINHAS = ['Giro','Salgado','Massa Salgado','Pão de Queijo','Confeitaria','Padaria','Pão de Ló e Bolos'];
+const MC_RADAR_LABELS = { 'Giro': 'Giro Dia' };
+
+async function MC_loadRadar(){
+  const client = LANC_getClient();
+  const gridEl = document.getElementById('mcRadarGrid');
+  if(!gridEl) return;
+  gridEl.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">Carregando radar...</div>';
+  document.getElementById('mcRadarKpis').innerHTML = '';
+
+  try {
+    // Busca leve: só linha + produto (sem filtro de data)
+    const [corridasRes, bateladasRes, refRes] = await Promise.all([
+      client.from('produtividade_corridas').select('linha,produto'),
+      client.from('tempo_processo_bateladas').select('linha,produto,id'),
+      client.from('pp_etapas_referencia').select('linha,produto'),
+    ]);
+
+    // Para bateladas: só conta se a batelada tem ao menos 1 etapa lançada
+    // Buscamos as etapas separadas para cruzar
+    const etapasRes = await client.from('tempo_processo_etapas')
+      .select('batelada_id');
+
+    const bateladasComEtapas = new Set(
+      (etapasRes.data || []).map(e => e.batelada_id)
+    );
+
+    /* Monta mapa:
+       radar[linha][produto] = { corridas: bool, bateladas: bool, referencia: bool } */
+    const radar = {};
+    MC_RADAR_LINHAS.forEach(l => { radar[l] = {}; });
+
+    function marca(linha, produto, campo){
+      const lin = linha && linha.trim();
+      const prod = produto && produto.trim();
+      if(!lin || !prod) return;
+      if(!radar[lin]) return; // setor fora da lista rastreada
+      if(!radar[lin][prod]) radar[lin][prod] = { corridas:false, bateladas:false, referencia:false };
+      radar[lin][prod][campo] = true;
+    }
+
+    (corridasRes.data || []).forEach(r => marca(r.linha, r.produto, 'corridas'));
+
+    (bateladasRes.data || []).forEach(r => {
+      if(bateladasComEtapas.has(r.id)){
+        marca(r.linha, r.produto, 'bateladas');
+      }
+    });
+
+    (refRes.data || []).forEach(r => marca(r.linha, r.produto, 'referencia'));
+
+    MC_RADAR = radar;
+    MC_renderRadar();
+  } catch(err) {
+    console.error('MC_loadRadar:', err);
+    gridEl.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><span class="empty-icon">⚠</span>Erro ao carregar radar: ${err.message||err}</div>`;
+  }
+}
+
+function MC_renderRadar(){
+  const radar = MC_RADAR;
+  if(!radar){ MC_loadRadar(); return; }
+
+  const gridEl  = document.getElementById('mcRadarGrid');
+  const kpisEl  = document.getElementById('mcRadarKpis');
+  if(!gridEl || !kpisEl) return;
+
+  // KPIs globais
+  let totalProd = 0, mapProd = 0, mapTP = 0, mapCompleto = 0;
+  MC_RADAR_LINHAS.forEach(linha => {
+    Object.values(radar[linha]||{}).forEach(p => {
+      totalProd++;
+      if(p.corridas) mapProd++;
+      if(p.bateladas && p.referencia) mapTP++;
+      if(p.corridas && p.bateladas && p.referencia) mapCompleto++;
+    });
+  });
+
+  const kpiStyle = `background:var(--cream);border:1px solid var(--line);border-radius:var(--radius-md);padding:10px 16px;text-align:center;min-width:120px;flex:1;`;
+  kpisEl.innerHTML = `
+    <div style="${kpiStyle}">
+      <div style="font-size:22px;font-weight:800;color:var(--ink);font-family:var(--font-display);">${totalProd}</div>
+      <div style="font-size:11px;color:var(--ink-soft);font-weight:600;margin-top:2px;">Produtos Conhecidos</div>
+    </div>
+    <div style="${kpiStyle}">
+      <div style="font-size:22px;font-weight:800;color:var(--good);font-family:var(--font-display);">${mapCompleto}</div>
+      <div style="font-size:11px;color:var(--ink-soft);font-weight:600;margin-top:2px;">100% Mapeados</div>
+    </div>
+    <div style="${kpiStyle}">
+      <div style="font-size:22px;font-weight:800;color:var(--gold);font-family:var(--font-display);">${totalProd - mapCompleto}</div>
+      <div style="font-size:11px;color:var(--ink-soft);font-weight:600;margin-top:2px;">Pendentes</div>
+    </div>
+    <div style="${kpiStyle}">
+      <div style="font-size:22px;font-weight:800;color:var(--red-dark);font-family:var(--font-display);">${mapProd}</div>
+      <div style="font-size:11px;color:var(--ink-soft);font-weight:600;margin-top:2px;">Com Produtividade</div>
+    </div>
+    <div style="${kpiStyle}">
+      <div style="font-size:22px;font-weight:800;color:var(--red-dark);font-family:var(--font-display);">${mapTP}</div>
+      <div style="font-size:11px;color:var(--ink-soft);font-weight:600;margin-top:2px;">Com Tempo Processo</div>
+    </div>`;
+
+  // Cards por setor
+  const badge = (ok, label) => ok
+    ? `<span style="background:var(--good-bg);color:var(--good);border:1px solid var(--good);border-radius:var(--radius-pill);padding:2px 9px;font-size:10.5px;font-weight:700;white-space:nowrap;">✓ ${label}</span>`
+    : `<span style="background:#f3f3f3;color:#999;border:1px solid #e0e0e0;border-radius:var(--radius-pill);padding:2px 9px;font-size:10.5px;font-weight:600;white-space:nowrap;">Pendente</span>`;
+
+  const cardHTMLs = MC_RADAR_LINHAS.map(linha => {
+    const produtos = Object.keys(radar[linha]||{}).sort();
+    const label = MC_RADAR_LABELS[linha] || linha;
+    const total = produtos.length;
+    const completos = produtos.filter(p => {
+      const d = radar[linha][p];
+      return d.corridas && d.bateladas && d.referencia;
+    }).length;
+
+    const pct = total > 0 ? Math.round(completos/total*100) : 0;
+    const corPct = pct === 100 ? 'var(--good)' : pct >= 50 ? 'var(--gold)' : 'var(--red)';
+
+    if(total === 0){
+      return `<div style="border:1px solid var(--line);border-radius:var(--radius-md);padding:16px;background:var(--paper);">
+        <div style="font-size:13px;font-weight:800;color:var(--red-dark);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">${label}</div>
+        <div style="font-size:12px;color:var(--ink-soft);font-style:italic;">Nenhum produto registrado ainda.</div>
+      </div>`;
+    }
+
+    const linhas = produtos.map(prod => {
+      const d = radar[linha][prod];
+      const completo = d.corridas && d.bateladas && d.referencia;
+      const bgRow = completo ? 'background:#f6fff9;' : '';
+      return `<tr style="${bgRow}">
+        <td style="padding:7px 10px;font-size:12.5px;font-weight:${completo?'700':'400'};color:var(--ink);border-bottom:1px solid var(--line);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${prod}">${prod}</td>
+        <td style="padding:7px 8px;border-bottom:1px solid var(--line);text-align:center;">${badge(d.corridas,'Sim')}</td>
+        <td style="padding:7px 8px;border-bottom:1px solid var(--line);text-align:center;">${badge(d.bateladas,'Sim')}</td>
+        <td style="padding:7px 8px;border-bottom:1px solid var(--line);text-align:center;">${badge(d.referencia,'Sim')}</td>
+      </tr>`;
+    }).join('');
+
+    return `<div style="border:1px solid var(--line);border-radius:var(--radius-md);padding:16px 14px;background:var(--paper);overflow:hidden;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:800;color:var(--red-dark);text-transform:uppercase;letter-spacing:.8px;">${label}</div>
+        <div style="font-size:11px;font-weight:700;color:${corPct};">${completos}/${total} mapeados</div>
+      </div>
+      <!-- Barra de progresso -->
+      <div style="height:4px;background:#f0e6d3;border-radius:99px;margin-bottom:12px;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:${corPct};border-radius:99px;transition:width .4s;"></div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;min-width:280px;">
+          <thead>
+            <tr style="background:var(--cream);">
+              <th style="padding:6px 10px;font-size:10.5px;color:var(--ink-soft);font-weight:700;text-align:left;border-bottom:2px solid var(--line);">Produto</th>
+              <th style="padding:6px 8px;font-size:10.5px;color:var(--ink-soft);font-weight:700;text-align:center;border-bottom:2px solid var(--line);" title="Tem registros em produtividade_corridas">Produtividade</th>
+              <th style="padding:6px 8px;font-size:10.5px;color:var(--ink-soft);font-weight:700;text-align:center;border-bottom:2px solid var(--line);" title="Tem lançamentos de etapas de processo">Processo (lançto)</th>
+              <th style="padding:6px 8px;font-size:10.5px;color:var(--ink-soft);font-weight:700;text-align:center;border-bottom:2px solid var(--line);" title="Tem tempos-meta cadastrados em pp_etapas_referencia">Referência (meta)</th>
+            </tr>
+          </thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      </div>
+    </div>`;
+  });
+
+  gridEl.innerHTML = cardHTMLs.join('');
+}
+
+
 async function MC_loadData(){
   const board = document.getElementById('mcBoard');
   board.innerHTML = `<div class="empty-state">Carregando...</div>`;
@@ -8735,6 +8927,7 @@ async function MC_loadData(){
     MC_DATA = data || [];
     MC_renderKpis();
     MC_render();
+    MC_loadRadar(); // carrega radar em paralelo — não bloqueia a tela principal
   }catch(err){
     console.error('Erro ao carregar Melhoria Contínua:', err);
     board.innerHTML = `<div class="empty-state"><span class="empty-icon">⚠</span>Erro ao carregar: ${err.message||err}</div>`;
@@ -9068,6 +9261,7 @@ document.getElementById('mcModalDeleteBtn').addEventListener('click', async ()=>
 
 document.getElementById('mcFiltro').addEventListener('input', MC_render);
 document.getElementById('mcFiltroStatus').addEventListener('change', MC_render);
+document.getElementById('mcRadarRefreshBtn').addEventListener('click', ()=>{ MC_RADAR = null; MC_loadRadar(); });
 
 /* ============================================================================
    PRODUTIVIDADE & PROCESSOS — página unificada, lendo do Supabase
