@@ -9868,24 +9868,33 @@ function PP_renderKPIs(){
     return;
   }
 
-  // Pão de Ló e Bolos: mesma lógica de "batelada" (aqui, forma) vinda das
-  // etapas, mais Unidades/hora — essa linha é a única que pode ter os dois
-  // tipos de lançamento (Etapas e Produtividade) ao mesmo tempo, então o
-  // Unidades/hora vem de produtividade_corridas quando existir.
+  // Pão de Ló e Bolos: 4 cards — Formas/hora, Unidades/hora, Tempo Médio/Forma,
+  // Batelada/Hora. Fontes separadas: corridas (tempos de forma) e bateladas
+  // (duracao_total_seg das bateladas de massa registradas no módulo produtividade).
   if(PP_currentLinha === 'Pão de Ló e Bolos'){
-    const leadTimes = PP_BATELADAS
-      .map(b => (b.tempo_processo_etapas||[]).reduce((s,e)=> s + (Number(e.duracao_seg)||0), 0))
-      .filter(v => v > 0);
-    const leadMedio = leadTimes.length ? leadTimes.reduce((a,b)=>a+b,0)/leadTimes.length : null;
-    const formasPorHora = (leadMedio != null && leadMedio > 0) ? 3600/leadMedio : null;
+    // Formas/hora e Tempo Médio/Forma vêm das corridas (tempo_medio_seg = média das formas)
+    const formaTempos = PP_CORRIDAS.map(c => c.tempo_medio_seg).filter(v => v != null && v > 0);
+    const tempoMedioForma = formaTempos.length ? formaTempos.reduce((a,b)=>a+b,0)/formaTempos.length : null;
+    const formasPorHora = tempoMedioForma ? 3600/tempoMedioForma : null;
 
-    const unidadesHoraValores = PP_CORRIDAS.map(c => PP_getProdutividadeValor(c)).filter(v => v != null);
-    const mediaUnidadesHora = unidadesHoraValores.length ? unidadesHoraValores.reduce((a,b)=>a+b,0)/unidadesHoraValores.length : null;
+    // Unidades/hora = Formas/hora × unidades_por_recipiente (G=9 / P=12), por corrida
+    const unidadesHoraValores = PP_CORRIDAS
+      .filter(c => c.tempo_medio_seg > 0 && c.unidades_por_recipiente > 0)
+      .map(c => (3600 / c.tempo_medio_seg) * c.unidades_por_recipiente);
+    const mediaUnidadesHora = unidadesHoraValores.length
+      ? unidadesHoraValores.reduce((a,b)=>a+b,0) / unidadesHoraValores.length
+      : null;
+
+    // Batelada/Hora vem das bateladas com duracao_total_seg (lançadas pela tab Produtividade)
+    const batelTimes = PP_BATELADAS.map(b => b.duracao_total_seg).filter(v => v != null && v > 0);
+    const tempoMedioBatelada = batelTimes.length ? batelTimes.reduce((a,b)=>a+b,0)/batelTimes.length : null;
+    const bateladaPorHora = tempoMedioBatelada ? 3600/tempoMedioBatelada : null;
 
     const kpis = [
-      { label:'Formas/hora', value: formasPorHora != null ? formasPorHora.toLocaleString('pt-BR',{maximumFractionDigits:2}) : '—' },
-      { label:'Tempo Médio/Forma', value: leadMedio != null ? PP_fmtDuracao(leadMedio) : '—' },
-      { label:'Unidades/hora', value: mediaUnidadesHora != null ? mediaUnidadesHora.toLocaleString('pt-BR',{maximumFractionDigits:0}) : '—' },
+      { label:'Formas/hora',      value: formasPorHora    != null ? formasPorHora.toLocaleString('pt-BR',{maximumFractionDigits:1})  : '—' },
+      { label:'Unidades/hora',    value: mediaUnidadesHora != null ? mediaUnidadesHora.toLocaleString('pt-BR',{maximumFractionDigits:0}) : '—' },
+      { label:'Tempo Médio/Forma', value: tempoMedioForma  != null ? PP_fmtDuracao(tempoMedioForma)  : '—' },
+      { label:'Batelada/Hora',    value: bateladaPorHora  != null ? bateladaPorHora.toLocaleString('pt-BR',{maximumFractionDigits:2}) : '—' },
     ];
     grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
     grid.innerHTML = kpis.map(k=>`
