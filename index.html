@@ -997,6 +997,34 @@
         Nenhum dado registrado pra essa linha no período selecionado.
       </div>
 
+      <!-- Painel de Etapas de Referência — visível só na aba Confeitaria -->
+      <div id="ppPainelReferencia" style="display:none;" class="container">
+        <div class="panel">
+          <div class="panel-title">⏱ Etapas de Referência — Confeitaria</div>
+          <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 16px;">
+            Cadastre aqui as etapas e os tempos que você cronometrou para cada produto.
+            Esses tempos aparecem como referência nos gráficos acima e pré-preenchem
+            o formulário de Lançamento de Tempo de Processo.
+          </p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end;">
+            <div class="lanc-field" style="min-width:220px;">
+              <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-soft);">Produto</label>
+              <input type="text" id="ppRefProduto" list="ppRefProdutoList" placeholder="Nome do produto" style="border:1px solid #e8d3a3;border-radius:7px;padding:8px 12px;font-size:13px;font-family:inherit;background:var(--cream);width:100%;">
+              <datalist id="ppRefProdutoList"></datalist>
+            </div>
+            <button type="button" class="btn-refresh" id="ppRefBuscarBtn" style="padding:9px 18px;">Carregar Etapas</button>
+          </div>
+          <div id="ppRefFeedback" style="font-size:12.5px;font-weight:600;margin-bottom:10px;"></div>
+          <div id="ppRefPainelEditar" style="display:none;">
+            <div id="ppRefEtapasContainer" class="lanc-items" style="margin-bottom:12px;"></div>
+            <div style="display:flex;gap:10px;align-items:center;margin-top:10px;">
+              <button type="button" class="lanc-add-item-btn" id="ppRefAddEtapaBtn">+ Adicionar etapa</button>
+              <button type="button" class="btn-refresh" id="ppRefSalvarBtn">Salvar Referências</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div> <!-- /page-produtividade-processos -->
 
@@ -1754,6 +1782,7 @@
                   <option value="Salgado">Salgado</option>
                   <option value="Massa Salgado">Massa Salgado</option>
                   <option value="Pão de Queijo">Pão de Queijo</option>
+                  <option value="Confeitaria">Confeitaria</option>
                   <option value="Padaria">Padaria</option>
                   <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
                 </select>
@@ -1798,6 +1827,7 @@
                   <option value="Salgado">Salgado</option>
                   <option value="Massa Salgado">Massa Salgado</option>
                   <option value="Pão de Queijo">Pão de Queijo</option>
+                  <option value="Confeitaria">Confeitaria</option>
                   <option value="Padaria">Padaria</option>
                   <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
                 </select>
@@ -9054,7 +9084,7 @@ document.getElementById('mcFiltroStatus').addEventListener('change', MC_render);
    por isso o Giro (que tem os dois tipos) mostra tudo, e as outras linhas
    (que só têm um tipo) mostram só o bloco correspondente. */
 let PP_loadedOnce = false;
-const PP_LINHAS = ['Giro','Salgado','Massa Salgado','Pão de Queijo','Padaria','Pão de Ló e Bolos'];
+const PP_LINHAS = ['Giro','Salgado','Massa Salgado','Pão de Queijo','Confeitaria','Padaria','Pão de Ló e Bolos'];
 const PP_LINHA_LABELS = { 'Giro': 'Giro Dia' }; // rótulo de exibição — o valor real (usado nas consultas) continua "Giro"
 let PP_currentLinha = 'Giro';
 let PP_selectedProduto = '';
@@ -9185,6 +9215,17 @@ function PP_render(){
   } else {
     painelVelSimples.style.display = '';
     painelCap.style.display = 'none';
+  }
+
+  // Painel de referência: só visível na Confeitaria
+  const painelRef = document.getElementById('ppPainelReferencia');
+  if(painelRef){
+    if(PP_currentLinha === 'Confeitaria'){
+      painelRef.style.display = 'block';
+      PP_REF_renderPainel();
+    } else {
+      painelRef.style.display = 'none';
+    }
   }
 }
 
@@ -9342,6 +9383,33 @@ function PP_renderKPIs(){
     return;
   }
 
+  // Confeitaria: produção contínua (corridas) + etapas por produto.
+  // KPIs: Lead Time médio das etapas (quando existir) + Unidades/hora da corrida.
+  if(PP_currentLinha === 'Confeitaria'){
+    const leadTimes = PP_BATELADAS
+      .map(b => (b.tempo_processo_etapas||[]).reduce((s,e)=> s + (Number(e.duracao_seg)||0), 0))
+      .filter(v => v > 0);
+    const leadMedio = leadTimes.length ? leadTimes.reduce((a,b)=>a+b,0)/leadTimes.length : null;
+
+    const unidadesHoraValores = PP_CORRIDAS.map(c => PP_getProdutividadeValor(c)).filter(v => v != null);
+    const mediaUnidadesHora = unidadesHoraValores.length ? unidadesHoraValores.reduce((a,b)=>a+b,0)/unidadesHoraValores.length : null;
+
+    const qtdProdutos = new Set([
+      ...PP_BATELADAS.map(b=>b.produto), ...PP_CORRIDAS.map(c=>c.produto)
+    ].filter(Boolean)).size;
+
+    const kpis = [
+      { label:'Unidades/hora', value: mediaUnidadesHora != null ? mediaUnidadesHora.toLocaleString('pt-BR',{maximumFractionDigits:0}) : '—' },
+      { label:'Lead Time Médio por Processo', value: leadMedio != null ? PP_fmtDuracao(leadMedio) : '—' },
+      { label:'Produtos no Período', value: qtdProdutos || '—' },
+    ];
+    grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
+    grid.innerHTML = kpis.map(k=>`
+      <div class="kpi-card"><div class="label">${k.label}</div><div class="value">${k.value}</div></div>
+    `).join('');
+    return;
+  }
+
   // Pão de Ló e Bolos: mesma lógica de "batelada" (aqui, forma) vinda das
   // etapas, mais Unidades/hora — essa linha é a única que pode ter os dois
   // tipos de lançamento (Etapas e Produtividade) ao mesmo tempo, então o
@@ -9388,6 +9456,13 @@ function PP_renderKPIs(){
 
 /* ---------- Bloco Etapas ---------- */
 function PP_renderEtapas(){
+  // Confeitaria: cada produto tem etapas diferentes → renderiza separado por produto
+  if(PP_currentLinha === 'Confeitaria'){
+    PP_renderEtapasConfeitaria();
+    return;
+  }
+
+  // Demais linhas: etapas homogêneas → agrega tudo, tira média geral
   const porEtapa = {};
   PP_BATELADAS.forEach(b=>{
     (b.tempo_processo_etapas||[]).forEach(e=>{
@@ -9420,6 +9495,299 @@ function PP_renderEtapas(){
   const tbody = document.getElementById('ppTbodyBateladas');
   const linhas = [...PP_BATELADAS].sort((a,b)=> a.data.localeCompare(b.data));
   tbody.innerHTML = linhas.map(b=>{
+    const total = (b.tempo_processo_etapas||[]).reduce((s,e)=> s+(Number(e.duracao_seg)||0), 0);
+    return `<tr>
+      <td>${PP_fmtDataBR(b.data)}</td>
+      <td class="center">${b.batelada ?? '—'}</td>
+      <td>${b.masseira ?? '—'}</td>
+      <td>${b.produto ?? '—'}</td>
+      <td class="center">${PP_fmtDuracao(total)}</td>
+      <td class="center">${b.retencao_seg != null ? PP_fmtDuracao(b.retencao_seg) : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* Confeitaria: renderiza etapas separadas por produto, com comparação
+   real vs referência (pp_etapas_referencia). Cada produto vira um painel
+   próprio com o gráfico de barras das suas etapas. */
+let PP_REF_CACHE = {}; // cache linha→produto→etapas de referência
+
+async function PP_loadEtapasReferencia(linha, produtos){
+  const client = LANC_getClient();
+  const faltando = produtos.filter(p => !PP_REF_CACHE[linha+'|'+p]);
+  if(faltando.length > 0){
+    try{
+      const { data } = await client.from('pp_etapas_referencia')
+        .select('produto,etapa,ordem,tempo_meta_seg')
+        .eq('linha', linha).in('produto', faltando);
+      (data||[]).forEach(r=>{
+        const key = linha+'|'+r.produto;
+        if(!PP_REF_CACHE[key]) PP_REF_CACHE[key] = [];
+        PP_REF_CACHE[key].push(r);
+      });
+      // garante que produtos sem referência não re-buscam
+      faltando.forEach(p=>{
+        const key = linha+'|'+p;
+        if(!PP_REF_CACHE[key]) PP_REF_CACHE[key] = [];
+      });
+    }catch(e){ console.error('pp_etapas_referencia:', e); }
+  }
+  return produtos.reduce((acc,p)=>{ acc[p]=PP_REF_CACHE[linha+'|'+p]||[]; return acc; }, {});
+}
+
+/* ---------- Painel de Gestão de Etapas de Referência — Confeitaria ----------
+   Permite cadastrar/editar os tempos de referência (meta) por produto.
+   Esses tempos são usados como barra de referência nos gráficos e como
+   sugestão no formulário de lançamento (PPL). */
+async function PP_REF_renderPainel(){
+  const client = LANC_getClient();
+
+  // Popula datalist com produtos já existentes na tabela de referência
+  try {
+    const { data: prods } = await client
+      .from('pp_etapas_referencia')
+      .select('produto')
+      .eq('linha', 'Confeitaria')
+      .order('produto');
+    const dl = document.getElementById('ppRefProdutoList');
+    if(dl && prods){
+      const uniq = [...new Set(prods.map(r => r.produto))];
+      dl.innerHTML = uniq.map(p => `<option value="${p}">`).join('');
+    }
+  } catch(e){ console.error('PP_REF datalist:', e); }
+
+  // Botão Carregar
+  const btnBuscar = document.getElementById('ppRefBuscarBtn');
+  const btnAdd    = document.getElementById('ppRefAddEtapaBtn');
+  const btnSalvar = document.getElementById('ppRefSalvarBtn');
+  // Remove listeners antigos clonando o nó
+  const nb = btnBuscar.cloneNode(true); btnBuscar.parentNode.replaceChild(nb, btnBuscar);
+  const na = btnAdd.cloneNode(true);    btnAdd.parentNode.replaceChild(na, btnAdd);
+  const ns = btnSalvar.cloneNode(true); btnSalvar.parentNode.replaceChild(ns, btnSalvar);
+
+  nb.addEventListener('click', async () => {
+    const produto = document.getElementById('ppRefProduto').value.trim();
+    const fb = document.getElementById('ppRefFeedback');
+    const painel = document.getElementById('ppRefPainelEditar');
+    if(!produto){ fb.style.color='var(--red)'; fb.textContent='Informe o nome do produto.'; return; }
+    fb.style.color = 'var(--ink-soft)'; fb.textContent = 'Carregando…';
+    try {
+      const { data, error } = await client
+        .from('pp_etapas_referencia')
+        .select('etapa, ordem, tempo_meta_seg')
+        .eq('linha', 'Confeitaria')
+        .eq('produto', produto)
+        .order('ordem');
+      if(error) throw error;
+      painel.style.display = 'block';
+      PP_REF_renderEtapasEditar(data || []);
+      fb.textContent = data && data.length ? `${data.length} etapa(s) carregada(s).` : 'Nenhuma etapa cadastrada ainda. Adicione abaixo.';
+    } catch(e){
+      fb.style.color = 'var(--red)';
+      fb.textContent = 'Erro ao carregar: ' + (e.message || e);
+    }
+  });
+
+  na.addEventListener('click', () => {
+    const container = document.getElementById('ppRefEtapasContainer');
+    const rows = container.querySelectorAll('.ppref-etapa-row');
+    const nextOrdem = rows.length + 1;
+    PP_REF_addEtapaRow(container, { etapa: '', ordem: nextOrdem, tempo_meta_seg: null });
+  });
+
+  ns.addEventListener('click', async () => {
+    const produto = document.getElementById('ppRefProduto').value.trim();
+    const fb = document.getElementById('ppRefFeedback');
+    if(!produto){ fb.style.color='var(--red)'; fb.textContent='Informe o nome do produto antes de salvar.'; return; }
+    const container = document.getElementById('ppRefEtapasContainer');
+    const rows = container.querySelectorAll('.ppref-etapa-row');
+    const registros = [];
+    let temErro = false;
+    rows.forEach(row => {
+      const etapa = row.querySelector('.ppref-nome').value.trim();
+      const ordem = parseInt(row.querySelector('.ppref-ordem').value, 10) || 0;
+      const mmss  = row.querySelector('.ppref-tempo').value.trim();
+      if(!etapa){ temErro = true; return; }
+      const seg = PP_REF_parseMmSs(mmss);
+      registros.push({ linha: 'Confeitaria', produto, etapa, ordem, tempo_meta_seg: seg });
+    });
+    if(temErro){ fb.style.color='var(--red)'; fb.textContent='Todas as etapas precisam ter um nome.'; return; }
+    if(registros.length === 0){ fb.style.color='var(--red)'; fb.textContent='Adicione ao menos uma etapa.'; return; }
+    fb.style.color = 'var(--ink-soft)'; fb.textContent = 'Salvando…';
+    try {
+      // Deleta registros antigos do produto e insere os novos — mais simples que upsert por etapa
+      const { error: delErr } = await client
+        .from('pp_etapas_referencia')
+        .delete()
+        .eq('linha', 'Confeitaria')
+        .eq('produto', produto);
+      if(delErr) throw delErr;
+      const { error: insErr } = await client
+        .from('pp_etapas_referencia')
+        .insert(registros);
+      if(insErr) throw insErr;
+      // Invalida cache pra esse produto
+      delete PP_REF_CACHE['Confeitaria|' + produto];
+      // Atualiza datalist
+      const dl = document.getElementById('ppRefProdutoList');
+      if(dl){
+        const opts = [...dl.options].map(o => o.value);
+        if(!opts.includes(produto)){
+          const opt = document.createElement('option'); opt.value = produto; dl.appendChild(opt);
+        }
+      }
+      fb.style.color = 'var(--good)'; fb.textContent = `${registros.length} etapa(s) salva(s) com sucesso!`;
+    } catch(e){
+      fb.style.color = 'var(--red)';
+      fb.textContent = 'Erro ao salvar: ' + (e.message || e);
+    }
+  });
+}
+
+/* Renderiza as linhas editáveis de etapas de referência no container */
+function PP_REF_renderEtapasEditar(etapas){
+  const container = document.getElementById('ppRefEtapasContainer');
+  container.innerHTML = '';
+  if(etapas.length === 0){
+    PP_REF_addEtapaRow(container, { etapa: '', ordem: 1, tempo_meta_seg: null });
+    return;
+  }
+  etapas.forEach(e => PP_REF_addEtapaRow(container, e));
+}
+
+/* Adiciona uma linha editável de etapa no container */
+function PP_REF_addEtapaRow(container, { etapa, ordem, tempo_meta_seg }){
+  const div = document.createElement('div');
+  div.className = 'ppref-etapa-row lanc-item';
+  div.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:nowrap;';
+  const tempoStr = PP_REF_fmtMmSs(tempo_meta_seg);
+  div.innerHTML = `
+    <div style="flex:2;min-width:140px;">
+      <label style="font-size:11px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:3px;">Etapa</label>
+      <input type="text" class="ppref-nome lanc-input" value="${etapa.replace(/"/g,'&quot;')}" placeholder="Nome da etapa" style="width:100%;">
+    </div>
+    <div style="flex:0 0 72px;">
+      <label style="font-size:11px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:3px;">Ordem</label>
+      <input type="number" class="ppref-ordem lanc-input" value="${ordem}" min="1" step="1" style="width:100%;">
+    </div>
+    <div style="flex:1;min-width:90px;">
+      <label style="font-size:11px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:3px;">Tempo Meta</label>
+      <input type="text" class="ppref-tempo lanc-input" value="${tempoStr}" placeholder="mm:ss" style="width:100%;" title="Formato: mm:ss ou hh:mm:ss">
+    </div>
+    <div style="flex:0 0 32px;padding-top:18px;">
+      <button type="button" class="lanc-remove-btn" title="Remover etapa" style="background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:2px 6px;">×</button>
+    </div>`;
+  div.querySelector('.lanc-remove-btn').addEventListener('click', () => div.remove());
+  container.appendChild(div);
+}
+
+/* Converte segundos → "mm:ss" para exibição no campo de tempo */
+function PP_REF_fmtMmSs(seg){
+  if(seg == null || isNaN(seg)) return '';
+  seg = Math.round(seg);
+  const h = Math.floor(seg/3600);
+  const m = Math.floor((seg%3600)/60);
+  const s = seg%60;
+  if(h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+/* Converte "mm:ss" ou "hh:mm:ss" → segundos (int ou null) */
+function PP_REF_parseMmSs(str){
+  if(!str || !str.trim()) return null;
+  const parts = str.trim().split(':').map(p => parseInt(p,10));
+  if(parts.some(isNaN)) return null;
+  if(parts.length === 2) return parts[0]*60 + parts[1];
+  if(parts.length === 3) return parts[0]*3600 + parts[1]*60 + parts[2];
+  return null;
+}
+
+
+async function PP_renderEtapasConfeitaria(){
+  const wrap = document.getElementById('ppChartEtapas');
+  const legend = document.getElementById('ppEtapasLegend');
+
+  // Agrupa bateladas por produto
+  const porProduto = {};
+  PP_BATELADAS.forEach(b=>{
+    const prod = b.produto || '(sem produto)';
+    if(!porProduto[prod]) porProduto[prod] = [];
+    porProduto[prod].push(b);
+  });
+  const produtos = Object.keys(porProduto).sort();
+  if(produtos.length === 0){ wrap.innerHTML = ''; legend.innerHTML = ''; return; }
+
+  // Busca referências em paralelo
+  const refs = await PP_loadEtapasReferencia('Confeitaria', produtos);
+
+  let html = '';
+  produtos.forEach((prod, pi)=>{
+    const bateladas = porProduto[prod];
+    // Agrega etapas deste produto
+    const porEtapa = {};
+    bateladas.forEach(b=>{
+      (b.tempo_processo_etapas||[]).forEach(e=>{
+        if(!porEtapa[e.etapa]) porEtapa[e.etapa] = { soma:0, count:0, ordem: e.ordem||0 };
+        if(e.duracao_seg != null){ porEtapa[e.etapa].soma += Number(e.duracao_seg); porEtapa[e.etapa].count += 1; }
+      });
+    });
+    const etapas = Object.keys(porEtapa)
+      .map(nome => ({ nome, media: porEtapa[nome].count ? porEtapa[nome].soma/porEtapa[nome].count : 0, ordem: porEtapa[nome].ordem }))
+      .sort((a,b) => a.ordem - b.ordem);
+    if(etapas.length === 0) return;
+
+    const refProd = refs[prod] || [];
+    const leadTotal = etapas.reduce((s,e)=>s+e.media, 0);
+
+    // Gráfico de barras: Real vs Referência
+    const maxVal = Math.max(...etapas.map(e=>e.media), ...refProd.map(r=>r.tempo_meta_seg||0), 1);
+    const barH = 24, gap = 12, leftPad = 180, rightPad = 120;
+    const chartW = 820;
+    const rows = etapas.map((e,i)=>{
+      const ref = refProd.find(r=>r.etapa===e.nome);
+      const metaSeg = ref ? ref.tempo_meta_seg : null;
+      const barReal = Math.round((e.media/maxVal)*(chartW-leftPad-rightPad));
+      const yTop = 10 + i*(barH+gap);
+      const yMid = yTop + barH/2;
+      let svg = '';
+      // Barra referência (fundo, cinza)
+      if(metaSeg){
+        const barRef = Math.round((metaSeg/maxVal)*(chartW-leftPad-rightPad));
+        svg += `<rect x="${leftPad}" y="${yTop+4}" width="${barRef}" height="${barH-8}" fill="#f0ddc0" rx="3"/>`;
+        svg += `<text x="${leftPad+barRef+6}" y="${yMid+4}" font-size="10" fill="var(--gold)" font-weight="700">${PP_fmtDuracao(metaSeg)} ref</text>`;
+      }
+      // Barra real
+      const corReal = metaSeg ? (e.media <= metaSeg ? 'var(--good)' : 'var(--red)') : 'var(--red)';
+      svg += `<rect x="${leftPad}" y="${yTop}" width="${barReal}" height="${barH}" fill="${corReal}" rx="4"/>`;
+      svg += `<text x="${leftPad+barReal+6}" y="${yMid+4}" font-size="11" fill="${corReal}" font-weight="700">${PP_fmtDuracao(e.media)}</text>`;
+      // Rótulo da etapa
+      svg += `<text x="${leftPad-8}" y="${yMid+4}" font-size="11" fill="var(--ink)" text-anchor="end">${e.nome}</text>`;
+      return svg;
+    }).join('');
+
+    const svgH = etapas.length*(barH+gap)+10;
+    html += `<div style="margin-bottom:24px;">
+      <div style="font-size:12px;font-weight:800;color:var(--red-dark);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+        ${prod} <span style="font-size:11px;color:var(--ink-soft);font-weight:600;text-transform:none;letter-spacing:0;">— Lead Time Médio: ${PP_fmtDuracao(leadTotal)} · ${bateladas.length} registro(s)</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;font-size:11px;color:var(--ink-soft);margin-bottom:6px;">
+        <span><i class="dot" style="background:var(--good);border:1px solid var(--good);display:inline-block;width:10px;height:10px;border-radius:2px;"></i> Real ≤ Referência</span>
+        <span><i class="dot" style="background:var(--red);border:1px solid var(--red);display:inline-block;width:10px;height:10px;border-radius:2px;"></i> Real &gt; Referência</span>
+        <span><i class="dot" style="background:#f0ddc0;border:1px solid var(--gold);display:inline-block;width:10px;height:10px;border-radius:2px;"></i> Tempo de Referência</span>
+      </div>
+      <div class="chart-wrap">
+        <svg viewBox="0 0 ${chartW} ${svgH}" width="${chartW}" height="${svgH}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;">${rows}</svg>
+      </div>
+    </div>`;
+  });
+
+  legend.innerHTML = '';
+  wrap.innerHTML = html || '<div class="empty-state"><span class="empty-icon">📊</span>Nenhuma batelada com etapas no período.</div>';
+
+  // Tabela de registros
+  const tbody = document.getElementById('ppTbodyBateladas');
+  const linhasTabela = [...PP_BATELADAS].sort((a,b)=> a.data.localeCompare(b.data));
+  tbody.innerHTML = linhasTabela.map(b=>{
     const total = (b.tempo_processo_etapas||[]).reduce((s,e)=> s+(Number(e.duracao_seg)||0), 0);
     return `<tr>
       <td>${PP_fmtDataBR(b.data)}</td>
@@ -9637,6 +10005,7 @@ const PPL_VELOCIDADE_CONFIG = {
   'Massa Salgado': { campos:['inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
   'Pão de Queijo': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
   'Padaria': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
+  'Confeitaria': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
   'Pão de Ló e Bolos': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
 };
 
@@ -9769,6 +10138,24 @@ async function PPL_buscarEtapasHistoricas(linha, produto){
   }
 }
 
+/* Busca etapas de referência cadastradas (pp_etapas_referencia) para esse
+   linha+produto. Retorna array de nomes ordenados por ordem, ou null se vazio. */
+async function PPL_buscarEtapasReferencia(linha, produto){
+  try{
+    const client = LANC_getClient();
+    const { data, error } = await client.from('pp_etapas_referencia')
+      .select('etapa, ordem, tempo_meta_seg')
+      .eq('linha', linha).eq('produto', produto)
+      .order('ordem');
+    if(error) throw error;
+    if(!data || data.length === 0) return null;
+    return data; // array de { etapa, ordem, tempo_meta_seg }
+  }catch(err){
+    console.error('Erro ao buscar etapas de referência:', err);
+    return null;
+  }
+}
+
 async function PPL_renderCamposEtapas(linha){
   const container = document.getElementById('pplCamposDinamicos');
   const produto = document.getElementById('pplProduto').value.trim();
@@ -9779,9 +10166,26 @@ async function PPL_renderCamposEtapas(linha){
     return;
   }
 
-  container.innerHTML = base + '<p style="color:var(--ink-soft);margin-top:14px;">Verificando se esse produto já tem etapas mapeadas...</p>';
-  const etapasExistentes = await PPL_buscarEtapasHistoricas(linha, produto);
+  container.innerHTML = base + '<p style="color:var(--ink-soft);margin-top:14px;">Verificando etapas cadastradas...</p>';
 
+  // 1ª prioridade: referências cadastradas (pp_etapas_referencia) — contém os tempos meta
+  const refData = await PPL_buscarEtapasReferencia(linha, produto);
+  if(refData && refData.length > 0){
+    let html = base + `<p style="color:var(--good);margin:10px 0 4px;font-size:12px;">✓ Etapas de referência encontradas para "${produto}" — preencha o horário real de cada uma.</p>`;
+    html += '<div class="lanc-item-grid">';
+    refData.forEach((ref, i)=>{
+      const nomeAttr = ref.etapa.replace(/"/g,'&quot;');
+      const metaLabel = ref.tempo_meta_seg ? ` <span style="color:var(--gold);font-weight:600;">(ref: ${PP_fmtDuracao ? PP_fmtDuracao(ref.tempo_meta_seg) : ref.tempo_meta_seg+'s'})</span>` : '';
+      html += `<div class="lanc-field"><label>${ref.etapa} — Início${metaLabel}</label><input type="time" class="ppl-etapa-ini" data-etapa="${nomeAttr}" data-ordem="${i+1}"></div>`;
+      html += `<div class="lanc-field"><label>${ref.etapa} — Fim</label><input type="time" class="ppl-etapa-fim" data-etapa="${nomeAttr}" data-ordem="${i+1}"></div>`;
+    });
+    html += '</div>' + PPL_paradaUnicaHtml();
+    container.innerHTML = html;
+    return;
+  }
+
+  // 2ª prioridade: histórico de bateladas anteriores
+  const etapasExistentes = await PPL_buscarEtapasHistoricas(linha, produto);
   if(etapasExistentes && etapasExistentes.length > 0){
     let html = base + `<p style="color:var(--good);margin:10px 0 4px;font-size:12px;">✓ Encontramos o padrão de etapas já usado pra "${produto}" — é só preencher os horários.</p>`;
     html += '<div class="lanc-item-grid">';
