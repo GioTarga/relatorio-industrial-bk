@@ -1753,7 +1753,6 @@
                   <option value="Giro">Giro Dia</option>
                   <option value="Salgado">Salgado</option>
                   <option value="Massa Salgado">Massa Salgado</option>
-                  <option value="Pão de Queijo">Pão de Queijo</option>
                   <option value="Padaria">Padaria</option>
                   <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
                 </select>
@@ -1797,7 +1796,6 @@
                   <option value="Giro">Giro Dia</option>
                   <option value="Salgado">Salgado</option>
                   <option value="Massa Salgado">Massa Salgado</option>
-                  <option value="Pão de Queijo">Pão de Queijo</option>
                   <option value="Padaria">Padaria</option>
                   <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
                 </select>
@@ -9047,7 +9045,7 @@ document.getElementById('mcFiltroStatus').addEventListener('change', MC_render);
    por isso o Giro (que tem os dois tipos) mostra tudo, e as outras linhas
    (que só têm um tipo) mostram só o bloco correspondente. */
 let PP_loadedOnce = false;
-const PP_LINHAS = ['Giro','Salgado','Massa Salgado','Pão de Queijo','Padaria','Pão de Ló e Bolos'];
+const PP_LINHAS = ['Giro','Salgado','Massa Salgado','Padaria','Pão de Ló e Bolos'];
 const PP_LINHA_LABELS = { 'Giro': 'Giro Dia' }; // rótulo de exibição — o valor real (usado nas consultas) continua "Giro"
 let PP_currentLinha = 'Giro';
 let PP_selectedProduto = '';
@@ -9226,8 +9224,13 @@ function PP_renderKPIs(){
     const unidadesHoraValores = PP_CORRIDAS.map(c=>PP_getUnidadesPorHora(c)).filter(v => v != null);
     const mediaUnidadesHora = unidadesHoraValores.length ? unidadesHoraValores.reduce((a,b)=>a+b,0)/unidadesHoraValores.length : null;
 
-    const temposMedios = PP_CORRIDAS.map(c=>c.tempo_medio_seg).filter(v => v != null).map(Number);
+    // Tempo médio: prioriza leituras T1/T2/T3 de produtividade_tempos_massa;
+    // cai no campo legado tempo_medio_seg se não tiver leituras novas.
+    const tempoLeituras = PP_CORRIDAS.flatMap(c => c.produtividade_tempos_massa || []).map(t => Number(t.tempo_seg)).filter(v => v > 0);
+    const tempoLegado = PP_CORRIDAS.map(c=>c.tempo_medio_seg).filter(v => v != null).map(Number);
+    const temposMedios = tempoLeituras.length ? tempoLeituras : tempoLegado;
     const mediaTempo = temposMedios.length ? temposMedios.reduce((a,b)=>a+b,0)/temposMedios.length : null;
+    const nLeituras = tempoLeituras.length;
 
     const capacidades = [];
     PP_CORRIDAS.forEach(c=>{
@@ -9243,6 +9246,7 @@ function PP_renderKPIs(){
       { label:'Unidades/h', value: mediaUnidadesHora != null ? mediaUnidadesHora.toLocaleString('pt-BR',{maximumFractionDigits:0}) : '—' },
       { label:`Tempo Médio por ${unidadeSingular}`, value: mediaTempo != null ? PP_fmtDuracao(mediaTempo) : '—' },
       { label:'Capacidade da Máquina (Unid/h)', value: mediaCapacidade != null ? mediaCapacidade.toLocaleString('pt-BR') : 'Sem registro' },
+      { label:'Leituras Coletadas', value: nLeituras || '—' },
     ];
     grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
     grid.innerHTML = kpis.map(k=>`
@@ -9263,16 +9267,22 @@ function PP_renderKPIs(){
     const mediaBlocosHora = taxaBlocos.length ? taxaBlocos.reduce((a,b)=>a+b,0)/taxaBlocos.length : null;
     const mediaRolosHora = taxaRolos.length ? taxaRolos.reduce((a,b)=>a+b,0)/taxaRolos.length : null;
 
-    const tempoBlocos = blocos.map(c=>c.tempo_medio_seg).filter(v=>v!=null).map(Number);
-    const tempoRolos = rolos.map(c=>c.tempo_medio_seg).filter(v=>v!=null).map(Number);
+    // Tempos: prioriza leituras T1/T2/T3 de produtividade_tempos_massa por produto;
+    // cai no campo legado tempo_medio_seg se não tiver leituras novas.
+    const leiturasB = blocos.flatMap(c => c.produtividade_tempos_massa || []).map(t => Number(t.tempo_seg)).filter(v => v > 0);
+    const leiturasR = rolos.flatMap(c => c.produtividade_tempos_massa || []).map(t => Number(t.tempo_seg)).filter(v => v > 0);
+    const tempoBlocos = leiturasB.length ? leiturasB : blocos.map(c=>c.tempo_medio_seg).filter(v=>v!=null).map(Number);
+    const tempoRolos  = leiturasR.length ? leiturasR  : rolos.map(c=>c.tempo_medio_seg).filter(v=>v!=null).map(Number);
     const mediaTempoBlocos = tempoBlocos.length ? tempoBlocos.reduce((a,b)=>a+b,0)/tempoBlocos.length : null;
-    const mediaTempoRolos = tempoRolos.length ? tempoRolos.reduce((a,b)=>a+b,0)/tempoRolos.length : null;
+    const mediaTempoRolos  = tempoRolos.length  ? tempoRolos.reduce((a,b)=>a+b,0)/tempoRolos.length   : null;
+    const nLeiturasMS = leiturasB.length + leiturasR.length;
 
     const kpis = [
       { label:'Blocos de Massa/hora', value: mediaBlocosHora != null ? mediaBlocosHora.toLocaleString('pt-BR',{maximumFractionDigits:1}) : '—' },
       { label:'Rolos Laminados/hora', value: mediaRolosHora != null ? mediaRolosHora.toLocaleString('pt-BR',{maximumFractionDigits:1}) : '—' },
       { label:'Tempo Médio Rolos Laminados', value: mediaTempoRolos != null ? PP_fmtDuracao(mediaTempoRolos) : '—' },
       { label:'Tempo Médio Blocos de Massa', value: mediaTempoBlocos != null ? PP_fmtDuracao(mediaTempoBlocos) : '—' },
+      { label:'Leituras Coletadas', value: nLeiturasMS || '—' },
     ];
     grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
     grid.innerHTML = kpis.map(k=>`
@@ -9283,7 +9293,7 @@ function PP_renderKPIs(){
 
   // Pão de Queijo e Padaria: card de quantas bateladas dá pra fazer por
   // hora (1h ÷ lead time médio das Etapas) e o próprio lead time médio.
-  if(PP_currentLinha === 'Pão de Queijo' || PP_currentLinha === 'Padaria'){
+  if(PP_currentLinha === 'Padaria'){
     const leadTimes = PP_BATELADAS
       .map(b => (b.tempo_processo_etapas||[]).reduce((s,e)=> s + (Number(e.duracao_seg)||0), 0))
       .filter(v => v > 0);
@@ -9348,11 +9358,13 @@ function PP_renderKPIs(){
 
     const unidadesHoraValores = PP_CORRIDAS.map(c => PP_getProdutividadeValor(c)).filter(v => v != null);
     const mediaUnidadesHora = unidadesHoraValores.length ? unidadesHoraValores.reduce((a,b)=>a+b,0)/unidadesHoraValores.length : null;
+    const nLeiturasBolos = PP_CORRIDAS.flatMap(c => c.produtividade_tempos_massa || []).filter(t => t.tempo_seg > 0).length;
 
     const kpis = [
       { label:'Formas/hora', value: formasPorHora != null ? formasPorHora.toLocaleString('pt-BR',{maximumFractionDigits:2}) : '—' },
       { label:'Tempo Médio/Forma', value: leadMedio != null ? PP_fmtDuracao(leadMedio) : '—' },
       { label:'Unidades/hora', value: mediaUnidadesHora != null ? mediaUnidadesHora.toLocaleString('pt-BR',{maximumFractionDigits:0}) : '—' },
+      { label:'Leituras Coletadas', value: nLeiturasBolos || '—' },
     ];
     grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
     grid.innerHTML = kpis.map(k=>`
@@ -9626,11 +9638,51 @@ const PPL_VELOCIDADE_CONFIG = {
   // Coletados", repetível igual Paradas (ver PPL_addTempoMassaRow). Peso
   // da Massa saiu — não é informação que costuma ser coletada.
   'Giro': { campos:['inicio','fim','produtividade_paes_hora','tamanho_pao_g'] },
-  'Salgado': { campos:['maquina','inicio','fim','produtividade_prensa','qtd_colaboradores','unidades_por_hora','producao_por_hora','tempo_medio_seg','unidade_medida','unidades_por_recipiente','duracao_rolo_seg'] },
-  'Massa Salgado': { campos:['inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
-  'Pão de Queijo': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
-  'Padaria': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
-  'Pão de Ló e Bolos': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
+  // Salgado/Massa Salgado/Padaria/Pão de Ló e Bolos: tempo_medio_seg e
+  // duracao_rolo_seg saíram dos campos fixos — os tempos agora são capturados
+  // como leituras repetíveis T1/T2/T3... em produtividade_tempos_massa
+  // (mesma lógica do Giro). Ver PPL_TEMPOS_CONFIG abaixo.
+  'Salgado': { campos:['maquina','inicio','fim','produtividade_prensa','qtd_colaboradores','unidades_por_hora','producao_por_hora','unidade_medida','unidades_por_recipiente'] },
+  'Massa Salgado': { campos:['inicio','fim','quantidade','unidade_medida','unidades_por_recipiente'] },
+  'Padaria': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente'] },
+  'Pão de Ló e Bolos': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente'] },
+};
+
+/* Configuração da seção de leituras repetíveis T1/T2/T3 por setor.
+   Os rótulos adaptam o que faz sentido pra cada operação. Os dados
+   ficam sempre em produtividade_tempos_massa (campo genérico tempo_seg
+   + masseira como referência livre). */
+const PPL_TEMPOS_CONFIG = {
+  'Giro': {
+    secaoLabel: 'Tempos Coletados (cronômetro — um por masseira/leitura)',
+    tempoLabel: 'Tempo (hh:mm:ss)',
+    referenciaLabel: 'Masseira',
+    referenciaPlaceholder: 'Ex: 1',
+  },
+  'Salgado': {
+    secaoLabel: 'Tempos de Rolo/Ciclo (cronômetro — uma leitura por ciclo)',
+    tempoLabel: 'Duração do Rolo (hh:mm:ss)',
+    referenciaLabel: 'Referência',
+    referenciaPlaceholder: 'Ex: Rolo 1, Ciclo 2...',
+  },
+  'Massa Salgado': {
+    secaoLabel: 'Tempos de Ciclo (cronômetro — um por masseira/rodada)',
+    tempoLabel: 'Tempo do Ciclo (hh:mm:ss)',
+    referenciaLabel: 'Masseira',
+    referenciaPlaceholder: 'Ex: 1',
+  },
+  'Padaria': {
+    secaoLabel: 'Tempos Coletados (cronômetro — um por ciclo/leitura)',
+    tempoLabel: 'Tempo (hh:mm:ss)',
+    referenciaLabel: 'Referência',
+    referenciaPlaceholder: 'Ex: Máquina 1, Ciclo 2...',
+  },
+  'Pão de Ló e Bolos': {
+    secaoLabel: 'Tempos de Forma/Tela (cronômetro — uma leitura por vez)',
+    tempoLabel: 'Tempo (hh:mm:ss)',
+    referenciaLabel: 'Referência',
+    referenciaPlaceholder: 'Ex: Tela 1, Forma 2...',
+  },
 };
 
 const PPL_TIPO_LABELS = { etapas:'Tempo de Processo (Etapas)', velocidade:'Produtividade' };
@@ -9831,9 +9883,10 @@ function PPL_renderCamposVelocidade(linha){
     html += `<div class="lanc-field"><label>${meta.label}</label><input type="${inputType}"${step} id="pplCampo_${campo}"></div>`;
   });
   html += '</div>';
-  if(linha === 'Giro'){
+  const tempCfg = PPL_TEMPOS_CONFIG[linha];
+  if(tempCfg){
     html += `<div style="margin-top:16px;">
-      <label style="display:block;font-size:11px;font-weight:700;color:#6b5c5c;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">Tempos Coletados (cronômetro, um por masseira/leitura)</label>
+      <label style="display:block;font-size:11px;font-weight:700;color:#6b5c5c;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">${tempCfg.secaoLabel}</label>
       <div id="pplTemposMassaContainer" class="lanc-items"></div>
       <button type="button" class="lanc-add-item-btn" id="pplAddTempoMassaBtn">+ Adicionar tempo</button>
     </div>`;
@@ -9844,16 +9897,19 @@ function PPL_renderCamposVelocidade(linha){
   </div>`;
   container.innerHTML = html;
   document.getElementById('pplAddParadaBtn').addEventListener('click', PPL_addParadaRow);
-  if(linha === 'Giro'){
+  if(tempCfg){
     document.getElementById('pplAddTempoMassaBtn').addEventListener('click', PPL_addTempoMassaRow);
-    PPL_addTempoMassaRow(); // já começa com 1 pronto pra preencher, já que é sempre necessário nessa linha
+    PPL_addTempoMassaRow(); // inicia com 1 leitura já pronta pra preencher
   }
 }
 
-/* Cada leitura de cronômetro (Tempo + Masseira) do Giro — repetível, igual
-   Paradas. O Tempo Médio/Massa do setor é calculado como a MÉDIA de todas
-   essas leituras do período (ver PP_renderKPIs), não digitado à mão. */
+/* Cada leitura de cronômetro (T1, T2, T3…) — repetível, igual Paradas.
+   O Tempo Médio do setor é a MÉDIA de todas as leituras do período
+   (ver PP_renderKPIs), nunca digitado à mão. Os rótulos variam por setor
+   conforme PPL_TEMPOS_CONFIG. Todos os dados ficam em produtividade_tempos_massa. */
 function PPL_addTempoMassaRow(){
+  const linha = document.getElementById('pplLinha').value;
+  const cfg = PPL_TEMPOS_CONFIG[linha] || { tempoLabel:'Tempo (hh:mm:ss)', referenciaLabel:'Referência', referenciaPlaceholder:'Ex: 1' };
   const container = document.getElementById('pplTemposMassaContainer');
   const row = document.createElement('div');
   row.className = 'lanc-item';
@@ -9863,8 +9919,8 @@ function PPL_addTempoMassaRow(){
       <button type="button" class="lanc-item-remove" data-remove>Remover</button>
     </div>
     <div class="lanc-item-grid">
-      <div class="lanc-field"><label>Tempo (hh:mm:ss)</label><input type="time" step="1" class="ppl-tempo-massa-valor"></div>
-      <div class="lanc-field"><label>Masseira</label><input type="text" class="ppl-tempo-massa-masseira" placeholder="Ex: 1"></div>
+      <div class="lanc-field"><label>${cfg.tempoLabel}</label><input type="time" step="1" class="ppl-tempo-massa-valor"></div>
+      <div class="lanc-field"><label>${cfg.referenciaLabel}</label><input type="text" class="ppl-tempo-massa-masseira" placeholder="${cfg.referenciaPlaceholder}"></div>
     </div>`;
   row.querySelector('[data-remove]').addEventListener('click', ()=> row.remove());
   container.appendChild(row);
