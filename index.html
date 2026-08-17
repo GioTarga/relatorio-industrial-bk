@@ -956,7 +956,7 @@
           <div class="table-wrap">
             <table class="detail" id="ppTableBateladas">
               <thead>
-                <tr><th>Data</th><th class="center">Batelada</th><th>Masseira</th><th>Produto</th><th class="center">Tempo Total</th><th class="center">Retenção</th></tr>
+                <tr><th>Data</th><th class="center">Batelada</th><th>Masseira</th><th>Produto</th><th class="center">Lead Time (Σ etapas)</th><th class="center">⏱ Medido</th><th class="center">Retenção</th></tr>
               </thead>
               <tbody id="ppTbodyBateladas"></tbody>
             </table>
@@ -9954,12 +9954,16 @@ function PP_renderEtapas(){
   const linhas = [...PP_BATELADAS].sort((a,b)=> a.data.localeCompare(b.data));
   tbody.innerHTML = linhas.map(b=>{
     const total = (b.tempo_processo_etapas||[]).reduce((s,e)=> s+(Number(e.duracao_seg)||0), 0);
+    const medidoCell = b.duracao_total_seg != null
+      ? `<td class="center" title="Tempo total medido da batelada">${PP_fmtDuracao(b.duracao_total_seg)}</td>`
+      : `<td class="center" style="color:var(--ink-soft)">—</td>`;
     return `<tr>
       <td>${PP_fmtDataBR(b.data)}</td>
       <td class="center">${b.batelada ?? '—'}</td>
       <td>${b.masseira ?? '—'}</td>
       <td>${b.produto ?? '—'}</td>
       <td class="center">${PP_fmtDuracao(total)}</td>
+      ${medidoCell}
       <td class="center">${b.retencao_seg != null ? PP_fmtDuracao(b.retencao_seg) : '—'}</td>
     </tr>`;
   }).join('');
@@ -10247,12 +10251,16 @@ async function PP_renderEtapasConfeitaria(){
   const linhasTabela = [...PP_BATELADAS].sort((a,b)=> a.data.localeCompare(b.data));
   tbody.innerHTML = linhasTabela.map(b=>{
     const total = (b.tempo_processo_etapas||[]).reduce((s,e)=> s+(Number(e.duracao_seg)||0), 0);
+    const medidoCell = b.duracao_total_seg != null
+      ? `<td class="center" title="Tempo total medido da batelada">${PP_fmtDuracao(b.duracao_total_seg)}</td>`
+      : `<td class="center" style="color:var(--ink-soft)">—</td>`;
     return `<tr>
       <td>${PP_fmtDataBR(b.data)}</td>
       <td class="center">${b.batelada ?? '—'}</td>
       <td>${b.masseira ?? '—'}</td>
       <td>${b.produto ?? '—'}</td>
       <td class="center">${PP_fmtDuracao(total)}</td>
+      ${medidoCell}
       <td class="center">${b.retencao_seg != null ? PP_fmtDuracao(b.retencao_seg) : '—'}</td>
     </tr>`;
   }).join('');
@@ -10566,6 +10574,7 @@ function PPL_camposBaseEtapasHtml(){
     + '<div class="lanc-field"><label>Batelada (opcional)</label><input type="number" id="pplBatelada"></div>'
     + '<div class="lanc-field"><label>Masseira (opcional)</label><input type="text" id="pplMasseira"></div>'
     + '<div class="lanc-field"><label>Retenção (opcional, hh:mm:ss)</label><input type="time" step="1" id="pplRetencao"></div>'
+    + '<div class="lanc-field"><label>⏱ Tempo Total da Batelada (hh:mm:ss)</label><input type="time" step="1" id="pplDuracaoTotal" title="Tempo medido do início ao fim da batelada completa"></div>'
     + '</div>';
 }
 function PPL_paradaUnicaHtml(){
@@ -10805,6 +10814,7 @@ async function PPL_handleSubmit(e){
       const bateladaEl = document.getElementById('pplBatelada');
       const masseiraEl = document.getElementById('pplMasseira');
       const retencaoEl = document.getElementById('pplRetencao');
+      const duracaoTotalEl = document.getElementById('pplDuracaoTotal');
       const paradaMotivoEl = document.getElementById('pplParadaMotivo');
       const paradaDurEl = document.getElementById('pplParadaDuracao');
 
@@ -10813,6 +10823,7 @@ async function PPL_handleSubmit(e){
         batelada: bateladaEl && bateladaEl.value ? parseFloat(bateladaEl.value) : null,
         masseira: masseiraEl && masseiraEl.value.trim() ? masseiraEl.value.trim() : null,
         retencao_seg: retencaoEl ? PPL_timeToSeconds(retencaoEl.value) : null,
+        duracao_total_seg: duracaoTotalEl ? PPL_timeToSeconds(duracaoTotalEl.value) : null,
         parada_motivo: paradaMotivoEl && paradaMotivoEl.value.trim() ? paradaMotivoEl.value.trim() : null,
         parada_duracao_seg: paradaDurEl ? PPL_timeToSeconds(paradaDurEl.value) : null,
         parada_categoria: (()=>{ const el = document.getElementById('pplParadaCategoria'); return el && el.value ? el.value : null; })(),
@@ -10964,7 +10975,9 @@ function PPL_renderHistorico(){
     let resumo = '';
     if(r.tipo === 'etapas'){
       const total = (r.tempo_processo_etapas||[]).reduce((s,e)=> s+(Number(e.duracao_seg)||0), 0);
-      resumo = `Lead time: ${PP_fmtDuracao(total)}` + (r.batelada != null ? ` · Batelada #${r.batelada}` : '');
+      resumo = `Lead time: ${PP_fmtDuracao(total)}`;
+      if(r.duracao_total_seg != null) resumo += ` · Medido: ${PP_fmtDuracao(r.duracao_total_seg)}`;
+      if(r.batelada != null) resumo += ` · Batelada #${r.batelada}`;
     } else {
       const v = PP_getProdutividadeValor(r);
       resumo = v != null ? `Produtividade: ${v.toLocaleString('pt-BR',{maximumFractionDigits:1})}` : '—';
