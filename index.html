@@ -10577,13 +10577,7 @@ function PPL_camposBaseEtapasHtml(){
     + '<div class="lanc-field"><label>⏱ Tempo Total da Batelada (hh:mm:ss)</label><input type="time" step="1" id="pplDuracaoTotal" title="Tempo medido do início ao fim da batelada completa"></div>'
     + '</div>';
 }
-function PPL_paradaUnicaHtml(){
-  return `<div class="lanc-item-grid" style="margin-top:16px;">
-    <div class="lanc-field"><label>Parada — Categoria</label><select id="pplParadaCategoria"><option value="">Selecionar...</option><option value="Quebra / Falha de Equipamento">Quebra / Falha de Equipamento</option><option value="Setup / Troca de Produto">Setup / Troca de Produto</option><option value="Aguardando Insumo ou Embalagem">Aguardando Insumo ou Embalagem</option><option value="Parada de Equipe">Parada de Equipe</option></select></div>
-    <div class="lanc-field"><label>Parada — Motivo (opcional)</label><input type="text" id="pplParadaMotivo"></div>
-    <div class="lanc-field"><label>Parada — Duração (opcional, hh:mm:ss)</label><input type="time" step="1" id="pplParadaDuracao"></div>
-  </div>`;
-}
+/* PPL_paradaUnicaHtml removida — paradas são registradas na Produção Diária */
 
 /* Busca a batelada mais recente desse produto (na mesma linha) e devolve
    os nomes de etapa já usados, na ordem certa — assim quem já mapeou um
@@ -10646,7 +10640,7 @@ async function PPL_renderCamposEtapas(linha){
       const metaLabel = ref.tempo_meta_seg ? ` <span style="color:var(--gold);font-weight:600;">(meta: ${PP_fmtDuracao ? PP_fmtDuracao(ref.tempo_meta_seg) : ref.tempo_meta_seg+'s'})</span>` : '';
       html += `<div class="lanc-field"><label>${ref.etapa}${metaLabel}</label><input type="time" step="1" class="ppl-etapa-dur" data-etapa="${nomeAttr}" data-ordem="${i+1}" title="Duração da etapa (hh:mm:ss)"></div>`;
     });
-    html += '</div>' + PPL_paradaUnicaHtml();
+    html += '</div>';
     container.innerHTML = html;
     return;
   }
@@ -10660,7 +10654,7 @@ async function PPL_renderCamposEtapas(linha){
       const nomeAttr = nome.replace(/"/g,'&quot;');
       html += `<div class="lanc-field"><label>${nome}</label><input type="time" step="1" class="ppl-etapa-dur" data-etapa="${nomeAttr}" data-ordem="${i+1}" title="Duração da etapa (hh:mm:ss)"></div>`;
     });
-    html += '</div>' + PPL_paradaUnicaHtml();
+    html += '</div>';
     container.innerHTML = html;
     return;
   }
@@ -10689,7 +10683,7 @@ function PPL_gerarCamposEtapasNovas(){
     html += `<div class="lanc-field"><label>Duração (hh:mm:ss)</label><input type="time" step="1" class="ppl-etapa-dur-nova" data-ordem="${i}" title="Duração da etapa (hh:mm:ss)"></div>`;
   }
   html += '</div>';
-  wrap.innerHTML = html + PPL_paradaUnicaHtml();
+  wrap.innerHTML = html;
 }
 
 function PPL_renderCamposVelocidade(linha){
@@ -10714,12 +10708,7 @@ function PPL_renderCamposVelocidade(linha){
       <button type="button" class="lanc-add-item-btn" id="pplAddTempoMassaBtn">+ Adicionar tempo</button>
     </div>`;
   }
-  html += `<div style="margin-top:16px;">
-    <div id="pplParadasContainer" class="lanc-items"></div>
-    <button type="button" class="lanc-add-item-btn" id="pplAddParadaBtn">+ Adicionar parada (opcional)</button>
-  </div>`;
   container.innerHTML = html;
-  document.getElementById('pplAddParadaBtn').addEventListener('click', PPL_addParadaRow);
   if(linha === 'Giro'){
     document.getElementById('pplAddTempoMassaBtn').addEventListener('click', PPL_addTempoMassaRow);
     PPL_addTempoMassaRow(); // já começa com 1 pronto pra preencher, já que é sempre necessário nessa linha
@@ -10747,23 +10736,7 @@ function PPL_addTempoMassaRow(){
 }
 
 
-function PPL_addParadaRow(){
-  const container = document.getElementById('pplParadasContainer');
-  const row = document.createElement('div');
-  row.className = 'lanc-item';
-  row.innerHTML = `
-    <div class="lanc-item-header">
-      <span class="lanc-item-title">Parada</span>
-      <button type="button" class="lanc-item-remove" data-remove>Remover</button>
-    </div>
-    <div class="lanc-item-grid">
-      <div class="lanc-field"><label>Categoria</label><select class="ppl-parada-categoria"><option value="">Selecionar...</option><option value="Quebra / Falha de Equipamento">Quebra / Falha de Equipamento</option><option value="Setup / Troca de Produto">Setup / Troca de Produto</option><option value="Aguardando Insumo ou Embalagem">Aguardando Insumo ou Embalagem</option><option value="Parada de Equipe">Parada de Equipe</option></select></div>
-      <div class="lanc-field"><label>Motivo</label><input type="text" class="ppl-parada-motivo"></div>
-      <div class="lanc-field"><label>Duração (hh:mm:ss)</label><input type="time" step="1" class="ppl-parada-duracao"></div>
-    </div>`;
-  row.querySelector('[data-remove]').addEventListener('click', ()=> row.remove());
-  container.appendChild(row);
-}
+/* PPL_addParadaRow removida — paradas são registradas na Produção Diária */
 
 function PPL_timeToSeconds(str){
   if(!str) return null;
@@ -10812,8 +10785,6 @@ async function PPL_handleSubmit(e){
       const masseiraEl = document.getElementById('pplMasseira');
       const retencaoEl = document.getElementById('pplRetencao');
       const duracaoTotalEl = document.getElementById('pplDuracaoTotal');
-      const paradaMotivoEl = document.getElementById('pplParadaMotivo');
-      const paradaDurEl = document.getElementById('pplParadaDuracao');
 
       const bateladaPayload = {
         linha, data, produto: produtoFinal,
@@ -10821,9 +10792,6 @@ async function PPL_handleSubmit(e){
         masseira: masseiraEl && masseiraEl.value.trim() ? masseiraEl.value.trim() : null,
         retencao_seg: retencaoEl ? PPL_timeToSeconds(retencaoEl.value) : null,
         duracao_total_seg: duracaoTotalEl ? PPL_timeToSeconds(duracaoTotalEl.value) : null,
-        parada_motivo: paradaMotivoEl && paradaMotivoEl.value.trim() ? paradaMotivoEl.value.trim() : null,
-        parada_duracao_seg: paradaDurEl ? PPL_timeToSeconds(paradaDurEl.value) : null,
-        parada_categoria: (()=>{ const el = document.getElementById('pplParadaCategoria'); return el && el.value ? el.value : null; })(),
       };
       const { data: batInserted, error: batErr } = await client.from('tempo_processo_bateladas').insert([bateladaPayload]).select().single();
       if(batErr) throw batErr;
@@ -10878,17 +10846,6 @@ async function PPL_handleSubmit(e){
       });
       const { data: corInserted, error: corErr } = await client.from('produtividade_corridas').insert([corridaPayload]).select().single();
       if(corErr) throw corErr;
-
-      const paradasPayload = [];
-      document.querySelectorAll('#pplParadasContainer .lanc-item').forEach(row=>{
-        const motivo = row.querySelector('.ppl-parada-motivo').value.trim();
-        const dur = PPL_timeToSeconds(row.querySelector('.ppl-parada-duracao').value);
-        const cat = row.querySelector('.ppl-parada-categoria'); if(motivo || dur !== null) paradasPayload.push({ corrida_id: corInserted.id, motivo: motivo || null, duracao_seg: dur, categoria: cat && cat.value ? cat.value : null });
-      });
-      if(paradasPayload.length > 0){
-        const { error: parErr } = await client.from('produtividade_paradas').insert(paradasPayload);
-        if(parErr) throw parErr;
-      }
 
       const temposMassaPayload = [];
       document.querySelectorAll('#pplTemposMassaContainer .lanc-item').forEach(row=>{
