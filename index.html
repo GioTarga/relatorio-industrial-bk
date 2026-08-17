@@ -1753,6 +1753,7 @@
                   <option value="Giro">Giro Dia</option>
                   <option value="Salgado">Salgado</option>
                   <option value="Massa Salgado">Massa Salgado</option>
+                  <option value="Pão de Queijo">Pão de Queijo</option>
                   <option value="Padaria">Padaria</option>
                   <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
                 </select>
@@ -1796,6 +1797,7 @@
                   <option value="Giro">Giro Dia</option>
                   <option value="Salgado">Salgado</option>
                   <option value="Massa Salgado">Massa Salgado</option>
+                  <option value="Pão de Queijo">Pão de Queijo</option>
                   <option value="Padaria">Padaria</option>
                   <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
                 </select>
@@ -2368,6 +2370,19 @@ function parseNumOrNull(s){
    Não usar apenas "prev === null" pra identificar "fora do plano": isso
    juntava incorretamente os casos 2 e 3. */
 function classifyPlan(planRaw){
+  // Formato novo: "Produção Não Apontada|3420" — tipo canônico + quantidade planejada.
+  // O número após o pipe é a quantidade de referência; o texto antes classifica o status.
+  const s = (planRaw||'').toString();
+  const pipeIdx = s.lastIndexOf('|');
+  if(pipeIdx !== -1){
+    const textPart = s.substring(0, pipeIdx);
+    const numPart  = s.substring(pipeIdx + 1);
+    const numPipe = parseNumOrNull(numPart);
+    const norm2 = textPart.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const fdp = norm2.includes('nao planejada') || norm2.includes('fora do plano')
+      || norm2.includes('nao apontada') || norm2.includes('nao justificado');
+    return { prev: numPipe, foraDoPlano: fdp };
+  }
   const num = parseNumOrNull(planRaw);
   if(num !== null) return { prev: num, foraDoPlano: false };
   const norm = (planRaw||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
@@ -4288,17 +4303,7 @@ function renderOleoChart(filteredDates){
   }
   panel.style.display = '';
 
-  // Monta o conjunto de datas do gráfico: todas as datas de produção no período
-  // MAIS qualquer data de contagem de óleo que caia no range mas não seja dia de
-  // produção (ex: contagem de 08/08 quando Fritador não produziu naquele dia).
-  const start = filteredDates[0] || null;
-  const end   = filteredDates[filteredDates.length - 1] || null;
-  const extraOleoDates = start && end
-    ? Object.keys(OL_DATA).filter(d => d >= start && d <= end && !filteredDates.includes(d))
-    : [];
-  const allChartDates = [...filteredDates, ...extraOleoDates].sort();
-
-  const points = allChartDates.map(d=>{
+  const points = filteredDates.map(d=>{
     const kg = computeTotalKgForPeriod([d]);
     const litros = OL_DATA[d] ? OL_DATA[d].consumo : null;
     const indicador = (litros !== null && litros > 0) ? kg / litros : null;
@@ -5283,17 +5288,8 @@ const OL_ITEM = 'OLEO DE ALGODAO';
    quando na verdade falta contagem/entrada pra fechar a conta confunde
    quem lê o painel. */
 function OL_getConsumoForPeriod(filteredDates){
-  // Corrigido: itera sobre todos os intervalos de contagem dentro do range de
-  // datas (filteredDates[0]…filteredDates[last]), independente de haver produção
-  // do Fritador naquela data. Antes, contagens em dias sem produção (ex: 08/08)
-  // eram ignoradas, distorcendo o total do período.
-  if(!filteredDates.length) return null;
-  const start = filteredDates[0];
-  const end   = filteredDates[filteredDates.length - 1];
   let total = 0, temDado = false;
-  Object.keys(OL_DATA).forEach(d => {
-    if(d >= start && d <= end){ total += OL_DATA[d].consumo; temDado = true; }
-  });
+  filteredDates.forEach(d=>{ if(OL_DATA[d]){ total += OL_DATA[d].consumo; temDado = true; } });
   return temDado ? total : null;
 }
 
@@ -5311,14 +5307,14 @@ async function OL_loadData(isManualRefresh){
     const result = {};
     const lista = contagens || [];
     lista.forEach((atual, i) => {
-      // Premissa corrigida: quando entrada e contagem caem no mesmo dia, a
-      // entrada chegou ANTES da contagem (recebe → conta). Por isso o filtro
-      // é INCLUSIVO na data da contagem atual (e.data <= atual.data).
-      // O limite inferior exclui a data da contagem anterior (e.data > lista[i-1].data)
-      // para não duplicar entradas entre intervalos consecutivos.
-      const dataInicioIntervalo = i > 0 ? lista[i-1].data : null;
+      // Entrada no mesmo dia de uma contagem aconteceu DEPOIS dela (a
+      // contagem registra o que tinha antes da entrada chegar) — por isso
+      // o limite inferior é INCLUSIVO na data da contagem anterior, e o
+      // superior é EXCLUSIVO na data da contagem atual (a entrada do dia
+      // da contagem atual, se houver, só entra no próximo intervalo).
+      const dataInicioIntervalo = i > 0 ? lista[i-1].data : null; // null = sem contagem anterior pra comparar (1º intervalo sempre fica sem baseline)
       const entradasNoIntervalo = (entradas || [])
-        .filter(e => (dataInicioIntervalo === null || e.data > dataInicioIntervalo) && e.data <= atual.data)
+        .filter(e => (dataInicioIntervalo === null || e.data >= dataInicioIntervalo) && e.data < atual.data)
         .reduce((s, e) => s + Number(e.quantidade || 0), 0);
       // Consumo = Estoque Inicial (contagem anterior) + Entradas no meio −
       // Estoque Final (contagem atual). O 1º intervalo (i=0) não tem
@@ -6359,6 +6355,27 @@ function LP_combinarParadas(itemRow){
   return { paradas_desvios, duracao_parada };
 }
 
+// Textos canônicos para cada tipo de planejamento — definidos globalmente
+// para serem acessíveis tanto no formulário quanto nas funções de save.
+const LP_TIPO_PLANEJAMENTO_TEXTO = {
+  sem_qtd: 'Sem Quantidade Planejada',
+  fora_plano: 'Fora do plano de produção',
+  nao_apontada: 'Produção Não Apontada',
+  desvio_nao_justificado: 'Desvio Não Justificado',
+};
+
+// Codifica o campo producao_planejada para salvar no banco.
+// Quando tipo = "numero" → salva só o número.
+// Outros tipos → salva "Texto Canônico|número" (ex: "Produção Não Apontada|3420"),
+// ou só o texto canônico se não houver quantidade informada.
+// Isso preserva tanto o status quanto a quantidade planejada de referência.
+function LP_encodePlanejada(tipo, numVal){
+  if(tipo === 'numero') return numVal || null;
+  const texto = LP_TIPO_PLANEJAMENTO_TEXTO[tipo] || tipo;
+  const v = (numVal || '').toString().trim();
+  return v ? `${texto}|${v}` : texto;
+}
+
 function lpCreateItemRow(initial){
   initial = initial || {};
   const uid = ++LP_ITEM_UID;
@@ -6451,33 +6468,14 @@ function lpCreateItemRow(initial){
       </div>
     </div>
   `;
-  // Textos canônicos — precisam bater exatamente com o que classifyPlan()
-  // reconhece (ver função em cima do arquivo): "Fora do plano de produção"
-  // cai no caso foraDoPlano=true; "Sem Quantidade Planejada" cai no caso
-  // prev=null/foraDoPlano=false (PCP emitiu sem meta numérica). Fixar essas
-  // duas strings aqui evita reabrir a divergência de 12 variações de texto
-  // que existia quando o campo era livre.
-  const TIPO_PLANEJAMENTO_TEXTO = {
-    sem_qtd: 'Sem Quantidade Planejada',
-    fora_plano: 'Fora do plano de produção',
-    nao_apontada: 'Produção Não Apontada',
-    desvio_nao_justificado: 'Desvio Não Justificado',
-  };
+  // LP_TIPO_PLANEJAMENTO_TEXTO agora é global (definido antes desta função).
   const tipoPlanejamentoEl = row.querySelector('.lp-tipo-planejamento');
   const planejadaEl = row.querySelector('.lp-planejada');
   tipoPlanejamentoEl.addEventListener('change', ()=>{
-    const tipo = tipoPlanejamentoEl.value;
-    if(tipo === 'numero'){
-      planejadaEl.disabled = false;
-      planejadaEl.type = 'number';
-      planejadaEl.value = '';
-      planejadaEl.required = true;
-    } else {
-      planejadaEl.type = 'text';
-      planejadaEl.value = TIPO_PLANEJAMENTO_TEXTO[tipo];
-      planejadaEl.disabled = true;
-      planejadaEl.required = false;
-    }
+    // O campo "Produção Planejada" permanece sempre numérico e editável —
+    // o dropdown só classifica o tipo, não altera o valor de referência.
+    // O required só se aplica quando o tipo é "Planejado" (número obrigatório).
+    planejadaEl.required = tipoPlanejamentoEl.value === 'numero';
   });
   row.querySelector('[data-remove]').addEventListener('click', ()=>{
     row.remove();
@@ -6518,27 +6516,38 @@ function lpCreateItemRow(initial){
   if(initial.produto) row.querySelector('.lp-produto').value = initial.produto;
   if(initial.unidade) row.querySelector('.lp-unidade').value = initial.unidade;
   if(initial.planejado){
-    // Tenta achar o tipo certo por correspondência exata com o texto
-    // canônico primeiro (cobre os 4 tipos, inclusive os 2 novos) — só cai
-    // pro classifyPlan (que só distingue 2) quando o valor vem de fora com
-    // uma variação de texto antiga (ex: planilha importada).
-    const tipoExato = Object.keys(TIPO_PLANEJAMENTO_TEXTO).find(k => TIPO_PLANEJAMENTO_TEXTO[k] === initial.planejado);
-    const { prev, foraDoPlano } = classifyPlan(String(initial.planejado));
-    if(tipoExato){
-      tipoPlanejamentoEl.value = tipoExato;
-      planejadaEl.type = 'text';
-      planejadaEl.disabled = true;
-      planejadaEl.value = TIPO_PLANEJAMENTO_TEXTO[tipoExato];
-    } else if(prev !== null){
-      tipoPlanejamentoEl.value = 'numero';
-      planejadaEl.type = 'number';
-      planejadaEl.disabled = false;
-      planejadaEl.value = prev;
+    // O campo planejadaEl é sempre numérico e editável.
+    // Restaura o dropdown e o valor numérico a partir do formato armazenado.
+    planejadaEl.type = 'number';
+    planejadaEl.disabled = false;
+    const planStr = String(initial.planejado);
+    const pipeIdx = planStr.lastIndexOf('|');
+    if(pipeIdx !== -1){
+      // Formato novo: "Produção Não Apontada|3420"
+      const textPart = planStr.substring(0, pipeIdx);
+      const numPart  = planStr.substring(pipeIdx + 1);
+      const tipoExato = Object.keys(LP_TIPO_PLANEJAMENTO_TEXTO).find(k => LP_TIPO_PLANEJAMENTO_TEXTO[k] === textPart);
+      tipoPlanejamentoEl.value = tipoExato || 'nao_apontada';
+      const numRestored = parseNumOrNull(numPart);
+      planejadaEl.value = numRestored !== null ? numRestored : '';
+      planejadaEl.required = false;
     } else {
-      tipoPlanejamentoEl.value = foraDoPlano ? 'fora_plano' : 'sem_qtd';
-      planejadaEl.type = 'text';
-      planejadaEl.disabled = true;
-      planejadaEl.value = TIPO_PLANEJAMENTO_TEXTO[foraDoPlano ? 'fora_plano' : 'sem_qtd'];
+      // Formato legado: número puro ou texto canônico isolado
+      const tipoExato = Object.keys(LP_TIPO_PLANEJAMENTO_TEXTO).find(k => LP_TIPO_PLANEJAMENTO_TEXTO[k] === planStr);
+      const { prev, foraDoPlano } = classifyPlan(planStr);
+      if(tipoExato){
+        tipoPlanejamentoEl.value = tipoExato;
+        planejadaEl.value = '';
+        planejadaEl.required = false;
+      } else if(prev !== null){
+        tipoPlanejamentoEl.value = 'numero';
+        planejadaEl.value = prev;
+        planejadaEl.required = true;
+      } else {
+        tipoPlanejamentoEl.value = foraDoPlano ? 'fora_plano' : 'sem_qtd';
+        planejadaEl.value = '';
+        planejadaEl.required = false;
+      }
     }
   }
 
@@ -6895,7 +6904,7 @@ async function LP_saveSingleItem(row){
     equipe: row.querySelector('.lp-equipe').value ? parseInt(row.querySelector('.lp-equipe').value, 10) : null,
     maquina: row.querySelector('.lp-maquina').value.trim() || null,
     produto: produtoCat.descricao,
-    producao_planejada: row.querySelector('.lp-planejada').value.trim() || null,
+    producao_planejada: LP_encodePlanejada(row.querySelector('.lp-tipo-planejamento').value, row.querySelector('.lp-planejada').value.trim()),
     producao_real: parseFloat(realRaw),
     unidade: normalizeUnitDisplay(row.querySelector('.lp-unidade').value) || null,
     inicio_producao: row.querySelector('.lp-inicio').value || null,
@@ -6985,7 +6994,7 @@ document.getElementById('lancFormProducao').addEventListener('submit', async (e)
       equipe: row.querySelector('.lp-equipe').value ? parseInt(row.querySelector('.lp-equipe').value, 10) : null,
       maquina: row.querySelector('.lp-maquina').value.trim() || null,
       produto: produtoCatLote.descricao,
-      producao_planejada: row.querySelector('.lp-planejada').value.trim() || null,
+      producao_planejada: LP_encodePlanejada(row.querySelector('.lp-tipo-planejamento').value, row.querySelector('.lp-planejada').value.trim()),
       producao_real: parseFloat(realRaw),
       unidade: normalizeUnitDisplay(row.querySelector('.lp-unidade').value) || null,
       inicio_producao: row.querySelector('.lp-inicio').value || null,
@@ -9045,7 +9054,7 @@ document.getElementById('mcFiltroStatus').addEventListener('change', MC_render);
    por isso o Giro (que tem os dois tipos) mostra tudo, e as outras linhas
    (que só têm um tipo) mostram só o bloco correspondente. */
 let PP_loadedOnce = false;
-const PP_LINHAS = ['Giro','Salgado','Massa Salgado','Padaria','Pão de Ló e Bolos'];
+const PP_LINHAS = ['Giro','Salgado','Massa Salgado','Pão de Queijo','Padaria','Pão de Ló e Bolos'];
 const PP_LINHA_LABELS = { 'Giro': 'Giro Dia' }; // rótulo de exibição — o valor real (usado nas consultas) continua "Giro"
 let PP_currentLinha = 'Giro';
 let PP_selectedProduto = '';
@@ -9224,13 +9233,8 @@ function PP_renderKPIs(){
     const unidadesHoraValores = PP_CORRIDAS.map(c=>PP_getUnidadesPorHora(c)).filter(v => v != null);
     const mediaUnidadesHora = unidadesHoraValores.length ? unidadesHoraValores.reduce((a,b)=>a+b,0)/unidadesHoraValores.length : null;
 
-    // Tempo médio: prioriza leituras T1/T2/T3 de produtividade_tempos_massa;
-    // cai no campo legado tempo_medio_seg se não tiver leituras novas.
-    const tempoLeituras = PP_CORRIDAS.flatMap(c => c.produtividade_tempos_massa || []).map(t => Number(t.tempo_seg)).filter(v => v > 0);
-    const tempoLegado = PP_CORRIDAS.map(c=>c.tempo_medio_seg).filter(v => v != null).map(Number);
-    const temposMedios = tempoLeituras.length ? tempoLeituras : tempoLegado;
+    const temposMedios = PP_CORRIDAS.map(c=>c.tempo_medio_seg).filter(v => v != null).map(Number);
     const mediaTempo = temposMedios.length ? temposMedios.reduce((a,b)=>a+b,0)/temposMedios.length : null;
-    const nLeituras = tempoLeituras.length;
 
     const capacidades = [];
     PP_CORRIDAS.forEach(c=>{
@@ -9246,7 +9250,6 @@ function PP_renderKPIs(){
       { label:'Unidades/h', value: mediaUnidadesHora != null ? mediaUnidadesHora.toLocaleString('pt-BR',{maximumFractionDigits:0}) : '—' },
       { label:`Tempo Médio por ${unidadeSingular}`, value: mediaTempo != null ? PP_fmtDuracao(mediaTempo) : '—' },
       { label:'Capacidade da Máquina (Unid/h)', value: mediaCapacidade != null ? mediaCapacidade.toLocaleString('pt-BR') : 'Sem registro' },
-      { label:'Leituras Coletadas', value: nLeituras || '—' },
     ];
     grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
     grid.innerHTML = kpis.map(k=>`
@@ -9267,22 +9270,16 @@ function PP_renderKPIs(){
     const mediaBlocosHora = taxaBlocos.length ? taxaBlocos.reduce((a,b)=>a+b,0)/taxaBlocos.length : null;
     const mediaRolosHora = taxaRolos.length ? taxaRolos.reduce((a,b)=>a+b,0)/taxaRolos.length : null;
 
-    // Tempos: prioriza leituras T1/T2/T3 de produtividade_tempos_massa por produto;
-    // cai no campo legado tempo_medio_seg se não tiver leituras novas.
-    const leiturasB = blocos.flatMap(c => c.produtividade_tempos_massa || []).map(t => Number(t.tempo_seg)).filter(v => v > 0);
-    const leiturasR = rolos.flatMap(c => c.produtividade_tempos_massa || []).map(t => Number(t.tempo_seg)).filter(v => v > 0);
-    const tempoBlocos = leiturasB.length ? leiturasB : blocos.map(c=>c.tempo_medio_seg).filter(v=>v!=null).map(Number);
-    const tempoRolos  = leiturasR.length ? leiturasR  : rolos.map(c=>c.tempo_medio_seg).filter(v=>v!=null).map(Number);
+    const tempoBlocos = blocos.map(c=>c.tempo_medio_seg).filter(v=>v!=null).map(Number);
+    const tempoRolos = rolos.map(c=>c.tempo_medio_seg).filter(v=>v!=null).map(Number);
     const mediaTempoBlocos = tempoBlocos.length ? tempoBlocos.reduce((a,b)=>a+b,0)/tempoBlocos.length : null;
-    const mediaTempoRolos  = tempoRolos.length  ? tempoRolos.reduce((a,b)=>a+b,0)/tempoRolos.length   : null;
-    const nLeiturasMS = leiturasB.length + leiturasR.length;
+    const mediaTempoRolos = tempoRolos.length ? tempoRolos.reduce((a,b)=>a+b,0)/tempoRolos.length : null;
 
     const kpis = [
       { label:'Blocos de Massa/hora', value: mediaBlocosHora != null ? mediaBlocosHora.toLocaleString('pt-BR',{maximumFractionDigits:1}) : '—' },
       { label:'Rolos Laminados/hora', value: mediaRolosHora != null ? mediaRolosHora.toLocaleString('pt-BR',{maximumFractionDigits:1}) : '—' },
       { label:'Tempo Médio Rolos Laminados', value: mediaTempoRolos != null ? PP_fmtDuracao(mediaTempoRolos) : '—' },
       { label:'Tempo Médio Blocos de Massa', value: mediaTempoBlocos != null ? PP_fmtDuracao(mediaTempoBlocos) : '—' },
-      { label:'Leituras Coletadas', value: nLeiturasMS || '—' },
     ];
     grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
     grid.innerHTML = kpis.map(k=>`
@@ -9293,7 +9290,7 @@ function PP_renderKPIs(){
 
   // Pão de Queijo e Padaria: card de quantas bateladas dá pra fazer por
   // hora (1h ÷ lead time médio das Etapas) e o próprio lead time médio.
-  if(PP_currentLinha === 'Padaria'){
+  if(PP_currentLinha === 'Pão de Queijo' || PP_currentLinha === 'Padaria'){
     const leadTimes = PP_BATELADAS
       .map(b => (b.tempo_processo_etapas||[]).reduce((s,e)=> s + (Number(e.duracao_seg)||0), 0))
       .filter(v => v > 0);
@@ -9358,13 +9355,11 @@ function PP_renderKPIs(){
 
     const unidadesHoraValores = PP_CORRIDAS.map(c => PP_getProdutividadeValor(c)).filter(v => v != null);
     const mediaUnidadesHora = unidadesHoraValores.length ? unidadesHoraValores.reduce((a,b)=>a+b,0)/unidadesHoraValores.length : null;
-    const nLeiturasBolos = PP_CORRIDAS.flatMap(c => c.produtividade_tempos_massa || []).filter(t => t.tempo_seg > 0).length;
 
     const kpis = [
       { label:'Formas/hora', value: formasPorHora != null ? formasPorHora.toLocaleString('pt-BR',{maximumFractionDigits:2}) : '—' },
       { label:'Tempo Médio/Forma', value: leadMedio != null ? PP_fmtDuracao(leadMedio) : '—' },
       { label:'Unidades/hora', value: mediaUnidadesHora != null ? mediaUnidadesHora.toLocaleString('pt-BR',{maximumFractionDigits:0}) : '—' },
-      { label:'Leituras Coletadas', value: nLeiturasBolos || '—' },
     ];
     grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
     grid.innerHTML = kpis.map(k=>`
@@ -9638,51 +9633,11 @@ const PPL_VELOCIDADE_CONFIG = {
   // Coletados", repetível igual Paradas (ver PPL_addTempoMassaRow). Peso
   // da Massa saiu — não é informação que costuma ser coletada.
   'Giro': { campos:['inicio','fim','produtividade_paes_hora','tamanho_pao_g'] },
-  // Salgado/Massa Salgado/Padaria/Pão de Ló e Bolos: tempo_medio_seg e
-  // duracao_rolo_seg saíram dos campos fixos — os tempos agora são capturados
-  // como leituras repetíveis T1/T2/T3... em produtividade_tempos_massa
-  // (mesma lógica do Giro). Ver PPL_TEMPOS_CONFIG abaixo.
-  'Salgado': { campos:['maquina','inicio','fim','produtividade_prensa','qtd_colaboradores','unidades_por_hora','producao_por_hora','unidade_medida','unidades_por_recipiente'] },
-  'Massa Salgado': { campos:['inicio','fim','quantidade','unidade_medida','unidades_por_recipiente'] },
-  'Padaria': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente'] },
-  'Pão de Ló e Bolos': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente'] },
-};
-
-/* Configuração da seção de leituras repetíveis T1/T2/T3 por setor.
-   Os rótulos adaptam o que faz sentido pra cada operação. Os dados
-   ficam sempre em produtividade_tempos_massa (campo genérico tempo_seg
-   + masseira como referência livre). */
-const PPL_TEMPOS_CONFIG = {
-  'Giro': {
-    secaoLabel: 'Tempos Coletados (cronômetro — um por masseira/leitura)',
-    tempoLabel: 'Tempo (hh:mm:ss)',
-    referenciaLabel: 'Masseira',
-    referenciaPlaceholder: 'Ex: 1',
-  },
-  'Salgado': {
-    secaoLabel: 'Tempos de Rolo/Ciclo (cronômetro — uma leitura por ciclo)',
-    tempoLabel: 'Duração do Rolo (hh:mm:ss)',
-    referenciaLabel: 'Referência',
-    referenciaPlaceholder: 'Ex: Rolo 1, Ciclo 2...',
-  },
-  'Massa Salgado': {
-    secaoLabel: 'Tempos de Ciclo (cronômetro — um por masseira/rodada)',
-    tempoLabel: 'Tempo do Ciclo (hh:mm:ss)',
-    referenciaLabel: 'Masseira',
-    referenciaPlaceholder: 'Ex: 1',
-  },
-  'Padaria': {
-    secaoLabel: 'Tempos Coletados (cronômetro — um por ciclo/leitura)',
-    tempoLabel: 'Tempo (hh:mm:ss)',
-    referenciaLabel: 'Referência',
-    referenciaPlaceholder: 'Ex: Máquina 1, Ciclo 2...',
-  },
-  'Pão de Ló e Bolos': {
-    secaoLabel: 'Tempos de Forma/Tela (cronômetro — uma leitura por vez)',
-    tempoLabel: 'Tempo (hh:mm:ss)',
-    referenciaLabel: 'Referência',
-    referenciaPlaceholder: 'Ex: Tela 1, Forma 2...',
-  },
+  'Salgado': { campos:['maquina','inicio','fim','produtividade_prensa','qtd_colaboradores','unidades_por_hora','producao_por_hora','tempo_medio_seg','unidade_medida','unidades_por_recipiente','duracao_rolo_seg'] },
+  'Massa Salgado': { campos:['inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
+  'Pão de Queijo': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
+  'Padaria': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
+  'Pão de Ló e Bolos': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
 };
 
 const PPL_TIPO_LABELS = { etapas:'Tempo de Processo (Etapas)', velocidade:'Produtividade' };
@@ -9883,10 +9838,9 @@ function PPL_renderCamposVelocidade(linha){
     html += `<div class="lanc-field"><label>${meta.label}</label><input type="${inputType}"${step} id="pplCampo_${campo}"></div>`;
   });
   html += '</div>';
-  const tempCfg = PPL_TEMPOS_CONFIG[linha];
-  if(tempCfg){
+  if(linha === 'Giro'){
     html += `<div style="margin-top:16px;">
-      <label style="display:block;font-size:11px;font-weight:700;color:#6b5c5c;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">${tempCfg.secaoLabel}</label>
+      <label style="display:block;font-size:11px;font-weight:700;color:#6b5c5c;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">Tempos Coletados (cronômetro, um por masseira/leitura)</label>
       <div id="pplTemposMassaContainer" class="lanc-items"></div>
       <button type="button" class="lanc-add-item-btn" id="pplAddTempoMassaBtn">+ Adicionar tempo</button>
     </div>`;
@@ -9897,19 +9851,16 @@ function PPL_renderCamposVelocidade(linha){
   </div>`;
   container.innerHTML = html;
   document.getElementById('pplAddParadaBtn').addEventListener('click', PPL_addParadaRow);
-  if(tempCfg){
+  if(linha === 'Giro'){
     document.getElementById('pplAddTempoMassaBtn').addEventListener('click', PPL_addTempoMassaRow);
-    PPL_addTempoMassaRow(); // inicia com 1 leitura já pronta pra preencher
+    PPL_addTempoMassaRow(); // já começa com 1 pronto pra preencher, já que é sempre necessário nessa linha
   }
 }
 
-/* Cada leitura de cronômetro (T1, T2, T3…) — repetível, igual Paradas.
-   O Tempo Médio do setor é a MÉDIA de todas as leituras do período
-   (ver PP_renderKPIs), nunca digitado à mão. Os rótulos variam por setor
-   conforme PPL_TEMPOS_CONFIG. Todos os dados ficam em produtividade_tempos_massa. */
+/* Cada leitura de cronômetro (Tempo + Masseira) do Giro — repetível, igual
+   Paradas. O Tempo Médio/Massa do setor é calculado como a MÉDIA de todas
+   essas leituras do período (ver PP_renderKPIs), não digitado à mão. */
 function PPL_addTempoMassaRow(){
-  const linha = document.getElementById('pplLinha').value;
-  const cfg = PPL_TEMPOS_CONFIG[linha] || { tempoLabel:'Tempo (hh:mm:ss)', referenciaLabel:'Referência', referenciaPlaceholder:'Ex: 1' };
   const container = document.getElementById('pplTemposMassaContainer');
   const row = document.createElement('div');
   row.className = 'lanc-item';
@@ -9919,8 +9870,8 @@ function PPL_addTempoMassaRow(){
       <button type="button" class="lanc-item-remove" data-remove>Remover</button>
     </div>
     <div class="lanc-item-grid">
-      <div class="lanc-field"><label>${cfg.tempoLabel}</label><input type="time" step="1" class="ppl-tempo-massa-valor"></div>
-      <div class="lanc-field"><label>${cfg.referenciaLabel}</label><input type="text" class="ppl-tempo-massa-masseira" placeholder="${cfg.referenciaPlaceholder}"></div>
+      <div class="lanc-field"><label>Tempo (hh:mm:ss)</label><input type="time" step="1" class="ppl-tempo-massa-valor"></div>
+      <div class="lanc-field"><label>Masseira</label><input type="text" class="ppl-tempo-massa-masseira" placeholder="Ex: 1"></div>
     </div>`;
   row.querySelector('[data-remove]').addEventListener('click', ()=> row.remove());
   container.appendChild(row);
