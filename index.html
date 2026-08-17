@@ -979,6 +979,13 @@
           <div class="chart-wrap" id="ppChartCapacidade"></div>
         </div>
 
+        <!-- Pareto de Paradas por Categoria -->
+        <div class="panel" id="ppPainelPareto" style="display:none;">
+          <div class="panel-title">Pareto de Paradas por Categoria</div>
+          <div class="trend-foot" style="margin-bottom:10px;">Distribuição das paradas por causa raiz no período. A linha mostra o acumulado.</div>
+          <div class="chart-wrap" id="ppChartPareto"></div>
+        </div>
+
         <div class="panel">
           <div class="panel-title">Registros de Produção (Produtividade)</div>
           <div class="table-wrap">
@@ -995,6 +1002,21 @@
       <div class="empty-state" id="ppEmptyState" style="display:none;">
         <span class="empty-icon">📊</span>
         Nenhum dado registrado pra essa linha no período selecionado.
+      </div>
+
+      <!-- Bloco Tendência de Velocidade — independente do período; sempre busca histórico completo -->
+      <div id="ppBlocoTendencia" style="display:none;">
+        <div class="panel">
+          <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+            <span>📈 Tendência de Velocidade de Produção</span>
+            <select id="ppTendenciaProduto" style="padding:6px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:12px;font-family:inherit;background:var(--cream);">
+              <option value="">Todos os produtos</option>
+            </select>
+          </div>
+          <div class="trend-foot" style="margin-bottom:10px;">Velocidade média diária (unidades/hora) por dia de lançamento. Cada ponto = média das corridas daquele dia.</div>
+          <div id="ppTendenciaInfo" style="font-size:12px;color:var(--ink-soft);margin-bottom:8px;"></div>
+          <div class="chart-wrap" id="ppChartTendencia"></div>
+        </div>
       </div>
 
       <!-- Painel de Etapas de Referência — visível só na aba Confeitaria -->
@@ -9421,7 +9443,249 @@ function PP_render(){
       painelRef.style.display = 'none';
     }
   }
+
+  // Pareto de paradas — visível quando há paradas com categoria no período
+  const todasParadas = PP_CORRIDAS.flatMap(c => c.produtividade_paradas || []);
+  const temParadas = todasParadas.some(p => p.categoria);
+  document.getElementById('ppPainelPareto').style.display = (temVelocidade && todasParadas.length > 0) ? 'block' : 'none';
+  if(temVelocidade && todasParadas.length > 0) PP_renderPareto(todasParadas);
+
+  // Tendência — sempre visível quando há linha selecionada; busca histórico completo
+  document.getElementById('ppBlocoTendencia').style.display = 'block';
+  PP_loadTendenciaData();
 }
+
+/* ===== PARETO DE PARADAS POR CATEGORIA ===== */
+const PP_PARADA_CAT_CORES = {
+  'Quebra / Falha de Equipamento':  '#A10101',
+  'Setup / Troca de Produto':       '#B5640B',
+  'Aguardando Insumo ou Embalagem': '#2f7d52',
+  'Parada de Equipe':               '#4a6fa5',
+};
+const PP_PARADA_CAT_ABREV = {
+  'Quebra / Falha de Equipamento':  'Quebra',
+  'Setup / Troca de Produto':       'Setup',
+  'Aguardando Insumo ou Embalagem': 'Insumo',
+  'Parada de Equipe':               'Equipe',
+};
+
+function PP_renderPareto(paradas){
+  const wrap = document.getElementById('ppChartPareto');
+
+  // Conta por categoria (inclui paradas sem categoria como "Não classificada")
+  const contagem = {};
+  paradas.forEach(p => {
+    const cat = p.categoria || 'Não classificada';
+    contagem[cat] = (contagem[cat] || 0) + 1;
+  });
+  const itens = Object.entries(contagem)
+    .map(([cat, count]) => ({ cat, count }))
+    .sort((a, b) => b.count - a.count);
+  const total = itens.reduce((s, i) => s + i.count, 0);
+
+  const barW = 80, gap = 28, baseY = 200, topPad = 30, leftPad = 40;
+  const chartW = Math.max(itens.length * (barW + gap) + leftPad + 40, 400);
+  const maxVal = itens[0]?.count || 1;
+  let acum = 0;
+  let bars = '', linha = '', pontos = '';
+
+  itens.forEach((it, i) => {
+    const x0 = leftPad + i * (barW + gap);
+    const h = Math.round((it.count / maxVal) * (baseY - topPad));
+    const cor = PP_PARADA_CAT_CORES[it.cat] || '#888';
+    acum += it.count;
+    const pct = Math.round(acum / total * 100);
+    const py = topPad + (baseY - topPad) * (1 - acum / total);
+    const px = x0 + barW / 2;
+
+    bars += `<rect x="${x0}" y="${baseY - h}" width="${barW}" height="${h}" fill="${cor}" rx="4" opacity="0.9"/>`;
+    bars += `<text x="${x0 + barW/2}" y="${baseY - h - 6}" font-size="11" font-weight="700" fill="${cor}" text-anchor="middle">${it.count}</text>`;
+    bars += `<text x="${x0 + barW/2}" y="${baseY + 16}" font-size="10.5" fill="var(--ink)" text-anchor="middle">${PP_PARADA_CAT_ABREV[it.cat] || it.cat.slice(0, 10)}</text>`;
+    bars += `<text x="${x0 + barW/2}" y="${baseY + 28}" font-size="9.5" fill="var(--ink-soft)" text-anchor="middle">${Math.round(it.count / total * 100)}%</text>`;
+
+    if(i > 0) linha += ` L ${px} ${py}`;
+    else linha = `M ${px} ${py}`;
+    pontos += `<circle cx="${px}" cy="${py}" r="4" fill="var(--gold)" stroke="#fff" stroke-width="1.5"/>`;
+    pontos += `<text x="${px + 6}" y="${py - 5}" font-size="9" fill="var(--gold)" font-weight="700">${pct}%</text>`;
+  });
+
+  // Linha 80%
+  const y80 = topPad + (baseY - topPad) * 0.2;
+  const lineColor = '#aaa';
+  const axisLine = `<line x1="${leftPad}" y1="${baseY}" x2="${chartW - 20}" y2="${baseY}" stroke="${lineColor}" stroke-width="1"/>`;
+  const pct80Line = `<line x1="${leftPad}" y1="${y80}" x2="${chartW - 20}" y2="${y80}" stroke="var(--gold)" stroke-width="1" stroke-dasharray="5,4"/>
+    <text x="${leftPad - 4}" y="${y80 + 4}" font-size="9" fill="var(--gold)" text-anchor="end">80%</text>`;
+
+  wrap.innerHTML = `<svg viewBox="0 0 ${chartW} ${baseY + 50}" width="${chartW}" height="${baseY + 50}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;">
+    ${axisLine}${pct80Line}
+    ${bars}
+    <path d="${linha}" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linejoin="round"/>
+    ${pontos}
+  </svg>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;">
+    ${itens.map(it => `<span style="font-size:11px;display:flex;align-items:center;gap:5px;">
+      <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${PP_PARADA_CAT_CORES[it.cat]||'#888'};"></span>
+      ${it.cat} (${it.count})
+    </span>`).join('')}
+  </div>`;
+}
+
+/* ===== TENDÊNCIA DE VELOCIDADE ===== */
+let PP_TENDENCIA_RAW = []; // corridas históricas da linha atual (sem filtro de data)
+
+async function PP_loadTendenciaData(){
+  const wrap = document.getElementById('ppChartTendencia');
+  const infoEl = document.getElementById('ppTendenciaInfo');
+  if(!wrap) return;
+  try {
+    const client = LANC_getClient();
+    const { data, error } = await client
+      .from('produtividade_corridas')
+      .select('data, produto, inicio, fim, quantidade, unidade_medida, unidades_por_hora, producao_por_hora')
+      .eq('linha', PP_currentLinha)
+      .order('data', { ascending: true });
+    if(error) throw error;
+    PP_TENDENCIA_RAW = data || [];
+
+    // Popula filtro de produto
+    const sel = document.getElementById('ppTendenciaProduto');
+    if(sel){
+      const prods = [...new Set(PP_TENDENCIA_RAW.map(r => r.produto).filter(Boolean))].sort();
+      const valorAtual = sel.value;
+      sel.innerHTML = '<option value="">Todos os produtos</option>' +
+        prods.map(p => `<option value="${p}"${p===valorAtual?' selected':''}>${p}</option>`).join('');
+      // Listener (adiciona só uma vez verificando flag)
+      if(!sel._ppTendListener){
+        sel._ppTendListener = true;
+        sel.addEventListener('change', () => PP_renderTendencia());
+      }
+    }
+    PP_renderTendencia();
+  } catch(e){
+    console.error('PP_loadTendenciaData:', e);
+    infoEl.textContent = 'Erro ao carregar tendência: ' + (e.message || e);
+  }
+}
+
+function PP_renderTendencia(){
+  const wrap = document.getElementById('ppChartTendencia');
+  const infoEl = document.getElementById('ppTendenciaInfo');
+  if(!wrap) return;
+
+  const prodFiltro = (document.getElementById('ppTendenciaProduto')?.value) || '';
+  const dados = prodFiltro
+    ? PP_TENDENCIA_RAW.filter(r => r.produto === prodFiltro)
+    : PP_TENDENCIA_RAW;
+
+  if(dados.length === 0){
+    wrap.innerHTML = '<div class="empty-state"><span class="empty-icon">📈</span>Nenhum dado de velocidade registrado ainda pra essa linha.</div>';
+    infoEl.textContent = '';
+    return;
+  }
+
+  // Agrupa por data: calcula velocidade média do dia
+  const porData = {};
+  dados.forEach(r => {
+    const vel = PP_getVelocidadeTendencia(r);
+    if(vel == null) return;
+    if(!porData[r.data]) porData[r.data] = { soma: 0, count: 0 };
+    porData[r.data].soma += vel;
+    porData[r.data].count += 1;
+  });
+
+  const pontos = Object.entries(porData)
+    .map(([data, v]) => ({ data, vel: v.soma / v.count }))
+    .sort((a, b) => a.data.localeCompare(b.data));
+
+  if(pontos.length < 2){
+    wrap.innerHTML = '<div class="empty-state"><span class="empty-icon">📈</span>Poucos dados ainda — registre mais dias pra ver a tendência.</div>';
+    infoEl.textContent = `${pontos.length} dia(s) com dados. São necessários ao menos 2 dias.`;
+    return;
+  }
+
+  // Estatísticas
+  const vels = pontos.map(p => p.vel);
+  const media = vels.reduce((a, b) => a + b, 0) / vels.length;
+  const primeiro = vels[0], ultimo = vels[vels.length - 1];
+  const delta = ((ultimo - primeiro) / primeiro * 100).toFixed(1);
+  const deltaStr = delta > 0 ? `+${delta}%` : `${delta}%`;
+  const deltaColor = delta >= 0 ? 'var(--good)' : 'var(--red)';
+  infoEl.innerHTML = `<span>${pontos.length} dias com dados · Média: <strong>${media.toFixed(0)} un/h</strong> · Variação 1º→último dia: <strong style="color:${deltaColor}">${deltaStr}</strong></span>`;
+
+  // SVG linha do tempo
+  const maxV = Math.max(...vels, 1);
+  const minV = Math.min(...vels, 0);
+  const W = 820, H = 220, padL = 52, padR = 20, padT = 20, padB = 50;
+  const iW = W - padL - padR, iH = H - padT - padB;
+  const xScale = i => padL + (i / (pontos.length - 1)) * iW;
+  const yScale = v => padT + iH - ((v - minV) / (maxV - minV || 1)) * iH;
+
+  // Linha de média
+  const yMedia = yScale(media);
+  const mediaLine = `<line x1="${padL}" y1="${yMedia}" x2="${W - padR}" y2="${yMedia}" stroke="var(--ink-soft)" stroke-width="1" stroke-dasharray="5,4" opacity="0.5"/>
+    <text x="${padL - 4}" y="${yMedia + 4}" font-size="9" fill="var(--ink-soft)" text-anchor="end">${media.toFixed(0)}</text>`;
+
+  // Linha principal
+  const pathD = pontos.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScale(p.vel)}`).join(' ');
+
+  // Área sob a curva
+  const areaD = `M ${xScale(0)} ${padT + iH} ` + pontos.map((p, i) => `L ${xScale(i)} ${yScale(p.vel)}`).join(' ') + ` L ${xScale(pontos.length - 1)} ${padT + iH} Z`;
+
+  // Pontos + labels de data (apenas início, meio, fim)
+  let dateLabels = '';
+  const labelIdxs = [0, Math.floor(pontos.length / 2), pontos.length - 1];
+  labelIdxs.forEach(i => {
+    const p = pontos[i];
+    const parts = p.data.split('-');
+    const label = `${parts[2]}/${parts[1]}`;
+    dateLabels += `<text x="${xScale(i)}" y="${H - 8}" font-size="10" fill="var(--ink-soft)" text-anchor="middle">${label}</text>`;
+  });
+
+  // Eixo Y labels
+  const steps = 4;
+  let yLabels = '';
+  for(let i = 0; i <= steps; i++){
+    const v = minV + (maxV - minV) * (i / steps);
+    const y = yScale(v);
+    yLabels += `<text x="${padL - 4}" y="${y + 4}" font-size="9" fill="var(--ink-soft)" text-anchor="end">${Math.round(v)}</text>`;
+    yLabels += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#f0ddc0" stroke-width="1"/>`;
+  }
+
+  // Pontos individuais (somente se poucos)
+  let circs = '';
+  if(pontos.length <= 60){
+    pontos.forEach((p, i) => {
+      const cor = i === pontos.length - 1 ? 'var(--red)' : 'var(--red-dark)';
+      circs += `<circle cx="${xScale(i)}" cy="${yScale(p.vel)}" r="${pontos.length <= 20 ? 4 : 2.5}" fill="${cor}" opacity="0.8">
+        <title>${p.data}: ${p.vel.toFixed(0)} un/h</title></circle>`;
+    });
+  }
+
+  wrap.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;">
+    <defs><linearGradient id="tendGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--red)" stop-opacity="0.15"/><stop offset="100%" stop-color="var(--red)" stop-opacity="0"/></linearGradient></defs>
+    ${yLabels}
+    ${mediaLine}
+    <path d="${areaD}" fill="url(#tendGrad)"/>
+    <path d="${pathD}" fill="none" stroke="var(--red)" stroke-width="2" stroke-linejoin="round"/>
+    ${circs}
+    ${dateLabels}
+  </svg>`;
+}
+
+/* Extrai velocidade (un/h) de um registro de corrida pra uso na tendência */
+function PP_getVelocidadeTendencia(r){
+  if(r.unidades_por_hora != null) return Number(r.unidades_por_hora);
+  if(r.producao_por_hora != null) return Number(r.producao_por_hora);
+  if(r.quantidade != null && r.inicio && r.fim){
+    const [ih, im] = r.inicio.split(':').map(Number);
+    const [fh, fm] = r.fim.split(':').map(Number);
+    let h = ((fh * 60 + fm) - (ih * 60 + im)) / 60;
+    if(h < 0) h += 24;
+    if(h > 0) return Number(r.quantidade) / h;
+  }
+  return null;
+}
+
 
 function PP_fmtDuracao(seg){
   if(seg == null || isNaN(seg)) return '—';
@@ -10306,7 +10570,8 @@ function PPL_camposBaseEtapasHtml(){
 }
 function PPL_paradaUnicaHtml(){
   return `<div class="lanc-item-grid" style="margin-top:16px;">
-    <div class="lanc-field span-2"><label>Parada — Motivo (opcional)</label><input type="text" id="pplParadaMotivo"></div>
+    <div class="lanc-field"><label>Parada — Categoria</label><select id="pplParadaCategoria"><option value="">Selecionar...</option><option value="Quebra / Falha de Equipamento">Quebra / Falha de Equipamento</option><option value="Setup / Troca de Produto">Setup / Troca de Produto</option><option value="Aguardando Insumo ou Embalagem">Aguardando Insumo ou Embalagem</option><option value="Parada de Equipe">Parada de Equipe</option></select></div>
+    <div class="lanc-field"><label>Parada — Motivo (opcional)</label><input type="text" id="pplParadaMotivo"></div>
     <div class="lanc-field"><label>Parada — Duração (opcional, hh:mm:ss)</label><input type="time" step="1" id="pplParadaDuracao"></div>
   </div>`;
 }
@@ -10486,7 +10751,8 @@ function PPL_addParadaRow(){
       <button type="button" class="lanc-item-remove" data-remove>Remover</button>
     </div>
     <div class="lanc-item-grid">
-      <div class="lanc-field span-2"><label>Motivo</label><input type="text" class="ppl-parada-motivo"></div>
+      <div class="lanc-field"><label>Categoria</label><select class="ppl-parada-categoria"><option value="">Selecionar...</option><option value="Quebra / Falha de Equipamento">Quebra / Falha de Equipamento</option><option value="Setup / Troca de Produto">Setup / Troca de Produto</option><option value="Aguardando Insumo ou Embalagem">Aguardando Insumo ou Embalagem</option><option value="Parada de Equipe">Parada de Equipe</option></select></div>
+      <div class="lanc-field"><label>Motivo</label><input type="text" class="ppl-parada-motivo"></div>
       <div class="lanc-field"><label>Duração (hh:mm:ss)</label><input type="time" step="1" class="ppl-parada-duracao"></div>
     </div>`;
   row.querySelector('[data-remove]').addEventListener('click', ()=> row.remove());
@@ -10549,6 +10815,7 @@ async function PPL_handleSubmit(e){
         retencao_seg: retencaoEl ? PPL_timeToSeconds(retencaoEl.value) : null,
         parada_motivo: paradaMotivoEl && paradaMotivoEl.value.trim() ? paradaMotivoEl.value.trim() : null,
         parada_duracao_seg: paradaDurEl ? PPL_timeToSeconds(paradaDurEl.value) : null,
+        parada_categoria: (()=>{ const el = document.getElementById('pplParadaCategoria'); return el && el.value ? el.value : null; })(),
       };
       const { data: batInserted, error: batErr } = await client.from('tempo_processo_bateladas').insert([bateladaPayload]).select().single();
       if(batErr) throw batErr;
@@ -10612,7 +10879,7 @@ async function PPL_handleSubmit(e){
       document.querySelectorAll('#pplParadasContainer .lanc-item').forEach(row=>{
         const motivo = row.querySelector('.ppl-parada-motivo').value.trim();
         const dur = PPL_timeToSeconds(row.querySelector('.ppl-parada-duracao').value);
-        if(motivo || dur !== null) paradasPayload.push({ corrida_id: corInserted.id, motivo: motivo || null, duracao_seg: dur });
+        const cat = row.querySelector('.ppl-parada-categoria'); if(motivo || dur !== null) paradasPayload.push({ corrida_id: corInserted.id, motivo: motivo || null, duracao_seg: dur, categoria: cat && cat.value ? cat.value : null });
       });
       if(paradasPayload.length > 0){
         const { error: parErr } = await client.from('produtividade_paradas').insert(paradasPayload);
