@@ -10689,6 +10689,52 @@ function PPL_gerarCamposEtapasNovas(){
 
 function PPL_renderCamposVelocidade(linha){
   const container = document.getElementById('pplCamposDinamicos');
+
+  /* ── Pão de Ló e Bolos: formulário próprio ── */
+  if(linha === 'Pão de Ló e Bolos'){
+    container.innerHTML = `
+      <div style="margin-bottom:18px;">
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:10px;">Tamanho do Produto</label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <label id="pplPdLLabelG" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 18px;border:2px solid var(--line);border-radius:var(--radius-sm);font-weight:600;font-size:13px;user-select:none;transition:border-color .15s,background .15s;">
+            <input type="radio" name="pplPdLTamanho" value="G" id="pplPdLTamanhoG" style="accent-color:var(--red);"> G — 9 unidades/forma
+          </label>
+          <label id="pplPdLLabelP" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 18px;border:2px solid var(--line);border-radius:var(--radius-sm);font-weight:600;font-size:13px;user-select:none;transition:border-color .15s,background .15s;">
+            <input type="radio" name="pplPdLTamanho" value="P" id="pplPdLTamanhoP" style="accent-color:var(--red);"> P — 12 unidades/forma
+          </label>
+        </div>
+      </div>
+
+      <div style="margin-bottom:18px;">
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">⏱ Tempos de Forma <span style="font-weight:400;text-transform:none;">(intervalo forma a forma — cronômetro)</span></label>
+        <div id="pplPdLFormasContainer" class="lanc-items"></div>
+        <button type="button" class="lanc-add-item-btn" id="pplAddPdLFormaBtn">+ Adicionar Tempo de Forma</button>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">🔥 Bateladas de Massa <span style="font-weight:400;text-transform:none;">(tempo de 1 batelada ficar pronta)</span></label>
+        <div id="pplPdLBateladasContainer" class="lanc-items"></div>
+        <button type="button" class="lanc-add-item-btn" id="pplAddPdLBateladaBtn">+ Adicionar Batelada</button>
+      </div>`;
+
+    // Toggle highlight ao selecionar tamanho
+    document.querySelectorAll('input[name="pplPdLTamanho"]').forEach(radio=>{
+      radio.addEventListener('change', ()=>{
+        document.getElementById('pplPdLLabelG').style.borderColor = '';
+        document.getElementById('pplPdLLabelG').style.background = '';
+        document.getElementById('pplPdLLabelP').style.borderColor = '';
+        document.getElementById('pplPdLLabelP').style.background = '';
+        const lbl = document.getElementById('pplPdLLabel'+radio.value);
+        if(lbl){ lbl.style.borderColor='var(--red)'; lbl.style.background='var(--bad-bg)'; }
+      });
+    });
+
+    document.getElementById('pplAddPdLFormaBtn').addEventListener('click', PPL_addPdLFormaRow);
+    document.getElementById('pplAddPdLBateladaBtn').addEventListener('click', PPL_addPdLBateladaRow);
+    PPL_addPdLFormaRow(); // começa com 1 linha pronta
+    return;
+  }
+
   const cfg = PPL_VELOCIDADE_CONFIG[linha] || { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] };
   let html = '<div class="lanc-item-grid">';
   cfg.campos.forEach(campo=>{
@@ -10714,6 +10760,42 @@ function PPL_renderCamposVelocidade(linha){
     document.getElementById('pplAddTempoMassaBtn').addEventListener('click', PPL_addTempoMassaRow);
     PPL_addTempoMassaRow(); // já começa com 1 pronto pra preencher, já que é sempre necessário nessa linha
   }
+}
+
+/* Adiciona uma linha de tempo de forma (Pão de Ló e Bolos) */
+function PPL_addPdLFormaRow(){
+  const container = document.getElementById('pplPdLFormasContainer');
+  const idx = container.children.length + 1;
+  const row = document.createElement('div');
+  row.className = 'lanc-item';
+  row.innerHTML = `
+    <div class="lanc-item-header">
+      <span class="lanc-item-title">Forma ${idx}</span>
+      <button type="button" class="lanc-item-remove" data-remove>Remover</button>
+    </div>
+    <div class="lanc-item-grid">
+      <div class="lanc-field"><label>Tempo da Forma (hh:mm:ss)</label><input type="time" step="1" class="pdl-forma-tempo" title="Intervalo cronometrado entre uma forma completa e a próxima"></div>
+    </div>`;
+  row.querySelector('[data-remove]').addEventListener('click', ()=> row.remove());
+  container.appendChild(row);
+}
+
+/* Adiciona uma linha de tempo de batelada de massa (Pão de Ló e Bolos) */
+function PPL_addPdLBateladaRow(){
+  const container = document.getElementById('pplPdLBateladasContainer');
+  const idx = container.children.length + 1;
+  const row = document.createElement('div');
+  row.className = 'lanc-item';
+  row.innerHTML = `
+    <div class="lanc-item-header">
+      <span class="lanc-item-title">Batelada ${idx}</span>
+      <button type="button" class="lanc-item-remove" data-remove>Remover</button>
+    </div>
+    <div class="lanc-item-grid">
+      <div class="lanc-field span-2"><label>Tempo da Batelada de Massa (hh:mm:ss)</label><input type="time" step="1" class="pdl-batelada-tempo" title="Duração total de 1 batelada de massa ficar pronta"></div>
+    </div>`;
+  row.querySelector('[data-remove]').addEventListener('click', ()=> row.remove());
+  container.appendChild(row);
 }
 
 /* Cada leitura de cronômetro (Tempo + Masseira) do Giro — repetível, igual
@@ -10831,6 +10913,55 @@ async function PPL_handleSubmit(e){
         if(etErr) throw etErr;
       }
     } else {
+      /* ── Pão de Ló e Bolos: salva formas + bateladas separadamente ── */
+      if(linha === 'Pão de Ló e Bolos'){
+        const tamanhoEl = document.querySelector('input[name="pplPdLTamanho"]:checked');
+        const tamanho = tamanhoEl ? tamanhoEl.value : null;
+        const unidadesPorForma = tamanho === 'G' ? 9 : tamanho === 'P' ? 12 : null;
+
+        // Coleta tempos de forma
+        const formaTempos = [];
+        document.querySelectorAll('.pdl-forma-tempo').forEach(el=>{
+          const seg = PPL_timeToSeconds(el.value);
+          if(seg !== null) formaTempos.push(seg);
+        });
+        const mediaFormaSeg = formaTempos.length > 0
+          ? Math.round(formaTempos.reduce((a,b)=>a+b,0) / formaTempos.length)
+          : null;
+
+        // Salva corrida (com média das formas)
+        const corridaPayload = {
+          linha, data, produto: produtoFinal,
+          unidade_medida: 'Forma',
+          unidades_por_recipiente: unidadesPorForma,
+          tempo_medio_seg: mediaFormaSeg,
+        };
+        const { data: corInserted, error: corErr } = await client.from('produtividade_corridas').insert([corridaPayload]).select().single();
+        if(corErr) throw corErr;
+
+        // Salva leituras individuais de forma em produtividade_tempos_massa
+        if(formaTempos.length > 0){
+          const formaPayload = formaTempos.map(t => ({ corrida_id: corInserted.id, tempo_seg: t, masseira: null }));
+          const { error: ftErr } = await client.from('produtividade_tempos_massa').insert(formaPayload);
+          if(ftErr) throw ftErr;
+        }
+
+        // Salva bateladas de massa em tempo_processo_bateladas
+        const bateladaPayloads = [];
+        document.querySelectorAll('.pdl-batelada-tempo').forEach((el, idx)=>{
+          const seg = PPL_timeToSeconds(el.value);
+          if(seg !== null) bateladaPayloads.push({
+            linha, data, produto: produtoFinal,
+            duracao_total_seg: seg,
+            batelada: idx + 1,
+          });
+        });
+        if(bateladaPayloads.length > 0){
+          const { error: btErr } = await client.from('tempo_processo_bateladas').insert(bateladaPayloads);
+          if(btErr) throw btErr;
+        }
+      } else {
+      /* ── Demais linhas: lógica genérica ── */
       const cfg = PPL_VELOCIDADE_CONFIG[linha] || { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] };
       const corridaPayload = { linha, data, produto: produtoFinal };
       if(linha === 'Giro') corridaPayload.unidade_medida = 'Massa'; // fixo — não tem campo no formulário pra essa linha
@@ -10858,6 +10989,7 @@ async function PPL_handleSubmit(e){
         const { error: tmErr } = await client.from('produtividade_tempos_massa').insert(temposMassaPayload);
         if(tmErr) throw tmErr;
       }
+      } // fim else demais linhas
     }
     feedback.textContent = '✓ Lançamento salvo com sucesso!';
     feedback.className = 'lanc-feedback ok';
