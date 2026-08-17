@@ -9814,6 +9814,7 @@ function PP_renderKPIs(){
   // Padeiros vem da MÉDIA das leituras de cronômetro (ver
   // PPL_addTempoMassaRow); Batelada vem do Tempo de Processo/Etapas.
   if(PP_currentLinha === 'Giro'){
+    // Padeiros: média das leituras de cronômetro registradas nas corridas
     const tempoMedioValores = PP_CORRIDAS
       .flatMap(c => c.produtividade_tempos_massa || [])
       .map(t => Number(t.tempo_seg))
@@ -9821,18 +9822,17 @@ function PP_renderKPIs(){
     const tempoMedioMassa = tempoMedioValores.length ? tempoMedioValores.reduce((a,b)=>a+b,0)/tempoMedioValores.length : null;
     const massaPorHora = (tempoMedioMassa != null && tempoMedioMassa > 0) ? 3600/tempoMedioMassa : null;
 
-    const leadTimes = PP_BATELADAS
-      .map(b => (b.tempo_processo_etapas||[]).reduce((s,e)=> s + (Number(e.duracao_seg)||0), 0))
-      .filter(v => v > 0);
-    const leadMedio = leadTimes.length ? leadTimes.reduce((a,b)=>a+b,0)/leadTimes.length : null;
-    const bateladasPorHora = (leadMedio != null && leadMedio > 0) ? 3600/leadMedio : null;
+    // Batelada: usa duracao_total_seg registrado diretamente nas bateladas
+    const batelTimes = PP_BATELADAS.map(b => b.duracao_total_seg).filter(v => v != null && v > 0);
+    const tempoMedioBatelada = batelTimes.length ? batelTimes.reduce((a,b)=>a+b,0)/batelTimes.length : null;
+    const bateladaPorHora = (tempoMedioBatelada != null && tempoMedioBatelada > 0) ? 3600/tempoMedioBatelada : null;
 
     const kpis = [
-      { label:'Produtividade Padeiros — Massa/hora', value: massaPorHora != null ? massaPorHora.toLocaleString('pt-BR',{maximumFractionDigits:2}) : '—' },
-      { label:'Produtividade Padeiros — Tempo Médio/Massa', value: tempoMedioMassa != null ? PP_fmtDuracao(tempoMedioMassa) : '—' },
-      { label:'Produtividade Batelada (GA) — Batelada/hora', value: bateladasPorHora != null ? bateladasPorHora.toLocaleString('pt-BR',{maximumFractionDigits:2}) : '—' },
-      { label:'Produtividade Batelada (GA) — Tempo Médio', value: leadMedio != null ? PP_fmtDuracao(leadMedio) : '—' },
-      { label:'Leituras Coletadas', value: tempoMedioValores.length },
+      { label:'Produtividade Padeiros — Massa/hora',       value: massaPorHora      != null ? massaPorHora.toLocaleString('pt-BR',{maximumFractionDigits:2})      : '—' },
+      { label:'Produtividade Padeiros — Tempo Médio/Massa', value: tempoMedioMassa  != null ? PP_fmtDuracao(tempoMedioMassa)                                       : '—' },
+      { label:'Tempo Médio da Batelada',                   value: tempoMedioBatelada != null ? PP_fmtDuracao(tempoMedioBatelada)                                   : '—' },
+      { label:'Batelada/Hora',                             value: bateladaPorHora   != null ? bateladaPorHora.toLocaleString('pt-BR',{maximumFractionDigits:2})    : '—' },
+      { label:'Leituras Coletadas',                        value: tempoMedioValores.length },
     ];
     grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
     grid.innerHTML = kpis.map(k=>`
@@ -10326,6 +10326,12 @@ function PP_getProdutividadeValor(c){
     if(horas < 0) horas += 24;
     if(horas > 0) return Number(c.quantidade) / horas;
   }
+  // Pão de Ló e Bolos: produtividade = (3600 / tempo_medio_seg) × unidades_por_recipiente
+  // (tempo_medio_seg = intervalo médio forma a forma; unidades_por_recipiente = 9 G ou 12 P)
+  if(c.tempo_medio_seg != null && c.tempo_medio_seg > 0){
+    const formaPH = 3600 / c.tempo_medio_seg;
+    return c.unidades_por_recipiente != null ? formaPH * c.unidades_por_recipiente : formaPH;
+  }
   if(c.quantidade != null) return Number(c.quantidade); // sem horário pra calcular taxa — mostra a quantidade bruta mesmo
   return null;
 }
@@ -10438,16 +10444,24 @@ function PP_renderVelocidade(){
   }
 
   const tbody = document.getElementById('ppTbodyCorridas');
+  const ehPdL = PP_currentLinha === 'Pão de Ló e Bolos';
   const linhas = [...PP_CORRIDAS].sort((a,b)=> a.data.localeCompare(b.data));
   tbody.innerHTML = linhas.map(c=>{
     const veloc = ehSalgado ? PP_getUnidadesPorHora(c) : PP_getProdutividadeValor(c);
+    const sufixoTabela = ehSalgado || ehPdL ? ' Unid/h' : '';
+    // Para Pão de Ló e Bolos: exibe tamanho (G/P) em vez de Início/Fim que não existem
+    const col3 = ehPdL
+      ? (c.unidades_por_recipiente === 9 ? 'G (9 unid)' : c.unidades_por_recipiente === 12 ? 'P (12 unid)' : '—')
+      : (c.maquina || c.masseira || '—');
+    const col4 = ehPdL ? '—' : (c.inicio||c.hora_massa||'—').toString().slice(0,5);
+    const col5 = ehPdL ? '—' : (c.fim||'—').toString().slice(0,5);
     return `<tr>
       <td>${PP_fmtDataBR(c.data)}</td>
       <td>${c.produto ?? '—'}</td>
-      <td>${c.maquina || c.masseira || '—'}</td>
-      <td class="center">${(c.inicio||c.hora_massa||'—').toString().slice(0,5)}</td>
-      <td class="center">${(c.fim||'—').toString().slice(0,5)}</td>
-      <td class="center">${veloc != null ? veloc.toLocaleString('pt-BR',{maximumFractionDigits:1}) + (ehSalgado ? ' Unid/h' : '') : '—'}</td>
+      <td>${col3}</td>
+      <td class="center">${col4}</td>
+      <td class="center">${col5}</td>
+      <td class="center">${veloc != null ? veloc.toLocaleString('pt-BR',{maximumFractionDigits:1}) + sufixoTabela : '—'}</td>
     </tr>`;
   }).join('');
 }
