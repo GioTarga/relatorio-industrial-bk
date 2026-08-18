@@ -3226,7 +3226,10 @@ function renderCauses(filteredDates){
       });
     });
   });
-  const entries = Object.entries(counts).sort((a,b)=> (durMinutes[b[0]]||0) - (durMinutes[a[0]]||0) || b[1] - a[1]);
+  // Só entra no gráfico causas que têm tempo de parada registrado — sem duração não contribuem para o Pareto.
+  const entries = Object.entries(counts)
+    .filter(([cat]) => (durMinutes[cat]||0) > 0)
+    .sort((a,b)=> (durMinutes[b[0]]||0) - (durMinutes[a[0]]||0) || b[1] - a[1]);
 
   if(entries.length === 0){
     document.getElementById('causesWrap').innerHTML = `
@@ -4838,7 +4841,9 @@ function buildDayCausesSvgElement(dayKey){
       if(min !== null) durMinutes[cat] = (durMinutes[cat]||0) + min;
     });
   });
-  const entries = Object.entries(counts).sort((a,b)=> (durMinutes[b[0]]||0) - (durMinutes[a[0]]||0) || b[1] - a[1]);
+  const entries = Object.entries(counts)
+    .filter(([cat]) => (durMinutes[cat]||0) > 0)
+    .sort((a,b)=> (durMinutes[b[0]]||0) - (durMinutes[a[0]]||0) || b[1] - a[1]);
   const total = entries.reduce((a,[,v])=>a+v,0);
   if(entries.length === 0) return null;
 
