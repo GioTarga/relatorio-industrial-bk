@@ -9143,73 +9143,49 @@ function MC_gerarFormulario(){
     return;
   }
 
-  // Monta lista de produtos pendentes (corridas ou bateladas)
+  // 1) Produtos pendentes do radar (já mapeados, com coleta faltando)
   const opcoes = []; // { setor, prod, faltam }
+  const jaNoRadar = new Set();
   MC_RADAR_LINHAS.forEach(linha => {
     const prods = MC_RADAR[linha];
     if(!prods) return;
     Object.entries(prods).forEach(([prod, flags]) => {
       const faltam = ['corridas','bateladas'].filter(k => !flags[k]);
-      if(faltam.length > 0) opcoes.push({ setor: linha, prod, faltam });
+      if(faltam.length > 0){
+        opcoes.push({ setor: linha, prod, faltam });
+        jaNoRadar.add(prod.trim().toLowerCase());
+      }
     });
   });
 
+  // 2) Todos os produtos do catálogo não presentes no radar → ambos pendentes
+  if(typeof PRODCAT_POR_CODIGO !== 'undefined' && PRODCAT_POR_CODIGO){
+    PRODCAT_POR_CODIGO.forEach(entry => {
+      const nome = (entry.descricao || '').trim();
+      if(nome && !jaNoRadar.has(nome.toLowerCase())){
+        opcoes.push({ setor: '— Sem coleta iniciada', prod: nome, faltam: ['corridas','bateladas'] });
+      }
+    });
+  }
+
   if(opcoes.length === 0){
-    alert('Nenhum produto pendente! Todos os setores estão 100% mapeados.');
+    alert('Nenhum produto encontrado. Verifique o catálogo de produtos.');
     return;
   }
 
-  // --- Modal de seleção ---
-  const overlay = document.createElement('div');
-  overlay.id = 'mcFormOverlay';
-  overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.55);
-    z-index:9000;display:flex;align-items:center;justify-content:center;`;
-
-  // Agrupa por setor para o <select>
-  const porSetor = {};
-  opcoes.forEach(o => {
-    if(!porSetor[o.setor]) porSetor[o.setor] = [];
-    porSetor[o.setor].push(o);
-  });
-  const optgroupsHTML = Object.entries(porSetor).map(([setor, lista]) => {
-    const opts = lista.map(o => {
-      const idx = opcoes.indexOf(o);
-      return `<option value="${idx}">${o.prod}</option>`;
-    }).join('');
-    return `<optgroup label="${setor}">${opts}</optgroup>`;
-  }).join('');
+  // --- Estado da seleção ---
+  let selectedIdx = 0; // índice em opcoes[]
 
   const TIPO_INFO = {
     corridas:  { icon:'⚡', label:'Produtividade' },
     bateladas: { icon:'⏱', label:'Tempo de Processo' }
   };
 
-  // Monta os botões de tipo de coleta — sempre exibe os dois, marca pendentes
-  function renderTipos(faltam){
-    return `<div style="display:flex;gap:10px;">
-      ${['corridas','bateladas'].map(t => {
-        const { icon, label } = TIPO_INFO[t];
-        const pendente = faltam.includes(t);
-        return `<label style="flex:1;cursor:pointer;">
-          <input type="radio" name="mcTipo" value="${t}" style="display:none;">
-          <div class="mc-tipo-btn" data-tipo="${t}"
-            style="border:2px solid var(--line,#ddd);border-radius:8px;padding:10px 14px;
-              text-align:center;font-size:12.5px;font-weight:600;transition:all .15s;
-              cursor:pointer;user-select:none;position:relative;">
-            <div style="font-size:22px;margin-bottom:4px;">${icon}</div>
-            ${label}
-            ${pendente
-              ? `<div style="font-size:9.5px;color:var(--red,#c0392b);margin-top:4px;font-weight:700;">● Pendente</div>`
-              : `<div style="font-size:9.5px;color:var(--good,#27ae60);margin-top:4px;font-weight:700;">✓ Coletado</div>`
-            }
-          </div>
-        </label>`;
-      }).join('')}
-    </div>
-    <div id="mcTipoErro" style="color:#c0392b;font-size:11.5px;margin-top:6px;display:none;">
-      Selecione o tipo de coleta.
-    </div>`;
-  }
+  // --- Modal ---
+  const overlay = document.createElement('div');
+  overlay.id = 'mcFormOverlay';
+  overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.55);
+    z-index:9000;display:flex;align-items:center;justify-content:center;`;
 
   overlay.innerHTML = `
     <div style="background:var(--surface,#fff);border-radius:12px;padding:28px 30px;
@@ -9222,10 +9198,25 @@ function MC_gerarFormulario(){
       <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;">
         1. Produto a coletar:
       </label>
-      <select id="mcFormSelect" style="width:100%;padding:9px 12px;border:1px solid var(--line,#ddd);
-        border-radius:7px;font-size:13px;background:var(--surface,#fff);margin-bottom:18px;">
-        ${optgroupsHTML}
-      </select>
+
+      <!-- Combobox com busca por digitação -->
+      <div style="position:relative;margin-bottom:18px;">
+        <input id="mcFormSearch" type="text" autocomplete="off"
+          placeholder="Digite para buscar produto..."
+          style="width:100%;padding:9px 12px 9px 36px;border:1px solid var(--line,#ddd);
+            border-radius:7px;font-size:13px;box-sizing:border-box;
+            background:var(--surface,#fff);font-family:inherit;">
+        <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);
+          font-size:14px;pointer-events:none;">🔍</span>
+        <div id="mcFormDropdown"
+          style="position:absolute;top:calc(100% + 4px);left:0;right:0;
+            background:#fff;border:1px solid var(--line,#ddd);border-radius:8px;
+            max-height:220px;overflow-y:auto;z-index:200;
+            box-shadow:0 6px 20px rgba(0,0,0,.13);display:none;">
+        </div>
+        <div id="mcFormSelectedLabel"
+          style="font-size:11px;color:var(--ink-soft,#888);margin-top:5px;min-height:14px;"></div>
+      </div>
 
       <label style="font-size:12px;font-weight:600;display:block;margin-bottom:8px;">
         2. O que você vai coletar?
@@ -9246,13 +9237,38 @@ function MC_gerarFormulario(){
 
   document.body.appendChild(overlay);
 
-  // Popula tipos ao mudar o produto
-  function atualizarTipos(){
-    const idx = parseInt(document.getElementById('mcFormSelect').value, 10);
-    const container = document.getElementById('mcTipoContainer');
-    container.innerHTML = renderTipos(opcoes[idx].faltam);
+  // ── Helpers internos ────────────────────────────────────────────────────
+  function renderTipos(faltam){
+    return `<div style="display:flex;gap:10px;">
+      ${['corridas','bateladas'].map(t => {
+        const { icon, label } = TIPO_INFO[t];
+        const pendente = faltam.includes(t);
+        return `<label style="flex:1;cursor:pointer;">
+          <input type="radio" name="mcTipo" value="${t}" style="display:none;">
+          <div class="mc-tipo-btn" data-tipo="${t}"
+            style="border:2px solid var(--line,#ddd);border-radius:8px;padding:10px 14px;
+              text-align:center;font-size:12.5px;font-weight:600;transition:all .15s;
+              cursor:pointer;user-select:none;">
+            <div style="font-size:22px;margin-bottom:4px;">${icon}</div>
+            ${label}
+            ${pendente
+              ? `<div style="font-size:9.5px;color:var(--red,#c0392b);margin-top:4px;font-weight:700;">● Pendente</div>`
+              : `<div style="font-size:9.5px;color:var(--good,#27ae60);margin-top:4px;font-weight:700;">✓ Coletado</div>`
+            }
+          </div>
+        </label>`;
+      }).join('')}
+    </div>
+    <div id="mcTipoErro" style="color:#c0392b;font-size:11.5px;margin-top:6px;display:none;">
+      Selecione o tipo de coleta.
+    </div>`;
+  }
 
-    // Estilo de seleção dos botões de tipo
+  function atualizarTipos(){
+    const opcao  = opcoes[selectedIdx];
+    const container = document.getElementById('mcTipoContainer');
+    if(!opcao || !container) return;
+    container.innerHTML = renderTipos(opcao.faltam);
     container.querySelectorAll('.mc-tipo-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         container.querySelectorAll('.mc-tipo-btn').forEach(b => {
@@ -9271,17 +9287,112 @@ function MC_gerarFormulario(){
     });
   }
 
-  document.getElementById('mcFormSelect').addEventListener('change', atualizarTipos);
-  atualizarTipos(); // inicial
+  function selectOpcao(idx){
+    selectedIdx = idx;
+    const opcao = opcoes[idx];
+    const searchEl  = document.getElementById('mcFormSearch');
+    const labelEl   = document.getElementById('mcFormSelectedLabel');
+    const ddEl      = document.getElementById('mcFormDropdown');
+    if(searchEl) searchEl.value = opcao.prod;
+    if(labelEl)  labelEl.textContent = opcao.setor !== '— Sem coleta iniciada'
+      ? `Setor: ${opcao.setor}`
+      : 'Produto ainda sem coleta — ambos os tipos serão marcados como pendentes';
+    if(ddEl) ddEl.style.display = 'none';
+    atualizarTipos();
+  }
 
+  function renderDropdown(filtro){
+    const dd = document.getElementById('mcFormDropdown');
+    if(!dd) return;
+    const norm = (filtro || '').toLowerCase().trim();
+    const filtered = opcoes
+      .map((o, idx) => ({...o, idx}))
+      .filter(o => !norm || o.prod.toLowerCase().includes(norm));
+
+    if(filtered.length === 0){
+      dd.innerHTML = `<div style="padding:12px 14px;font-size:12px;color:#888;">
+        Nenhum produto encontrado</div>`;
+      dd.style.display = 'block';
+      return;
+    }
+
+    // Agrupa por setor
+    const groups = {};
+    filtered.forEach(o => {
+      if(!groups[o.setor]) groups[o.setor] = [];
+      groups[o.setor].push(o);
+    });
+
+    let html = '';
+    Object.entries(groups).forEach(([setor, lista]) => {
+      html += `<div style="padding:6px 12px 3px;font-size:9.5px;font-weight:700;
+        color:#999;text-transform:uppercase;letter-spacing:.6px;
+        border-top:1px solid #f0f0f0;">${setor}</div>`;
+      lista.forEach(o => {
+        const n = o.faltam.length;
+        const badge = n === 2
+          ? `<span style="font-size:9px;background:#fbe2dc;color:#c0392b;
+              padding:2px 6px;border-radius:4px;font-weight:700;flex-shrink:0;">2 pendentes</span>`
+          : `<span style="font-size:9px;background:#fef9e7;color:#b7770d;
+              padding:2px 6px;border-radius:4px;font-weight:700;flex-shrink:0;">1 pendente</span>`;
+        const isSel = (o.idx === selectedIdx);
+        html += `<div data-mcidx="${o.idx}"
+          style="padding:8px 14px;cursor:pointer;font-size:12.5px;display:flex;
+            align-items:center;justify-content:space-between;gap:8px;
+            background:${isSel ? 'var(--red,#c0392b)' : 'transparent'};
+            color:${isSel ? '#fff' : 'inherit'};">
+          <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
+            white-space:nowrap;">${o.prod}</span>
+          ${badge}
+        </div>`;
+      });
+    });
+    dd.innerHTML = html;
+    dd.style.display = 'block';
+
+    dd.querySelectorAll('[data-mcidx]').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        if(parseInt(el.dataset.mcidx,10) !== selectedIdx)
+          el.style.background = '#f5f5f5';
+      });
+      el.addEventListener('mouseleave', () => {
+        if(parseInt(el.dataset.mcidx,10) !== selectedIdx)
+          el.style.background = 'transparent';
+      });
+      el.addEventListener('click', () => {
+        selectOpcao(parseInt(el.dataset.mcidx, 10));
+      });
+    });
+  }
+
+  // ── Eventos do combobox ─────────────────────────────────────────────────
+  const searchEl = document.getElementById('mcFormSearch');
+  const ddEl     = document.getElementById('mcFormDropdown');
+
+  searchEl.addEventListener('focus', () => renderDropdown(searchEl.value));
+  searchEl.addEventListener('input', () => renderDropdown(searchEl.value));
+  searchEl.addEventListener('keydown', e => {
+    if(e.key === 'Escape'){ ddEl.style.display = 'none'; }
+  });
+  // Fecha dropdown ao clicar fora do input/dropdown
+  document.addEventListener('mousedown', function closeDd(e){
+    if(!searchEl.contains(e.target) && !ddEl.contains(e.target)){
+      ddEl.style.display = 'none';
+      document.removeEventListener('mousedown', closeDd);
+    }
+  });
+
+  // ── Inicializa com o primeiro item ──────────────────────────────────────
+  selectOpcao(0);
+
+  // ── Botões do modal ─────────────────────────────────────────────────────
   document.getElementById('mcFormCancelar').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
 
   document.getElementById('mcFormConfirmar').addEventListener('click', () => {
-    const idx = parseInt(document.getElementById('mcFormSelect').value, 10);
-    const opcao = opcoes[idx];
+    const opcao = opcoes[selectedIdx];
+    if(!opcao){ alert('Selecione um produto.'); return; }
 
-    // Descobre o tipo selecionado
     const radioChecked = overlay.querySelector('input[name="mcTipo"]:checked');
     if(!radioChecked){
       const erroEl = document.getElementById('mcTipoErro');
@@ -9289,7 +9400,6 @@ function MC_gerarFormulario(){
       return;
     }
     const tipoSel = radioChecked.value;
-
     overlay.remove();
     MC_imprimirFormulario({ setor: opcao.setor, prod: opcao.prod, faltam: [tipoSel] });
   });
