@@ -9137,11 +9137,20 @@ function MC_renderRotina(){
 // MC_gerarFormulario — abre seletor de produto e gera folha A4 para impressão
 // 1 produto por página · 10 amostras · apenas Produtividade e Tempo de Processo
 // --------------------------------------------------------------------------
-function MC_gerarFormulario(){
+async function MC_gerarFormulario(){
   if(!MC_RADAR){
     alert('Atualize o Radar de Cobertura antes de gerar o formulário.');
     return;
   }
+
+  // Garante que o catálogo está carregado (mesmo sem visitar a aba Produtos)
+  const btnGerar = document.querySelector('[onclick*="MC_gerarFormulario"], button[id*="mcGerar"]');
+  const labelOrig = btnGerar ? btnGerar.innerHTML : null;
+  if(btnGerar){ btnGerar.disabled = true; btnGerar.innerHTML = '⏳ Carregando...'; }
+
+  await PRODCAT_load();
+
+  if(btnGerar){ btnGerar.disabled = false; if(labelOrig) btnGerar.innerHTML = labelOrig; }
 
   // 1) Produtos pendentes do radar (já mapeados, com coleta faltando)
   const opcoes = []; // { setor, prod, faltam }
@@ -9158,8 +9167,8 @@ function MC_gerarFormulario(){
     });
   });
 
-  // 2) Todos os produtos do catálogo não presentes no radar → ambos pendentes
-  if(typeof PRODCAT_POR_CODIGO !== 'undefined' && PRODCAT_POR_CODIGO){
+  // 2) Todos os produtos do catálogo completo (Supabase) não presentes no radar
+  if(PRODCAT_POR_CODIGO && PRODCAT_POR_CODIGO.size > 0){
     PRODCAT_POR_CODIGO.forEach(entry => {
       const nome = (entry.descricao || '').trim();
       if(nome && !jaNoRadar.has(nome.toLowerCase())){
