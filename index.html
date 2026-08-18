@@ -3218,17 +3218,18 @@ function renderCauses(filteredDates){
   const durMinutes = {};
   filteredDates.forEach(d=>{
     getDayRows(d).forEach(r=>{
-      const cats = categorize(r.obs || '');
       const min = timeToMinutes(r.duracaoParada);
+      // Só registra a causa se a linha tem duração de parada real (> 0 minutos).
+      // Causas que aparecem em observações livres sem tempo de parada são ignoradas.
+      if(min === null || min <= 0) return;
+      const cats = categorize(r.obs || '');
       cats.forEach(cat => {
         counts[cat] = (counts[cat]||0) + 1;
-        if(min !== null) durMinutes[cat] = (durMinutes[cat]||0) + min;
+        durMinutes[cat] = (durMinutes[cat]||0) + min;
       });
     });
   });
-  // Só entra no gráfico causas que têm tempo de parada registrado — sem duração não contribuem para o Pareto.
   const entries = Object.entries(counts)
-    .filter(([cat]) => (durMinutes[cat]||0) > 0)
     .sort((a,b)=> (durMinutes[b[0]]||0) - (durMinutes[a[0]]||0) || b[1] - a[1]);
 
   if(entries.length === 0){
@@ -4834,15 +4835,15 @@ function buildDayCausesSvgElement(dayKey){
   const counts = {};
   const durMinutes = {};
   getDayRows(dayKey).forEach(r=>{
-    const cats = categorize(r.obs || '');
     const min = timeToMinutes(r.duracaoParada);
+    if(min === null || min <= 0) return;
+    const cats = categorize(r.obs || '');
     cats.forEach(cat => {
       counts[cat] = (counts[cat]||0) + 1;
-      if(min !== null) durMinutes[cat] = (durMinutes[cat]||0) + min;
+      durMinutes[cat] = (durMinutes[cat]||0) + min;
     });
   });
   const entries = Object.entries(counts)
-    .filter(([cat]) => (durMinutes[cat]||0) > 0)
     .sort((a,b)=> (durMinutes[b[0]]||0) - (durMinutes[a[0]]||0) || b[1] - a[1]);
   const total = entries.reduce((a,[,v])=>a+v,0);
   if(entries.length === 0) return null;
