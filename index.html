@@ -9176,11 +9176,6 @@ function MC_gerarFormulario(){
   // --- Estado da seleção ---
   let selectedIdx = 0; // índice em opcoes[]
 
-  const TIPO_INFO = {
-    corridas:  { icon:'⚡', label:'Produtividade' },
-    bateladas: { icon:'⏱', label:'Tempo de Processo' }
-  };
-
   // --- Modal ---
   const overlay = document.createElement('div');
   overlay.id = 'mcFormOverlay';
@@ -9192,11 +9187,11 @@ function MC_gerarFormulario(){
       max-width:500px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,.3);">
       <div style="font-size:18px;font-weight:700;margin-bottom:4px;">🖨 Gerar Formulário de Coleta</div>
       <div style="font-size:12px;color:var(--ink-soft,#666);margin-bottom:20px;">
-        Formulário A4 com <strong>10 amostras</strong> — 1 produto por página.
+        Formulário A4 com tabela de <strong>Produtividade</strong> e <strong>Tempo de Processo</strong> — 1 produto por página.
       </div>
 
       <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;">
-        1. Produto a coletar:
+        Produto a coletar:
       </label>
 
       <!-- Combobox com busca por digitação -->
@@ -9218,11 +9213,6 @@ function MC_gerarFormulario(){
           style="font-size:11px;color:var(--ink-soft,#888);margin-top:5px;min-height:14px;"></div>
       </div>
 
-      <label style="font-size:12px;font-weight:600;display:block;margin-bottom:8px;">
-        2. O que você vai coletar?
-      </label>
-      <div id="mcTipoContainer"></div>
-
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:22px;">
         <button id="mcFormCancelar" type="button"
           style="padding:8px 18px;border:1px solid var(--line,#ddd);background:transparent;
@@ -9238,55 +9228,6 @@ function MC_gerarFormulario(){
   document.body.appendChild(overlay);
 
   // ── Helpers internos ────────────────────────────────────────────────────
-  function renderTipos(faltam){
-    return `<div style="display:flex;gap:10px;">
-      ${['corridas','bateladas'].map(t => {
-        const { icon, label } = TIPO_INFO[t];
-        const pendente = faltam.includes(t);
-        return `<label style="flex:1;cursor:pointer;">
-          <input type="radio" name="mcTipo" value="${t}" style="display:none;">
-          <div class="mc-tipo-btn" data-tipo="${t}"
-            style="border:2px solid var(--line,#ddd);border-radius:8px;padding:10px 14px;
-              text-align:center;font-size:12.5px;font-weight:600;transition:all .15s;
-              cursor:pointer;user-select:none;">
-            <div style="font-size:22px;margin-bottom:4px;">${icon}</div>
-            ${label}
-            ${pendente
-              ? `<div style="font-size:9.5px;color:var(--red,#c0392b);margin-top:4px;font-weight:700;">● Pendente</div>`
-              : `<div style="font-size:9.5px;color:var(--good,#27ae60);margin-top:4px;font-weight:700;">✓ Coletado</div>`
-            }
-          </div>
-        </label>`;
-      }).join('')}
-    </div>
-    <div id="mcTipoErro" style="color:#c0392b;font-size:11.5px;margin-top:6px;display:none;">
-      Selecione o tipo de coleta.
-    </div>`;
-  }
-
-  function atualizarTipos(){
-    const opcao  = opcoes[selectedIdx];
-    const container = document.getElementById('mcTipoContainer');
-    if(!opcao || !container) return;
-    container.innerHTML = renderTipos(opcao.faltam);
-    container.querySelectorAll('.mc-tipo-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        container.querySelectorAll('.mc-tipo-btn').forEach(b => {
-          b.style.borderColor = 'var(--line,#ddd)';
-          b.style.background  = 'transparent';
-          b.style.color       = 'inherit';
-        });
-        btn.style.borderColor = 'var(--red,#c0392b)';
-        btn.style.background  = 'var(--red,#c0392b)';
-        btn.style.color       = '#fff';
-        const radio = btn.previousElementSibling;
-        if(radio) radio.checked = true;
-        const erroEl = document.getElementById('mcTipoErro');
-        if(erroEl) erroEl.style.display = 'none';
-      });
-    });
-  }
-
   function selectOpcao(idx){
     selectedIdx = idx;
     const opcao = opcoes[idx];
@@ -9296,9 +9237,8 @@ function MC_gerarFormulario(){
     if(searchEl) searchEl.value = opcao.prod;
     if(labelEl)  labelEl.textContent = opcao.setor !== '— Sem coleta iniciada'
       ? `Setor: ${opcao.setor}`
-      : 'Produto ainda sem coleta — ambos os tipos serão marcados como pendentes';
+      : 'Produto ainda sem coleta iniciada';
     if(ddEl) ddEl.style.display = 'none';
-    atualizarTipos();
   }
 
   function renderDropdown(filtro){
@@ -9392,16 +9332,8 @@ function MC_gerarFormulario(){
   document.getElementById('mcFormConfirmar').addEventListener('click', () => {
     const opcao = opcoes[selectedIdx];
     if(!opcao){ alert('Selecione um produto.'); return; }
-
-    const radioChecked = overlay.querySelector('input[name="mcTipo"]:checked');
-    if(!radioChecked){
-      const erroEl = document.getElementById('mcTipoErro');
-      if(erroEl) erroEl.style.display = 'block';
-      return;
-    }
-    const tipoSel = radioChecked.value;
     overlay.remove();
-    MC_imprimirFormulario({ setor: opcao.setor, prod: opcao.prod, faltam: [tipoSel] });
+    MC_imprimirFormulario({ setor: opcao.setor, prod: opcao.prod, faltam: ['corridas','bateladas'] });
   });
 }
 
@@ -9411,7 +9343,7 @@ function MC_gerarFormulario(){
 function MC_imprimirFormulario({ setor, prod, faltam }){
   const today = new Date();
   const dataStr = today.toLocaleDateString('pt-BR');
-  const N = 10; // amostras
+  const N = 8; // 8 amostras por tabela (sempre duas tabelas por folha)
 
   // Definição das tabelas por tipo
   const TIPOS = {
@@ -9452,13 +9384,17 @@ function MC_imprimirFormulario({ setor, prod, faltam }){
       <div style="margin-bottom:18px;">
         <div style="font-size:12px;font-weight:700;margin-bottom:5px;
           padding:5px 10px;background:#222;color:#fff;border-radius:4px 4px 0 0;">
-          ${icon} ${label} — 10 amostras
+          ${icon} ${label} — ${N} amostras
         </div>
         <table style="width:100%;border-collapse:collapse;font-size:11px;">
           <thead><tr>${ths}</tr></thead>
           <tbody>${rows}</tbody>
         </table>
-      </div>`;
+      </div>
+      ${faltam.indexOf(tipo) < faltam.length - 1
+        ? `<div style="border-top:2px dashed #bbb;margin:14px 0 16px;"></div>`
+        : ''
+      }`;
   });
 
   const html = `<!DOCTYPE html>
