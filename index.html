@@ -1572,13 +1572,12 @@
           <datalist id="lpProdutoList"></datalist>
           <datalist id="lpMaquinaList"></datalist>
           <datalist id="lpUnidadeList">
-            <option value="Massa">
             <option value="Massas">
-            <option value="Unid">
-            <option value="Caixas">
+            <option value="Unidade">
             <option value="Kg">
+            <option value="Carrinhos">
+            <option value="Caixas">
             <option value="Blocos">
-            <option value="Pacotes">
           </datalist>
         </div>
 
@@ -2007,6 +2006,17 @@
               <label>Descrição do Produto</label>
               <input type="text" class="pr-descricao" placeholder="Ex: MINI PASTEL NATA CARNE BK 35G PCT 600G - CX C/18 UNID" required>
             </div>
+            <div class="lanc-field" style="flex:0 0 140px;">
+              <label>Unidade</label>
+              <select class="pr-unidade">
+                <option value="Caixas">Caixas</option>
+                <option value="Massas">Massas</option>
+                <option value="Kg">Kg</option>
+                <option value="Unidade">Unidade</option>
+                <option value="Carrinhos">Carrinhos</option>
+                <option value="Blocos">Blocos</option>
+              </select>
+            </div>
             <button type="submit" class="lanc-submit-btn">Cadastrar Produto</button>
           </form>
           <span class="lanc-feedback" id="prFeedback"></span>
@@ -2016,7 +2026,7 @@
           <div class="table-wrap" style="max-height:520px;">
             <table class="detail" id="prTable">
               <thead>
-                <tr><th class="center">Código</th><th>Descrição</th><th class="center">Ações</th></tr>
+                <tr><th class="center">Código</th><th>Descrição</th><th class="center" style="width:100px;">Unidade</th><th class="center">Ações</th></tr>
               </thead>
               <tbody id="prTbody"></tbody>
             </table>
@@ -2476,31 +2486,33 @@ function parseNumOrNull(s){
    Não usar apenas "prev === null" pra identificar "fora do plano": isso
    juntava incorretamente os casos 2 e 3. */
 function classifyPlan(planRaw){
-  // Formato novo: "Produção Não Apontada|3420" — tipo canônico + quantidade planejada.
-  // O número após o pipe é a quantidade de referência; o texto antes classifica o status.
+  // Três tipos com semânticas distintas para o cálculo de meta:
+  //   fora_plano   → foraDoPlano:true,  semQuantidade:false — NUNCA entra na meta
+  //   nao_apontada → foraDoPlano:false, semQuantidade:true  — NUNCA entra na meta (sem qtd definida)
+  //   desvio       → foraDoPlano:false, semQuantidade:false — ENTRA na meta se tiver qty numérica
+  //   numero       → foraDoPlano:false, semQuantidade:false — ENTRA na meta normalmente
   const s = (planRaw||'').toString();
   const pipeIdx = s.lastIndexOf('|');
   if(pipeIdx !== -1){
     const textPart = s.substring(0, pipeIdx);
     const numPart  = s.substring(pipeIdx + 1);
     const numPipe = parseNumOrNull(numPart);
-    const norm2 = textPart.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-    const fdp = norm2.includes('nao planejada') || norm2.includes('fora do plano')
-      || norm2.includes('nao apontada') || norm2.includes('nao justificado');
-    return { prev: numPipe, foraDoPlano: fdp };
+    const norm2 = textPart.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+    const ehForaPlano     = norm2.includes('fora do plano') || norm2.includes('nao planejada');
+    const ehSemQuantidade = norm2.includes('nao apontada');
+    // 'nao justificado' (Desvio) com quantidade numérica conta para meta — foraDoPlano:false
+    return { prev: numPipe, foraDoPlano: ehForaPlano, semQuantidade: ehSemQuantidade };
   }
   const num = parseNumOrNull(planRaw);
-  if(num !== null) return { prev: num, foraDoPlano: false };
-  const norm = (planRaw||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  // Aceita tanto o texto original da planilha ("Produção não planejada")
-  // quanto os textos padronizados usados no formulário de Lançamento
-  // ("Fora do plano de produção", "Produção Não Apontada", "Desvio Não
-  // Justificado") — todos precisam ser reconhecidos como "sem meta
-  // numérica" pro cálculo de % de atendimento (nenhum deles compete por
-  // uma meta, então nenhum entra no denominador).
-  const foraDoPlano = norm.includes('nao planejada') || norm.includes('fora do plano')
-    || norm.includes('nao apontada') || norm.includes('nao justificado');
-  return { prev: null, foraDoPlano };
+  if(num !== null) return { prev: num, foraDoPlano: false, semQuantidade: false };
+  const norm = (planRaw||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  // Texto legado sem pipe:
+  //   "fora do plano" / "nao planejada"  → foraDoPlano
+  //   "nao apontada"                     → semQuantidade (sem qtd definida)
+  //   "nao justificado" (desvio)         → foraDoPlano:false (conta para meta quando tem qty)
+  const foraDoPlano    = norm.includes('fora do plano') || norm.includes('nao planejada');
+  const semQuantidade  = norm.includes('nao apontada');
+  return { prev: null, foraDoPlano, semQuantidade };
 }
 
 /* ============================================================================
@@ -2796,7 +2808,7 @@ function transformSupabaseRowsToData(rows){
 
     // producao_planejada vem como texto (aceita número OU "S/ Quantidade
     // Planejada" / "Fora do plano de produção") — mesma lógica do CSV.
-    const { prev, foraDoPlano } = classifyPlan(r.producao_planejada || '');
+    const { prev, foraDoPlano, semQuantidade } = classifyPlan(r.producao_planejada || '');
     const real = (r.producao_real !== null && r.producao_real !== undefined) ? Number(r.producao_real) : 0;
     const dif = (prev !== null && prev !== 0) ? ((real - prev) / prev * 100) : null;
     const uni = normalizeUnitDisplay(r.unidade || '');
@@ -2814,7 +2826,7 @@ function transformSupabaseRowsToData(rows){
     const recheio = (r.recheio_consumido_caixas !== null && r.recheio_consumido_caixas !== undefined) ? Number(r.recheio_consumido_caixas) : null;
 
     if(!byDate[dateISO]) byDate[dateISO] = [];
-    byDate[dateISO].push({ setor, equipe, maquina, produto, prev, foraDoPlano, real, uni, dif, obs, inicio, fim, duracaoParada, apontamentoCompleto, recheio });
+    byDate[dateISO].push({ setor, equipe, maquina, produto, prev, foraDoPlano, semQuantidade, real, uni, dif, obs, inicio, fim, duracaoParada, apontamentoCompleto, recheio });
   });
 
   const result = {};
@@ -3763,12 +3775,12 @@ function computeMetaAtingimento(filteredDates){
   const source = [];
   filteredDates.forEach(d=>{
     getDayRows(d).forEach(r=>{
-      // Considera todo dia em que o produto tinha uma meta numérica
-      // cadastrada — não só os dias em que ficou abaixo dela. Antes só
-      // entravam os dias ruins, o que subestimava tanto o Planejado quanto
-      // o Real somados no período (resquício de quando isso era só um
-      // ranking de perda, não um indicador de atingimento).
-      if(r.prev !== null){
+      // Entra na meta apenas se:
+      //   1) tem quantidade numérica definida (r.prev !== null)
+      //   2) NÃO é "Fora do plano de produção" (foraDoPlano)
+      //   3) NÃO é "Produção Não Apontada" (semQuantidade)
+      // Desvio Não Justificado COM quantidade definida ENTRA normalmente.
+      if(r.prev !== null && !rowIsForaDoPlano(r) && !r.semQuantidade){
         source.push(r);
       }
     });
@@ -3798,7 +3810,7 @@ function computeMetaAtingimentoPorSetor(filteredDates){
   const SETORES_EXCLUIDOS = new Set(['COZINHA']);
   filteredDates.forEach(d=>{
     getDayRows(d).forEach(r=>{
-      if(r.prev !== null && r.prev > 0){
+      if(r.prev !== null && r.prev > 0 && !rowIsForaDoPlano(r) && !r.semQuantidade){
         const setor = r.setor || '—';
         if(SETORES_EXCLUIDOS.has(setor)) return;
         if(!bySetor[setor]) bySetor[setor] = { sumRatio:0, count:0, planejado:0, real:0, dias:new Set() };
@@ -6114,7 +6126,7 @@ function PR_renderTable(){
   let itens = PR_DATA;
   if(filtro) itens = itens.filter(p => p.codigo.toLowerCase().includes(filtro) || p.descricao.toLowerCase().includes(filtro));
   if(itens.length === 0){
-    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum produto encontrado.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum produto encontrado.</td></tr>';
     return;
   }
   tbody.innerHTML = itens.map(row => PR_buildRowHtml(row)).join('');
@@ -6130,6 +6142,7 @@ function PR_buildRowHtml(row){
     <tr data-codigo="${row.codigo.replace(/"/g,'&quot;')}">
       <td class="center" style="font-weight:600;">${row.codigo}</td>
       <td>${row.descricao}</td>
+      <td class="center" style="font-size:12px;color:var(--ink-soft);">${row.unidade || ''}</td>
       <td class="center">
         <button type="button" class="lanc-hist-btn edit">Editar</button>
         <button type="button" class="lanc-hist-btn delete">Excluir</button>
@@ -6138,10 +6151,16 @@ function PR_buildRowHtml(row){
 }
 
 function PR_buildEditRowHtml(row){
+  const unidadeOpts = ['Massas','Unidade','Kg','Carrinhos','Caixas','Blocos'];
   return `
     <tr data-codigo="${row.codigo.replace(/"/g,'&quot;')}">
       <td class="center"><input type="text" class="epr-codigo" style="width:100px;" value="${row.codigo.replace(/"/g,'&quot;')}" disabled title="Código não pode ser editado — exclua e cadastre de novo se precisar trocar."></td>
       <td><input type="text" class="epr-descricao" value="${row.descricao.replace(/"/g,'&quot;')}"></td>
+      <td class="center">
+        <select class="epr-unidade" style="font-size:12px;padding:4px 6px;">
+          ${unidadeOpts.map(u => `<option value="${u}"${(row.unidade||'')===u?' selected':''}>${u}</option>`).join('')}
+        </select>
+      </td>
       <td class="center">
         <button type="button" class="lanc-hist-btn save">Salvar</button>
         <button type="button" class="lanc-hist-btn cancel">Cancelar</button>
@@ -6165,6 +6184,7 @@ async function PR_saveEditRow(codigo){
   if(!tr) return;
   const feedback = document.getElementById('prFeedback');
   const descricao = tr.querySelector('.epr-descricao').value.trim();
+  const unidade   = (tr.querySelector('.epr-unidade')?.value || '').trim();
   if(!descricao){
     feedback.textContent = '⚠ Descrição é obrigatória.';
     feedback.className = 'lanc-feedback err';
@@ -6172,10 +6192,10 @@ async function PR_saveEditRow(codigo){
   }
   try{
     const client = LANC_getClient();
-    const { error } = await client.from('produtos_producao').update({ descricao, updated_at: new Date().toISOString() }).eq('codigo', codigo);
+    const { error } = await client.from('produtos_producao').update({ descricao, unidade, updated_at: new Date().toISOString() }).eq('codigo', codigo);
     if(error) throw error;
     const idx = PR_DATA.findIndex(r => r.codigo === codigo);
-    if(idx >= 0) PR_DATA[idx].descricao = descricao;
+    if(idx >= 0){ PR_DATA[idx].descricao = descricao; PR_DATA[idx].unidade = unidade; }
     PR_renderTable();
     await PR_refreshCatalogCache();
     feedback.textContent = '✓ Produto atualizado.';
@@ -6212,6 +6232,7 @@ async function PR_submitNew(ev){
   const feedback = document.getElementById('prFeedback');
   const codigo = form.querySelector('.pr-codigo').value.trim();
   const descricao = form.querySelector('.pr-descricao').value.trim();
+  const unidade = (form.querySelector('.pr-unidade')?.value || '').trim();
   if(!codigo || !descricao){
     feedback.textContent = '⚠ Código e Descrição são obrigatórios.';
     feedback.className = 'lanc-feedback err';
@@ -6219,7 +6240,7 @@ async function PR_submitNew(ev){
   }
   try{
     const client = LANC_getClient();
-    const { error } = await client.from('produtos_producao').insert([{ codigo, descricao }]);
+    const { error } = await client.from('produtos_producao').insert([{ codigo, descricao, unidade }]);
     if(error) throw error;
     form.reset();
     feedback.textContent = '✓ Produto cadastrado.';
@@ -6304,9 +6325,9 @@ function LANC_getKnownValues(){
    (produtos_producao.codigo) só serve de identificador único por trás dos
    panos, pra nunca duplicar o mesmo produto com descrição diferente.
    ============================================================================ */
-let PRODCAT_LISTA = null;      // [{codigo, descricao}], null até carregar
-let PRODCAT_POR_NOME = null;   // Map: descricao normalizada (maiúsc/trim) -> {codigo, descricao}
-let PRODCAT_POR_CODIGO = null; // Map: codigo exato -> {codigo, descricao} — permite buscar produto pelo código
+let PRODCAT_LISTA = null;      // [{codigo, descricao, unidade}], null até carregar
+let PRODCAT_POR_NOME = null;   // Map: descricao normalizada (maiúsc/trim) -> {codigo, descricao, unidade}
+let PRODCAT_POR_CODIGO = null; // Map: codigo exato -> {codigo, descricao, unidade} — permite buscar produto pelo código
 
 function PRODCAT_normalizar(s){
   return (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
@@ -6316,7 +6337,7 @@ async function PRODCAT_load(){
   if(PRODCAT_LISTA) return PRODCAT_LISTA; // já carregado — cache simples, não recarrega sozinho
   try{
     const client = LANC_getClient();
-    const { data, error } = await client.from('produtos_producao').select('codigo, descricao').order('descricao');
+    const { data, error } = await client.from('produtos_producao').select('codigo, descricao, unidade').order('descricao');
     if(error) throw error;
     PRODCAT_LISTA = data || [];
     PRODCAT_POR_NOME = new Map();
@@ -6637,20 +6658,30 @@ function lpCreateItemRow(initial){
       const match = PRODCAT_POR_CODIGO.get(v) || PRODCAT_POR_CODIGO.get(semZeros);
       if(match){ _prodEl.value = match.descricao; _prodEl.dispatchEvent(new Event('input')); }
     });
-    // Seleciona/digita nome → preenche código
+    // Seleciona/digita nome → preenche código e unidade
     _prodEl.addEventListener('change', () => {
       if(!PRODCAT_POR_NOME) return;
       const match = PRODCAT_POR_NOME.get(PRODCAT_normalizar(_prodEl.value));
-      if(match) _codEl.value = match.codigo;
+      if(match){
+        _codEl.value = match.codigo;
+        const _unidEl = row.querySelector('.lp-unidade');
+        if(_unidEl && match.unidade) _unidEl.value = match.unidade;
+      }
     });
   }
 
   if(initial.produto){
     row.querySelector('.lp-produto').value = initial.produto;
-    // Restaura o código junto com o nome
+    // Restaura o código e unidade junto com o nome
     if(_codEl && PRODCAT_POR_NOME){
       const _m = PRODCAT_POR_NOME.get(PRODCAT_normalizar(initial.produto));
-      if(_m) _codEl.value = _m.codigo;
+      if(_m){
+        _codEl.value = _m.codigo;
+        if(!initial.unidade && _m.unidade){
+          const _uEl = row.querySelector('.lp-unidade');
+          if(_uEl) _uEl.value = _m.unidade;
+        }
+      }
     }
   }
   if(initial.unidade) row.querySelector('.lp-unidade').value = initial.unidade;
