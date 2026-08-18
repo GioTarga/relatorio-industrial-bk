@@ -1212,10 +1212,26 @@
     </div>
 
     <div class="period-bar">
-      <label for="eqDashDataIni">De</label>
-      <input type="date" id="eqDashDataIni">
-      <label for="eqDashDataFim">Até</label>
-      <input type="date" id="eqDashDataFim">
+      <label>Período</label>
+      <div class="dr-wrap" id="drWrap_eq">
+        <button type="button" class="dr-btn" id="drBtn_eq"></button>
+        <div class="dr-panel" id="drPanel_eq">
+          <div class="dr-header">
+            <button type="button" class="dr-nav" id="drPrev_eq">‹</button>
+            <div class="dr-month-label" id="drLabel_eq"></div>
+            <button type="button" class="dr-nav" id="drNext_eq">›</button>
+          </div>
+          <div class="dr-weekdays"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+          <div class="dr-grid" id="drGrid_eq"></div>
+          <div class="dr-hint" id="drHint_eq">Clique numa data para começar, e em outra pra fechar o intervalo</div>
+          <div class="dr-footer">
+            <button type="button" id="drClear_eq">Limpar</button>
+            <button type="button" id="drToday_eq">Hoje</button>
+          </div>
+        </div>
+      </div>
+      <input type="date" id="eqDashDataIni" style="display:none;">
+      <input type="date" id="eqDashDataFim" style="display:none;">
       <button class="btn-refresh" id="eqDashBtnRefresh">⟳ Atualizar</button>
       <span class="period-info" id="eqDashPeriodInfo"></span>
     </div>
@@ -1821,7 +1837,6 @@
                   <option value="Giro">Giro Dia</option>
                   <option value="Salgado">Salgado</option>
                   <option value="Massa Salgado">Massa Salgado</option>
-                  <option value="Pão de Queijo">Pão de Queijo</option>
                   <option value="Confeitaria">Confeitaria</option>
                   <option value="Padaria">Padaria</option>
                   <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
@@ -1866,7 +1881,6 @@
                   <option value="Giro">Giro Dia</option>
                   <option value="Salgado">Salgado</option>
                   <option value="Massa Salgado">Massa Salgado</option>
-                  <option value="Pão de Queijo">Pão de Queijo</option>
                   <option value="Confeitaria">Confeitaria</option>
                   <option value="Padaria">Padaria</option>
                   <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
@@ -8322,13 +8336,11 @@ let EQ_DASH_MINIMOS = {}; // item -> {quantidade_minima, unidade} — cadastrado
 
 function EQ_DASH_init(){
   const hoje = new Date();
-  if(!document.getElementById('eqDashDataFim').value){
-    document.getElementById('eqDashDataFim').value = hoje.toISOString().slice(0,10);
-  }
-  if(!document.getElementById('eqDashDataIni').value){
-    const d = new Date(); d.setDate(d.getDate()-60);
-    document.getElementById('eqDashDataIni').value = d.toISOString().slice(0,10);
-  }
+  const startEl = document.getElementById('eqDashDataIni');
+  const endEl   = document.getElementById('eqDashDataFim');
+  if(!endEl.value)   endEl.value   = hoje.toISOString().slice(0,10);
+  if(!startEl.value){ const d = new Date(); d.setDate(d.getDate()-60); startEl.value = d.toISOString().slice(0,10); }
+  initDateRangePicker('eq', startEl, endEl, EQ_DASH_loadData);
   document.getElementById('eqDashBtnRefresh').addEventListener('click', EQ_DASH_loadData);
   document.getElementById('eqMinimosToggleBtn').addEventListener('click', ()=>{
     const panel = document.getElementById('eqMinimosPanel');
@@ -8773,7 +8785,7 @@ function MC_renderMatriz(itens){
 let MC_RADAR = null; // cache do último carregamento
 
 /* Sectores rastreados pelo radar — mesmo conjunto do módulo PP */
-const MC_RADAR_LINHAS = ['Giro','Salgado','Massa Salgado','Pão de Queijo','Confeitaria','Padaria','Pão de Ló e Bolos'];
+const MC_RADAR_LINHAS = ['Giro','Salgado','Massa Salgado','Confeitaria','Padaria','Pão de Ló e Bolos'];
 const MC_RADAR_LABELS = { 'Giro': 'Giro Dia' };
 
 async function MC_loadRadar(){
@@ -9300,7 +9312,7 @@ document.getElementById('mcRadarRefreshBtn').addEventListener('click', ()=>{ MC_
    por isso o Giro (que tem os dois tipos) mostra tudo, e as outras linhas
    (que só têm um tipo) mostram só o bloco correspondente. */
 let PP_loadedOnce = false;
-const PP_LINHAS = ['Giro','Salgado','Massa Salgado','Pão de Queijo','Confeitaria','Padaria','Pão de Ló e Bolos'];
+const PP_LINHAS = ['Giro','Salgado','Massa Salgado','Confeitaria','Padaria','Pão de Ló e Bolos'];
 const PP_LINHA_LABELS = { 'Giro': 'Giro Dia' }; // rótulo de exibição — o valor real (usado nas consultas) continua "Giro"
 let PP_currentLinha = 'Giro';
 let PP_selectedProduto = '';
@@ -9787,9 +9799,9 @@ function PP_renderKPIs(){
     return;
   }
 
-  // Pão de Queijo e Padaria: card de quantas bateladas dá pra fazer por
+  // Padaria: card de quantas bateladas dá pra fazer por
   // hora (1h ÷ lead time médio das Etapas) e o próprio lead time médio.
-  if(PP_currentLinha === 'Pão de Queijo' || PP_currentLinha === 'Padaria'){
+  if(PP_currentLinha === 'Padaria'){
     const leadTimes = PP_BATELADAS
       .map(b => (b.tempo_processo_etapas||[]).reduce((s,e)=> s + (Number(e.duracao_seg)||0), 0))
       .filter(v => v > 0);
@@ -10492,7 +10504,6 @@ const PPL_VELOCIDADE_CONFIG = {
   'Giro': { campos:['inicio','fim','produtividade_paes_hora','tamanho_pao_g'] },
   'Salgado': { campos:['maquina','inicio','fim','produtividade_prensa','qtd_colaboradores','unidades_por_hora','producao_por_hora','tempo_medio_seg','unidade_medida','unidades_por_recipiente','duracao_rolo_seg'] },
   'Massa Salgado': { campos:['inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
-  'Pão de Queijo': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
   'Padaria': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
   'Confeitaria': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
   'Pão de Ló e Bolos': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_batelada_massa'] },
