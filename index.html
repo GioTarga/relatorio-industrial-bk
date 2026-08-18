@@ -9174,7 +9174,7 @@ function MC_gerarFormulario(){
   }
 
   // --- Estado da seleção ---
-  let selectedIdx = 0; // índice em opcoes[]
+  let selectedIdx = -1; // índice em opcoes[]
 
   // --- Modal ---
   const overlay = document.createElement('div');
@@ -9234,10 +9234,16 @@ function MC_gerarFormulario(){
     const searchEl  = document.getElementById('mcFormSearch');
     const labelEl   = document.getElementById('mcFormSelectedLabel');
     const ddEl      = document.getElementById('mcFormDropdown');
-    if(searchEl) searchEl.value = opcao.prod;
-    if(labelEl)  labelEl.textContent = opcao.setor !== '— Sem coleta iniciada'
-      ? `Setor: ${opcao.setor}`
-      : 'Produto ainda sem coleta iniciada';
+    if(searchEl){
+      searchEl.value = opcao.prod;
+      searchEl.style.borderColor = 'var(--line,#ddd)';
+    }
+    if(labelEl){
+      labelEl.style.color = 'var(--ink-soft,#888)';
+      labelEl.textContent = opcao.setor !== '— Sem coleta iniciada'
+        ? `✓ Setor: ${opcao.setor}`
+        : '✓ Produto ainda sem coleta iniciada';
+    }
     if(ddEl) ddEl.style.display = 'none';
   }
 
@@ -9309,29 +9315,45 @@ function MC_gerarFormulario(){
   const searchEl = document.getElementById('mcFormSearch');
   const ddEl     = document.getElementById('mcFormDropdown');
 
-  searchEl.addEventListener('focus', () => renderDropdown(searchEl.value));
-  searchEl.addEventListener('input', () => renderDropdown(searchEl.value));
+  searchEl.addEventListener('focus', () => {
+    searchEl.style.borderColor = 'var(--line,#ddd)';
+    const labelEl2 = document.getElementById('mcFormSelectedLabel');
+    if(labelEl2) labelEl2.style.color = 'var(--ink-soft,#888)';
+    renderDropdown(searchEl.value);
+  });
+  searchEl.addEventListener('input', () => {
+    // Se o usuário edita o texto após ter selecionado, invalida a seleção
+    selectedIdx = -1;
+    const labelEl2 = document.getElementById('mcFormSelectedLabel');
+    if(labelEl2){ labelEl2.textContent = ''; }
+    renderDropdown(searchEl.value);
+  });
   searchEl.addEventListener('keydown', e => {
     if(e.key === 'Escape'){ ddEl.style.display = 'none'; }
   });
-  // Fecha dropdown ao clicar fora do input/dropdown
-  document.addEventListener('mousedown', function closeDd(e){
+  // Fecha dropdown ao clicar fora — listener persistente via overlay
+  overlay.addEventListener('mousedown', e => {
     if(!searchEl.contains(e.target) && !ddEl.contains(e.target)){
       ddEl.style.display = 'none';
-      document.removeEventListener('mousedown', closeDd);
     }
   });
 
-  // ── Inicializa com o primeiro item ──────────────────────────────────────
-  selectOpcao(0);
+  // ── Inicializa vazio — usuário deve buscar e clicar ────────────────────
+  // (sem selectOpcao(0) para não pré-fixar o setor Giro)
 
   // ── Botões do modal ─────────────────────────────────────────────────────
   document.getElementById('mcFormCancelar').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
 
   document.getElementById('mcFormConfirmar').addEventListener('click', () => {
+    if(selectedIdx < 0){
+      const searchEl2 = document.getElementById('mcFormSearch');
+      if(searchEl2) searchEl2.style.borderColor = '#c0392b';
+      const labelEl2 = document.getElementById('mcFormSelectedLabel');
+      if(labelEl2){ labelEl2.textContent = '⚠ Selecione um produto da lista acima.'; labelEl2.style.color = '#c0392b'; }
+      return;
+    }
     const opcao = opcoes[selectedIdx];
-    if(!opcao){ alert('Selecione um produto.'); return; }
     overlay.remove();
     MC_imprimirFormulario({ setor: opcao.setor, prod: opcao.prod, faltam: ['corridas','bateladas'] });
   });
