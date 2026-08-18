@@ -1004,20 +1004,6 @@
         Nenhum dado registrado pra essa linha no período selecionado.
       </div>
 
-      <!-- Bloco Tendência de Velocidade — independente do período; sempre busca histórico completo -->
-      <div id="ppBlocoTendencia" style="display:none;">
-        <div class="panel">
-          <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-            <span>📈 Tendência de Velocidade de Produção</span>
-            <select id="ppTendenciaProduto" style="padding:6px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:12px;font-family:inherit;background:var(--cream);">
-              <option value="">Todos os produtos</option>
-            </select>
-          </div>
-          <div class="trend-foot" style="margin-bottom:10px;">Velocidade média diária (unidades/hora) por dia de lançamento. Cada ponto = média das corridas daquele dia.</div>
-          <div id="ppTendenciaInfo" style="font-size:12px;color:var(--ink-soft);margin-bottom:8px;"></div>
-          <div class="chart-wrap" id="ppChartTendencia"></div>
-        </div>
-      </div>
 
       <!-- Painel de Etapas de Referência — visível só na aba Confeitaria -->
       <div id="ppPainelReferencia" style="display:none;" class="container">
@@ -10012,9 +9998,6 @@ function PP_render(){
   document.getElementById('ppPainelPareto').style.display = (temVelocidade && todasParadas.length > 0) ? 'block' : 'none';
   if(temVelocidade && todasParadas.length > 0) PP_renderPareto(todasParadas);
 
-  // Tendência — sempre visível quando há linha selecionada; busca histórico completo
-  document.getElementById('ppBlocoTendencia').style.display = 'block';
-  PP_loadTendenciaData();
 }
 
 /* ===== PARETO DE PARADAS POR CATEGORIA ===== */
@@ -10091,163 +10074,6 @@ function PP_renderPareto(paradas){
     </span>`).join('')}
   </div>`;
 }
-
-/* ===== TENDÊNCIA DE VELOCIDADE ===== */
-let PP_TENDENCIA_RAW = []; // corridas históricas da linha atual (sem filtro de data)
-
-async function PP_loadTendenciaData(){
-  const wrap = document.getElementById('ppChartTendencia');
-  const infoEl = document.getElementById('ppTendenciaInfo');
-  if(!wrap) return;
-  try {
-    const client = LANC_getClient();
-    const { data, error } = await client
-      .from('produtividade_corridas')
-      .select('data, produto, inicio, fim, quantidade, unidade_medida, unidades_por_hora, producao_por_hora')
-      .eq('linha', PP_currentLinha)
-      .order('data', { ascending: true });
-    if(error) throw error;
-    PP_TENDENCIA_RAW = data || [];
-
-    // Popula filtro de produto
-    const sel = document.getElementById('ppTendenciaProduto');
-    if(sel){
-      const prods = [...new Set(PP_TENDENCIA_RAW.map(r => r.produto).filter(Boolean))].sort();
-      const valorAtual = sel.value;
-      sel.innerHTML = '<option value="">Todos os produtos</option>' +
-        prods.map(p => `<option value="${p}"${p===valorAtual?' selected':''}>${p}</option>`).join('');
-      // Listener (adiciona só uma vez verificando flag)
-      if(!sel._ppTendListener){
-        sel._ppTendListener = true;
-        sel.addEventListener('change', () => PP_renderTendencia());
-      }
-    }
-    PP_renderTendencia();
-  } catch(e){
-    console.error('PP_loadTendenciaData:', e);
-    infoEl.textContent = 'Erro ao carregar tendência: ' + (e.message || e);
-  }
-}
-
-function PP_renderTendencia(){
-  const wrap = document.getElementById('ppChartTendencia');
-  const infoEl = document.getElementById('ppTendenciaInfo');
-  if(!wrap) return;
-
-  const prodFiltro = (document.getElementById('ppTendenciaProduto')?.value) || '';
-  const dados = prodFiltro
-    ? PP_TENDENCIA_RAW.filter(r => r.produto === prodFiltro)
-    : PP_TENDENCIA_RAW;
-
-  if(dados.length === 0){
-    wrap.innerHTML = '<div class="empty-state"><span class="empty-icon">📈</span>Nenhum dado de velocidade registrado ainda pra essa linha.</div>';
-    infoEl.textContent = '';
-    return;
-  }
-
-  // Agrupa por data: calcula velocidade média do dia
-  const porData = {};
-  dados.forEach(r => {
-    const vel = PP_getVelocidadeTendencia(r);
-    if(vel == null) return;
-    if(!porData[r.data]) porData[r.data] = { soma: 0, count: 0 };
-    porData[r.data].soma += vel;
-    porData[r.data].count += 1;
-  });
-
-  const pontos = Object.entries(porData)
-    .map(([data, v]) => ({ data, vel: v.soma / v.count }))
-    .sort((a, b) => a.data.localeCompare(b.data));
-
-  if(pontos.length < 2){
-    wrap.innerHTML = '<div class="empty-state"><span class="empty-icon">📈</span>Poucos dados ainda — registre mais dias pra ver a tendência.</div>';
-    infoEl.textContent = `${pontos.length} dia(s) com dados. São necessários ao menos 2 dias.`;
-    return;
-  }
-
-  // Estatísticas
-  const vels = pontos.map(p => p.vel);
-  const media = vels.reduce((a, b) => a + b, 0) / vels.length;
-  const primeiro = vels[0], ultimo = vels[vels.length - 1];
-  const delta = ((ultimo - primeiro) / primeiro * 100).toFixed(1);
-  const deltaStr = delta > 0 ? `+${delta}%` : `${delta}%`;
-  const deltaColor = delta >= 0 ? 'var(--good)' : 'var(--red)';
-  infoEl.innerHTML = `<span>${pontos.length} dias com dados · Média: <strong>${media.toFixed(0)} un/h</strong> · Variação 1º→último dia: <strong style="color:${deltaColor}">${deltaStr}</strong></span>`;
-
-  // SVG linha do tempo
-  const maxV = Math.max(...vels, 1);
-  const minV = Math.min(...vels, 0);
-  const W = 820, H = 220, padL = 52, padR = 20, padT = 20, padB = 50;
-  const iW = W - padL - padR, iH = H - padT - padB;
-  const xScale = i => padL + (i / (pontos.length - 1)) * iW;
-  const yScale = v => padT + iH - ((v - minV) / (maxV - minV || 1)) * iH;
-
-  // Linha de média
-  const yMedia = yScale(media);
-  const mediaLine = `<line x1="${padL}" y1="${yMedia}" x2="${W - padR}" y2="${yMedia}" stroke="var(--ink-soft)" stroke-width="1" stroke-dasharray="5,4" opacity="0.5"/>
-    <text x="${padL - 4}" y="${yMedia + 4}" font-size="9" fill="var(--ink-soft)" text-anchor="end">${media.toFixed(0)}</text>`;
-
-  // Linha principal
-  const pathD = pontos.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScale(p.vel)}`).join(' ');
-
-  // Área sob a curva
-  const areaD = `M ${xScale(0)} ${padT + iH} ` + pontos.map((p, i) => `L ${xScale(i)} ${yScale(p.vel)}`).join(' ') + ` L ${xScale(pontos.length - 1)} ${padT + iH} Z`;
-
-  // Pontos + labels de data (apenas início, meio, fim)
-  let dateLabels = '';
-  const labelIdxs = [0, Math.floor(pontos.length / 2), pontos.length - 1];
-  labelIdxs.forEach(i => {
-    const p = pontos[i];
-    const parts = p.data.split('-');
-    const label = `${parts[2]}/${parts[1]}`;
-    dateLabels += `<text x="${xScale(i)}" y="${H - 8}" font-size="10" fill="var(--ink-soft)" text-anchor="middle">${label}</text>`;
-  });
-
-  // Eixo Y labels
-  const steps = 4;
-  let yLabels = '';
-  for(let i = 0; i <= steps; i++){
-    const v = minV + (maxV - minV) * (i / steps);
-    const y = yScale(v);
-    yLabels += `<text x="${padL - 4}" y="${y + 4}" font-size="9" fill="var(--ink-soft)" text-anchor="end">${Math.round(v)}</text>`;
-    yLabels += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#f0ddc0" stroke-width="1"/>`;
-  }
-
-  // Pontos individuais (somente se poucos)
-  let circs = '';
-  if(pontos.length <= 60){
-    pontos.forEach((p, i) => {
-      const cor = i === pontos.length - 1 ? 'var(--red)' : 'var(--red-dark)';
-      circs += `<circle cx="${xScale(i)}" cy="${yScale(p.vel)}" r="${pontos.length <= 20 ? 4 : 2.5}" fill="${cor}" opacity="0.8">
-        <title>${p.data}: ${p.vel.toFixed(0)} un/h</title></circle>`;
-    });
-  }
-
-  wrap.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;">
-    <defs><linearGradient id="tendGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--red)" stop-opacity="0.15"/><stop offset="100%" stop-color="var(--red)" stop-opacity="0"/></linearGradient></defs>
-    ${yLabels}
-    ${mediaLine}
-    <path d="${areaD}" fill="url(#tendGrad)"/>
-    <path d="${pathD}" fill="none" stroke="var(--red)" stroke-width="2" stroke-linejoin="round"/>
-    ${circs}
-    ${dateLabels}
-  </svg>`;
-}
-
-/* Extrai velocidade (un/h) de um registro de corrida pra uso na tendência */
-function PP_getVelocidadeTendencia(r){
-  if(r.unidades_por_hora != null) return Number(r.unidades_por_hora);
-  if(r.producao_por_hora != null) return Number(r.producao_por_hora);
-  if(r.quantidade != null && r.inicio && r.fim){
-    const [ih, im] = r.inicio.split(':').map(Number);
-    const [fh, fm] = r.fim.split(':').map(Number);
-    let h = ((fh * 60 + fm) - (ih * 60 + im)) / 60;
-    if(h < 0) h += 24;
-    if(h > 0) return Number(r.quantidade) / h;
-  }
-  return null;
-}
-
 
 function PP_fmtDuracao(seg){
   if(seg == null || isNaN(seg)) return '—';
@@ -10384,8 +10210,12 @@ function PP_renderKPIs(){
     const tempoMedioMassa = tempoMedioValores.length ? tempoMedioValores.reduce((a,b)=>a+b,0)/tempoMedioValores.length : null;
     const massaPorHora = (tempoMedioMassa != null && tempoMedioMassa > 0) ? 3600/tempoMedioMassa : null;
 
-    // Batelada: usa duracao_total_seg registrado diretamente nas bateladas
-    const batelTimes = PP_BATELADAS.map(b => b.duracao_total_seg).filter(v => v != null && v > 0);
+    // Batelada: usa duracao_total_seg quando disponível; fallback = soma das etapas
+    const batelTimes = PP_BATELADAS.map(b => {
+      if(b.duracao_total_seg != null && Number(b.duracao_total_seg) > 0) return Number(b.duracao_total_seg);
+      const somaEtapas = (b.tempo_processo_etapas || []).reduce((s, e) => s + (Number(e.duracao_seg) || 0), 0);
+      return somaEtapas > 0 ? somaEtapas : null;
+    }).filter(v => v != null && v > 0);
     const tempoMedioBatelada = batelTimes.length ? batelTimes.reduce((a,b)=>a+b,0)/batelTimes.length : null;
     const bateladaPorHora = (tempoMedioBatelada != null && tempoMedioBatelada > 0) ? 3600/tempoMedioBatelada : null;
 
