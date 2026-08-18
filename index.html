@@ -8989,11 +8989,10 @@ function MC_renderRotina(){
     return;
   }
 
-  // Etiquetas amigáveis para cada tipo de coleta
+  // Apenas Produtividade e Tempo de Processo (sem Referência por ora)
   const LABELS = {
-    corridas:   { icon:'⚡', label:'Produtividade' },
-    bateladas:  { icon:'⏱', label:'Tempo de Processo' },
-    referencia: { icon:'🎯', label:'Referência (meta)' }
+    corridas:  { icon:'⚡', label:'Produtividade' },
+    bateladas: { icon:'⏱', label:'Tempo de Processo' }
   };
 
   let totalPendentes = 0;
@@ -9065,7 +9064,8 @@ function MC_renderRotina(){
 }
 
 // --------------------------------------------------------------------------
-// MC_gerarFormulario — gera folha de campo para impressão
+// MC_gerarFormulario — abre seletor de produto e gera folha A4 para impressão
+// 1 produto por página · 10 amostras · apenas Produtividade e Tempo de Processo
 // --------------------------------------------------------------------------
 function MC_gerarFormulario(){
   if(!MC_RADAR){
@@ -9073,143 +9073,204 @@ function MC_gerarFormulario(){
     return;
   }
 
-  const LABELS = {
-    corridas:   { icon:'⚡', label:'Produtividade', campos:['Início','Fim','Qtd produzida','Un. de medida','Obs'] },
-    bateladas:  { icon:'⏱', label:'Tempo de Processo', campos:['Etapa / fase','Tempo início','Tempo fim','Tempo total (seg)','Obs'] },
-    referencia: { icon:'🎯', label:'Referência (meta)', campos:['Etapa / fase','Tempo-meta (seg)','Responsável','Obs'] }
-  };
-
-  const today = new Date();
-  const dataStr = today.toLocaleDateString('pt-BR');
-
-  let secoes = '';
-  let algumPendente = false;
-
+  // Monta lista de produtos pendentes (corridas ou bateladas)
+  const opcoes = []; // { setor, prod, faltam }
   MC_RADAR_LINHAS.forEach(linha => {
     const prods = MC_RADAR[linha];
     if(!prods) return;
-
-    const pendentes = [];
     Object.entries(prods).forEach(([prod, flags]) => {
-      const faltam = Object.keys(LABELS).filter(k => !flags[k]);
-      if(faltam.length > 0) pendentes.push({ prod, faltam });
+      const faltam = ['corridas','bateladas'].filter(k => !flags[k]);
+      if(faltam.length > 0) opcoes.push({ setor: linha, prod, faltam });
     });
-    if(pendentes.length === 0) return;
-
-    algumPendente = true;
-    let prodSecs = '';
-
-    pendentes.forEach(({ prod, faltam }) => {
-      let tabelasCampos = '';
-      faltam.forEach(tipo => {
-        const { icon, label, campos } = LABELS[tipo];
-        const cabecalhos = campos.map(c => `<th style="padding:6px 8px;border:1px solid #ccc;font-size:11px;background:#f0f0f0;">${c}</th>`).join('');
-        const celulas = campos.map(() => `<td style="padding:12px 8px;border:1px solid #ccc;min-width:80px;">&nbsp;</td>`).join('');
-        // 3 linhas de preenchimento por tipo
-        const linhasFill = [1,2,3].map(() => `<tr>${celulas}</tr>`).join('');
-        tabelasCampos += `
-          <div style="margin:8px 0;">
-            <div style="font-size:11px;font-weight:700;color:#555;margin-bottom:4px;">${icon} ${label}</div>
-            <table style="width:100%;border-collapse:collapse;">
-              <thead><tr>${cabecalhos}</tr></thead>
-              <tbody>${linhasFill}</tbody>
-            </table>
-          </div>`;
-      });
-
-      prodSecs += `
-        <div style="border:1px solid #bbb;border-radius:6px;margin-bottom:14px;overflow:hidden;page-break-inside:avoid;">
-          <div style="background:#e8e8e8;padding:6px 12px;font-size:12px;font-weight:700;">${prod}</div>
-          <div style="padding:10px 12px;">${tabelasCampos}</div>
-        </div>`;
-    });
-
-    secoes += `
-      <div style="margin-bottom:24px;page-break-inside:avoid;">
-        <div style="background:#222;color:#fff;padding:8px 14px;font-size:13px;
-          font-weight:700;border-radius:6px 6px 0 0;margin-bottom:8px;">
-          ${linha} &nbsp;—&nbsp; ${pendentes.length} produto${pendentes.length>1?'s':''} pendente${pendentes.length>1?'s':''}
-        </div>
-        ${prodSecs}
-      </div>`;
   });
 
-  if(!algumPendente){
+  if(opcoes.length === 0){
     alert('Nenhum produto pendente! Todos os setores estão 100% mapeados.');
     return;
   }
+
+  // --- Modal de seleção ---
+  const overlay = document.createElement('div');
+  overlay.id = 'mcFormOverlay';
+  overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.55);
+    z-index:9000;display:flex;align-items:center;justify-content:center;`;
+
+  // Agrupa por setor para o <select>
+  const porSetor = {};
+  opcoes.forEach(o => {
+    if(!porSetor[o.setor]) porSetor[o.setor] = [];
+    porSetor[o.setor].push(o);
+  });
+  const optgroupsHTML = Object.entries(porSetor).map(([setor, lista]) => {
+    const opts = lista.map((o, i) => {
+      const idx = opcoes.indexOf(o);
+      return `<option value="${idx}">${o.prod}</option>`;
+    }).join('');
+    return `<optgroup label="${setor}">${opts}</optgroup>`;
+  }).join('');
+
+  overlay.innerHTML = `
+    <div style="background:var(--surface,#fff);border-radius:12px;padding:28px 30px;
+      max-width:480px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.3);">
+      <div style="font-size:18px;font-weight:700;margin-bottom:6px;">🖨 Gerar Formulário de Coleta</div>
+      <div style="font-size:12.5px;color:var(--ink-soft,#666);margin-bottom:20px;">
+        Selecione o produto que você vai coletar. O formulário será impresso com
+        <strong>10 amostras</strong> para cada tipo de dado pendente.
+      </div>
+      <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;">
+        Produto a coletar:
+      </label>
+      <select id="mcFormSelect" style="width:100%;padding:9px 12px;border:1px solid var(--line,#ddd);
+        border-radius:7px;font-size:13px;background:var(--surface,#fff);margin-bottom:20px;">
+        ${optgroupsHTML}
+      </select>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button id="mcFormCancelar" type="button"
+          style="padding:8px 18px;border:1px solid var(--line,#ddd);background:transparent;
+            border-radius:7px;font-size:13px;cursor:pointer;">Cancelar</button>
+        <button id="mcFormConfirmar" type="button"
+          style="padding:8px 22px;background:var(--red,#c0392b);color:#fff;
+            border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">
+          🖨 Gerar
+        </button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  document.getElementById('mcFormCancelar').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
+
+  document.getElementById('mcFormConfirmar').addEventListener('click', () => {
+    const idx = parseInt(document.getElementById('mcFormSelect').value, 10);
+    overlay.remove();
+    MC_imprimirFormulario(opcoes[idx]);
+  });
+}
+
+// --------------------------------------------------------------------------
+// MC_imprimirFormulario — constrói e abre o HTML imprimível (1 produto / A4)
+// --------------------------------------------------------------------------
+function MC_imprimirFormulario({ setor, prod, faltam }){
+  const today = new Date();
+  const dataStr = today.toLocaleDateString('pt-BR');
+  const N = 10; // amostras
+
+  // Definição das tabelas por tipo
+  const TIPOS = {
+    corridas: {
+      icon: '⚡', label: 'Produtividade',
+      cols: ['N°','Início','Fim','Duração','Qtd produzida','Un. medida','Obs'],
+      widths: ['30px','70px','70px','70px','90px','80px','']
+    },
+    bateladas: {
+      icon: '⏱', label: 'Tempo de Processo',
+      cols: ['N°','Etapa / Fase','Hora início','Hora fim','Tempo (seg)','Obs'],
+      widths: ['30px','','75px','75px','80px','']
+    }
+  };
+
+  let tabelas = '';
+  faltam.forEach(tipo => {
+    const { icon, label, cols, widths } = TIPOS[tipo];
+    const ths = cols.map((c, i) =>
+      `<th style="padding:5px 6px;border:1px solid #aaa;font-size:10px;
+        background:#e8e8e8;white-space:nowrap;${widths[i]?'width:'+widths[i]+';':''}">${c}</th>`
+    ).join('');
+    const tds = cols.map((c, i) =>
+      `<td style="padding:0;border:1px solid #aaa;${widths[i]?'width:'+widths[i]+';':''}">&nbsp;</td>`
+    ).join('');
+    const rows = Array.from({length:N}, (_, i) =>
+      `<tr style="height:22px;">
+        <td style="padding:2px 4px;border:1px solid #aaa;width:30px;text-align:center;
+          font-size:10px;background:#f9f9f9;">${i+1}</td>
+        ${cols.slice(1).map((c, ci) =>
+          `<td style="padding:2px 4px;border:1px solid #aaa;
+            ${widths[ci+1]?'width:'+widths[ci+1]+';':''}">&nbsp;</td>`
+        ).join('')}
+      </tr>`
+    ).join('');
+
+    tabelas += `
+      <div style="margin-bottom:18px;">
+        <div style="font-size:12px;font-weight:700;margin-bottom:5px;
+          padding:5px 10px;background:#222;color:#fff;border-radius:4px 4px 0 0;">
+          ${icon} ${label} — 10 amostras
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:11px;">
+          <thead><tr>${ths}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  });
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Rotina de Coleta — Bread King</title>
+<title>Coleta — ${prod}</title>
 <style>
-  @page { size: A4; margin: 18mm 14mm; }
+  @page { size: A4 portrait; margin: 14mm 12mm; }
   * { box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; color: #111; margin: 0; }
-  .cabecalho { display:flex; justify-content:space-between; align-items:flex-end;
-    border-bottom: 3px solid #111; padding-bottom: 10px; margin-bottom: 20px; }
-  .cabecalho h1 { font-size: 18px; margin: 0 0 4px; }
-  .cabecalho p  { font-size: 11px; color: #555; margin: 0; }
-  .info-row { display:flex; gap: 24px; margin-bottom: 20px; }
-  .info-row label { font-size: 11px; color: #555; }
-  .info-row .campo { border-bottom: 1px solid #555; min-width: 140px;
-    display:inline-block; padding-bottom: 2px; }
-  .legenda { background: #f5f5f5; border: 1px solid #ccc; border-radius: 6px;
-    padding: 8px 14px; margin-bottom: 20px; font-size: 11px; color: #444; }
-  @media print { button { display: none; } }
+  body { font-family: Arial, sans-serif; color: #111; margin: 0; font-size: 11px; }
+  .topo { display:flex; justify-content:space-between; align-items:flex-start;
+    border-bottom: 2px solid #111; padding-bottom: 8px; margin-bottom: 12px; }
+  .topo h1 { font-size: 15px; margin: 0 0 2px; }
+  .topo p  { font-size: 10px; color: #555; margin: 0; }
+  .produto { background:#111; color:#fff; padding:7px 12px; border-radius:5px;
+    font-size:13px; font-weight:700; margin-bottom:12px; }
+  .setor-tag { font-size:10px; opacity:.7; font-weight:400; margin-left:8px; }
+  .info-row { display:flex; gap:20px; margin-bottom:14px; flex-wrap:wrap; }
+  .info-row .campo-wrap { display:flex; flex-direction:column; gap:2px; }
+  .info-row label { font-size:9px; color:#666; text-transform:uppercase; letter-spacing:.5px; }
+  .info-row .linha { border-bottom:1px solid #555; min-width:130px; height:18px; }
+  @media print { .btn-print { display:none; } }
 </style>
 </head>
 <body>
 
-<div class="cabecalho">
+<div class="topo">
   <div>
-    <h1>🍞 Bread King — Rotina de Coleta</h1>
-    <p>Formulário de campo · Gerado em ${dataStr}</p>
+    <h1>🍞 Bread King — Formulário de Coleta</h1>
+    <p>Gerado em ${dataStr} &nbsp;·&nbsp; Preencha no campo e lance no sistema ao retornar.</p>
   </div>
-  <div style="text-align:right;">
-    <button onclick="window.print()"
-      style="padding:8px 18px;font-size:12px;background:#111;color:#fff;
-        border:none;border-radius:5px;cursor:pointer;">🖨 Imprimir</button>
-  </div>
+  <button class="btn-print" onclick="window.print()"
+    style="padding:7px 16px;font-size:11px;background:#111;color:#fff;
+      border:none;border-radius:5px;cursor:pointer;white-space:nowrap;">🖨 Imprimir</button>
+</div>
+
+<div class="produto">
+  ${prod}
+  <span class="setor-tag">[ ${setor} ]</span>
 </div>
 
 <div class="info-row">
-  <div><label>Data coleta: </label> <span class="campo">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
-  <div><label>Turno: </label> <span class="campo">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
-  <div><label>Responsável: </label> <span class="campo">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+  <div class="campo-wrap"><label>Data da coleta</label><div class="linha"></div></div>
+  <div class="campo-wrap"><label>Turno</label><div class="linha" style="min-width:80px;"></div></div>
+  <div class="campo-wrap"><label>Responsável</label><div class="linha" style="min-width:160px;"></div></div>
+  <div class="campo-wrap"><label>Máquina / Equipamento</label><div class="linha" style="min-width:140px;"></div></div>
 </div>
 
-<div class="legenda">
-  <strong>Legenda:</strong> &nbsp;
-  ⚡ Produtividade = corridas produtivas (início, fim, quantidade) &nbsp;|&nbsp;
-  ⏱ Tempo de Processo = cronometragem por etapa &nbsp;|&nbsp;
-  🎯 Referência = tempo-meta da operação padrão
+${tabelas}
+
+<div style="margin-top:10px;padding-top:6px;border-top:1px dashed #ccc;
+  font-size:9.5px;color:#999;display:flex;justify-content:space-between;">
+  <span>Bread King · Rotina de Coleta · ${dataStr}</span>
+  <span>Assinatura: ___________________________</span>
 </div>
 
-${secoes}
-
-<p style="font-size:10px;color:#999;margin-top:32px;border-top:1px solid #ddd;padding-top:8px;">
-  Documento gerado automaticamente pelo sistema Bread King · ${dataStr}
-</p>
 </body>
 </html>`;
 
-  // Abre em nova aba e dispara impressão
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url  = URL.createObjectURL(blob);
   const win  = window.open(url, '_blank');
   if(win){
-    win.addEventListener('load', () => {
-      win.focus();
-      win.print();
-    });
+    win.addEventListener('load', () => { win.focus(); win.print(); });
   } else {
-    // Fallback: download direto
     const a = document.createElement('a');
     a.href = url;
-    a.download = `rotina_coleta_${dataStr.replace(/\//g,'-')}.html`;
+    a.download = `coleta_${prod.substring(0,30).replace(/[^a-zA-Z0-9]/g,'_')}_${dataStr.replace(/\//g,'-')}.html`;
     a.click();
   }
 }
