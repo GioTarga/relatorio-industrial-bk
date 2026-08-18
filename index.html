@@ -9933,7 +9933,15 @@ async function PP_loadData(){
     ]);
     if(bateladasRes.error) throw bateladasRes.error;
     if(corridasRes.error) throw corridasRes.error;
-    PP_BATELADAS_RAW = bateladasRes.data || [];
+
+    // Etapas ocultadas temporariamente da exibição e dos cálculos
+    const PP_ETAPAS_OCULTAS = new Set(['Modelagem', 'Modelagem GA']);
+
+    PP_BATELADAS_RAW = (bateladasRes.data || []).map(b => ({
+      ...b,
+      tempo_processo_etapas: (b.tempo_processo_etapas || [])
+        .filter(e => !PP_ETAPAS_OCULTAS.has(e.etapa))
+    }));
     PP_CORRIDAS_RAW = corridasRes.data || [];
     PP_populateProdutoFilter();
     PP_applyProdutoFilter();
@@ -11447,7 +11455,10 @@ async function PPL_loadHistorico(){
     const [batRes, corRes] = await Promise.all([qBat, qCor]);
     if(batRes.error) throw batRes.error;
     if(corRes.error) throw corRes.error;
-    const bateladas = (batRes.data || []).map(b => Object.assign({ tipo:'etapas' }, b));
+    const _etapasOcultas = new Set(['Modelagem', 'Modelagem GA']);
+    const bateladas = (batRes.data || []).map(b => Object.assign({ tipo:'etapas' }, b, {
+      tempo_processo_etapas: (b.tempo_processo_etapas || []).filter(e => !_etapasOcultas.has(e.etapa))
+    }));
     const corridas = (corRes.data || []).map(c => Object.assign({ tipo:'velocidade' }, c));
     PPL_HIST_DATA = [...bateladas, ...corridas].sort((a,b)=> b.data.localeCompare(a.data));
     PPL_renderHistorico();
