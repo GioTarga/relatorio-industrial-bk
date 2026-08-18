@@ -9114,30 +9114,24 @@ function MC_gerarFormulario(){
     bateladas: { icon:'⏱', label:'Tempo de Processo' }
   };
 
-  // Monta os botões de tipo de coleta para um produto
+  // Monta os botões de tipo de coleta — sempre exibe os dois, marca pendentes
   function renderTipos(faltam){
-    if(faltam.length === 1){
-      // Só um tipo pendente — exibe como info, sem escolha
-      const { icon, label } = TIPO_INFO[faltam[0]];
-      return `<div style="font-size:12.5px;color:var(--ink-soft,#666);
-        background:var(--surface-alt,#f5f4f2);border-radius:7px;padding:10px 14px;
-        border:1px solid var(--line,#ddd);">
-        Único tipo pendente: <strong>${icon} ${label}</strong>
-        <input type="hidden" id="mcFormTipo" value="${faltam[0]}">
-      </div>`;
-    }
-    // Dois tipos — botões de escolha
     return `<div style="display:flex;gap:10px;">
-      ${faltam.map(t => {
+      ${['corridas','bateladas'].map(t => {
         const { icon, label } = TIPO_INFO[t];
+        const pendente = faltam.includes(t);
         return `<label style="flex:1;cursor:pointer;">
           <input type="radio" name="mcTipo" value="${t}" style="display:none;">
           <div class="mc-tipo-btn" data-tipo="${t}"
             style="border:2px solid var(--line,#ddd);border-radius:8px;padding:10px 14px;
               text-align:center;font-size:12.5px;font-weight:600;transition:all .15s;
-              cursor:pointer;user-select:none;">
-            <div style="font-size:20px;margin-bottom:3px;">${icon}</div>
+              cursor:pointer;user-select:none;position:relative;">
+            <div style="font-size:22px;margin-bottom:4px;">${icon}</div>
             ${label}
+            ${pendente
+              ? `<div style="font-size:9.5px;color:var(--red,#c0392b);margin-top:4px;font-weight:700;">● Pendente</div>`
+              : `<div style="font-size:9.5px;color:var(--good,#27ae60);margin-top:4px;font-weight:700;">✓ Coletado</div>`
+            }
           </div>
         </label>`;
       }).join('')}
@@ -9218,18 +9212,13 @@ function MC_gerarFormulario(){
     const opcao = opcoes[idx];
 
     // Descobre o tipo selecionado
-    let tipoSel;
-    if(opcao.faltam.length === 1){
-      tipoSel = opcao.faltam[0];
-    } else {
-      const radioChecked = overlay.querySelector('input[name="mcTipo"]:checked');
-      if(!radioChecked){
-        const erroEl = document.getElementById('mcTipoErro');
-        if(erroEl) erroEl.style.display = 'block';
-        return;
-      }
-      tipoSel = radioChecked.value;
+    const radioChecked = overlay.querySelector('input[name="mcTipo"]:checked');
+    if(!radioChecked){
+      const erroEl = document.getElementById('mcTipoErro');
+      if(erroEl) erroEl.style.display = 'block';
+      return;
     }
+    const tipoSel = radioChecked.value;
 
     overlay.remove();
     MC_imprimirFormulario({ setor: opcao.setor, prod: opcao.prod, faltam: [tipoSel] });
