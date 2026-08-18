@@ -1346,6 +1346,28 @@
       </div>
     </div>
 
+    <!-- ===== ROTINA DE COLETA ===== -->
+    <div class="panel" id="mcRotinaPanel" style="margin-top:0;">
+      <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+        <span>📋 Rotina de Coleta</span>
+        <button type="button" class="btn-primary" id="mcGerarFormBtn"
+          style="padding:7px 18px;font-size:12.5px;display:flex;align-items:center;gap:6px;">
+          🖨 Gerar Formulário
+        </button>
+      </div>
+      <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 14px;">
+        Produtos com coleta pendente, agrupados por setor. Clique em
+        <strong>🖨 Gerar Formulário</strong> para baixar a folha de campo
+        pronta para impressão.
+      </p>
+      <div id="mcRotinaGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;">
+        <div class="empty-state" style="grid-column:1/-1;">
+          Atualize o Radar de Cobertura para visualizar a rotina.
+        </div>
+      </div>
+    </div>
+    <!-- ===== /ROTINA DE COLETA ===== -->
+
     </div>
   </div> <!-- /page-melhoria -->
 
@@ -8948,6 +8970,248 @@ function MC_renderRadar(){
   });
 
   gridEl.innerHTML = cardHTMLs.join('');
+
+  // Após renderizar o radar, atualiza a rotina de coleta automaticamente
+  MC_renderRotina();
+}
+
+// --------------------------------------------------------------------------
+// MC_renderRotina — exibe no painel "Rotina de Coleta" os produtos pendentes
+// --------------------------------------------------------------------------
+function MC_renderRotina(){
+  const grid = document.getElementById('mcRotinaGrid');
+  if(!grid) return;
+
+  if(!MC_RADAR){
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
+      Atualize o Radar de Cobertura para visualizar a rotina.
+    </div>`;
+    return;
+  }
+
+  // Etiquetas amigáveis para cada tipo de coleta
+  const LABELS = {
+    corridas:   { icon:'⚡', label:'Produtividade' },
+    bateladas:  { icon:'⏱', label:'Tempo de Processo' },
+    referencia: { icon:'🎯', label:'Referência (meta)' }
+  };
+
+  let totalPendentes = 0;
+  const cardHTMLs = [];
+
+  MC_RADAR_LINHAS.forEach(linha => {
+    const prods = MC_RADAR[linha];
+    if(!prods) return;
+
+    const pendentes = [];
+    Object.entries(prods).forEach(([prod, flags]) => {
+      const faltam = Object.keys(LABELS).filter(k => !flags[k]);
+      if(faltam.length > 0) pendentes.push({ prod, faltam });
+    });
+
+    if(pendentes.length === 0) return; // setor 100% coberto
+
+    totalPendentes += pendentes.length;
+
+    const linhas = pendentes.map(({ prod, faltam }) => {
+      const badges = faltam.map(k =>
+        `<span style="background:var(--warn-bg,#fff3cd);color:var(--warn,#856404);
+          border:1px solid var(--warn,#ffc107);border-radius:4px;
+          padding:2px 7px;font-size:10.5px;white-space:nowrap;">
+          ${LABELS[k].icon} ${LABELS[k].label}
+        </span>`
+      ).join(' ');
+      return `<tr>
+        <td style="padding:5px 8px;font-size:12px;border-bottom:1px solid var(--line);">
+          ${prod}
+        </td>
+        <td style="padding:5px 8px;border-bottom:1px solid var(--line);">
+          <div style="display:flex;flex-wrap:wrap;gap:4px;">${badges}</div>
+        </td>
+      </tr>`;
+    }).join('');
+
+    cardHTMLs.push(`
+      <div style="background:var(--surface);border:1px solid var(--line);
+        border-radius:10px;overflow:hidden;">
+        <div style="background:var(--surface-alt,#f5f4f2);padding:8px 12px;
+          font-weight:700;font-size:12.5px;display:flex;justify-content:space-between;
+          align-items:center;border-bottom:1px solid var(--line);">
+          <span>${linha}</span>
+          <span style="background:var(--red);color:#fff;border-radius:20px;
+            padding:2px 9px;font-size:11px;">${pendentes.length} pendente${pendentes.length>1?'s':''}</span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr>
+            <th style="padding:5px 8px;font-size:10.5px;color:var(--ink-soft);
+              font-weight:700;text-align:left;border-bottom:2px solid var(--line);">Produto</th>
+            <th style="padding:5px 8px;font-size:10.5px;color:var(--ink-soft);
+              font-weight:700;text-align:left;border-bottom:2px solid var(--line);">O que coletar</th>
+          </tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      </div>`);
+  });
+
+  if(cardHTMLs.length === 0){
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
+      <span style="font-size:28px;">✅</span><br>
+      Todos os produtos estão 100% mapeados. Nenhuma coleta pendente!
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = cardHTMLs.join('');
+}
+
+// --------------------------------------------------------------------------
+// MC_gerarFormulario — gera folha de campo para impressão
+// --------------------------------------------------------------------------
+function MC_gerarFormulario(){
+  if(!MC_RADAR){
+    alert('Atualize o Radar de Cobertura antes de gerar o formulário.');
+    return;
+  }
+
+  const LABELS = {
+    corridas:   { icon:'⚡', label:'Produtividade', campos:['Início','Fim','Qtd produzida','Un. de medida','Obs'] },
+    bateladas:  { icon:'⏱', label:'Tempo de Processo', campos:['Etapa / fase','Tempo início','Tempo fim','Tempo total (seg)','Obs'] },
+    referencia: { icon:'🎯', label:'Referência (meta)', campos:['Etapa / fase','Tempo-meta (seg)','Responsável','Obs'] }
+  };
+
+  const today = new Date();
+  const dataStr = today.toLocaleDateString('pt-BR');
+
+  let secoes = '';
+  let algumPendente = false;
+
+  MC_RADAR_LINHAS.forEach(linha => {
+    const prods = MC_RADAR[linha];
+    if(!prods) return;
+
+    const pendentes = [];
+    Object.entries(prods).forEach(([prod, flags]) => {
+      const faltam = Object.keys(LABELS).filter(k => !flags[k]);
+      if(faltam.length > 0) pendentes.push({ prod, faltam });
+    });
+    if(pendentes.length === 0) return;
+
+    algumPendente = true;
+    let prodSecs = '';
+
+    pendentes.forEach(({ prod, faltam }) => {
+      let tabelasCampos = '';
+      faltam.forEach(tipo => {
+        const { icon, label, campos } = LABELS[tipo];
+        const cabecalhos = campos.map(c => `<th style="padding:6px 8px;border:1px solid #ccc;font-size:11px;background:#f0f0f0;">${c}</th>`).join('');
+        const celulas = campos.map(() => `<td style="padding:12px 8px;border:1px solid #ccc;min-width:80px;">&nbsp;</td>`).join('');
+        // 3 linhas de preenchimento por tipo
+        const linhasFill = [1,2,3].map(() => `<tr>${celulas}</tr>`).join('');
+        tabelasCampos += `
+          <div style="margin:8px 0;">
+            <div style="font-size:11px;font-weight:700;color:#555;margin-bottom:4px;">${icon} ${label}</div>
+            <table style="width:100%;border-collapse:collapse;">
+              <thead><tr>${cabecalhos}</tr></thead>
+              <tbody>${linhasFill}</tbody>
+            </table>
+          </div>`;
+      });
+
+      prodSecs += `
+        <div style="border:1px solid #bbb;border-radius:6px;margin-bottom:14px;overflow:hidden;page-break-inside:avoid;">
+          <div style="background:#e8e8e8;padding:6px 12px;font-size:12px;font-weight:700;">${prod}</div>
+          <div style="padding:10px 12px;">${tabelasCampos}</div>
+        </div>`;
+    });
+
+    secoes += `
+      <div style="margin-bottom:24px;page-break-inside:avoid;">
+        <div style="background:#222;color:#fff;padding:8px 14px;font-size:13px;
+          font-weight:700;border-radius:6px 6px 0 0;margin-bottom:8px;">
+          ${linha} &nbsp;—&nbsp; ${pendentes.length} produto${pendentes.length>1?'s':''} pendente${pendentes.length>1?'s':''}
+        </div>
+        ${prodSecs}
+      </div>`;
+  });
+
+  if(!algumPendente){
+    alert('Nenhum produto pendente! Todos os setores estão 100% mapeados.');
+    return;
+  }
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Rotina de Coleta — Bread King</title>
+<style>
+  @page { size: A4; margin: 18mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; color: #111; margin: 0; }
+  .cabecalho { display:flex; justify-content:space-between; align-items:flex-end;
+    border-bottom: 3px solid #111; padding-bottom: 10px; margin-bottom: 20px; }
+  .cabecalho h1 { font-size: 18px; margin: 0 0 4px; }
+  .cabecalho p  { font-size: 11px; color: #555; margin: 0; }
+  .info-row { display:flex; gap: 24px; margin-bottom: 20px; }
+  .info-row label { font-size: 11px; color: #555; }
+  .info-row .campo { border-bottom: 1px solid #555; min-width: 140px;
+    display:inline-block; padding-bottom: 2px; }
+  .legenda { background: #f5f5f5; border: 1px solid #ccc; border-radius: 6px;
+    padding: 8px 14px; margin-bottom: 20px; font-size: 11px; color: #444; }
+  @media print { button { display: none; } }
+</style>
+</head>
+<body>
+
+<div class="cabecalho">
+  <div>
+    <h1>🍞 Bread King — Rotina de Coleta</h1>
+    <p>Formulário de campo · Gerado em ${dataStr}</p>
+  </div>
+  <div style="text-align:right;">
+    <button onclick="window.print()"
+      style="padding:8px 18px;font-size:12px;background:#111;color:#fff;
+        border:none;border-radius:5px;cursor:pointer;">🖨 Imprimir</button>
+  </div>
+</div>
+
+<div class="info-row">
+  <div><label>Data coleta: </label> <span class="campo">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+  <div><label>Turno: </label> <span class="campo">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+  <div><label>Responsável: </label> <span class="campo">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+</div>
+
+<div class="legenda">
+  <strong>Legenda:</strong> &nbsp;
+  ⚡ Produtividade = corridas produtivas (início, fim, quantidade) &nbsp;|&nbsp;
+  ⏱ Tempo de Processo = cronometragem por etapa &nbsp;|&nbsp;
+  🎯 Referência = tempo-meta da operação padrão
+</div>
+
+${secoes}
+
+<p style="font-size:10px;color:#999;margin-top:32px;border-top:1px solid #ddd;padding-top:8px;">
+  Documento gerado automaticamente pelo sistema Bread King · ${dataStr}
+</p>
+</body>
+</html>`;
+
+  // Abre em nova aba e dispara impressão
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const win  = window.open(url, '_blank');
+  if(win){
+    win.addEventListener('load', () => {
+      win.focus();
+      win.print();
+    });
+  } else {
+    // Fallback: download direto
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rotina_coleta_${dataStr.replace(/\//g,'-')}.html`;
+    a.click();
+  }
 }
 
 
@@ -9296,6 +9560,7 @@ document.getElementById('mcModalDeleteBtn').addEventListener('click', async ()=>
 document.getElementById('mcFiltro').addEventListener('input', MC_render);
 document.getElementById('mcFiltroStatus').addEventListener('change', MC_render);
 document.getElementById('mcRadarRefreshBtn').addEventListener('click', ()=>{ MC_RADAR = null; MC_loadRadar(); });
+document.getElementById('mcGerarFormBtn').addEventListener('click', MC_gerarFormulario);
 
 /* ============================================================================
    PRODUTIVIDADE & PROCESSOS — página unificada, lendo do Supabase
