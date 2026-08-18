@@ -6507,6 +6507,12 @@ function lpCreateItemRow(initial){
         </select>
         <input type="text" class="lp-item-setor-outro" placeholder="Nome do setor" style="display:none;margin-top:6px;">
       </div>
+      <div class="lanc-field">
+        <label>Cód.</label>
+        <input type="text" class="lp-cod" placeholder="Ex: 6234"
+          style="font-family:monospace;letter-spacing:.5px;"
+          title="Digite o código do produto para preenchimento automático">
+      </div>
       <div class="lanc-field span-2">
         <label>Produto</label>
         <input type="text" class="lp-produto" list="lpProdutoList_${uid}" placeholder="Nome do produto" required>
@@ -6619,7 +6625,34 @@ function lpCreateItemRow(initial){
   LP_toggleRecheioField(row, setorEl.value);
   PRODCAT_wireCodigoLookup(row.querySelector('.lp-produto'));
 
-  if(initial.produto) row.querySelector('.lp-produto').value = initial.produto;
+  // Campo Cód. ↔ Produto: sincronização bidirecional
+  const _codEl  = row.querySelector('.lp-cod');
+  const _prodEl = row.querySelector('.lp-produto');
+  if(_codEl && _prodEl){
+    // Digita código → preenche nome
+    _codEl.addEventListener('input', () => {
+      if(!PRODCAT_POR_CODIGO) return;
+      const v = _codEl.value.trim();
+      const semZeros = /^\d+$/.test(v) ? v.replace(/^0+/, '') || '0' : v;
+      const match = PRODCAT_POR_CODIGO.get(v) || PRODCAT_POR_CODIGO.get(semZeros);
+      if(match){ _prodEl.value = match.descricao; _prodEl.dispatchEvent(new Event('input')); }
+    });
+    // Seleciona/digita nome → preenche código
+    _prodEl.addEventListener('change', () => {
+      if(!PRODCAT_POR_NOME) return;
+      const match = PRODCAT_POR_NOME.get(PRODCAT_normalizar(_prodEl.value));
+      if(match) _codEl.value = match.codigo;
+    });
+  }
+
+  if(initial.produto){
+    row.querySelector('.lp-produto').value = initial.produto;
+    // Restaura o código junto com o nome
+    if(_codEl && PRODCAT_POR_NOME){
+      const _m = PRODCAT_POR_NOME.get(PRODCAT_normalizar(initial.produto));
+      if(_m) _codEl.value = _m.codigo;
+    }
+  }
   if(initial.unidade) row.querySelector('.lp-unidade').value = initial.unidade;
   if(initial.planejado){
     // O campo planejadaEl é sempre numérico e editável.
