@@ -9102,49 +9102,137 @@ function MC_gerarFormulario(){
     porSetor[o.setor].push(o);
   });
   const optgroupsHTML = Object.entries(porSetor).map(([setor, lista]) => {
-    const opts = lista.map((o, i) => {
+    const opts = lista.map(o => {
       const idx = opcoes.indexOf(o);
       return `<option value="${idx}">${o.prod}</option>`;
     }).join('');
     return `<optgroup label="${setor}">${opts}</optgroup>`;
   }).join('');
 
+  const TIPO_INFO = {
+    corridas:  { icon:'⚡', label:'Produtividade' },
+    bateladas: { icon:'⏱', label:'Tempo de Processo' }
+  };
+
+  // Monta os botões de tipo de coleta para um produto
+  function renderTipos(faltam){
+    if(faltam.length === 1){
+      // Só um tipo pendente — exibe como info, sem escolha
+      const { icon, label } = TIPO_INFO[faltam[0]];
+      return `<div style="font-size:12.5px;color:var(--ink-soft,#666);
+        background:var(--surface-alt,#f5f4f2);border-radius:7px;padding:10px 14px;
+        border:1px solid var(--line,#ddd);">
+        Único tipo pendente: <strong>${icon} ${label}</strong>
+        <input type="hidden" id="mcFormTipo" value="${faltam[0]}">
+      </div>`;
+    }
+    // Dois tipos — botões de escolha
+    return `<div style="display:flex;gap:10px;">
+      ${faltam.map(t => {
+        const { icon, label } = TIPO_INFO[t];
+        return `<label style="flex:1;cursor:pointer;">
+          <input type="radio" name="mcTipo" value="${t}" style="display:none;">
+          <div class="mc-tipo-btn" data-tipo="${t}"
+            style="border:2px solid var(--line,#ddd);border-radius:8px;padding:10px 14px;
+              text-align:center;font-size:12.5px;font-weight:600;transition:all .15s;
+              cursor:pointer;user-select:none;">
+            <div style="font-size:20px;margin-bottom:3px;">${icon}</div>
+            ${label}
+          </div>
+        </label>`;
+      }).join('')}
+    </div>
+    <div id="mcTipoErro" style="color:#c0392b;font-size:11.5px;margin-top:6px;display:none;">
+      Selecione o tipo de coleta.
+    </div>`;
+  }
+
   overlay.innerHTML = `
     <div style="background:var(--surface,#fff);border-radius:12px;padding:28px 30px;
-      max-width:480px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.3);">
-      <div style="font-size:18px;font-weight:700;margin-bottom:6px;">🖨 Gerar Formulário de Coleta</div>
-      <div style="font-size:12.5px;color:var(--ink-soft,#666);margin-bottom:20px;">
-        Selecione o produto que você vai coletar. O formulário será impresso com
-        <strong>10 amostras</strong> para cada tipo de dado pendente.
+      max-width:500px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,.3);">
+      <div style="font-size:18px;font-weight:700;margin-bottom:4px;">🖨 Gerar Formulário de Coleta</div>
+      <div style="font-size:12px;color:var(--ink-soft,#666);margin-bottom:20px;">
+        Formulário A4 com <strong>10 amostras</strong> — 1 produto por página.
       </div>
+
       <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;">
-        Produto a coletar:
+        1. Produto a coletar:
       </label>
       <select id="mcFormSelect" style="width:100%;padding:9px 12px;border:1px solid var(--line,#ddd);
-        border-radius:7px;font-size:13px;background:var(--surface,#fff);margin-bottom:20px;">
+        border-radius:7px;font-size:13px;background:var(--surface,#fff);margin-bottom:18px;">
         ${optgroupsHTML}
       </select>
-      <div style="display:flex;gap:10px;justify-content:flex-end;">
+
+      <label style="font-size:12px;font-weight:600;display:block;margin-bottom:8px;">
+        2. O que você vai coletar?
+      </label>
+      <div id="mcTipoContainer"></div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:22px;">
         <button id="mcFormCancelar" type="button"
           style="padding:8px 18px;border:1px solid var(--line,#ddd);background:transparent;
             border-radius:7px;font-size:13px;cursor:pointer;">Cancelar</button>
         <button id="mcFormConfirmar" type="button"
           style="padding:8px 22px;background:var(--red,#c0392b);color:#fff;
             border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">
-          🖨 Gerar
+          🖨 Gerar Formulário
         </button>
       </div>
     </div>`;
 
   document.body.appendChild(overlay);
 
+  // Popula tipos ao mudar o produto
+  function atualizarTipos(){
+    const idx = parseInt(document.getElementById('mcFormSelect').value, 10);
+    const container = document.getElementById('mcTipoContainer');
+    container.innerHTML = renderTipos(opcoes[idx].faltam);
+
+    // Estilo de seleção dos botões de tipo
+    container.querySelectorAll('.mc-tipo-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        container.querySelectorAll('.mc-tipo-btn').forEach(b => {
+          b.style.borderColor = 'var(--line,#ddd)';
+          b.style.background  = 'transparent';
+          b.style.color       = 'inherit';
+        });
+        btn.style.borderColor = 'var(--red,#c0392b)';
+        btn.style.background  = 'var(--red,#c0392b)';
+        btn.style.color       = '#fff';
+        const radio = btn.previousElementSibling;
+        if(radio) radio.checked = true;
+        const erroEl = document.getElementById('mcTipoErro');
+        if(erroEl) erroEl.style.display = 'none';
+      });
+    });
+  }
+
+  document.getElementById('mcFormSelect').addEventListener('change', atualizarTipos);
+  atualizarTipos(); // inicial
+
   document.getElementById('mcFormCancelar').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
 
   document.getElementById('mcFormConfirmar').addEventListener('click', () => {
     const idx = parseInt(document.getElementById('mcFormSelect').value, 10);
+    const opcao = opcoes[idx];
+
+    // Descobre o tipo selecionado
+    let tipoSel;
+    if(opcao.faltam.length === 1){
+      tipoSel = opcao.faltam[0];
+    } else {
+      const radioChecked = overlay.querySelector('input[name="mcTipo"]:checked');
+      if(!radioChecked){
+        const erroEl = document.getElementById('mcTipoErro');
+        if(erroEl) erroEl.style.display = 'block';
+        return;
+      }
+      tipoSel = radioChecked.value;
+    }
+
     overlay.remove();
-    MC_imprimirFormulario(opcoes[idx]);
+    MC_imprimirFormulario({ setor: opcao.setor, prod: opcao.prod, faltam: [tipoSel] });
   });
 }
 
