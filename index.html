@@ -3426,7 +3426,7 @@ function renderDayChart(rows){
     // Cor do texto: branco em fundo escuro, preto em fundo claro
     const textColor = (realColor === '#2f7d52' || realColor === '#A10101') ? '#ffffff' : '#2a2a2a';
     const yLabelInterna = baseY - hTop/2;
-    bars += `<text x="${x0+barW/2}" y="${yLabelInterna}" font-size="${Math.max(7, fsLab-0.5)}" font-weight="bold" fill="${textColor}" text-anchor="middle" opacity="0.95" transform="rotate(-90 ${x0+barW/2} ${yLabelInterna})"><title>Clique pra ver o histórico de ${r.produto}</title>${truncateProdLabel(r.produto)}</text>`;
+    bars += `<text x="${x0+barW/2}" y="${yLabelInterna}" font-size="${Math.max(11, fsLab+1.5)}" font-weight="bold" fill="#E65C00" text-anchor="middle" opacity="1" transform="rotate(-90 ${x0+barW/2} ${yLabelInterna})"><title>Clique pra ver o histórico de ${r.produto}</title>${truncateProdLabel(r.produto)}</text>`;
     bars += `</g>`;
   });
 
