@@ -3030,7 +3030,7 @@ function renderKPIs(filteredDates){
   let frituraCardsHtml = '';
   if(showFrituraCards){
     const totalKg = computeTotalKgForPeriod(filteredDates);
-    const totalOleoL = OL_getConsumoForPeriod(filteredDates);
+    const totalOleoL = OL_getConsumoForPeriod(dateStartInput.value, dateEndInput.value);
     const indicador = (totalOleoL != null && totalOleoL > 0) ? totalKg / totalOleoL : null;
     frituraCardsHtml = `
       <div class="kpi-card">
@@ -5398,9 +5398,10 @@ const OL_ITEM = 'OLEO DE ALGODAO';
    contém dias com lançamentos de produção — dias sem produção (mas com
    contagem de óleo) seriam ignorados incorretamente.
    Retorna null (não 0) quando não há nenhum intervalo no período. */
-function OL_getConsumoForPeriod(filteredDates){
-  const start = dateStartInput.value;
-  const end   = dateEndInput.value;
+/* Recebe start e end como strings ISO (ex: '2026-08-01') e soma o consumo
+   de todos os intervalos de contagem cujas datas caem nesse período.
+   Usa intervalo de datas diretamente, independente de haver produção nesses dias. */
+function OL_getConsumoForPeriod(start, end){
   let total = 0, temDado = false;
   Object.keys(OL_DATA).forEach(d => {
     if(d >= start && d <= end){ total += OL_DATA[d].consumo; temDado = true; }
