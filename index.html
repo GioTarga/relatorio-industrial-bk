@@ -3422,12 +3422,8 @@ function renderDayChart(rows){
     // Preenchimento = Produção Real, sobreposto na mesma coluna
     bars += `<rect x="${x0}" y="${baseY-hR}" width="${barW}" height="${hR}" fill="${realColor}" rx="4"/>`;
     bars += `<text x="${x0+barW/2}" y="${baseY-hTop-9}" font-size="${fsVal}" font-weight="700" fill="${realColor}" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-hTop-9})">${labelTexto}</text>`;
-    // Label DO SETOR — em negrito, vertical, laranja
-    // Se a barra é muito pequena (< 50px), posiciona ACIMA dela
-    // Se a barra é grande, posiciona no MEIO dela
-    const barraEhPequena = hTop < 50;
-    const yLabelInterna = barraEhPequena ? (baseY - hTop - 20) : (baseY - hTop/2);
-    bars += `<text x="${x0+barW/2}" y="${yLabelInterna}" font-size="${Math.max(11, fsLab+1.5)}" font-weight="bold" fill="#E65C00" text-anchor="middle" opacity="1" transform="rotate(-90 ${x0+barW/2} ${yLabelInterna})"><title>Clique pra ver o histórico de ${r.produto}</title>${truncateProdLabel(r.produto)}</text>`;
+    // Label DO SETOR — fora da barra, abaixo, vertical, laranja, grande
+    bars += `<text x="${x0+barW/2}" y="${baseY+20}" font-size="${Math.max(12, fsLab+2)}" font-weight="bold" fill="#E65C00" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+20})"><title>Clique pra ver o histórico de ${r.produto}</title>${truncateProdLabel(r.produto)}</text>`;
     bars += `</g>`;
   });
 
