@@ -3030,7 +3030,7 @@ function renderKPIs(filteredDates){
   let frituraCardsHtml = '';
   if(showFrituraCards){
     const totalKg = computeTotalKgForPeriod(filteredDates);
-    const totalOleoL = OL_getConsumoForPeriod(dateStartInput.value, dateEndInput.value);
+    const totalOleoL = OL_getConsumoForPeriod(filteredDates);
     const indicador = (totalOleoL != null && totalOleoL > 0) ? totalKg / totalOleoL : null;
     frituraCardsHtml = `
       <div class="kpi-card">
@@ -5392,16 +5392,16 @@ document.getElementById('rcBtnRefresh').addEventListener('click', ()=> RC_loadDa
    à DATA DA CONTAGEM QUE FECHOU ele. */
 const OL_ITEM = 'OLEO DE ALGODAO';
 
-/* Soma o consumo de óleo (L) para todos os intervalos de contagem cujas
-   datas caem dentro do período selecionado (start..end). Usa o intervalo
-   de datas diretamente em vez de filteredDates, porque filteredDates só
-   contém dias com lançamentos de produção — dias sem produção (mas com
-   contagem de óleo) seriam ignorados incorretamente.
+/* Soma o consumo de óleo (L) para todos os intervalos de contagem que caem
+   dentro do período. Deriva o range (start/end) do primeiro e último dia de
+   filteredDates — isso garante que datas de contagem de óleo sem lançamento
+   de produção naquele dia ainda sejam contadas, porque varremos OL_DATA
+   inteiro e não só os índices de filteredDates.
    Retorna null (não 0) quando não há nenhum intervalo no período. */
-/* Recebe start e end como strings ISO (ex: '2026-08-01') e soma o consumo
-   de todos os intervalos de contagem cujas datas caem nesse período.
-   Usa intervalo de datas diretamente, independente de haver produção nesses dias. */
-function OL_getConsumoForPeriod(start, end){
+function OL_getConsumoForPeriod(filteredDates){
+  if(!filteredDates || !filteredDates.length) return null;
+  const start = filteredDates[0];
+  const end   = filteredDates[filteredDates.length - 1];
   let total = 0, temDado = false;
   Object.keys(OL_DATA).forEach(d => {
     if(d >= start && d <= end){ total += OL_DATA[d].consumo; temDado = true; }
