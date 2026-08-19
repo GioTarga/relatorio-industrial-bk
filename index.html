@@ -4564,14 +4564,20 @@ function computeChartRows(filteredDates){
         .filter(r => r.setor === g.produto && r.uni === fixa.unidade)
         .reduce((s, r) => s + r.real, 0);
     });
-    // Decrescente por % de PRODUTOS que atingem meta (não volume agregado).
-    // Agora o indicador reflete: quantos produtos do setor conseguem entregar
-    // o que foi planejado, não se alguns fazem muito a mais mascaram o fracasso de outros.
+    // Cálculo de % diferenciado por setor:
+    // - PÃO C/ LINGUIÇA: % de volume (real/prev) — tem meta fixa agregada
+    // - Demais setores: % de produtos que atingem meta — têm metas individuais
     groups.forEach(g => {
-      const produtosDoSetor = source.filter(r => r.setor === g.produto);
-      const atingirram = produtosDoSetor.filter(r => r.prev !== null && r.real >= r.prev).length;
-      const totalComMeta = produtosDoSetor.filter(r => r.prev !== null).length;
-      g.pct = totalComMeta > 0 ? atingirram / totalComMeta : null;
+      if(g.produto === 'PÃO C/ LINGUIÇA'){
+        // Meta fixa: usar volume direto
+        g.pct = (g.prev != null && g.prev > 0) ? (g.real / g.prev) : null;
+      } else {
+        // Demais setores: contar quantos produtos atingem
+        const produtosDoSetor = source.filter(r => r.setor === g.produto);
+        const atingirram = produtosDoSetor.filter(r => r.prev !== null && r.real >= r.prev).length;
+        const totalComMeta = produtosDoSetor.filter(r => r.prev !== null).length;
+        g.pct = totalComMeta > 0 ? atingirram / totalComMeta : null;
+      }
     });
     return groups.sort((a, b) => {
       if(a.pct === null && b.pct === null) return b.real - a.real;
