@@ -3040,6 +3040,7 @@ function renderKPIs(filteredDates){
       <div class="kpi-card">
         <div class="label">Consumo de Óleo (L)</div>
         <div class="value">${totalOleoL === null ? '—' : totalOleoL.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' L'}</div>
+        <div style="font-size:9px;color:#999;margin-top:4px">DBG: keys=${Object.keys(OL_DATA).join('|')||'vazio'} s=${filteredDates[0]||'?'} e=${filteredDates[filteredDates.length-1]||'?'}</div>
       </div>
       <div class="kpi-card">
         <div class="label">Fritura (Kg) / Litro de Óleo</div>
@@ -4983,8 +4984,12 @@ let OL_DATA = {}; // { 'YYYY-MM-DD': {consumo, entrada, contagemAnterior, contag
 
 /* ---------- Inicializa página 1 (Relatório Industrial) ---------- */
 periodInfo.textContent = 'Carregando dados do banco…';
-loadData(false);
-OL_loadData(false);
+(async () => {
+  await loadData(false);
+  await OL_loadData(false);
+  // Garante refresh final após ambos carregarem
+  if(Object.keys(DATA).length > 0) refreshAll();
+})();
 
 
 /* ============================================================================
