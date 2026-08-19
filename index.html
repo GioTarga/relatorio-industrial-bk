@@ -3040,7 +3040,6 @@ function renderKPIs(filteredDates){
       <div class="kpi-card">
         <div class="label">Consumo de Óleo (L)</div>
         <div class="value">${totalOleoL === null ? '—' : totalOleoL.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' L'}</div>
-        <div style="font-size:9px;color:#999;margin-top:4px">DBG: keys=${Object.keys(OL_DATA).join('|')||'vazio'} s=${filteredDates[0]||'?'} e=${filteredDates[filteredDates.length-1]||'?'}</div>
       </div>
       <div class="kpi-card">
         <div class="label">Fritura (Kg) / Litro de Óleo</div>
@@ -5407,10 +5406,44 @@ function OL_getConsumoForPeriod(filteredDates){
   if(!filteredDates || !filteredDates.length) return null;
   const start = filteredDates[0];
   const end   = filteredDates[filteredDates.length - 1];
-  let total = 0, temDado = false;
-  Object.keys(OL_DATA).forEach(d => {
-    if(d >= start && d <= end){ total += OL_DATA[d].consumo; temDado = true; }
-  });
+  
+  const allKeys = Object.keys(OL_DATA).sort();
+  if(allKeys.length === 0) return null;
+  
+  let total = 0;
+  
+  // Acha a contagem mais recente ANTES de start (pra ter baseline)
+  let startKeyIdx = 0;
+  for(let i = allKeys.length - 1; i >= 0; i--){
+    if(allKeys[i] < start){
+      startKeyIdx = i;
+      break;
+    }
+  }
+  
+  // Acha a contagem mais recente APÓS end (ou a última se nenhuma depois)
+  let endKeyIdx = allKeys.length - 1;
+  for(let i = 0; i < allKeys.length; i++){
+    if(allKeys[i] > end){
+      endKeyIdx = i;
+      break;
+    }
+  }
+  
+  // Soma consumo de todas as contagens entre start (inclusive) e end (inclusive)
+  let temDado = false;
+  for(let i = startKeyIdx + 1; i <= endKeyIdx; i++){
+    const d = allKeys[i];
+    if(d >= start && d <= end){
+      total += OL_DATA[d].consumo;
+      temDado = true;
+    } else if(d > end && i === endKeyIdx){
+      // Se a última contagem cai após end, também inclui pra fechar o intervalo
+      total += OL_DATA[d].consumo;
+      temDado = true;
+    }
+  }
+  
   return temDado ? total : null;
 }
 
