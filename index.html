@@ -3410,7 +3410,8 @@ function renderDayChart(rows){
     if(semMeta){
       labelTexto = `${Math.round(r.real).toLocaleString('pt-BR')} (sem meta)`;
     } else if(porSetor){
-      const pct = r.prev > 0 ? (r.real/r.prev)*100 : 0;
+      // r.pct agora é: (produtos que atingem) / (total com meta) — converte pra %
+      const pct = r.pct !== null ? r.pct * 100 : 0;
       labelTexto = `${pct.toFixed(0)}%`;
     } else {
       labelTexto = `${Math.round(r.real).toLocaleString('pt-BR')} / ${Math.round(r.prev).toLocaleString('pt-BR')}`;
@@ -3421,9 +3422,11 @@ function renderDayChart(rows){
     // Preenchimento = Produção Real, sobreposto na mesma coluna
     bars += `<rect x="${x0}" y="${baseY-hR}" width="${barW}" height="${hR}" fill="${realColor}" rx="4"/>`;
     bars += `<text x="${x0+barW/2}" y="${baseY-hTop-9}" font-size="${fsVal}" font-weight="700" fill="${realColor}" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-hTop-9})">${labelTexto}</text>`;
-    // Label DO SETOR DENTRO DA BARRA — em negrito, vertical, branco
+    // Label DO SETOR DENTRO DA BARRA — em negrito, vertical
+    // Cor do texto: branco em fundo escuro, preto em fundo claro
+    const textColor = (realColor === '#2f7d52' || realColor === '#A10101') ? '#ffffff' : '#2a2a2a';
     const yLabelInterna = baseY - hTop/2;
-    bars += `<text x="${x0+barW/2}" y="${yLabelInterna}" font-size="${Math.max(7, fsLab-0.5)}" font-weight="bold" fill="#ffffff" text-anchor="middle" opacity="0.9" transform="rotate(-90 ${x0+barW/2} ${yLabelInterna})"><title>Clique pra ver o histórico de ${r.produto}</title>${truncateProdLabel(r.produto)}</text>`;
+    bars += `<text x="${x0+barW/2}" y="${yLabelInterna}" font-size="${Math.max(7, fsLab-0.5)}" font-weight="bold" fill="${textColor}" text-anchor="middle" opacity="0.95" transform="rotate(-90 ${x0+barW/2} ${yLabelInterna})"><title>Clique pra ver o histórico de ${r.produto}</title>${truncateProdLabel(r.produto)}</text>`;
     bars += `</g>`;
   });
 
