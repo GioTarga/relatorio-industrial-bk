@@ -5392,14 +5392,19 @@ document.getElementById('rcBtnRefresh').addEventListener('click', ()=> RC_loadDa
    à DATA DA CONTAGEM QUE FECHOU ele. */
 const OL_ITEM = 'OLEO DE ALGODAO';
 
-/* Soma o consumo de óleo (L) nas datas do período filtrado. Retorna null
-   (não 0) quando não há nenhum intervalo de contagem calculado no período —
-   "sem dado" e "consumo zero" são coisas diferentes, e mostrar 0,00 L
-   quando na verdade falta contagem/entrada pra fechar a conta confunde
-   quem lê o painel. */
+/* Soma o consumo de óleo (L) para todos os intervalos de contagem cujas
+   datas caem dentro do período selecionado (start..end). Usa o intervalo
+   de datas diretamente em vez de filteredDates, porque filteredDates só
+   contém dias com lançamentos de produção — dias sem produção (mas com
+   contagem de óleo) seriam ignorados incorretamente.
+   Retorna null (não 0) quando não há nenhum intervalo no período. */
 function OL_getConsumoForPeriod(filteredDates){
+  const start = dateStartInput.value;
+  const end   = dateEndInput.value;
   let total = 0, temDado = false;
-  filteredDates.forEach(d=>{ if(OL_DATA[d]){ total += OL_DATA[d].consumo; temDado = true; } });
+  Object.keys(OL_DATA).forEach(d => {
+    if(d >= start && d <= end){ total += OL_DATA[d].consumo; temDado = true; }
+  });
   return temDado ? total : null;
 }
 
