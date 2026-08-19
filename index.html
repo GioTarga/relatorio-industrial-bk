@@ -3421,7 +3421,9 @@ function renderDayChart(rows){
     // Preenchimento = Produção Real, sobreposto na mesma coluna
     bars += `<rect x="${x0}" y="${baseY-hR}" width="${barW}" height="${hR}" fill="${realColor}" rx="4"/>`;
     bars += `<text x="${x0+barW/2}" y="${baseY-hTop-9}" font-size="${fsVal}" font-weight="700" fill="${realColor}" text-anchor="start" transform="rotate(-90 ${x0+barW/2} ${baseY-hTop-9})">${labelTexto}</text>`;
-    bars += `<text x="${x0+barW/2}" y="${baseY+16}" font-size="${fsLab}" fill="#4a3a3a" text-anchor="end" transform="rotate(-45 ${x0+barW/2} ${baseY+16})">${truncateProdLabel(r.produto)}<title>Clique pra ver o histórico de ${r.produto}</title></text>`;
+    // Label DO SETOR DENTRO DA BARRA — em negrito, vertical, branco
+    const yLabelInterna = baseY - hTop/2;
+    bars += `<text x="${x0+barW/2}" y="${yLabelInterna}" font-size="${Math.max(7, fsLab-0.5)}" font-weight="bold" fill="#ffffff" text-anchor="middle" opacity="0.9" transform="rotate(-90 ${x0+barW/2} ${yLabelInterna})"><title>Clique pra ver o histórico de ${r.produto}</title>${truncateProdLabel(r.produto)}</text>`;
     bars += `</g>`;
   });
 
@@ -4562,10 +4564,15 @@ function computeChartRows(filteredDates){
         .filter(r => r.setor === g.produto && r.uni === fixa.unidade)
         .reduce((s, r) => s + r.real, 0);
     });
-    // Decrescente por % de atendimento (Real/Prevista), 100% pro topo,
-    // menores depois; setores sem meta cadastrada (sem % pra comparar)
-    // ficam sempre por último, entre si ordenados por volume real.
-    groups.forEach(g => { g.pct = (g.prev != null && g.prev > 0) ? g.real / g.prev : null; });
+    // Decrescente por % de PRODUTOS que atingem meta (não volume agregado).
+    // Agora o indicador reflete: quantos produtos do setor conseguem entregar
+    // o que foi planejado, não se alguns fazem muito a mais mascaram o fracasso de outros.
+    groups.forEach(g => {
+      const produtosDoSetor = source.filter(r => r.setor === g.produto);
+      const atingirram = produtosDoSetor.filter(r => r.prev !== null && r.real >= r.prev).length;
+      const totalComMeta = produtosDoSetor.filter(r => r.prev !== null).length;
+      g.pct = totalComMeta > 0 ? atingirram / totalComMeta : null;
+    });
     return groups.sort((a, b) => {
       if(a.pct === null && b.pct === null) return b.real - a.real;
       if(a.pct === null) return 1;
