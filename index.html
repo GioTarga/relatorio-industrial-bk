@@ -2779,6 +2779,25 @@ function fmtDuracaoParada(raw){
 }
 
 /* ---------- Transforma as linhas da tabela producao_diaria (Supabase) no formato interno DATA{} ---------- */
+// Extrai meta numérica de strings malformadas (ex: "Produção Não Apontada|324" → 324)
+function extractNumericMeta(value){
+  if(value === null || value === undefined) return null;
+  if(typeof value === 'number') return value;
+  
+  const str = String(value).trim();
+  
+  // Se tem pipe (|), pega o número depois
+  if(str.includes('|')){
+    const parts = str.split('|');
+    const num = parseFloat(parts[parts.length - 1]);
+    return isNaN(num) ? null : num;
+  }
+  
+  // Tenta converter direto
+  const num = parseFloat(str);
+  return isNaN(num) ? null : num;
+}
+
 function transformSupabaseRowsToData(rows){
   const byDate = {};
 
