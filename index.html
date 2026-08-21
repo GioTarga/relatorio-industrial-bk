@@ -1024,10 +1024,10 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 
 /* ORDER TABLE */
 
-#page-pcp-estoque .order-header{display:grid;grid-template-columns:28px 1fr 80px 70px 70px 70px 80px 110px 110px 28px;gap:4px;padding:8px 14px;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.8);font-weight:700;border-bottom:1px solid var(--line);background:var(--red-dark)}
+#page-pcp-estoque .order-header{display:grid;grid-template-columns:28px 1fr 80px 70px 70px 70px 80px 85px 110px 110px 28px;gap:4px;padding:8px 14px;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.8);font-weight:700;border-bottom:1px solid var(--line);background:var(--red-dark)}
 
 
-#page-pcp-estoque .order-row{display:grid;grid-template-columns:28px 1fr 80px 70px 70px 70px 80px 110px 110px 28px;gap:4px;padding:8px 14px;border-bottom:1px solid var(--line);align-items:start}
+#page-pcp-estoque .order-row{display:grid;grid-template-columns:28px 1fr 80px 70px 70px 70px 80px 85px 110px 110px 28px;gap:4px;padding:8px 14px;border-bottom:1px solid var(--line);align-items:start}
 
 
 #page-pcp-estoque .order-row:last-child{border-bottom:none}
@@ -1790,6 +1790,40 @@ body{background:#fff;color:#000}
   </div> <!-- /page-estoque -->
 
   <div id="page-pcp-estoque" class="report-page" style="display:none;">
+
+<!-- ── MODAL ENVIAR PARA OP ────────────────────────────────────────── -->
+<div id="pcpOrdemModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
+  <div style="background:var(--paper);border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.22);padding:28px 28px 22px;width:360px;max-width:94vw;font-family:inherit">
+    <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);margin-bottom:6px">→ Ordem de Produção</div>
+    <div id="pcpModalDesc" style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:18px;line-height:1.4;border-left:3px solid var(--red);padding-left:10px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+      <div>
+        <label style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-soft);display:block;margin-bottom:5px">Quantidade</label>
+        <input id="pcpModalQtd" type="number" min="0" step="0.001"
+          style="width:100%;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:14px;font-weight:700;font-family:inherit;background:var(--cream);color:var(--ink);box-sizing:border-box"
+          oninput="this.style.borderColor=this.value?'var(--red)':'var(--line)'">
+      </div>
+      <div>
+        <label style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-soft);display:block;margin-bottom:5px">Unidade</label>
+        <select id="pcpModalUnidade"
+          style="width:100%;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;background:var(--cream);color:var(--ink);cursor:pointer;box-sizing:border-box">
+          <option value="Massa">Massa</option>
+          <option value="Kg">Kg</option>
+          <option value="Caixas">Caixas</option>
+          <option value="Carrinhos">Carrinhos</option>
+          <option value="Armários">Armários</option>
+          <option value="Blocos">Blocos</option>
+          <option value="Unid">Unid</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closePcpModal()" style="padding:9px 18px;border-radius:8px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink-soft);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.5px;text-transform:uppercase">Cancelar</button>
+      <button onclick="confirmPcpModal()" style="padding:9px 22px;border-radius:8px;border:none;background:var(--red);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.5px;text-transform:uppercase;box-shadow:0 2px 8px rgba(161,1,1,.25)">Confirmar →</button>
+    </div>
+  </div>
+</div>
+
 <div class="topbar">
   <div class="eyebrow">Bread King · Sistema de Gestão</div>
   <h1>BK360</h1>
@@ -12393,6 +12427,9 @@ function getSetor(codigo){
   return SD.setores[0];
 }
 
+// Contexto temporário do modal de OP
+let _pcpModalCtx=null;
+
 function enviarParaOrdem(safekey){
   const btnEl=document.getElementById('btn-'+safekey);
   const item=JSON.parse(decodeURIComponent(btnEl.dataset.item));
@@ -12403,18 +12440,50 @@ function enviarParaOrdem(safekey){
   if(existing){btnEl.textContent='✓ Já na OP';btnEl.classList.add('sent');setTimeout(()=>{btnEl.textContent='→ Ordem';btnEl.classList.remove('sent');},2500);return;}
   const saldo=calculateAvailableStock(item);
   const need=calculateProductionNeed(item);
+  // Salva contexto e abre modal
+  _pcpModalCtx={item,setor,saldo,need,btnEl};
+  const guessedUnit=guessUnit(item.familia)||'Unid';
+  document.getElementById('pcpModalDesc').textContent=item.descricao;
+  document.getElementById('pcpModalQtd').value=need>0?need:'';
+  // Selecionar unidade pré-definida no select
+  const sel=document.getElementById('pcpModalUnidade');
+  const unitMap={MASSA:'Massa',KG:'Kg',CAIXAS:'Caixas',CARRINHOS:'Carrinhos',ARMARIOS:'Armários',BLOCOS:'Blocos',UNID:'Unid'};
+  const mapped=unitMap[guessedUnit.toUpperCase()]||'Unid';
+  for(let i=0;i<sel.options.length;i++){if(sel.options[i].value===mapped){sel.selectedIndex=i;break;}}
+  const modal=document.getElementById('pcpOrdemModal');
+  modal.style.display='flex';
+  setTimeout(()=>document.getElementById('pcpModalQtd').focus(),50);
+}
+
+function closePcpModal(){
+  document.getElementById('pcpOrdemModal').style.display='none';
+  _pcpModalCtx=null;
+}
+
+function confirmPcpModal(){
+  if(!_pcpModalCtx)return;
+  const {item,setor,saldo,need,btnEl}=_pcpModalCtx;
+  const qtdInput=document.getElementById('pcpModalQtd').value;
+  const unidMedida=document.getElementById('pcpModalUnidade').value;
   const rowData={
     id:rowCounter++,code:item.codigo,desc:item.descricao,
     estoque:item.estoque,reserva:item.reserva||0,saldo,need,
     setor,loc:item.tipo,unidade:guessUnit(item.familia),
-    qtd:need>0?n(need):'',maquina:'',obs:''
+    unidadeMedida:unidMedida,
+    qtd:qtdInput||'',maquina:'',obs:''
   };
   ordemState[setor].push(rowData);
   renderOrdem();
   switchTab('ordem');
   btnEl.textContent='✓ Adicionado';btnEl.classList.add('sent');
   setTimeout(()=>{btnEl.textContent='→ Ordem';btnEl.classList.remove('sent');},2500);
+  closePcpModal();
 }
+
+// Fechar modal com Escape
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&_pcpModalCtx)closePcpModal();
+});
 
 function renderTableRow(item){
   const saldo=calculateAvailableStock(item);
@@ -12628,7 +12697,7 @@ function gerarOrdemAutomatica(){
       id:rowCounter++,code:item.codigo,desc:item.descricao,
       estoque:item.estoque,reserva:item.reserva||0,saldo,need,
       setor,loc:item.tipo,unidade:guessUnit(item.familia),
-      qtd:n(need),maquina:'',obs:''
+      unidadeMedida:'Unid',qtd:n(need),maquina:'',obs:''
     });
   });
   renderOrdem();
@@ -12650,7 +12719,7 @@ function addRow(setor){
   const s=setor||SD.setores[0];
   if(!ordemState[s])ordemState[s]=[];
   ordemState[s].push({id:rowCounter++,code:'',desc:'',estoque:0,reserva:0,saldo:0,need:0,
-    setor:s,loc:'FABRICA',unidade:'UNID',qtd:'',maquina:'',obs:''});
+    setor:s,loc:'FABRICA',unidade:'UNID',unidadeMedida:'Unid',qtd:'',maquina:'',obs:''});
   renderOrdem();
 }
 
@@ -12688,6 +12757,7 @@ function renderOrdemRow(setor,row,seq){
     <div style="font-size:12px;text-align:right;padding-top:6px;font-weight:700" class="${saldoClass}">${n(row.saldo)}</div>
     <div style="font-size:12px;text-align:right;padding-top:6px;font-weight:700;color:var(--red)">${row.need>0?n(row.need):'—'}</div>
     <div><input class="order-input" placeholder="Qtd a produzir" value="${row.qtd}" oninput="syncField('${setor}',${row.id},'qtd',this.value)"></div>
+    <div><select class="order-input" onchange="syncField('${setor}',${row.id},'unidadeMedida',this.value)" style="cursor:pointer">${['Massa','Kg','Caixas','Carrinhos','Armários','Blocos','Unid'].map(u=>`<option value="${u}"${(row.unidadeMedida||'Unid')===u?' selected':''}>${u}</option>`).join('')}</select></div>
     <div><input class="order-input" placeholder="Máquina..." value="${row.maquina||''}" oninput="syncField('${setor}',${row.id},'maquina',this.value)"></div>
     <div><input class="order-input" placeholder="Observação..." value="${row.obs}" oninput="syncField('${setor}',${row.id},'obs',this.value)"></div>
     <div><button class="del-btn no-print" onclick="delRow('${setor}',${row.id})" title="Remover">✕</button></div>
@@ -12713,7 +12783,7 @@ function renderOrdem(){
       </div>
       <div id="body-${sid}">
         <div class="order-header">
-          <div>#</div><div>Produto · Código</div><div style="text-align:right">ESTOQUE</div><div style="text-align:right">RESERVA</div><div style="text-align:right">SALDO</div><div style="text-align:right">NECESSID.</div><div>PRODUZIR</div><div>MÁQUINA</div><div>OBSERVAÇÃO</div><div></div>
+          <div>#</div><div>Produto · Código</div><div style="text-align:right">ESTOQUE</div><div style="text-align:right">RESERVA</div><div style="text-align:right">SALDO</div><div style="text-align:right">NECESSID.</div><div>PRODUZIR</div><div>UNIDADE</div><div>MÁQUINA</div><div>OBSERVAÇÃO</div><div></div>
         </div>
         ${rows.length?rows.map((r,i)=>renderOrdemRow(setor,r,i+1)).join(''):'<div style="padding:12px 14px;font-size:12px;color:#4a5568;font-style:italic">Sem alertas neste setor.</div>'}
         <div class="add-row-btn no-print" onclick="addRow('${setor}')">+ adicionar produto</div>
@@ -12905,7 +12975,9 @@ async function salvarOPSupabase(){
     (ordemState[setor]||[]).forEach((row,idx)=>{
       itens.push({codigo:row.code,descricao:row.desc,setor,local:row.loc,
         estoque:row.estoque||0,reserva:row.reserva||0,saldo:row.saldo||0,
-        necessidade:row.need||0,qtd_programada:row.qtd,maquina:row.maquina||'',
+        necessidade:row.need||0,qtd_programada:row.qtd,
+        unidade_medida:row.unidadeMedida||'Unid',
+        maquina:row.maquina||'',
         observacao:row.obs||'',sequencia:idx+1});
     });
   });
@@ -13001,8 +13073,8 @@ td{padding:3px 6px;border:1px solid #ccc}
 .setor-color{width:10px;height:10px;border-radius:50%}
 .sc-gironoite{background:#9b2c2c}.sc-padaria{background:#2c5282}.sc-girodia{background:#276749}.sc-salgado{background:#6b46c1}.sc-fritador{background:#744210}
 .setor-name{font-weight:700;font-size:11px}
-.order-header{display:grid;grid-template-columns:28px 1fr 80px 70px 70px 70px 80px 110px 110px;background:#f8f8f8;color:#555;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #ccc;padding:4px 8px;gap:6px}
-.order-row{display:grid;grid-template-columns:28px 1fr 80px 70px 70px 70px 80px 110px 110px;border-bottom:1px solid #eee;padding:4px 8px;gap:6px;align-items:start}
+.order-header{display:grid;grid-template-columns:28px 1fr 80px 70px 70px 70px 80px 85px 110px 110px;background:#f8f8f8;color:#555;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #ccc;padding:4px 8px;gap:6px}
+.order-row{display:grid;grid-template-columns:28px 1fr 80px 70px 70px 70px 80px 85px 110px 110px;border-bottom:1px solid #eee;padding:4px 8px;gap:6px;align-items:start}
 .order-seq{font-size:10px;color:#555;padding-top:4px}
 .order-desc{font-weight:600;font-size:10px}
 .order-gap{font-size:9px;color:#888}
