@@ -12758,14 +12758,24 @@ function processFile(file,tipo){
       const ws=wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
       if(rows.length<2){statusEl.style.color='var(--red)';statusEl.textContent='❌ Arquivo vazio ou inválido';return;}
-      // Detectar linha de cabeçalho (primeira linha não-vazia)
-      let headerIdx=0;
-      for(let i=0;i<Math.min(10,rows.length);i++){
-        if(rows[i]&&rows[i].some(c=>c!=null&&c!=='')){headerIdx=i;break;}
+      // Detectar linha de cabeçalho CIGAM: procura linha onde col[0]~='material'
+      let headerIdx=-1;
+      for(let i=0;i<Math.min(15,rows.length);i++){
+        if(!rows[i])continue;
+        const c0=(rows[i][0]||'').toString().toLowerCase().trim();
+        const c1=(rows[i][1]||'').toString().toLowerCase().trim();
+        if(c0.includes('material')&&(c1.includes('descri')||c1==='')){headerIdx=i;break;}
       }
+      // Fallback: primeira linha não-vazia
+      if(headerIdx<0){
+        for(let i=0;i<Math.min(10,rows.length);i++){
+          if(rows[i]&&rows[i].some(c=>c!=null&&c!=='')){headerIdx=i;break;}
+        }
+      }
+      if(headerIdx<0)headerIdx=0;
       const header=rows[headerIdx].map(h=>h?h.toString().trim():'');
-      const iCod=findCol(header,['código','codigo','cod','sku']);
-      const iDesc=findCol(header,['descrição','descricao','desc','produto','nome']);
+      const iCod=findCol(header,['material','código','codigo','cod','sku']);
+      const iDesc=findCol(header,['descrição material','descricao material','descrição','descricao','desc','produto','nome']);
       const iEst=findCol(header,['estoque','saldo atual','qtd']);
       const iRes=findCol(header,['reserva','reservado','comprometido']);
       // Validação das colunas essenciais
@@ -12787,11 +12797,15 @@ function processFile(file,tipo){
         if(!row||row.every(c=>c==null||c===''))continue;
         const rawCod=(row[iCod]||'').toString().trim();
         if(!rawCod){semCodigo++;continue;}
+        // Pular linhas de grupo/seção CIGAM (ex: '51 - LINHA PAES') onde estoque não é número
+        const rawEstCheck=row[iEst];
+        const estoqueCheck=parseFloat((rawEstCheck||'').toString().replace(/\./g,'').replace(',','.'));
+        if(isNaN(estoqueCheck))continue; // linha de cabeçalho de grupo — ignorar silenciosamente
         const codigo=normCod(rawCod)||rawCod;
         if(codigosVistos.has(codigo)){duplicados++;continue;}
         codigosVistos.add(codigo);
-        const rawEst=row[iEst];
-        const estoque=parseFloat((rawEst||'').toString().replace(/\./g,'').replace(',','.'));
+        const rawEst=rawEstCheck;
+        const estoque=estoqueCheck;
         if(isNaN(estoque)){estoqueInvalido++;continue;}
         const rawRes=iRes>=0?row[iRes]:null;
         let reserva=0;
