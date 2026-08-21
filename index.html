@@ -782,6 +782,36 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 
 /* TABS */
 
+/* nav agora como .pcp-nav */
+#page-pcp-estoque .pcp-nav{display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--line)}
+
+/* split layout: esquerda = mapa, direita = OP sempre visível */
+#page-pcp-estoque .pcp-split{display:flex;gap:16px;align-items:flex-start}
+#page-pcp-estoque .pcp-left{flex:1;min-width:0;overflow:hidden}
+#page-pcp-estoque .pcp-right{width:500px;flex-shrink:0;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;box-shadow:0 2px 10px rgba(161,1,1,.04)}
+
+/* OP compacta no painel direito: ocultar Estoque, Reserva, Saldo, Necessidade */
+#page-pcp-estoque .pcp-right .order-header,
+#page-pcp-estoque .pcp-right .order-row{grid-template-columns:22px 1fr 72px 80px 96px 96px 22px}
+#page-pcp-estoque .pcp-right .order-header > div:nth-child(3),
+#page-pcp-estoque .pcp-right .order-header > div:nth-child(4),
+#page-pcp-estoque .pcp-right .order-header > div:nth-child(5),
+#page-pcp-estoque .pcp-right .order-header > div:nth-child(6),
+#page-pcp-estoque .pcp-right .order-row > div:nth-child(3),
+#page-pcp-estoque .pcp-right .order-row > div:nth-child(4),
+#page-pcp-estoque .pcp-right .order-row > div:nth-child(5),
+#page-pcp-estoque .pcp-right .order-row > div:nth-child(6){display:none}
+
+/* título do painel direito */
+#page-pcp-estoque .pcp-right-title{font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.7);background:var(--red-dark);padding:10px 14px;border-bottom:1px solid var(--line)}
+
+/* responsivo: empilha abaixo de 1100px */
+@media(max-width:1100px){
+  #page-pcp-estoque .pcp-split{flex-direction:column}
+  #page-pcp-estoque .pcp-right{width:100%}
+}
+
+/* legado .tabs mantido para compatibilidade de print */
 #page-pcp-estoque .tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--line)}
 
 
@@ -1116,9 +1146,22 @@ body{background:#fff;color:#000}
 
   
 #page-pcp-estoque #tab-alertas,#page-pcp-estoque #tab-fabrica,#page-pcp-estoque #tab-loja,#page-pcp-estoque #tab-upload{display:none!important}
-
-  
 #page-pcp-estoque #tab-ordem{display:block!important}
+/* No print: desfaz o split — OP ocupa largura total */
+#page-pcp-estoque .pcp-split{display:block!important}
+#page-pcp-estoque .pcp-left{display:none!important}
+#page-pcp-estoque .pcp-right{width:100%!important;border:none!important;box-shadow:none!important}
+/* Restaura colunas completas para impressão */
+#page-pcp-estoque .pcp-right .order-header,
+#page-pcp-estoque .pcp-right .order-row{grid-template-columns:28px 1fr 80px 70px 70px 70px 80px 85px 110px 110px 28px!important}
+#page-pcp-estoque .pcp-right .order-header>div:nth-child(3),
+#page-pcp-estoque .pcp-right .order-header>div:nth-child(4),
+#page-pcp-estoque .pcp-right .order-header>div:nth-child(5),
+#page-pcp-estoque .pcp-right .order-header>div:nth-child(6),
+#page-pcp-estoque .pcp-right .order-row>div:nth-child(3),
+#page-pcp-estoque .pcp-right .order-row>div:nth-child(4),
+#page-pcp-estoque .pcp-right .order-row>div:nth-child(5),
+#page-pcp-estoque .pcp-right .order-row>div:nth-child(6){display:block!important}
 
   
 #page-pcp-estoque .del-btn,#page-pcp-estoque .add-row-btn{display:none}
@@ -1834,14 +1877,14 @@ body{background:#fff;color:#000}
 
 <div class="container">
   <div class="stats-row no-print" id="statsRow"></div>
-  <div class="top-gap-wrap no-print" id="maiorGapBanner" style="display:none"></div>
-  <div class="tabs no-print">
+  <div class="pcp-nav no-print">
     <div class="tab active" onclick="switchTab('alertas')">Alertas <span class="count-badge" id="alertCount">0</span></div>
     <div class="tab" onclick="switchTab('fabrica')">Fábrica</div>
     <div class="tab" onclick="switchTab('loja')">Loja</div>
-    <div class="tab" onclick="switchTab('ordem')">Ordem de Produção</div>
     <div class="tab" onclick="switchTab('upload')">Importar</div>
   </div>
+  <div class="pcp-split">
+  <div class="pcp-left">
 
   <div id="tab-alertas">
     <div class="filters">
@@ -1903,7 +1946,10 @@ body{background:#fff;color:#000}
     </div>
   </div>
 
-  <div id="tab-ordem" style="display:none">
+  </div><!-- /pcp-left -->
+  <div class="pcp-right">
+  <div id="tab-ordem">
+    <div class="pcp-right-title no-print">📋 Ordem de Produção</div>
     <div class="print-header">
       <table><tr>
         <td rowspan="2" style="width:55%;font-weight:700">BREAD KING ALIMENTOS · PCP</td>
@@ -1965,7 +2011,10 @@ body{background:#fff;color:#000}
       <div id="uploadHistory"><div class="history-row" style="color:#a0a0a0;font-style:italic">Nenhum arquivo importado ainda.</div></div>
     </div>
     <div id="importPreview" style="display:none;margin-top:16px;max-width:760px;padding:14px 16px;background:#fff;border-radius:12px;border:1px solid #f0ddc0"></div>
-  </div>
+  </div><!-- /tab-upload -->
+  </div><!-- /tab-ordem -->
+  </div><!-- /pcp-right -->
+  </div><!-- /pcp-split -->
 </div>
 
   </div> <!-- /page-pcp-estoque -->
@@ -12474,7 +12523,7 @@ function confirmPcpModal(){
   };
   ordemState[setor].push(rowData);
   renderOrdem();
-  switchTab('ordem');
+  // OP sempre visível no painel direito — não precisa trocar de aba
   btnEl.textContent='✓ Adicionado';btnEl.classList.add('sent');
   setTimeout(()=>{btnEl.textContent='→ Ordem';btnEl.classList.remove('sent');},2500);
   closePcpModal();
@@ -12615,7 +12664,7 @@ function buildStats(){
       <div class="stat-value ${necessidade>0?'red':'neutral'}" style="font-size:20px">${n(necessidade)}</div>
       <div class="stat-sub">Total a produzir</div>
     </div>`;
-  renderTopGap('ALL');
+  // Top 10 removido — renderTopGap não é mais chamada
 }
 
 function buildChips(id,items,setter){
@@ -13102,10 +13151,15 @@ td{padding:3px 6px;border:1px solid #ccc}
 }
 
 function switchTab(tab){
-  ['alertas','fabrica','loja','ordem','upload'].forEach(t=>{
-    document.getElementById('tab-'+t).style.display=t===tab?'block':'none';
+  // Ordem fica sempre visível no painel direito — só alterna esquerda
+  ['alertas','fabrica','loja','upload'].forEach(t=>{
+    const el=document.getElementById('tab-'+t);
+    if(el)el.style.display=t===tab?'block':'none';
   });
-  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['alertas','fabrica','loja','ordem','upload'][i]===tab));
+  document.querySelectorAll('#page-pcp-estoque .pcp-nav .tab').forEach(el=>{
+    const onclick=el.getAttribute('onclick')||'';
+    el.classList.toggle('active',onclick.includes("'"+tab+"'"));
+  });
 }
 
 let PCP_INITIALIZED=false;
