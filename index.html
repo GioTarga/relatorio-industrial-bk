@@ -798,30 +798,49 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .pcp-right .order-header{display:none!important}
 #page-pcp-estoque .pcp-right .order-row{display:none!important}
 
-/* Card compacto */
-#page-pcp-estoque .cp-row{padding:8px 10px;border-bottom:1px solid var(--line);transition:background .1s}
-#page-pcp-estoque .cp-row:hover{background:var(--cream)}
-#page-pcp-estoque .cp-header{display:flex;align-items:flex-start;gap:6px;margin-bottom:3px}
-#page-pcp-estoque .cp-seq{flex-shrink:0;font-size:11px;font-weight:800;color:var(--ink-soft);padding-top:1px;min-width:18px}
-#page-pcp-estoque .cp-name{flex:1;font-size:10.5px;font-weight:700;color:var(--ink);line-height:1.3;word-break:break-word}
-#page-pcp-estoque .cp-p1{display:inline-block;background:var(--red);color:#fff;border-radius:3px;padding:1px 5px;font-size:8px;font-weight:800;margin-left:4px;vertical-align:middle;letter-spacing:.3px}
-#page-pcp-estoque .cp-p2{display:inline-block;background:var(--orange,#c0560a);color:#fff;border-radius:3px;padding:1px 5px;font-size:8px;font-weight:800;margin-left:4px;vertical-align:middle;letter-spacing:.3px}
-#page-pcp-estoque .cp-del{flex-shrink:0;background:none;border:none;color:#bbb;font-size:13px;cursor:pointer;padding:0 2px;line-height:1;font-family:inherit}
+/* Linhas de produto na OP */
+#page-pcp-estoque .op-rows-header{display:flex;align-items:center;gap:6px;padding:4px 12px;background:#f7f0e6;border-bottom:1px solid var(--line);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft)}
+#page-pcp-estoque .op-h-bal{width:52px;text-align:right;flex-shrink:0}
+#page-pcp-estoque .op-h-need{width:64px;text-align:right;flex-shrink:0}
+#page-pcp-estoque .op-row{border-bottom:1px solid var(--line);transition:background .1s}
+#page-pcp-estoque .op-row:hover{background:#fdfaf5}
+#page-pcp-estoque .op-row-top{display:flex;align-items:center;gap:6px;padding:7px 12px 4px}
+#page-pcp-estoque .op-seq{flex-shrink:0;font-size:10px;font-weight:800;color:#b0a090;min-width:16px}
+#page-pcp-estoque .op-name{flex:1;font-size:11px;font-weight:600;color:var(--ink);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#page-pcp-estoque .op-bal{width:52px;text-align:right;flex-shrink:0}
+#page-pcp-estoque .op-need{width:64px;text-align:right;flex-shrink:0}
+#page-pcp-estoque .op-row-fields{display:flex;gap:5px;align-items:center;padding:0 12px 8px}
+/* Botão remover */
+#page-pcp-estoque .cp-del{flex-shrink:0;background:none;border:none;color:#ccc;font-size:13px;cursor:pointer;padding:0 2px;line-height:1;font-family:inherit}
 #page-pcp-estoque .cp-del:hover{color:var(--red)}
-#page-pcp-estoque .cp-meta{display:flex;align-items:center;gap:5px;margin-bottom:7px;flex-wrap:wrap}
-#page-pcp-estoque .cp-code{font-size:10px;color:var(--ink-soft)}
-#page-pcp-estoque .cp-saldo{font-size:10px;font-weight:700}
-#page-pcp-estoque .cp-fields{display:flex;gap:5px;align-items:center}
+/* Campos de input na OP */
 #page-pcp-estoque .cp-f-num{width:50px;padding:4px 4px;font-size:11px;font-weight:700;text-align:center;border:1.5px solid var(--line);border-radius:5px;background:var(--cream);font-family:inherit;color:var(--ink)}
 #page-pcp-estoque .cp-f-num:focus{outline:none;border-color:var(--red)}
 #page-pcp-estoque .cp-f-sel{width:76px;padding:4px 3px;font-size:10px;font-weight:600;border:1.5px solid var(--line);border-radius:5px;background:var(--cream);font-family:inherit;color:var(--ink);cursor:pointer}
 #page-pcp-estoque .cp-f-sel:focus{outline:none;border-color:var(--red)}
 #page-pcp-estoque .cp-f-txt{flex:1;min-width:0;padding:4px 6px;font-size:10px;border:1.5px solid var(--line);border-radius:5px;background:var(--cream);font-family:inherit;color:var(--ink)}
 #page-pcp-estoque .cp-f-txt:focus{outline:none;border-color:var(--red)}
-/* Setor block no painel direito: mais compacto */
-#page-pcp-estoque .pcp-right .setor-header{padding:8px 12px}
-#page-pcp-estoque .pcp-right .setor-name{font-size:9.5px}
-#page-pcp-estoque .pcp-right .add-row-btn{padding:6px 12px;font-size:11px}
+/* Busca inline de produto na OP */
+#page-pcp-estoque .prod-search-wrap{padding:6px 12px 10px;background:var(--cream);border-top:1px dashed var(--line)}
+#page-pcp-estoque .prod-search-input{width:100%;box-sizing:border-box;padding:7px 10px;font-size:11px;font-family:var(--font-body);border:1.5px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);outline:none}
+#page-pcp-estoque .prod-search-input:focus{border-color:var(--red)}
+#page-pcp-estoque .prod-search-results{margin-top:5px;max-height:180px;overflow-y:auto;border:1px solid var(--line);border-radius:6px;background:#fff}
+#page-pcp-estoque .prod-search-item{display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer;border-bottom:1px solid var(--line);transition:background .1s}
+#page-pcp-estoque .prod-search-item:last-child{border-bottom:none}
+#page-pcp-estoque .prod-search-item:hover{background:#fdf2e6}
+#page-pcp-estoque .prod-search-item .psi-code{font-size:9.5px;font-weight:800;color:var(--red-dark);min-width:44px;flex-shrink:0;font-variant-numeric:tabular-nums}
+#page-pcp-estoque .prod-search-item .psi-name{font-size:11px;color:var(--ink);flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#page-pcp-estoque .prod-search-item .psi-fam{font-size:9.5px;color:var(--ink-soft);flex-shrink:0}
+#page-pcp-estoque .prod-search-empty{padding:10px;font-size:11px;color:var(--ink-soft);text-align:center}
+/* Setor block no painel OP: header colorido e marcante */
+#page-pcp-estoque .pcp-right .setor-block{margin-bottom:0;border-radius:0;border-left:none;border-right:none;border-top:none;border-bottom:1px solid var(--line)}
+#page-pcp-estoque .pcp-right .setor-block:first-child{border-top:none}
+#page-pcp-estoque .pcp-right .setor-header{padding:9px 14px;background:var(--red-dark);border-bottom:none}
+#page-pcp-estoque .pcp-right .setor-color{display:none}
+#page-pcp-estoque .pcp-right .setor-name{font-size:11px;font-weight:900;letter-spacing:2px;color:#fff}
+#page-pcp-estoque .pcp-right .setor-count{font-size:10px;color:rgba(255,255,255,.6)}
+#page-pcp-estoque .pcp-right .setor-toggle{color:rgba(255,255,255,.5);font-size:12px}
+#page-pcp-estoque .pcp-right .add-row-btn{padding:7px 14px;font-size:11px;color:var(--red-dark);border-top:1px dashed var(--line);background:var(--cream)}
 /* Controles da OP no painel direito */
 #page-pcp-estoque .pcp-right .ordem-controls{padding:10px 12px;gap:6px;flex-wrap:wrap;flex-shrink:0}
 #page-pcp-estoque .print-header{flex-shrink:0}
@@ -861,6 +880,17 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .filters{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:nowrap;padding-bottom:2px}
 
 #page-pcp-estoque .filter-label{font-size:9.5px;color:var(--ink-soft);white-space:nowrap;text-transform:uppercase;letter-spacing:.8px;font-weight:700;flex-shrink:0}
+
+/* Separador vertical nos filtros */
+#page-pcp-estoque .filter-vsep{width:1px;height:18px;background:var(--line);flex-shrink:0;align-self:center}
+/* Chips de status coloridos */
+#page-pcp-estoque .chip-deficit.active{background:#fbe2dc;color:#9b2335;border-color:#f5a3a3}
+#page-pcp-estoque .chip-critico.active{background:#fde8d6;color:#7b3a10;border-color:#f6b894}
+#page-pcp-estoque .chip-atencao.active{background:#fdf2dc;color:#7a5400;border-color:#f0d07a}
+#page-pcp-estoque .chip-ok.active{background:#dff3e6;color:#1d6038;border-color:#86d4a0}
+/* Alinha filtros do alertas */
+#page-pcp-estoque .alert-filters{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+#page-pcp-estoque .alert-filters::-webkit-scrollbar{display:none}
 
 /* Dropdown de família */
 #page-pcp-estoque .fam-select{height:28px;padding:0 26px 0 8px;border:1px solid var(--line);border-radius:var(--r-sm);font-size:10.5px;font-weight:600;font-family:var(--font-body);color:var(--ink);background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b5c5c'/%3E%3C/svg%3E") no-repeat right 8px center;-webkit-appearance:none;appearance:none;cursor:pointer;min-width:140px;max-width:220px;flex-shrink:0}
@@ -1915,22 +1945,29 @@ body{background:#fff;color:#000}
   <div class="pcp-left">
 
   <div id="tab-alertas">
-    <div class="filters">
-      <span class="filter-label">Status</span>
+    <div class="filters alert-filters">
+      <!-- Status chips -->
       <div class="chips" id="statusChips">
         <div class="chip active" onclick="setStatusFilter(this,'ALL')">Todos</div>
-        <div class="chip" onclick="setStatusFilter(this,'DEFICIT')">🔴 Déficit</div>
-        <div class="chip" onclick="setStatusFilter(this,'CRITICO')">🟠 Crítico</div>
-        <div class="chip" onclick="setStatusFilter(this,'ATENCAO')">🟡 Atenção</div>
-        <div class="chip" onclick="setStatusFilter(this,'DISPONIVEL')">🟢 Disponível</div>
+        <div class="chip chip-deficit" onclick="setStatusFilter(this,'DEFICIT')">Déficit</div>
+        <div class="chip chip-critico" onclick="setStatusFilter(this,'CRITICO')">Crítico</div>
+        <div class="chip chip-atencao" onclick="setStatusFilter(this,'ATENCAO')">Atenção</div>
+        <div class="chip chip-ok" onclick="setStatusFilter(this,'DISPONIVEL')">Disponível</div>
       </div>
-      <span class="filter-label" style="margin-left:10px">Local</span>
+      <span class="filter-vsep"></span>
+      <!-- Local chips -->
       <div class="chips" id="locChips">
         <div class="chip active" onclick="setLoc(this,'ALL')">Todos</div>
         <div class="chip" onclick="setLoc(this,'FABRICA')">Fábrica</div>
         <div class="chip" onclick="setLoc(this,'LOJA')">Loja</div>
       </div>
-      <input class="search-box" type="text" placeholder="buscar produto..." oninput="renderAlerts()" id="searchAlert">
+      <span class="filter-vsep"></span>
+      <!-- Setor dropdown -->
+      <select class="fam-select" id="alertaSetorSel" onchange="setAlertaSetor(this.value)" style="min-width:130px">
+        <option value="ALL">Todos os setores</option>
+      </select>
+      <!-- Busca -->
+      <input class="search-box" type="text" placeholder="buscar produto..." oninput="renderAlerts()" id="searchAlert" style="margin-left:auto">
     </div>
     <div class="table-wrap">
       <div class="table-header">
@@ -12715,6 +12752,7 @@ function buildChips(id,items,setter){
 }
 
 let statusFilter='DEFICIT'; // default: mostra déficits primeiro
+let alertaSetor='ALL';
 
 function setStatusFilter(el,v){
   statusFilter=v;
@@ -12722,7 +12760,15 @@ function setStatusFilter(el,v){
   el.classList.add('active');
   renderAlerts();
 }
-function setLoc(el,v){locFilter=v;document.querySelectorAll('#locChips .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderAlerts()}
+function setLoc(el,v){locFilter=v;document.querySelectorAll('#locChips .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderAlerts();}
+function setAlertaSetor(v){alertaSetor=v;renderAlerts();}
+
+function buildAlertaSetorDropdown(){
+  const sel=document.getElementById('alertaSetorSel');
+  if(!sel||!SD.setores)return;
+  sel.innerHTML='<option value="ALL">Todos os setores</option>'+
+    SD.setores.map(s=>`<option value="${s}">${s}</option>`).join('');
+}
 function setFabFam(v){fabFam=v;renderFab();}
 function setLojaFam(v){lojaFam=v;renderLoja();}
 
@@ -12742,6 +12788,7 @@ function renderAlerts(){
   const q=(document.getElementById('searchAlert').value||'').toLowerCase();
   let items=[...allItems()];
   if(locFilter!=='ALL')items=items.filter(i=>i.tipo===locFilter);
+  if(alertaSetor!=='ALL'){const codes=new Set((SD.by_setor[alertaSetor]||[]).map(i=>i.codigo));items=items.filter(i=>codes.has(i.codigo));}
   items=filterByStatus(items,statusFilter);
   if(q)items=items.filter(i=>i.descricao.toLowerCase().includes(q)||i.familia.toLowerCase().includes(q));
   items.sort((a,b)=>calculateAvailableStock(a)-calculateAvailableStock(b));
@@ -12818,6 +12865,84 @@ function delRow(setor,id){
   renderOrdem();
 }
 
+function showProdSearch(setor){
+  const sid=setor.replace(/[^a-zA-Z0-9]/g,'_');
+  const wrap=document.getElementById('psw-'+sid);
+  const inp=document.getElementById('psi-'+sid);
+  if(!wrap)return;
+  const isOpen=wrap.style.display!=='none';
+  wrap.style.display=isOpen?'none':'block';
+  if(!isOpen&&inp){
+    inp.value='';
+    filterProdSearch(setor,sid);
+    inp.focus();
+  }
+}
+
+function filterProdSearch(setor,sid){
+  const inp=document.getElementById('psi-'+sid);
+  const res=document.getElementById('psr-'+sid);
+  if(!inp||!res)return;
+  const q=inp.value.toLowerCase().trim();
+  // Get items that belong to this setor from SD
+  const setorItems=(SD.by_setor&&SD.by_setor[setor])||[];
+  // Also allow items from allItems() filtered by setor if SD mapping available
+  let pool=setorItems.length>0?setorItems:allItems().filter(i=>{
+    const s=getSetor(i.codigo);
+    return s===setor;
+  });
+  // fallback: if no setor-specific items found, use all
+  if(!pool.length)pool=allItems();
+  const filtered=q?pool.filter(i=>{
+    const d=(i.descricao||i.desc||'').toLowerCase();
+    const c=(i.codigo||'').toLowerCase();
+    const f=(i.familia||'').toLowerCase();
+    return d.includes(q)||c.includes(q)||f.includes(q);
+  }):pool;
+  if(!filtered.length){
+    res.innerHTML=`<div class="prod-search-empty">Nenhum produto encontrado</div>`;
+    return;
+  }
+  const limit=filtered.slice(0,30);
+  res.innerHTML=limit.map(i=>{
+    const safeSetor=setor.replace(/'/g,"\\'");
+    const safeCod=(i.codigo||'').replace(/'/g,"\\'");
+    const desc=(i.descricao||i.desc||'');
+    const fam=(i.familia||'');
+    return`<div class="prod-search-item" onclick="addProdFromSearch('${safeSetor}','${safeCod}')">
+      <span class="psi-code">${i.codigo||''}</span>
+      <span class="psi-name" title="${desc}">${desc}</span>
+      <span class="psi-fam">${fam}</span>
+    </div>`;
+  }).join('');
+}
+
+function addProdFromSearch(setor,codigo){
+  if(!ordemState[setor])ordemState[setor]=[];
+  // Lookup product details
+  const allI=allItems();
+  const item=allI.find(i=>i.codigo===codigo)||(SD.by_setor&&(SD.by_setor[setor]||[]).find(i=>i.codigo===codigo));
+  const saldo=item?(item.saldo_fab!==undefined?item.saldo_fab:0):0;
+  const need=item?(item.necessidade!==undefined?item.necessidade:0):0;
+  const row={
+    id:Date.now()+Math.random(),
+    code:codigo,
+    desc:item?(item.descricao||item.desc||codigo):codigo,
+    saldo:saldo,
+    need:need,
+    qtd:'',
+    unidadeMedida:'Unid',
+    maquina:'',
+    obs:''
+  };
+  ordemState[setor].push(row);
+  // Hide search
+  const sid=setor.replace(/[^a-zA-Z0-9]/g,'_');
+  const wrap=document.getElementById('psw-'+sid);
+  if(wrap)wrap.style.display='none';
+  renderOrdem();
+}
+
 function syncField(setor,id,field,val){
   const rows=ordemState[setor];
   if(!rows)return;
@@ -12855,26 +12980,21 @@ function renderOrdemRow(setor,row,seq){
 }
 
 function renderOrdemRowCompact(setor,row,seq){
-  const locCls=row.loc==='FABRICA'?'loc-fab':'loc-loja';
-  const locLabel=row.loc==='FABRICA'?'FAB':'LOJA';
   const saldoCl=row.saldo<0?'num-red':row.saldo===0?'num-yellow':'num-green';
-  const priorLabel=row.saldo<0?'<span class="cp-p1">P1</span>':row.saldo===0?'<span class="cp-p2">P2</span>':'';
   const units=['Massa','Kg','Caixas','Carrinhos','Armários','Blocos','Unid'];
   const selOpts=units.map(u=>`<option value="${u}"${(row.unidadeMedida||'Unid')===u?' selected':''}>${u}</option>`).join('');
-  const desc=row.desc?shortDesc(row.desc):'<em style="color:#aaa">novo</em>';
-  return`<div class="cp-row">
-    <div class="cp-header">
-      <span class="cp-seq">${seq}</span>
-      <span class="cp-name" title="${row.desc||''}">${desc}${priorLabel}</span>
-      <button class="cp-del no-print" onclick="delRow('${setor}',${row.id})">✕</button>
+  const desc=row.desc?shortDesc(row.desc):'<span style="color:#aaa;font-style:italic">novo</span>';
+  const saldoStr=`<span class="${saldoCl}" style="font-size:11px;font-weight:700">${n(row.saldo)}</span>`;
+  const needStr=row.need>0?`<span style="font-size:11px;font-weight:700;color:var(--red)">${n(row.need)}</span>`:'<span style="color:#aaa">—</span>';
+  return`<div class="op-row">
+    <div class="op-row-top">
+      <span class="op-seq">${seq}</span>
+      <span class="op-name" title="${row.desc||''}">${desc}</span>
+      <span class="op-bal">${saldoStr}</span>
+      <span class="op-need">${needStr}</span>
+      <button class="cp-del no-print" onclick="delRow('${setor}',${row.id})" title="Remover">✕</button>
     </div>
-    <div class="cp-meta">
-      <span class="order-loc ${locCls}">${locLabel}</span>
-      ${row.code?`<span class="cp-code">· ${row.code}</span>`:''}
-      <span class="cp-saldo ${saldoCl}">saldo ${n(row.saldo)}</span>
-      ${row.need?`<span style="font-size:10px;color:#718096">· need ${n(row.need)}</span>`:''}
-    </div>
-    <div class="cp-fields">
+    <div class="op-row-fields">
       <input class="cp-f-num" type="number" min="0" placeholder="Qtd" value="${row.qtd||''}" oninput="syncField('${setor}',${row.id},'qtd',this.value)">
       <select class="cp-f-sel" onchange="syncField('${setor}',${row.id},'unidadeMedida',this.value)">${selOpts}</select>
       <input class="cp-f-txt" placeholder="Máquina..." value="${row.maquina||''}" oninput="syncField('${setor}',${row.id},'maquina',this.value)">
@@ -12897,14 +13017,17 @@ function renderOrdem(){
     const sid=setor.replace(/ /g,'_');
     return`<div class="setor-block">
       <div class="setor-header" onclick="toggleSetor('${setor}')">
-        <div class="setor-color ${sc.cls}"></div>
-        <span class="setor-name">${sc.emoji} ${setor}</span>
-        <span class="setor-count no-print">${rows.length} produto${rows.length!==1?'s':''}</span>
+        <span class="setor-name">${setor}</span>
+        <span class="setor-count no-print">${rows.length} item${rows.length!==1?'s':''}</span>
         <span class="setor-toggle no-print" id="tog-${sid}">▾</span>
       </div>
       <div id="body-${sid}">
-        ${rows.length?rows.map((r,i)=>renderOrdemRowCompact(setor,r,i+1)).join(''):'<div style="padding:10px 12px;font-size:12px;color:#4a5568;font-style:italic">Sem alertas neste setor.</div>'}
-        <div class="add-row-btn no-print" onclick="addRow('${setor}')">+ adicionar produto</div>
+        ${rows.length?`<div class="op-rows-header"><span style="flex:1">Produto</span><span class="op-h-bal">Saldo</span><span class="op-h-need">Necessidade</span><span style="width:20px"></span></div>`+rows.map((r,i)=>renderOrdemRowCompact(setor,r,i+1)).join(''):''}
+        <div class="add-row-btn no-print" onclick="showProdSearch('${setor}')">+ adicionar produto</div>
+        <div class="prod-search-wrap" id="psw-${sid}" style="display:none">
+          <input class="prod-search-input" id="psi-${sid}" type="text" placeholder="Digitar nome do produto..." oninput="filterProdSearch('${setor}','${sid}')">
+          <div class="prod-search-results" id="psr-${sid}"></div>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -13030,6 +13153,7 @@ function processFile(file,tipo){
           buildStats();
           buildChips('fabFamChips',fabItems(),'setFabFam');
           buildChips('lojaFamChips',lojaItems(),'setLojaFam');
+          buildAlertaSetorDropdown();
           renderAlerts();renderFab();renderLoja();
         });
         const now=new Date();
