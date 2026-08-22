@@ -780,19 +780,18 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .stat-sub{font-size:11px;color:var(--ink-soft);margin-top:6px}
 
 
-/* TABS */
-
-/* nav agora como .pcp-nav */
-#page-pcp-estoque .pcp-nav{display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--line)}
-
-/* split layout: 50/50 — esquerda = tabela, direita = OP */
-#page-pcp-estoque .pcp-split{display:flex;gap:16px;align-items:flex-start;}
-#page-pcp-estoque .pcp-left{flex:1;min-width:0;overflow:hidden}
-#page-pcp-estoque .pcp-right{flex:1;min-width:0;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;box-shadow:0 2px 10px rgba(161,1,1,.04);display:flex;flex-direction:column;max-height:calc(100vh - 180px)}
-/* Painel OP: quando vazio colapsa para faixa estreita */
-#page-pcp-estoque .pcp-right.is-empty{flex:0 0 260px}
+/* GRID 2 COLUNAS — garante alinhamento perfeito entre tabela e OP */
+#page-pcp-estoque .pcp-container{display:grid;grid-template-columns:1fr 1fr;column-gap:16px;row-gap:0}
+/* Barra de filtros — linha 1, coluna 1 */
+#page-pcp-estoque .pcp-filter-bar{grid-column:1;grid-row:1;display:flex;align-items:center;gap:8px;height:38px;border-bottom:1px solid var(--line);overflow:visible;flex-wrap:nowrap;box-sizing:border-box}
+/* Título OP — linha 1, coluna 2 */
+#page-pcp-estoque .pcp-op-title{grid-column:2;grid-row:1;display:flex;align-items:center;padding:0 14px;background:var(--red-dark);font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.85);border-radius:var(--r-md) var(--r-md) 0 0;border:1px solid var(--line);border-bottom:1px solid rgba(0,0,0,.2)}
+/* Tabela — linha 2, coluna 1 */
+#page-pcp-estoque .pcp-left{grid-column:1;grid-row:2;min-width:0;overflow:hidden;padding-top:8px}
+/* Painel OP — linha 2, coluna 2 (conecta visualmente ao título acima) */
+#page-pcp-estoque .pcp-right{grid-column:2;grid-row:2;min-width:0;background:var(--paper);border:1px solid var(--line);border-top:none;border-radius:0 0 var(--r-md) var(--r-md);overflow:hidden;box-shadow:0 2px 10px rgba(161,1,1,.04);display:flex;flex-direction:column;max-height:calc(100vh - 180px)}
 /* ordemBody tem scroll vertical próprio */
-#page-pcp-estoque #ordemBody{overflow-y:auto;flex:1;min-height:0;padding-top:6px}
+#page-pcp-estoque #ordemBody{overflow-y:auto;flex:1;min-height:0;padding-top:8px}
 
 /* Layout de cards para OP no painel direito */
 #page-pcp-estoque .pcp-right .order-header{display:none!important}
@@ -855,8 +854,11 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 
 /* responsivo: empilha abaixo de 1100px */
 @media(max-width:1100px){
-  #page-pcp-estoque .pcp-split{flex-direction:column}
-  #page-pcp-estoque .pcp-right{width:100%}
+  #page-pcp-estoque .pcp-container{grid-template-columns:1fr}
+  #page-pcp-estoque .pcp-filter-bar{grid-column:1}
+  #page-pcp-estoque .pcp-op-title{grid-column:1;border-radius:var(--r-md) var(--r-md) 0 0}
+  #page-pcp-estoque .pcp-left{grid-column:1}
+  #page-pcp-estoque .pcp-right{grid-column:1;width:100%}
 }
 
 /* legado .tabs mantido para compatibilidade de print */
@@ -876,8 +878,8 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 
 /* FILTERS */
 
-/* Filtros: barra fixa de 38px — alinha com o título da OP no painel direito */
-#page-pcp-estoque .filters{display:flex;align-items:center;gap:8px;margin-bottom:0;flex-wrap:nowrap;height:38px;overflow:hidden;box-sizing:border-box;border-bottom:1px solid var(--line)}
+/* Filtros (tabs ocultas Fábrica/Loja) */
+#page-pcp-estoque .filters{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:nowrap}
 #page-pcp-estoque .chips{display:flex;align-items:center;gap:4px;flex-wrap:nowrap;flex-shrink:0}
 
 #page-pcp-estoque .filter-label{font-size:9.5px;color:var(--ink-soft);white-space:nowrap;text-transform:uppercase;letter-spacing:.8px;font-weight:700;flex-shrink:0}
@@ -913,7 +915,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 
 /* TABLE */
 
-#page-pcp-estoque .table-wrap{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);overflow-x:hidden;box-shadow:0 2px 10px rgba(161,1,1,.04);margin-top:6px}
+#page-pcp-estoque .table-wrap{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);overflow-x:hidden;box-shadow:0 2px 10px rgba(161,1,1,.04)}
 
 #page-pcp-estoque .table-header{display:grid;grid-template-columns:1fr 62px 62px 80px 80px 82px 82px;gap:0;background:var(--red-dark);padding:6px 10px;font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.8);font-weight:700;border-bottom:1px solid var(--line)}
 
@@ -1013,7 +1015,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 
 #page-pcp-estoque .empty-state{text-align:center;padding:40px 20px;color:var(--ink-soft);font-size:13px;background:var(--cream);border:1px dashed var(--line);border-radius:var(--r-md)}
 #page-pcp-estoque .pcp-right .empty-state{padding:18px 14px;font-size:11px;text-align:center;color:var(--ink-soft)}
-#page-pcp-estoque .pcp-right.is-empty{width:200px}
+/* .pcp-right.is-empty removido — painel OP sempre ocupa flex:1 no grid */
 
 
 #page-pcp-estoque .empty-icon{font-size:28px;margin-bottom:10px;display:block}
@@ -1208,10 +1210,11 @@ body{background:#fff;color:#000}
   
 #page-pcp-estoque #tab-alertas,#page-pcp-estoque #tab-fabrica,#page-pcp-estoque #tab-loja,#page-pcp-estoque #tab-upload{display:none!important}
 #page-pcp-estoque #tab-ordem{display:block!important}
-/* No print: desfaz o split — OP ocupa largura total */
-#page-pcp-estoque .pcp-split{display:block!important}
+/* No print: desfaz o grid — OP ocupa largura total */
+#page-pcp-estoque .pcp-container{display:block!important}
+#page-pcp-estoque .pcp-filter-bar,#page-pcp-estoque .pcp-op-title{display:none!important}
 #page-pcp-estoque .pcp-left{display:none!important}
-#page-pcp-estoque .pcp-right{width:100%!important;border:none!important;box-shadow:none!important}
+#page-pcp-estoque .pcp-right{width:100%!important;border:none!important;box-shadow:none!important;border-radius:0!important}
 /* Restaura colunas completas para impressão */
 #page-pcp-estoque .pcp-right .order-header,
 #page-pcp-estoque .pcp-right .order-row{grid-template-columns:28px 1fr 80px 70px 70px 70px 80px 85px 110px 110px 28px!important}
@@ -1938,40 +1941,74 @@ body{background:#fff;color:#000}
 
 <div class="container">
   <div class="stats-row no-print" id="statsRow"></div>
-  <div class="pcp-nav no-print">
-    <div class="tab active" onclick="switchTab('alertas')">Alertas <span class="count-badge" id="alertCount">0</span></div>
-    <div class="tab" onclick="switchTab('fabrica')">Fábrica</div>
-    <div class="tab" onclick="switchTab('loja')">Loja</div>
-    <div class="tab" onclick="switchTab('upload')">Importar</div>
+  <div class="pcp-container">
+  <!-- Linha 1: Filtros (esq) + Título OP (dir) — ambos na mesma row do grid = alinhamento garantido -->
+  <div class="pcp-filter-bar no-print">
+    <!-- Status chips -->
+    <div class="chips" id="statusChips">
+      <div class="chip active" onclick="setStatusFilter(this,'ALL')">Todos</div>
+      <div class="chip chip-deficit" onclick="setStatusFilter(this,'DEFICIT')">Déficit</div>
+      <div class="chip chip-critico" onclick="setStatusFilter(this,'CRITICO')">Crítico</div>
+      <div class="chip chip-atencao" onclick="setStatusFilter(this,'ATENCAO')">Atenção</div>
+      <div class="chip chip-ok" onclick="setStatusFilter(this,'DISPONIVEL')">Disponível</div>
+    </div>
+    <span class="filter-vsep"></span>
+    <!-- Local chips -->
+    <div class="chips" id="locChips">
+      <div class="chip active" onclick="setLoc(this,'ALL')">Todos</div>
+      <div class="chip" onclick="setLoc(this,'FABRICA')">Fábrica</div>
+      <div class="chip" onclick="setLoc(this,'LOJA')">Loja</div>
+    </div>
+    <span class="filter-vsep"></span>
+    <!-- Setor dropdown -->
+    <select class="fam-select" id="alertaSetorSel" onchange="setAlertaSetor(this.value)" style="min-width:130px">
+      <option value="ALL">Todos os setores</option>
+    </select>
+    <!-- Busca -->
+    <input class="search-box" type="text" placeholder="buscar produto..." oninput="renderAlerts()" id="searchAlert" style="margin-left:auto">
+    <!-- Botão Importar -->
+    <button id="btnImportar" class="btn" onclick="toggleUploadPanel()" style="flex-shrink:0;padding:4px 10px;font-size:10px;font-weight:700;letter-spacing:.5px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;border-radius:var(--r-sm);white-space:nowrap">📂 Importar</button>
   </div>
-  <div class="pcp-split">
+  <div class="pcp-op-title no-print">ORDEM DE PRODUÇÃO</div>
+
+  <!-- Linha 2: Tabela (esq) + Corpo OP (dir) -->
   <div class="pcp-left">
 
-  <div id="tab-alertas">
-    <div class="filters alert-filters">
-      <!-- Status chips -->
-      <div class="chips" id="statusChips">
-        <div class="chip active" onclick="setStatusFilter(this,'ALL')">Todos</div>
-        <div class="chip chip-deficit" onclick="setStatusFilter(this,'DEFICIT')">Déficit</div>
-        <div class="chip chip-critico" onclick="setStatusFilter(this,'CRITICO')">Crítico</div>
-        <div class="chip chip-atencao" onclick="setStatusFilter(this,'ATENCAO')">Atenção</div>
-        <div class="chip chip-ok" onclick="setStatusFilter(this,'DISPONIVEL')">Disponível</div>
-      </div>
-      <span class="filter-vsep"></span>
-      <!-- Local chips -->
-      <div class="chips" id="locChips">
-        <div class="chip active" onclick="setLoc(this,'ALL')">Todos</div>
-        <div class="chip" onclick="setLoc(this,'FABRICA')">Fábrica</div>
-        <div class="chip" onclick="setLoc(this,'LOJA')">Loja</div>
-      </div>
-      <span class="filter-vsep"></span>
-      <!-- Setor dropdown -->
-      <select class="fam-select" id="alertaSetorSel" onchange="setAlertaSetor(this.value)" style="min-width:130px">
-        <option value="ALL">Todos os setores</option>
-      </select>
-      <!-- Busca -->
-      <input class="search-box" type="text" placeholder="buscar produto..." oninput="renderAlerts()" id="searchAlert" style="margin-left:auto">
+  <!-- Painel de importação (toggle via botão) -->
+  <div id="tab-upload" style="display:none;padding:12px 0 16px">
+    <div style="margin-bottom:16px;padding:12px 16px;background:#fff8e7;border:1px solid #f0ddc0;border-radius:12px;font-size:12px;color:#6b5c5c;max-width:760px">
+      <strong style="color:#6e0000">📋 Como importar:</strong> Exporte do CIGAM 11 os relatórios <em>Posição de Estoque</em> de Fábrica e Loja em formato XLSX. O sistema identifica automaticamente as colunas <strong>Código, Descrição, Estoque</strong> e <strong>Reserva</strong>.
     </div>
+    <div class="upload-grid">
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#4a5568;margin-bottom:8px">Estoque Fábrica</div>
+        <div class="upload-card" id="cardFab" ondragover="event.preventDefault()" ondrop="handleDrop(event,'FABRICA')">
+          <div class="upload-icon">🏭</div>
+          <div class="upload-title" id="fabFileName">Posicao_EstoquePC1.FABRICA.xlsx</div>
+          <div class="upload-sub" id="fabStatus">Exportado do CIGAM 11</div>
+          <input type="file" id="inputFab" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this,'FABRICA')">
+          <button class="upload-btn" onclick="document.getElementById('inputFab').click()">📂 Selecionar arquivo</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#4a5568;margin-bottom:8px">Estoque Loja</div>
+        <div class="upload-card" id="cardLoja" ondragover="event.preventDefault()" ondrop="handleDrop(event,'LOJA')">
+          <div class="upload-icon">🏪</div>
+          <div class="upload-title" id="lojaFileName">Posicao_EstoquePC1.LOJA.xlsx</div>
+          <div class="upload-sub" id="lojaStatus">Exportado do CIGAM 11</div>
+          <input type="file" id="inputLoja" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this,'LOJA')">
+          <button class="upload-btn" onclick="document.getElementById('inputLoja').click()">📂 Selecionar arquivo</button>
+        </div>
+      </div>
+    </div>
+    <div class="upload-history">
+      <div class="history-title">Histórico de importação</div>
+      <div id="uploadHistory"><div class="history-row" style="color:#a0a0a0;font-style:italic">Nenhum arquivo importado ainda.</div></div>
+    </div>
+    <div id="importPreview" style="display:none;margin-top:16px;max-width:760px;padding:14px 16px;background:#fff;border-radius:12px;border:1px solid #f0ddc0"></div>
+  </div>
+
+  <div id="tab-alertas">
     <div class="table-wrap">
       <div class="table-header">
         <div>Produto</div>
@@ -2019,43 +2056,9 @@ body{background:#fff;color:#000}
     </div>
   </div>
 
-  <div id="tab-upload" style="display:none">
-    <div style="margin-bottom:16px;padding:12px 16px;background:#fff8e7;border:1px solid #f0ddc0;border-radius:12px;font-size:12px;color:#6b5c5c;max-width:760px">
-      <strong style="color:#6e0000">📋 Como importar:</strong> Exporte do CIGAM 11 os relatórios <em>Posição de Estoque</em> de Fábrica e Loja em formato XLSX. O sistema identifica automaticamente as colunas <strong>Código, Descrição, Estoque</strong> e <strong>Reserva</strong>.
-    </div>
-    <div class="upload-grid">
-      <div>
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#4a5568;margin-bottom:8px">Estoque Fábrica</div>
-        <div class="upload-card" id="cardFab" ondragover="event.preventDefault()" ondrop="handleDrop(event,'FABRICA')">
-          <div class="upload-icon">🏭</div>
-          <div class="upload-title" id="fabFileName">Posicao_EstoquePC1.FABRICA.xlsx</div>
-          <div class="upload-sub" id="fabStatus">Exportado do CIGAM 11</div>
-          <input type="file" id="inputFab" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this,'FABRICA')">
-          <button class="upload-btn" onclick="document.getElementById('inputFab').click()">📂 Selecionar arquivo</button>
-        </div>
-      </div>
-      <div>
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#4a5568;margin-bottom:8px">Estoque Loja</div>
-        <div class="upload-card" id="cardLoja" ondragover="event.preventDefault()" ondrop="handleDrop(event,'LOJA')">
-          <div class="upload-icon">🏪</div>
-          <div class="upload-title" id="lojaFileName">Posicao_EstoquePC1.LOJA.xlsx</div>
-          <div class="upload-sub" id="lojaStatus">Exportado do CIGAM 11</div>
-          <input type="file" id="inputLoja" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this,'LOJA')">
-          <button class="upload-btn" onclick="document.getElementById('inputLoja').click()">📂 Selecionar arquivo</button>
-        </div>
-      </div>
-    </div>
-    <div class="upload-history">
-      <div class="history-title">Histórico de importação</div>
-      <div id="uploadHistory"><div class="history-row" style="color:#a0a0a0;font-style:italic">Nenhum arquivo importado ainda.</div></div>
-    </div>
-    <div id="importPreview" style="display:none;margin-top:16px;max-width:760px;padding:14px 16px;background:#fff;border-radius:12px;border:1px solid #f0ddc0"></div>
-  </div><!-- /tab-upload -->
-
   </div><!-- /pcp-left -->
   <div class="pcp-right">
   <div id="tab-ordem">
-    <div class="pcp-right-title no-print">ORDEM DE PRODUÇÃO</div>
     <div class="print-header">
       <table><tr>
         <td rowspan="2" style="width:55%;font-weight:700">BREAD KING ALIMENTOS · PCP</td>
@@ -2080,7 +2083,7 @@ body{background:#fff;color:#000}
     </div>
   </div><!-- /tab-ordem -->
   </div><!-- /pcp-right -->
-  </div><!-- /pcp-split -->
+  </div><!-- /pcp-container -->
 </div>
 
   </div> <!-- /page-pcp-estoque -->
@@ -12766,7 +12769,7 @@ function buildChips(id,items,setter){
   }
 }
 
-let statusFilter='DEFICIT'; // default: mostra déficits primeiro
+let statusFilter='ALL'; // default: todos os produtos (chip ativo = Todos)
 let alertaSetor='ALL';
 
 function setStatusFilter(el,v){
@@ -13390,15 +13393,23 @@ ${sectorsHtml||'<p style="text-align:center;color:#888;margin:20px">Nenhum produ
 }
 
 function switchTab(tab){
-  // Ordem fica sempre visível no painel direito — só alterna esquerda
+  // Mantido para compatibilidade; nav removida — só tab-upload usa este fluxo via toggleUploadPanel
   ['alertas','fabrica','loja','upload'].forEach(t=>{
     const el=document.getElementById('tab-'+t);
-    if(el)el.style.display=t===tab?'block':'none';
+    if(!el)return;
+    if(t==='upload')return; // upload gerenciado por toggleUploadPanel
+    el.style.display=t===tab?'block':'none';
   });
-  document.querySelectorAll('#page-pcp-estoque .pcp-nav .tab').forEach(el=>{
-    const onclick=el.getAttribute('onclick')||'';
-    el.classList.toggle('active',onclick.includes("'"+tab+"'"));
-  });
+}
+function toggleUploadPanel(){
+  const el=document.getElementById('tab-upload');
+  const btn=document.getElementById('btnImportar');
+  if(!el)return;
+  const open=el.style.display==='none'||el.style.display==='';
+  el.style.display=open?'block':'none';
+  if(btn){btn.style.background=open?'var(--red-dark)':'';}
+  if(btn){btn.style.color=open?'#fff':'';}
+  if(btn){btn.style.borderColor=open?'var(--red-dark)':'';}
 }
 
 let PCP_INITIALIZED=false;
