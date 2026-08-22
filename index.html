@@ -785,10 +785,14 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 /* nav agora como .pcp-nav */
 #page-pcp-estoque .pcp-nav{display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--line)}
 
-/* split layout: esquerda = mapa, direita = OP sempre visível */
+/* split layout: 50/50 — esquerda = tabela, direita = OP */
 #page-pcp-estoque .pcp-split{display:flex;gap:16px;align-items:flex-start}
 #page-pcp-estoque .pcp-left{flex:1;min-width:0;overflow:hidden}
-#page-pcp-estoque .pcp-right{width:500px;flex-shrink:0;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;box-shadow:0 2px 10px rgba(161,1,1,.04)}
+#page-pcp-estoque .pcp-right{flex:1;min-width:0;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;box-shadow:0 2px 10px rgba(161,1,1,.04);display:flex;flex-direction:column;max-height:calc(100vh - 180px)}
+/* Painel OP: quando vazio colapsa para faixa estreita */
+#page-pcp-estoque .pcp-right.is-empty{flex:0 0 260px}
+/* ordemBody tem scroll vertical próprio */
+#page-pcp-estoque #ordemBody{overflow-y:auto;flex:1;min-height:0}
 
 /* Layout de cards para OP no painel direito */
 #page-pcp-estoque .pcp-right .order-header{display:none!important}
@@ -819,13 +823,16 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .pcp-right .setor-name{font-size:9.5px}
 #page-pcp-estoque .pcp-right .add-row-btn{padding:6px 12px;font-size:11px}
 /* Controles da OP no painel direito */
-#page-pcp-estoque .pcp-right .ordem-controls{padding:10px 12px;gap:6px;flex-wrap:wrap}
+#page-pcp-estoque .pcp-right .ordem-controls{padding:10px 12px;gap:6px;flex-wrap:wrap;flex-shrink:0}
+#page-pcp-estoque .print-header{flex-shrink:0}
 #page-pcp-estoque .pcp-right .btn{padding:6px 12px;font-size:11px}
 /* empty state menor */
 #page-pcp-estoque .pcp-right .empty-state{padding:30px 16px;font-size:12px}
 
 /* título do painel direito */
-#page-pcp-estoque .pcp-right-title{font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.7);background:var(--red-dark);padding:10px 14px;border-bottom:1px solid var(--line)}
+#page-pcp-estoque .pcp-right-title{font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.7);background:var(--red-dark);padding:10px 14px;border-bottom:1px solid var(--line);flex-shrink:0}
+/* tab-ordem ocupa altura total do painel — flex column */
+#page-pcp-estoque #tab-ordem{display:flex;flex-direction:column;flex:1;min-height:0}
 
 /* responsivo: empilha abaixo de 1100px */
 @media(max-width:1100px){
@@ -851,15 +858,13 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 /* FILTERS */
 
 /* Filtros: single row horizontal scroll */
-#page-pcp-estoque .filters{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:2px}
-
-#page-pcp-estoque .filters::-webkit-scrollbar{display:none}
+#page-pcp-estoque .filters{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:nowrap;padding-bottom:2px}
 
 #page-pcp-estoque .filter-label{font-size:9.5px;color:var(--ink-soft);white-space:nowrap;text-transform:uppercase;letter-spacing:.8px;font-weight:700;flex-shrink:0}
 
-#page-pcp-estoque .chips{display:flex;gap:4px;flex-wrap:nowrap;flex-shrink:0}
-
-#page-pcp-estoque .chip{padding:3px 9px;border-radius:var(--r-sm);font-size:10px;font-weight:700;cursor:pointer;border:1px solid var(--line);background:var(--paper);color:var(--ink-soft);transition:all .15s;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
+/* Dropdown de família */
+#page-pcp-estoque .fam-select{height:28px;padding:0 26px 0 8px;border:1px solid var(--line);border-radius:var(--r-sm);font-size:10.5px;font-weight:600;font-family:var(--font-body);color:var(--ink);background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b5c5c'/%3E%3C/svg%3E") no-repeat right 8px center;-webkit-appearance:none;appearance:none;cursor:pointer;min-width:140px;max-width:220px;flex-shrink:0}
+#page-pcp-estoque .fam-select:focus{outline:none;border-color:var(--red)}
 
 #page-pcp-estoque .chip:hover{border-color:var(--red);color:var(--red-dark)}
 
@@ -1940,8 +1945,9 @@ body{background:#fff;color:#000}
 
   <div id="tab-fabrica" style="display:none">
     <div class="filters">
-      <span class="filter-label">Família</span>
-      <div class="chips" id="fabFamChips"></div>
+      <select class="fam-select" id="fabFamSel" onchange="setFabFam(this.value)">
+        <option value="ALL">Todas as famílias</option>
+      </select>
       <input class="search-box" type="text" placeholder="buscar produto..." oninput="renderFab()" id="searchFab">
     </div>
     <div class="table-wrap">
@@ -1957,8 +1963,9 @@ body{background:#fff;color:#000}
 
   <div id="tab-loja" style="display:none">
     <div class="filters">
-      <span class="filter-label">Família</span>
-      <div class="chips" id="lojaFamChips"></div>
+      <select class="fam-select" id="lojaFamSel" onchange="setLojaFam(this.value)">
+        <option value="ALL">Todas as famílias</option>
+      </select>
       <input class="search-box" type="text" placeholder="buscar produto..." oninput="renderLoja()" id="searchLoja">
     </div>
     <div class="table-wrap">
@@ -2024,10 +2031,6 @@ body{background:#fff;color:#000}
     <div class="ordem-controls no-print">
       <span class="ordem-date-label">Data</span>
       <input type="date" class="ordem-date" id="ordemDate" onchange="updateOrdemDate()">
-      <select class="ordem-date" id="ordemTurno" style="font-size:12px">
-        <option value="">Turno</option>
-        <option>MANHÃ</option><option>TARDE</option><option>NOITE</option>
-      </select>
       <button id="btnSalvarOP" class="btn btn-outline" onclick="salvarOPSupabase()" style="color:var(--good);border-color:var(--good)">💾 Salvar OP</button>
       <button id="btnLimpar" class="btn" style="background:#2d1a1a;color:#fc8181;border:1px solid #744210" data-confirm="0" onclick="limparOrdem()">🗑 Limpar</button>
       <button class="btn btn-print" onclick="printOrdem()">🖨 Imprimir</button>
@@ -12383,7 +12386,7 @@ const SUPA_KEY=SUPABASE_ANON_KEY;
 
 function normCod(c){return c?c.replace(/^0+(?=\d)/,''):'';}
 
-const SETOR_ORDER=['GIRO DIA/GIRO NOITE','SALGADO','CONFEITARIA','PADARIA','FRITADOR','CROISSANT','PÃO C/ LINGUIÇA','REVENDA'];
+const SETOR_ORDER=['GIRO DIA','GIRO NOITE','SALGADO','CONFEITARIA','PADARIA','FRITADOR','CROISSANT','PÃO C/ LINGUIÇA','REVENDA'];
 
 async function buildSD(){
   const allItems=[...RAW.fabrica.map(i=>({...i})),...RAW.loja.map(i=>({...i}))];
@@ -12409,7 +12412,9 @@ async function buildSD(){
   }
   const bySetor={};
   allItems.forEach(item=>{
-    const s=setorMap[item.codigo]||setorMap[normCod(item.codigo)]||'SEM SETOR';
+    let s=setorMap[item.codigo]||setorMap[normCod(item.codigo)]||'SEM SETOR';
+    // Compatibilidade: valor legado combinado → separar em Giro Dia por padrão
+    if(s==='GIRO DIA/GIRO NOITE')s='GIRO DIA';
     item.setor=s;
     if(!bySetor[s])bySetor[s]=[];
     bySetor[s].push(item);
@@ -12698,8 +12703,15 @@ function buildStats(){
 
 function buildChips(id,items,setter){
   const fams=[...new Set(items.map(i=>i.familia))].sort();
-  document.getElementById(id).innerHTML=`<div class="chip active" onclick="${setter}(this,'ALL')">Todos</div>`+
-    fams.map(f=>`<div class="chip" onclick="${setter}(this,'${f.replace(/'/g,"\\'")}')">${f}</div>`).join('');
+  // id can be the old chip id (ignored) or a select id — we always target the select
+  const selId=id==='fabFamChips'?'fabFamSel':id==='lojaFamChips'?'lojaFamSel':id;
+  const sel=document.getElementById(selId);
+  if(sel&&sel.tagName==='SELECT'){
+    sel.innerHTML=`<option value="ALL">Todas as famílias</option>`+
+      fams.map(f=>`<option value="${f.replace(/"/g,'&quot;')}">${f}</option>`).join('');
+    sel.value='ALL';
+    return;
+  }
 }
 
 let statusFilter='DEFICIT'; // default: mostra déficits primeiro
@@ -12711,8 +12723,8 @@ function setStatusFilter(el,v){
   renderAlerts();
 }
 function setLoc(el,v){locFilter=v;document.querySelectorAll('#locChips .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderAlerts()}
-function setFabFam(el,v){fabFam=v;document.querySelectorAll('#fabFamChips .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderFab()}
-function setLojaFam(el,v){lojaFam=v;document.querySelectorAll('#lojaFamChips .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderLoja()}
+function setFabFam(v){fabFam=v;renderFab();}
+function setLojaFam(v){lojaFam=v;renderLoja();}
 
 function filterByStatus(items,filter){
   if(filter==='ALL')return items;
@@ -13075,7 +13087,7 @@ async function salvarOPSupabase(){
   const btn=document.getElementById('btnSalvarOP');
   btn.textContent='Salvando...';btn.disabled=true;
   const dataVal=document.getElementById('ordemDate').value||new Date().toISOString().slice(0,10);
-  const turno=document.getElementById('ordemTurno').value||'—';
+  const turno='—';
   const itens=[];
   SD.setores.forEach(setor=>{
     (ordemState[setor]||[]).forEach((row,idx)=>{
@@ -13124,8 +13136,6 @@ async function salvarOPSupabase(){
 function updateOrdemDate(){
   const v=document.getElementById('ordemDate').value;
   if(v){const[y,m,day]=v.split('-');document.getElementById('printDate').textContent=day+'/'+m+'/'+y;}
-  const turno=document.getElementById('ordemTurno').value;
-  if(turno)document.getElementById('printTurno').textContent=turno;
 }
 
 function limparOrdem(){
