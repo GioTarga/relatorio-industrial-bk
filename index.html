@@ -790,17 +790,39 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .pcp-left{flex:1;min-width:0;overflow:hidden}
 #page-pcp-estoque .pcp-right{width:500px;flex-shrink:0;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;box-shadow:0 2px 10px rgba(161,1,1,.04)}
 
-/* OP compacta no painel direito: ocultar Estoque, Reserva, Saldo, Necessidade */
-#page-pcp-estoque .pcp-right .order-header,
-#page-pcp-estoque .pcp-right .order-row{grid-template-columns:22px 1fr 72px 80px 96px 96px 22px}
-#page-pcp-estoque .pcp-right .order-header > div:nth-child(3),
-#page-pcp-estoque .pcp-right .order-header > div:nth-child(4),
-#page-pcp-estoque .pcp-right .order-header > div:nth-child(5),
-#page-pcp-estoque .pcp-right .order-header > div:nth-child(6),
-#page-pcp-estoque .pcp-right .order-row > div:nth-child(3),
-#page-pcp-estoque .pcp-right .order-row > div:nth-child(4),
-#page-pcp-estoque .pcp-right .order-row > div:nth-child(5),
-#page-pcp-estoque .pcp-right .order-row > div:nth-child(6){display:none}
+/* Layout de cards para OP no painel direito */
+#page-pcp-estoque .pcp-right .order-header{display:none!important}
+#page-pcp-estoque .pcp-right .order-row{display:none!important}
+
+/* Card compacto */
+#page-pcp-estoque .cp-row{padding:10px 12px;border-bottom:1px solid var(--line);transition:background .1s}
+#page-pcp-estoque .cp-row:hover{background:var(--cream)}
+#page-pcp-estoque .cp-header{display:flex;align-items:flex-start;gap:6px;margin-bottom:3px}
+#page-pcp-estoque .cp-seq{flex-shrink:0;font-size:11px;font-weight:800;color:var(--ink-soft);padding-top:1px;min-width:18px}
+#page-pcp-estoque .cp-name{flex:1;font-size:12px;font-weight:700;color:var(--ink);line-height:1.35;word-break:break-word}
+#page-pcp-estoque .cp-p1{display:inline-block;background:var(--red);color:#fff;border-radius:3px;padding:1px 5px;font-size:8px;font-weight:800;margin-left:4px;vertical-align:middle;letter-spacing:.3px}
+#page-pcp-estoque .cp-p2{display:inline-block;background:var(--orange,#c0560a);color:#fff;border-radius:3px;padding:1px 5px;font-size:8px;font-weight:800;margin-left:4px;vertical-align:middle;letter-spacing:.3px}
+#page-pcp-estoque .cp-del{flex-shrink:0;background:none;border:none;color:#bbb;font-size:13px;cursor:pointer;padding:0 2px;line-height:1;font-family:inherit}
+#page-pcp-estoque .cp-del:hover{color:var(--red)}
+#page-pcp-estoque .cp-meta{display:flex;align-items:center;gap:5px;margin-bottom:7px;flex-wrap:wrap}
+#page-pcp-estoque .cp-code{font-size:10px;color:var(--ink-soft)}
+#page-pcp-estoque .cp-saldo{font-size:10px;font-weight:700}
+#page-pcp-estoque .cp-fields{display:flex;gap:5px;align-items:center}
+#page-pcp-estoque .cp-f-num{width:58px;padding:5px 6px;font-size:12px;font-weight:700;text-align:center;border:1.5px solid var(--line);border-radius:6px;background:var(--cream);font-family:inherit;color:var(--ink)}
+#page-pcp-estoque .cp-f-num:focus{outline:none;border-color:var(--red)}
+#page-pcp-estoque .cp-f-sel{width:82px;padding:5px 4px;font-size:11px;font-weight:600;border:1.5px solid var(--line);border-radius:6px;background:var(--cream);font-family:inherit;color:var(--ink);cursor:pointer}
+#page-pcp-estoque .cp-f-sel:focus{outline:none;border-color:var(--red)}
+#page-pcp-estoque .cp-f-txt{flex:1;min-width:0;padding:5px 7px;font-size:11px;border:1.5px solid var(--line);border-radius:6px;background:var(--cream);font-family:inherit;color:var(--ink)}
+#page-pcp-estoque .cp-f-txt:focus{outline:none;border-color:var(--red)}
+/* Setor block no painel direito: mais compacto */
+#page-pcp-estoque .pcp-right .setor-header{padding:8px 12px}
+#page-pcp-estoque .pcp-right .setor-name{font-size:10px}
+#page-pcp-estoque .pcp-right .add-row-btn{padding:6px 12px;font-size:11px}
+/* Controles da OP no painel direito */
+#page-pcp-estoque .pcp-right .ordem-controls{padding:10px 12px;gap:6px;flex-wrap:wrap}
+#page-pcp-estoque .pcp-right .btn{padding:6px 12px;font-size:11px}
+/* empty state menor */
+#page-pcp-estoque .pcp-right .empty-state{padding:30px 16px;font-size:12px}
 
 /* título do painel direito */
 #page-pcp-estoque .pcp-right-title{font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.7);background:var(--red-dark);padding:10px 14px;border-bottom:1px solid var(--line)}
@@ -12813,6 +12835,35 @@ function renderOrdemRow(setor,row,seq){
   </div>`;
 }
 
+function renderOrdemRowCompact(setor,row,seq){
+  const locCls=row.loc==='FABRICA'?'loc-fab':'loc-loja';
+  const locLabel=row.loc==='FABRICA'?'FAB':'LOJA';
+  const saldoCl=row.saldo<0?'num-red':row.saldo===0?'num-yellow':'num-green';
+  const priorLabel=row.saldo<0?'<span class="cp-p1">P1</span>':row.saldo===0?'<span class="cp-p2">P2</span>':'';
+  const units=['Massa','Kg','Caixas','Carrinhos','Armários','Blocos','Unid'];
+  const selOpts=units.map(u=>`<option value="${u}"${(row.unidadeMedida||'Unid')===u?' selected':''}>${u}</option>`).join('');
+  const desc=row.desc?shortDesc(row.desc):'<em style="color:#aaa">novo</em>';
+  return`<div class="cp-row">
+    <div class="cp-header">
+      <span class="cp-seq">${seq}</span>
+      <span class="cp-name" title="${row.desc||''}">${desc}${priorLabel}</span>
+      <button class="cp-del no-print" onclick="delRow('${setor}',${row.id})">✕</button>
+    </div>
+    <div class="cp-meta">
+      <span class="order-loc ${locCls}">${locLabel}</span>
+      ${row.code?`<span class="cp-code">· ${row.code}</span>`:''}
+      <span class="cp-saldo ${saldoCl}">saldo ${n(row.saldo)}</span>
+      ${row.need?`<span style="font-size:10px;color:#718096">· need ${n(row.need)}</span>`:''}
+    </div>
+    <div class="cp-fields">
+      <input class="cp-f-num" type="number" min="0" placeholder="Qtd" value="${row.qtd||''}" oninput="syncField('${setor}',${row.id},'qtd',this.value)">
+      <select class="cp-f-sel" onchange="syncField('${setor}',${row.id},'unidadeMedida',this.value)">${selOpts}</select>
+      <input class="cp-f-txt" placeholder="Máquina..." value="${row.maquina||''}" oninput="syncField('${setor}',${row.id},'maquina',this.value)">
+      <input class="cp-f-txt" placeholder="Obs..." value="${row.obs||''}" oninput="syncField('${setor}',${row.id},'obs',this.value)">
+    </div>
+  </div>`;
+}
+
 function renderOrdem(){
   const body=document.getElementById('ordemBody');
   if(!ordemState||!Object.keys(ordemState).length){
@@ -12831,10 +12882,7 @@ function renderOrdem(){
         <span class="setor-toggle no-print" id="tog-${sid}">▾</span>
       </div>
       <div id="body-${sid}">
-        <div class="order-header">
-          <div>#</div><div>Produto · Código</div><div style="text-align:right">ESTOQUE</div><div style="text-align:right">RESERVA</div><div style="text-align:right">SALDO</div><div style="text-align:right">NECESSID.</div><div>PRODUZIR</div><div>UNIDADE</div><div>MÁQUINA</div><div>OBSERVAÇÃO</div><div></div>
-        </div>
-        ${rows.length?rows.map((r,i)=>renderOrdemRow(setor,r,i+1)).join(''):'<div style="padding:12px 14px;font-size:12px;color:#4a5568;font-style:italic">Sem alertas neste setor.</div>'}
+        ${rows.length?rows.map((r,i)=>renderOrdemRowCompact(setor,r,i+1)).join(''):'<div style="padding:10px 12px;font-size:12px;color:#4a5568;font-style:italic">Sem alertas neste setor.</div>'}
         <div class="add-row-btn no-print" onclick="addRow('${setor}')">+ adicionar produto</div>
       </div>
     </div>`;
@@ -13095,57 +13143,83 @@ function limparOrdem(){
 }
 
 function printOrdem(){
-  // Expand all setor blocks before printing
-  SD.setores.forEach(s=>{
-    const sid=s.replace(/ /g,'_');
-    const b=document.getElementById('body-'+sid);
-    const t=document.getElementById('tog-'+sid);
-    if(b){b.style.display='';if(t)t.textContent='▾';}
-  });
-  const header=document.querySelector('.print-header');
-  const body=document.getElementById('ordemBody');
-  if(!header||!body)return;
   const printDate=document.getElementById('printDate').textContent||'—';
+  const printSetor=document.getElementById('printSetor').textContent||'—';
+  const printUser=document.getElementById('printUser').textContent||'—';
   const win=window.open('','_blank','width=1100,height=800');
   if(!win){alert('Permita pop-ups no navegador para imprimir.');return;}
+
+  // Gera HTML dos setores direto do ordemState (não clona DOM compacto)
+  const SCOLS=['#','Produto · Código','Estoque','Reserva','Saldo','Necessid.','Produzir','Unidade','Máquina','Observação'];
+  let sectorsHtml='';
+  SD.setores.forEach(setor=>{
+    const rows=ordemState[setor]||[];
+    if(!rows.length)return;
+    const sc=SETOR_COLORS[setor]||{cls:'',emoji:'📦'};
+    const rowsHtml=rows.map((row,i)=>{
+      const locLabel=row.loc==='FABRICA'?'FAB':'LOJA';
+      const locStyle=row.loc==='FABRICA'?'background:#ebf8ff;color:#2c5282':'background:#f0fff4;color:#276749';
+      const saldoStyle=row.saldo<0?'color:#c53030;font-weight:700':row.saldo===0?'color:#b7791f;font-weight:700':'color:#276749;font-weight:700';
+      const desc=row.desc?shortDesc(row.desc):'';
+      return`<tr>
+        <td style="text-align:center;color:#888">${i+1}</td>
+        <td><strong style="font-size:10px">${desc}</strong><br><span style="font-size:9px;color:#888">${row.code||''} <span style="padding:1px 4px;border-radius:2px;font-size:8px;${locStyle}">${locLabel}</span></span></td>
+        <td style="text-align:right">${n(row.estoque)}</td>
+        <td style="text-align:right">${n(row.reserva)}</td>
+        <td style="text-align:right;${saldoStyle}">${n(row.saldo)}</td>
+        <td style="text-align:right">${row.need!=null?n(row.need):'—'}</td>
+        <td style="text-align:center;font-weight:700">${row.qtd||''}</td>
+        <td style="text-align:center">${row.unidadeMedida||'Unid'}</td>
+        <td>${row.maquina||''}</td>
+        <td>${row.obs||''}</td>
+      </tr>`;
+    }).join('');
+    sectorsHtml+=`<div class="setor-block">
+      <div class="setor-header">
+        <div class="setor-color ${sc.cls}"></div>
+        <span class="setor-name">${sc.emoji} ${setor}</span>
+        <span style="font-size:10px;color:#666;margin-left:auto">${rows.length} produto${rows.length!==1?'s':''}</span>
+      </div>
+      <table>
+        <thead><tr>${SCOLS.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>`;
+  });
+
   win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
 <title>FOR-PCP-029 — ${printDate}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,sans-serif;font-size:10px;color:#000;background:#fff;padding:12px}
-table{width:100%;border-collapse:collapse;font-size:11px}
-td{padding:3px 6px;border:1px solid #ccc}
-.ph-title{font-size:14px;font-weight:700;text-align:center}
 .print-header{padding-bottom:10px;margin-bottom:12px;border-bottom:2px solid #000}
-.setor-block{border:1px solid #ccc;margin-bottom:6px;break-inside:avoid}
-.setor-header{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f0f0f0;border-bottom:1px solid #ccc}
-.setor-color{width:10px;height:10px;border-radius:50%}
-.sc-gironoite{background:#9b2c2c}.sc-padaria{background:#2c5282}.sc-girodia{background:#276749}.sc-salgado{background:#6b46c1}.sc-fritador{background:#744210}
+.ph-title{font-size:14px;font-weight:700;text-align:center;margin-bottom:4px}
+.ph-sub{font-size:10px;text-align:center;color:#555;margin-bottom:8px}
+.ph-info{display:flex;gap:20px;font-size:10px}
+.ph-info span b{margin-right:4px}
+.setor-block{border:1px solid #ccc;margin-bottom:8px;break-inside:avoid}
+.setor-header{display:flex;align-items:center;gap:8px;padding:5px 10px;background:#f0f0f0;border-bottom:1px solid #ccc}
+.setor-color{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.sc-gironoite{background:#9b2c2c}.sc-padaria{background:#2c5282}.sc-girodia{background:#276749}
+.sc-salgado{background:#6b46c1}.sc-fritador{background:#744210}.sc-confeitaria{background:#b7791f}
+.sc-massasalgado{background:#553c9a}.sc-paodelocebolos{background:#d53f8c}.sc-cozinha{background:#2c7a7b}.sc-paoclinguica{background:#c05621}
 .setor-name{font-weight:700;font-size:11px}
-.order-header{display:grid;grid-template-columns:28px 1fr 80px 70px 70px 70px 80px 85px 110px 110px;background:#f8f8f8;color:#555;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #ccc;padding:4px 8px;gap:6px}
-.order-row{display:grid;grid-template-columns:28px 1fr 80px 70px 70px 70px 80px 85px 110px 110px;border-bottom:1px solid #eee;padding:4px 8px;gap:6px;align-items:start}
-.order-seq{font-size:10px;color:#555;padding-top:4px}
-.order-desc{font-weight:600;font-size:10px}
-.order-gap{font-size:9px;color:#888}
-.order-loc{font-size:8px;display:inline-block;padding:1px 4px;border-radius:3px;margin-top:2px}
-.loc-fab{background:#ebf8ff;color:#2c5282}.loc-loja{background:#f0fff4;color:#276749}
-.order-input{width:100%;border:1px solid #bbb;padding:3px 5px;font-size:10px;font-family:inherit;background:#fff}
-.order-input-num{text-align:center}
-.cell-num{text-align:center}
-.no-print{display:none!important}
+table{width:100%;border-collapse:collapse;font-size:9px}
+th{background:#f8f8f8;color:#444;font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding:3px 6px;border:1px solid #ccc;text-align:left}
+td{padding:4px 6px;border:1px solid #e2e8f0;vertical-align:middle}
+tr:nth-child(even) td{background:#fafafa}
 </style></head><body>
-`);
-  // Clone and clean content
-  const hClone=header.cloneNode(true);
-  hClone.style.display='block';
-  win.document.write(hClone.outerHTML);
-  // Build rows without delete buttons
-  const bClone=body.cloneNode(true);
-  bClone.querySelectorAll('.no-print').forEach(el=>el.remove());
-  // Make sure all setor bodies are visible
-  bClone.querySelectorAll('[id^="body-"]').forEach(el=>el.style.display='');
-  win.document.write(bClone.outerHTML);
-  win.document.write('</body></html>');
+<div class="print-header">
+  <div class="ph-title">FOR-PCP-029 · ORDEM DE PRODUÇÃO</div>
+  <div class="ph-sub">Bread King Alimentos</div>
+  <div class="ph-info">
+    <span><b>Data:</b>${printDate}</span>
+    <span><b>Setor:</b>${printSetor}</span>
+    <span><b>Responsável:</b>${printUser}</span>
+  </div>
+</div>
+${sectorsHtml||'<p style="text-align:center;color:#888;margin:20px">Nenhum produto na ordem.</p>'}
+</body></html>`);
   win.document.close();
   win.onload=function(){win.focus();win.print();};
 }
