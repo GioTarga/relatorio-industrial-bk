@@ -855,10 +855,10 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 /* responsivo: empilha abaixo de 1100px */
 @media(max-width:1100px){
   #page-pcp-estoque .pcp-container{grid-template-columns:1fr}
-  #page-pcp-estoque .pcp-filter-bar{grid-column:1}
-  #page-pcp-estoque .pcp-op-title{grid-column:1;border-radius:var(--r-md) var(--r-md) 0 0}
-  #page-pcp-estoque .pcp-left{grid-column:1}
-  #page-pcp-estoque .pcp-right{grid-column:1;width:100%}
+  #page-pcp-estoque .pcp-filter-bar{grid-column:1;grid-row:1}
+  #page-pcp-estoque .pcp-op-title{grid-column:1;grid-row:2;border-radius:var(--r-md) var(--r-md) 0 0}
+  #page-pcp-estoque .pcp-left{grid-column:1;grid-row:3}
+  #page-pcp-estoque .pcp-right{grid-column:1;grid-row:4;width:100%;max-height:50vh}
 }
 
 /* legado .tabs mantido para compatibilidade de print */
@@ -954,9 +954,14 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .badge.orange{background:var(--orange-bg);color:var(--orange)}
 
 /* Row accent borders */
-#page-pcp-estoque .row-critical{border-left:3px solid var(--red) !important}
-#page-pcp-estoque .row-warning{border-left:3px solid var(--warn) !important}
-#page-pcp-estoque .row-ok{border-left:3px solid var(--good) !important}
+/* row-deficit = saldo < 0 (vermelho) */
+#page-pcp-estoque .row-deficit{border-left:4px solid var(--red)!important;background:rgba(192,57,43,0.06)!important}
+/* row-critical = saldo = 0 (laranja) */
+#page-pcp-estoque .row-critical{border-left:4px solid #d97706!important;background:rgba(217,119,6,0.05)!important}
+/* row-warning = atenção (amarelo suave) */
+#page-pcp-estoque .row-warning{border-left:4px solid #b59b00!important;background:rgba(181,155,0,0.04)!important}
+/* row-ok = disponível (verde) */
+#page-pcp-estoque .row-ok{border-left:3px solid var(--good)!important}
 #page-pcp-estoque .table-row.row-ok .cell-desc{color:var(--ink-soft);font-weight:500}
 
 /* New product cell */
@@ -1979,6 +1984,21 @@ body{background:#fff;color:#000}
     <div style="margin-bottom:16px;padding:12px 16px;background:#fff8e7;border:1px solid #f0ddc0;border-radius:12px;font-size:12px;color:#6b5c5c;max-width:760px">
       <strong style="color:#6e0000">📋 Como importar:</strong> Exporte do CIGAM 11 os relatórios <em>Posição de Estoque</em> de Fábrica e Loja em formato XLSX. O sistema identifica automaticamente as colunas <strong>Código, Descrição, Estoque</strong> e <strong>Reserva</strong>.
     </div>
+    <!-- Período dos dados — obrigatório antes de importar -->
+    <div id="periodSection" style="margin-bottom:14px;max-width:760px;padding:12px 16px;background:var(--paper);border:2px solid var(--red-dark);border-radius:12px">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--red-dark);margin-bottom:10px">📅 Período dos dados <span style="color:var(--red);font-size:9px">(obrigatório)</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center">
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:600;color:var(--ink)">
+          Data inicial
+          <input type="date" id="periodoInicio" style="padding:5px 9px;border:1px solid var(--line);border-radius:6px;font-size:12px;font-family:inherit;background:var(--cream);color:var(--ink)" oninput="validarPeriodo()">
+        </label>
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:600;color:var(--ink)">
+          Data final <span style="font-size:9px;font-weight:400;color:var(--ink-soft)">(opcional — igual à inicial se for 1 dia)</span>
+          <input type="date" id="periodoFim" style="padding:5px 9px;border:1px solid var(--line);border-radius:6px;font-size:12px;font-family:inherit;background:var(--cream);color:var(--ink)">
+        </label>
+        <div id="periodoStatus" style="font-size:11px;color:var(--ink-soft);align-self:flex-end;padding-bottom:2px"></div>
+      </div>
+    </div>
     <div class="upload-grid">
       <div>
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#4a5568;margin-bottom:8px">Estoque Fábrica</div>
@@ -2009,6 +2029,8 @@ body{background:#fff;color:#000}
   </div>
 
   <div id="tab-alertas">
+    <!-- Informativo de atualização — preenchido por renderDataInfo() -->
+    <div id="importDataInfo" style="display:none;margin-bottom:8px;padding:7px 12px;background:var(--paper);border:1px solid var(--line);border-radius:8px;font-size:10.5px;color:var(--ink-soft);display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px"></div>
     <div class="table-wrap">
       <div class="table-header">
         <div>Produto</div>
@@ -12487,6 +12509,34 @@ const ATTENTION_THRESHOLD = 100;
 let currentFab = null;  // null = usa RAW.fabrica
 let currentLoja = null; // null = usa RAW.loja
 let uploadHistory = [];
+let importMetadata = {ts:null, periodo:null}; // período e hora da última importação
+
+function validarPeriodo(){
+  const el=document.getElementById('periodoStatus');
+  const v=document.getElementById('periodoInicio')?.value;
+  if(!el)return;
+  if(!v){el.textContent='';return;}
+  const fim=document.getElementById('periodoFim')?.value||v;
+  const fmt=d=>{const[y,m,dd]=d.split('-');return`${dd}/${m}/${y}`;};
+  el.textContent=v===fim?`✅ ${fmt(v)}`:`✅ ${fmt(v)} a ${fmt(fim)}`;
+  el.style.color='var(--good)';
+}
+
+function formatDateBR(iso){
+  if(!iso)return'';
+  const[y,m,d]=iso.split('-');return`${d}/${m}/${y}`;
+}
+
+function renderDataInfo(){
+  const el=document.getElementById('importDataInfo');
+  if(!el)return;
+  if(!importMetadata.ts){el.style.display='none';return;}
+  const p=importMetadata.periodo;
+  const periodoStr=p?(p.inicio===p.fim?`Dados referentes a: <strong>${formatDateBR(p.inicio)}</strong>`:`Dados referentes a: <strong>${formatDateBR(p.inicio)}</strong> a <strong>${formatDateBR(p.fim)}</strong>`):'';
+  const tsStr=importMetadata.ts.toLocaleDateString('pt-BR')+' às '+importMetadata.ts.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  el.style.display='flex';
+  el.innerHTML=`<span>📦 ${periodoStr}</span><span>🕐 Última atualização: <strong>${tsStr}</strong></span>`;
+}
 
 function allItems(){return[...(currentFab||RAW.fabrica),...(currentLoja||RAW.loja)];}
 function fabItems(){return currentFab||RAW.fabrica;}
@@ -12510,7 +12560,7 @@ function calculatePriority(item){
 }
 function getStockStatus(item){
   const s=calculateAvailableStock(item);
-  if(s<0)return{cls:'red',emoji:'🔴',label:'DÉFICIT',stripe:'row-critical'};
+  if(s<0)return{cls:'red',emoji:'🔴',label:'DÉFICIT',stripe:'row-deficit'};
   if(s===0)return{cls:'orange',emoji:'🟠',label:'CRÍTICO',stripe:'row-critical'};
   if(s>0&&s<=ATTENTION_THRESHOLD)return{cls:'yellow',emoji:'🟡',label:'ATENÇÃO',stripe:'row-warning'};
   return{cls:'green',emoji:'🟢',label:'DISPONÍVEL',stripe:'row-ok'};
@@ -12806,21 +12856,30 @@ function filterByStatus(items,filter){
 }
 
 function renderAlerts(){
-  const q=(document.getElementById('searchAlert').value||'').toLowerCase();
-  let items=[...allItems()];
-  if(locFilter!=='ALL')items=items.filter(i=>i.tipo===locFilter);
-  if(alertaSetor!=='ALL'){const codes=new Set((SD.by_setor[alertaSetor]||[]).map(i=>i.codigo));items=items.filter(i=>codes.has(i.codigo));}
-  items=filterByStatus(items,statusFilter);
-  if(q)items=items.filter(i=>i.descricao.toLowerCase().includes(q)||i.familia.toLowerCase().includes(q));
-  items.sort((a,b)=>calculateAvailableStock(a)-calculateAvailableStock(b));
-  // Contagem de déficits para o badge
-  const deficitCount=allItems().filter(i=>calculateAvailableStock(i)<0).length;
-  document.getElementById('alertCount').textContent=deficitCount;
-  if(!items.length){
-    document.getElementById('alertTable').innerHTML='<div class="empty-state"><div class="empty-icon">✅</div>Nenhum produto nesta categoria.</div>';
-    return;
+  try{
+    const searchEl=document.getElementById('searchAlert');
+    const tableEl=document.getElementById('alertTable');
+    if(!tableEl)return;
+    const q=(searchEl?searchEl.value||'':'').toLowerCase();
+    let items=[...allItems()];
+    if(locFilter!=='ALL')items=items.filter(i=>i.tipo===locFilter);
+    if(alertaSetor!=='ALL'){const codes=new Set((SD.by_setor[alertaSetor]||[]).map(i=>i.codigo));items=items.filter(i=>codes.has(i.codigo));}
+    items=filterByStatus(items,statusFilter);
+    if(q)items=items.filter(i=>(i.descricao||'').toLowerCase().includes(q)||(i.familia||'').toLowerCase().includes(q));
+    items.sort((a,b)=>calculateAvailableStock(a)-calculateAvailableStock(b));
+    // Contagem de déficits para o badge
+    const deficitCount=allItems().filter(i=>calculateAvailableStock(i)<0).length;
+    const _ac=document.getElementById('alertCount');if(_ac)_ac.textContent=deficitCount;
+    if(!items.length){
+      tableEl.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div>Nenhum produto nesta categoria.</div>';
+      return;
+    }
+    tableEl.innerHTML=items.map(renderTableRow).join('');
+  }catch(err){
+    console.error('renderAlerts error:',err);
+    const tableEl=document.getElementById('alertTable');
+    if(tableEl)tableEl.innerHTML='<div class="empty-state" style="border-color:var(--red);color:var(--red)"><div class="empty-icon">⚠</div>Erro ao renderizar tabela. Abra o console (F12).<br><small style="opacity:.7">'+err.message+'</small></div>';
   }
-  document.getElementById('alertTable').innerHTML=items.map(renderTableRow).join('');
 }
 function renderFab(){
   const q=(document.getElementById('searchFab').value||'').toLowerCase();
@@ -13162,26 +13221,58 @@ function processFile(file,tipo){
         semCodigo,estoqueInvalido,reservaInvalida,duplicados,semReserva:iRes<0};
       showImportPreview(summary);
       // Confirmar importação
+      // ── Validar período antes de prosseguir ──────────────────────────────
+      const periodoInicio=document.getElementById('periodoInicio')?.value;
+      if(!periodoInicio){
+        statusEl.style.color='var(--warn)';
+        statusEl.textContent='⚠ Informe o período dos dados antes de importar';
+        // Destaca seção de período
+        const ps=document.getElementById('periodSection');
+        if(ps){ps.style.borderColor='var(--red)';ps.style.boxShadow='0 0 0 2px rgba(192,57,43,.25)';setTimeout(()=>{ps.style.boxShadow='';},2000);}
+        return;
+      }
+      const periodoFim=document.getElementById('periodoFim')?.value||periodoInicio;
+      // ────────────────────────────────────────────────────────────────────
       const msg=`Importar ${items.length} produtos (${tipo})?\n\n`+
         `✅ Válidos: ${items.length}\n`+
         (semCodigo?`⚠ Sem código: ${semCodigo}\n`:'')+
         (estoqueInvalido?`⚠ Estoque inválido: ${estoqueInvalido}\n`:'')+
         (reservaInvalida?`⚠ Reserva inválida (usou 0): ${reservaInvalida}\n`:'')+
         (duplicados?`⚠ Duplicados removidos: ${duplicados}\n`:'')+
-        (iRes<0?`ℹ️ Coluna Reserva não encontrada — usando reserva=0 para todos\n`:'');
+        (iRes<0?`ℹ️ Coluna Reserva não encontrada — usando reserva=0 para todos\n`:'')+
+        `\nPeríodo: ${periodoInicio===periodoFim?periodoInicio:periodoInicio+' a '+periodoFim}`;
       if(confirm(msg)){
         // Aplica dados
         if(tipo==='FABRICA')currentFab=items;
         else currentLoja=items;
+        // Registra metadados da importação
+        const now=new Date();
+        importMetadata={ts:now,periodo:{inicio:periodoInicio,fim:periodoFim}};
         // Atualiza Supabase SD
         buildSD().then(()=>{
           buildStats();
           buildChips('fabFamChips',fabItems(),'setFabFam');
           buildChips('lojaFamChips',lojaItems(),'setLojaFam');
           buildAlertaSetorDropdown();
+          // Resetar todos os filtros para ALL antes de renderizar
+          statusFilter='ALL';
+          locFilter='ALL';
+          alertaSetor='ALL';
+          document.querySelectorAll('#statusChips .chip').forEach(c=>c.classList.remove('active'));
+          const sc=document.querySelector('#statusChips .chip');if(sc)sc.classList.add('active');
+          document.querySelectorAll('#locChips .chip').forEach(c=>c.classList.remove('active'));
+          const lc=document.querySelector('#locChips .chip');if(lc)lc.classList.add('active');
+          const asSel=document.getElementById('alertaSetorSel');if(asSel)asSel.value='ALL';
+          // Renderizar tudo
           renderAlerts();renderFab();renderLoja();
+          // Mostrar informativo de atualização
+          renderDataInfo();
+          // Fechar painel de importação e exibir tab-alertas
+          const upPanel=document.getElementById('tab-upload');
+          if(upPanel)upPanel.style.display='none';
+          const btnImp=document.getElementById('btnImportar');
+          if(btnImp){btnImp.style.background='';btnImp.style.color='';btnImp.style.borderColor='';}
         });
-        const now=new Date();
         const ts=now.toLocaleDateString('pt-BR')+' · '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
         uploadHistory.unshift({tipo,ts,total:items.length,deficits:items.filter(shouldEnterProductionOrder).length,file:file.name});
         renderUploadHistory();
