@@ -963,6 +963,12 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 /* row-ok = disponível (verde) */
 #page-pcp-estoque .row-ok{border-left:3px solid var(--good)!important}
 #page-pcp-estoque .table-row.row-ok .cell-desc{color:var(--ink-soft);font-weight:500}
+/* row-revenda = produto de revenda — não fabricado internamente */
+#page-pcp-estoque .row-revenda{border-left:3px solid #a0aec0!important;opacity:.72}
+#page-pcp-estoque .row-revenda .cell-desc{color:var(--ink-soft)!important;font-weight:400!important}
+#page-pcp-estoque .badge-revenda{display:inline-block;padding:1px 6px;font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;border-radius:3px;background:#e2e8f0;color:#4a5568;vertical-align:middle}
+#page-pcp-estoque .chip-revenda{background:#e2e8f0!important;color:#4a5568!important}
+#page-pcp-estoque .chip-revenda.active{background:#4a5568!important;color:#fff!important}
 
 /* New product cell */
 #page-pcp-estoque .cell-produto{min-width:0;overflow:hidden}
@@ -1956,6 +1962,7 @@ body{background:#fff;color:#000}
       <div class="chip chip-critico" onclick="setStatusFilter(this,'CRITICO')">Crítico</div>
       <div class="chip chip-atencao" onclick="setStatusFilter(this,'ATENCAO')">Atenção</div>
       <div class="chip chip-ok" onclick="setStatusFilter(this,'DISPONIVEL')">Disponível</div>
+      <div class="chip chip-revenda" onclick="setStatusFilter(this,'REVENDA')">Revenda</div>
     </div>
     <span class="filter-vsep"></span>
     <!-- Local chips -->
@@ -12505,6 +12512,37 @@ let rowCounter=0;
 // Saldo positivo ≤ este valor = ATENÇÃO. Ajuste conforme necessidade do PCP.
 const ATTENTION_THRESHOLD = 100;
 
+// ─── CLASSIFICAÇÃO FABRICAÇÃO / REVENDA ──────────────────────────────────────
+// Famílias que a Bread King FABRICA internamente (nomes sem prefixo "XX - ")
+const FAB_FAMILIAS = new Set([
+  // LINHA PÃES
+  'PAO FRANCES','CESTA BASICA','MASSA DOCE','PAES DE QUEIJO','PAES ESPECIAIS','PAES LIGHT',
+  // LINHA SALGADOS
+  'FOLHADOS E CROISSANTS','PASTEL PARA FRITAR','SALGADO ASSADO','LANCHE FRITO',
+  'PASTEL NATA','SALGADO MINI','PRODUCAO','CROISSANT ZAFFARI','SALGADO CRU P/ FRITAR',
+  // LINHA CONFEITARIA
+  'TORTAS 1,2KG','TORTAS 800G','BOLO POTE E MOUSSE',
+  // LINHA HOTELARIA
+  'PAES MINI'
+]);
+// Famílias do Estoque LOJA que são explicitamente REVENDA
+const LOJA_REVENDA_FAM = new Set([
+  'SOPAS REVENDA','SEM GLUTEN','REVENDA PADARIA','PIZZA','REVENDA DIVERSOS'
+]);
+
+// Remove o prefixo "XX - " das famílias vindas do CIGAM ("00 - PAO FRANCES" → "PAO FRANCES")
+function normFamilia(familia){
+  return (familia||'').toUpperCase().trim().replace(/^\d{1,2}\s*-\s*/,'').trim();
+}
+// Retorna 'FABRICACAO' ou 'REVENDA' para um item
+function getClassificacao(item){
+  if(item.classificacao)return item.classificacao; // já classificado
+  const f=normFamilia(item.familia);
+  if(FAB_FAMILIAS.has(f))return'FABRICACAO';
+  if(item.tipo==='LOJA'&&LOJA_REVENDA_FAM.has(f))return'REVENDA';
+  return'REVENDA'; // família desconhecida → revenda por padrão
+}
+
 // ─── ESTADO GLOBAL ──────────────────────────────────────────────────────────
 let currentFab = null;  // null = usa RAW.fabrica
 let currentLoja = null; // null = usa RAW.loja
@@ -12566,6 +12604,8 @@ function getStockStatus(item){
   return{cls:'green',emoji:'🟢',label:'DISPONÍVEL',stripe:'row-ok'};
 }
 function shouldEnterProductionOrder(item){
+  // Produtos de revenda nunca entram na Ordem de Produção
+  if(getClassificacao(item)==='REVENDA')return false;
   return calculateAvailableStock(item)<0;
 }
 
@@ -12667,23 +12707,27 @@ document.addEventListener('keydown',function(e){
 });
 
 function renderTableRow(item){
+  const classif=getClassificacao(item);
+  const isRevenda=classif==='REVENDA';
   const saldo=calculateAvailableStock(item);
-  const need=calculateProductionNeed(item);
-  const st=getStockStatus(item);
-  const pr=calculatePriority(item);
+  const need=isRevenda?0:calculateProductionNeed(item); // revenda não gera necessidade
+  const st=isRevenda?{cls:'',emoji:'',label:'REVENDA',stripe:'row-revenda'}:getStockStatus(item);
+  const pr=isRevenda?{level:99,label:''}:calculatePriority(item);
   const locCls=item.tipo==='FABRICA'?'loc-fab':'loc-loja';
   const locLabel=item.tipo==='FABRICA'?'FÁBRICA':'LOJA';
   const sk=safeId(item);
   const itemEnc=encodeURIComponent(JSON.stringify({
     codigo:item.codigo,descricao:item.descricao,tipo:item.tipo,
     estoque:item.estoque,reserva:item.reserva||0,familia:item.familia,
-    setor:getSetor(item.codigo)  // baked no render, lookup já resolvido
+    setor:getSetor(item.codigo)
   }));
-  const saldoClass=saldoCls(saldo);
   const needHighlight = need > 0 ? 'need-high' : '';
   const saldoHigh = saldo < 0 ? 'saldo-neg' : saldo === 0 ? 'saldo-zero' : 'saldo-pos';
-  const btnLabel = should_enter_op_check(item) ? '+ OP' : 'OP';
-  const btnCls = should_enter_op_check(item) ? 'btn-send-ordem' : 'btn-send-ordem btn-op-neutral';
+  const btnLabel = isRevenda?'—':should_enter_op_check(item) ? '+ OP' : 'OP';
+  const btnCls = isRevenda?'btn-send-ordem btn-op-neutral':should_enter_op_check(item) ? 'btn-send-ordem' : 'btn-send-ordem btn-op-neutral';
+  const statusCell = isRevenda
+    ? `<div class="cell cell-status"><span class="badge-revenda">REVENDA</span></div>`
+    : `<div class="cell cell-status"><div class="status-pill ${st.cls}"><span class="status-dot"></span>${st.label}</div>${pr.level<=2?`<div class="status-pri">${pr.label}</div>`:''}</div>`;
   return`<div class="table-row ${st.stripe}">
     <div class="cell cell-produto">
       <div class="cell-desc" title="${item.descricao}">${shortDesc(item.descricao)}</div>
@@ -12693,9 +12737,9 @@ function renderTableRow(item){
     <div class="cell cell-num cell-res">${n(item.reserva||0)}</div>
     <div class="cell cell-num cell-saldo ${saldoHigh}">${n(saldo)}</div>
     <div class="cell cell-num cell-need ${needHighlight}">${need>0?n(need):'—'}</div>
-    <div class="cell cell-status"><div class="status-pill ${st.cls}"><span class="status-dot"></span>${st.label}</div>${pr.level<=2?`<div class="status-pri">${pr.label}</div>`:''}</div>
+    ${statusCell}
     <div class="cell cell-action">
-      <button id="btn-${sk}" class="${btnCls}" data-item="${itemEnc}" onclick="enviarParaOrdem('${sk}')">${btnLabel}</button>
+      <button id="btn-${sk}" class="${btnCls}" ${isRevenda?'disabled title="Produto de revenda — não entra em OP"':''}data-item="${itemEnc}" onclick="${isRevenda?'':'enviarParaOrdem(\''+sk+'\')'}">${btnLabel}</button>
     </div>
   </div>`;
 }
@@ -12844,8 +12888,12 @@ function setFabFam(v){fabFam=v;renderFab();}
 function setLojaFam(v){lojaFam=v;renderLoja();}
 
 function filterByStatus(items,filter){
-  if(filter==='ALL')return items;
-  return items.filter(i=>{
+  // Filtro REVENDA: mostra só produtos classificados como revenda
+  if(filter==='REVENDA')return items.filter(i=>getClassificacao(i)==='REVENDA');
+  // Para todos os outros filtros, excluir produtos de REVENDA (não são demanda de fabricação)
+  const fabItems=items.filter(i=>getClassificacao(i)==='FABRICACAO');
+  if(filter==='ALL')return items; // ALL mostra tudo (fabricação + revenda) para consulta
+  return fabItems.filter(i=>{
     const saldo=calculateAvailableStock(i);
     if(filter==='DEFICIT')return saldo<0;
     if(filter==='CRITICO')return saldo===0;
@@ -12867,8 +12915,8 @@ function renderAlerts(){
     items=filterByStatus(items,statusFilter);
     if(q)items=items.filter(i=>(i.descricao||'').toLowerCase().includes(q)||(i.familia||'').toLowerCase().includes(q));
     items.sort((a,b)=>calculateAvailableStock(a)-calculateAvailableStock(b));
-    // Contagem de déficits para o badge
-    const deficitCount=allItems().filter(i=>calculateAvailableStock(i)<0).length;
+    // Contagem de déficits para o badge — apenas produtos de FABRICAÇÃO
+    const deficitCount=allItems().filter(i=>getClassificacao(i)==='FABRICACAO'&&calculateAvailableStock(i)<0).length;
     const _ac=document.getElementById('alertCount');if(_ac)_ac.textContent=deficitCount;
     if(!items.length){
       tableEl.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div>Nenhum produto nesta categoria.</div>';
@@ -13209,11 +13257,15 @@ function processFile(file,tipo){
           if(isNaN(reserva)){reservaInvalida++;reserva=0;}
         }
         const familia=(findCol(header,['família','familia','fam','grupo'])>=0?row[findCol(header,['família','familia','fam','grupo'])]:null)||'';
+        const famUpper=familia.toString().toUpperCase().trim();
+        const classif=FAB_FAMILIAS.has(normFamilia(famUpper))?'FABRICACAO':
+                       (tipo==='LOJA'&&LOJA_REVENDA_FAM.has(normFamilia(famUpper)))?'REVENDA':'REVENDA';
         items.push({
           tipo,codigo,
           descricao:(row[iDesc]||'').toString().trim(),
           estoque,reserva,
-          familia:familia.toString().toUpperCase().trim(),
+          familia:famUpper,
+          classificacao:classif,
           agrupado:0,seguranca:0,diferenca:0,carregar:0
         });
       }
