@@ -808,7 +808,13 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .op-name{flex:1;font-size:11px;font-weight:600;color:var(--ink);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 #page-pcp-estoque .op-bal{width:52px;text-align:right;flex-shrink:0}
 #page-pcp-estoque .op-need{width:64px;text-align:right;flex-shrink:0}
-#page-pcp-estoque .op-row-fields{display:flex;gap:5px;align-items:center;padding:0 12px 8px}
+#page-pcp-estoque .op-row-fields{display:flex;gap:5px;align-items:center;padding:0 12px 6px}
+#page-pcp-estoque .op-row-prodinfo{display:flex;align-items:center;justify-content:space-between;padding:0 12px 8px;gap:6px}
+#page-pcp-estoque .op-prod-rate{font-size:9.5px;color:var(--ink-soft);display:flex;align-items:center;gap:3px}
+#page-pcp-estoque .op-prod-rate .prate-val{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+#page-pcp-estoque .op-prod-rate.no-data{font-style:italic;color:#bbb}
+#page-pcp-estoque .op-prod-time{font-size:9.5px;font-weight:700;color:var(--red-dark);font-variant-numeric:tabular-nums;background:#fdf2e6;border:1px solid #f4d9b8;padding:1px 7px;border-radius:4px;min-width:52px;text-align:center;white-space:nowrap}
+#page-pcp-estoque .op-prod-time.no-data{background:none;border:none;color:#ccc;font-weight:400;min-width:auto}
 /* Botão remover */
 #page-pcp-estoque .cp-del{flex-shrink:0;background:none;border:none;color:#ccc;font-size:13px;cursor:pointer;padding:0 2px;line-height:1;font-family:inherit}
 #page-pcp-estoque .cp-del:hover{color:var(--red)}
@@ -11147,8 +11153,6 @@ function PP_renderKPIs(){
       { label:'Produtividade Padeiros — Massa/hora',       value: massaPorHora      != null ? massaPorHora.toLocaleString('pt-BR',{maximumFractionDigits:2})      : '—' },
       { label:'Produtividade Padeiros — Tempo Médio/Massa', value: tempoMedioMassa  != null ? PP_fmtDuracao(tempoMedioMassa)                                       : '—' },
       { label:'Tempo Médio da Batelada',                   value: tempoMedioBatelada != null ? PP_fmtDuracao(tempoMedioBatelada)                                   : '—' },
-      { label:'Batelada/Hora',                             value: bateladaPorHora   != null ? bateladaPorHora.toLocaleString('pt-BR',{maximumFractionDigits:2})    : '—' },
-      { label:'Leituras Coletadas',                        value: tempoMedioValores.length },
     ];
     grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
     grid.innerHTML = kpis.map(k=>`
@@ -12460,6 +12464,71 @@ function normCod(c){return c?c.replace(/^0+(?=\d)/,''):'';}
 
 const SETOR_ORDER=['GIRO DIA','GIRO NOITE','SALGADO','CONFEITARIA','PADARIA','FRITADOR','CROISSANT','PÃO C/ LINGUIÇA','REVENDA'];
 
+// ─── PRODUTIVIDADE MAP ────────────────────────────────────────────────────────
+async function loadProdutividade(){
+  if(produtividadeLoaded) return;
+  try{
+    const {data}=await SUPA.from('produtividade_corridas')
+      .select('produto,linha,unidades_por_hora,producao_por_hora,unidade_medida,velocidade_paes_hora');
+    if(!data) return;
+    // Agrupa por nome normalizado e calcula média
+    const groups={};
+    data.forEach(r=>{
+      const k=normProdKey(r.produto);
+      if(!k) return;
+      if(!groups[k]) groups[k]={records:[],linha:r.linha,unidade_medida:null};
+      if(r.unidade_medida) groups[k].unidade_medida=r.unidade_medida;
+      groups[k].records.push(r);
+    });
+    for(const [k,g] of Object.entries(groups)){
+      const withUnid=g.records.filter(r=>r.unidades_por_hora!=null&&parseFloat(r.unidades_por_hora)>0);
+      const withVel=g.records.filter(r=>r.velocidade_paes_hora!=null&&parseFloat(r.velocidade_paes_hora)>0);
+      let avgRate=0,rateType='';
+      if(withUnid.length){
+        avgRate=Math.round(withUnid.reduce((s,r)=>s+parseFloat(r.unidades_por_hora),0)/withUnid.length);
+        rateType='unid/h';
+      } else if(withVel.length){
+        avgRate=Math.round(withVel.reduce((s,r)=>s+parseFloat(r.velocidade_paes_hora),0)/withVel.length);
+        rateType='pães/h';
+      }
+      produtividadeMap[k]={avgRate,rateType,unidade:g.unidade_medida||'',linha:g.linha};
+    }
+    produtividadeLoaded=true;
+  }catch(e){console.error('loadProdutividade:',e);}
+}
+
+function normProdKey(str){
+  return (str||'').toUpperCase().replace(/\s+/g,' ').trim();
+}
+
+function getProdutividade(desc){
+  if(!desc||!produtividadeLoaded) return null;
+  const dk=normProdKey(desc);
+  // 1. Correspondência exata
+  if(produtividadeMap[dk]) return produtividadeMap[dk];
+  // 2. Nome curto do banco está contido no nome CIGAM (ex: "DOGUINHO" ⊂ "DOGUINHO BREAD KING...")
+  for(const [k,v] of Object.entries(produtividadeMap)){
+    if(k.length>5&&dk.includes(k)) return v;
+  }
+  // 3. Todas as palavras significativas do banco estão no nome CIGAM
+  for(const [k,v] of Object.entries(produtividadeMap)){
+    const kWords=k.split(' ').filter(w=>w.length>3);
+    if(kWords.length>=2&&kWords.every(w=>dk.includes(w))) return v;
+  }
+  return null;
+}
+
+function formatHorasOP(h){
+  if(!h||h<=0||!isFinite(h)) return '—';
+  const totalMin=Math.round(h*60);
+  if(totalMin<1) return '<1min';
+  const hrs=Math.floor(totalMin/60);
+  const min=totalMin%60;
+  if(hrs===0) return `${min}min`;
+  if(min===0) return `${hrs}h`;
+  return `${hrs}h${String(min).padStart(2,'0')}min`;
+}
+
 async function buildSD(){
   const allItems=[...RAW.fabrica.map(i=>({...i})),...RAW.loja.map(i=>({...i}))];
   let setorMap={};
@@ -12507,6 +12576,8 @@ const SETOR_COLORS={'GIRO NOITE':{cls:'sc-gironoite',emoji:'🌙'},'PADARIA':{cl
 
 let ordemState={};
 let rowCounter=0;
+let produtividadeMap={};  // normKey -> {avgRate, rateType, unidade, linha}
+let produtividadeLoaded=false;
 
 // ─── CONFIGURAÇÃO PCP ───────────────────────────────────────────────────────
 // Saldo positivo ≤ este valor = ATENÇÃO. Ajuste conforme necessidade do PCP.
@@ -12686,12 +12757,16 @@ function confirmPcpModal(){
   const {item,setor,saldo,need,btnEl}=_pcpModalCtx;
   const qtdInput=document.getElementById('pcpModalQtd').value;
   const unidMedida=document.getElementById('pcpModalUnidade').value;
+  const prodInfo=getProdutividade(item.descricao);
   const rowData={
     id:rowCounter++,code:item.codigo,desc:item.descricao,
     estoque:item.estoque,reserva:item.reserva||0,saldo,need,
     setor,loc:item.tipo,unidade:guessUnit(item.familia),
     unidadeMedida:unidMedida,
-    qtd:qtdInput||'',maquina:'',obs:''
+    qtd:qtdInput||'',maquina:'',obs:'',
+    prodRate:prodInfo?.avgRate||0,
+    prodRateType:prodInfo?.rateType||'',
+    prodUnidade:prodInfo?.unidade||''
   };
   ordemState[setor].push(rowData);
   renderOrdem();
@@ -12958,11 +13033,15 @@ function gerarOrdemAutomatica(){
     if(!ordemState[setor])ordemState[setor]=[];
     const saldo=calculateAvailableStock(item);
     const need=calculateProductionNeed(item);
+    const prodInfoAuto=getProdutividade(item.descricao);
     ordemState[setor].push({
       id:rowCounter++,code:item.codigo,desc:item.descricao,
       estoque:item.estoque,reserva:item.reserva||0,saldo,need,
       setor,loc:item.tipo,unidade:guessUnit(item.familia),
-      unidadeMedida:'Unid',qtd:n(need),maquina:'',obs:''
+      unidadeMedida:'Unid',qtd:n(need),maquina:'',obs:'',
+      prodRate:prodInfoAuto?.avgRate||0,
+      prodRateType:prodInfoAuto?.rateType||'',
+      prodUnidade:prodInfoAuto?.unidade||''
     });
   });
   renderOrdem();
@@ -12984,7 +13063,8 @@ function addRow(setor){
   const s=setor||SD.setores[0];
   if(!ordemState[s])ordemState[s]=[];
   ordemState[s].push({id:rowCounter++,code:'',desc:'',estoque:0,reserva:0,saldo:0,need:0,
-    setor:s,loc:'FABRICA',unidade:'UNID',unidadeMedida:'Unid',qtd:'',maquina:'',obs:''});
+    setor:s,loc:'FABRICA',unidade:'UNID',unidadeMedida:'Unid',qtd:'',maquina:'',obs:'',
+    prodRate:0,prodRateType:'',prodUnidade:''});
   renderOrdem();
 }
 
@@ -13050,18 +13130,23 @@ function addProdFromSearch(setor,codigo){
   // Lookup product details
   const allI=allItems();
   const item=allI.find(i=>i.codigo===codigo)||(SD.by_setor&&(SD.by_setor[setor]||[]).find(i=>i.codigo===codigo));
-  const saldo=item?(item.saldo_fab!==undefined?item.saldo_fab:0):0;
-  const need=item?(item.necessidade!==undefined?item.necessidade:0):0;
+  const saldo=item?(item.saldo_fab!==undefined?item.saldo_fab:calculateAvailableStock(item)):0;
+  const need=item?(item.necessidade!==undefined?item.necessidade:calculateProductionNeed(item)):0;
+  const descFull=item?(item.descricao||item.desc||codigo):codigo;
+  const prodInfo=getProdutividade(descFull);
   const row={
-    id:Date.now()+Math.random(),
+    id:rowCounter++,
     code:codigo,
-    desc:item?(item.descricao||item.desc||codigo):codigo,
+    desc:descFull,
     saldo:saldo,
     need:need,
     qtd:'',
-    unidadeMedida:'Unid',
+    unidadeMedida:item?guessUnit(item.familia)||'Unid':'Unid',
     maquina:'',
-    obs:''
+    obs:'',
+    prodRate:prodInfo?.avgRate||0,
+    prodRateType:prodInfo?.rateType||'',
+    prodUnidade:prodInfo?.unidade||''
   };
   ordemState[setor].push(row);
   // Hide search
@@ -13075,7 +13160,16 @@ function syncField(setor,id,field,val){
   const rows=ordemState[setor];
   if(!rows)return;
   const r=rows.find(r=>r.id===id);
-  if(r)r[field]=val;
+  if(!r)return;
+  r[field]=val;
+  // Recalcula tempo estimado ao mudar quantidade
+  if(field==='qtd'&&r.prodRate>0){
+    const timeEl=document.getElementById('optime-'+id);
+    if(timeEl){
+      const qty=parseFloat(val)||0;
+      timeEl.textContent='⏱ '+(qty>0?formatHorasOP(qty/r.prodRate):'—');
+    }
+  }
 }
 
 function renderOrdemRow(setor,row,seq){
@@ -13128,6 +13222,15 @@ function renderOrdemRowCompact(setor,row,seq){
       <input class="cp-f-txt" placeholder="Máquina..." value="${row.maquina||''}" oninput="syncField('${setor}',${row.id},'maquina',this.value)">
       <input class="cp-f-txt" placeholder="Obs..." value="${row.obs||''}" oninput="syncField('${setor}',${row.id},'obs',this.value)">
     </div>
+    <div class="op-row-prodinfo">${(()=>{
+      const hasRate=row.prodRate>0;
+      const qty=parseFloat(row.qtd)||0;
+      const tempoStr=hasRate&&qty>0?formatHorasOP(qty/row.prodRate):'—';
+      const rateLabel=hasRate
+        ?`📊 <span class="prate-val">${n(row.prodRate)}</span>&nbsp;${row.prodRateType}${row.prodUnidade?' · '+row.prodUnidade:''}`
+        :'Sem dados de produtividade';
+      return`<span class="op-prod-rate${hasRate?'':' no-data'}">${rateLabel}</span><span class="op-prod-time${hasRate?'':' no-data'}" id="optime-${row.id}">⏱ ${tempoStr}</span>`;
+    })()}</div>
   </div>`;
 }
 
@@ -13568,7 +13671,10 @@ async function PCP_init(){
   ov.style.cssText='display:flex;position:fixed;inset:0;background:rgba(110,0,0,.7);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:12px';
   ov.innerHTML='<div style="width:44px;height:44px;border:4px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite"></div><div style="color:#fff;font-size:13px;font-weight:700;letter-spacing:1px">Sincronizando catálogo…</div>';
   document.body.appendChild(ov);
-  await buildSD().catch(e=>console.error('buildSD:',e));
+  await Promise.all([
+    buildSD().catch(e=>console.error('buildSD:',e)),
+    loadProdutividade().catch(e=>console.error('loadProdutividade:',e))
+  ]);
   ov.remove();
   buildStats();
   buildChips('fabFamChips',fabItems(),'setFabFam');
