@@ -13338,6 +13338,7 @@ function processFile(file,tipo){
       // Parse dos dados
       const items=[];let semCodigo=0,estoqueInvalido=0,reservaInvalida=0,duplicados=0;
       const codigosVistos=new Set();
+      let currentFamilia=''; // família atual capturada dos cabeçalhos de seção CIGAM
       for(let i=headerIdx+1;i<rows.length;i++){
         const row=rows[i];
         if(!row||row.every(c=>c==null||c===''))continue;
@@ -13346,7 +13347,13 @@ function processFile(file,tipo){
         // Pular linhas de grupo/seção CIGAM (ex: '51 - LINHA PAES') onde estoque não é número
         const rawEstCheck=row[iEst];
         const estoqueCheck=parseFloat((rawEstCheck||'').toString().replace(/\./g,'').replace(',','.'));
-        if(isNaN(estoqueCheck))continue; // linha de cabeçalho de grupo — ignorar silenciosamente
+        if(isNaN(estoqueCheck)){
+          // Linha de cabeçalho de família CIGAM — captura para usar nos produtos seguintes
+          const iDescH=findCol(header,['descrição produto','descricao produto','descrição','descricao','desc']);
+          const candidate=rawCod||((iDescH>=0?(row[iDescH]||''):'').toString().trim());
+          if(candidate&&!candidate.match(/^\d+[\.,]?\d*$/)) currentFamilia=candidate;
+          continue;
+        }
         const codigo=normCod(rawCod)||rawCod;
         if(codigosVistos.has(codigo)){duplicados++;continue;}
         codigosVistos.add(codigo);
@@ -13359,7 +13366,8 @@ function processFile(file,tipo){
           reserva=parseFloat(rawRes.toString().replace(/\./g,'').replace(',','.'));
           if(isNaN(reserva)){reservaInvalida++;reserva=0;}
         }
-        const familia=(findCol(header,['família','familia','fam','grupo'])>=0?row[findCol(header,['família','familia','fam','grupo'])]:null)||'';
+        const famColIdx=findCol(header,['família','familia','fam','grupo']);
+        const familia=(famColIdx>=0&&row[famColIdx]!=null&&row[famColIdx]!=='')?row[famColIdx].toString().trim():currentFamilia;
         const famUpper=familia.toString().toUpperCase().trim();
         const classif=FAB_FAMILIAS.has(normFamilia(famUpper))?'FABRICACAO':
                        (tipo==='LOJA'&&LOJA_REVENDA_FAM.has(normFamilia(famUpper)))?'REVENDA':'REVENDA';
