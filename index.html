@@ -12493,6 +12493,8 @@ async function loadProdutividade(){
       produtividadeMap[k]={avgRate,rateType,unidade:g.unidade_medida||'',linha:g.linha};
     }
     produtividadeLoaded=true;
+    // Re-renderiza OP para atualizar tempos que ficaram sem dados antes do mapa carregar
+    if(typeof renderOrdem==='function') renderOrdem();
   }catch(e){console.error('loadProdutividade:',e);}
 }
 
@@ -12509,17 +12511,17 @@ function getProdutividade(desc){
   for(const [k,v] of Object.entries(produtividadeMap)){
     if(v.avgRate>0&&k.length>5&&dk.includes(k)) return v;
   }
-  // 3. Todas as palavras significativas do banco estão no nome CIGAM (≥4 chars)
+  // 3. Todas as palavras significativas do banco estão no nome CIGAM (≥3 chars)
   for(const [k,v] of Object.entries(produtividadeMap)){
     if(v.avgRate<=0) continue;
-    const kWords=k.split(' ').filter(w=>w.length>3);
+    const kWords=k.split(/[\s\/\-]+/).filter(w=>w.length>=3&&!/^\d/.test(w));
     if(kWords.length>=2&&kWords.every(w=>dk.includes(w))) return v;
   }
   // 4. Inverso: palavras do CIGAM (sem stopwords) estão no nome do banco (para nomes informais)
   for(const [k,v] of Object.entries(produtividadeMap)){
     if(v.avgRate<=0) continue;
-    const STOP=new Set(['BREAD','KING','TRAD','UNID','MINI','PARA']);
-    const dkWords=dk.split(' ').filter(w=>w.length>3&&!STOP.has(w));
+    const STOP=new Set(['BREAD','KING','TRAD','UNID','MINI','PARA','130G','125G']);
+    const dkWords=dk.split(/[\s\/\-]+/).filter(w=>w.length>=3&&!STOP.has(w)&&!/^\d/.test(w));
     if(dkWords.length>=2&&dkWords.every(w=>k.includes(w))) return v;
   }
   return null;
