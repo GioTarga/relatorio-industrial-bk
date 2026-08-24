@@ -1968,7 +1968,6 @@ body{background:#fff;color:#000}
       <div class="chip chip-critico" onclick="setStatusFilter(this,'CRITICO')">Crítico</div>
       <div class="chip chip-atencao" onclick="setStatusFilter(this,'ATENCAO')">Atenção</div>
       <div class="chip chip-ok" onclick="setStatusFilter(this,'DISPONIVEL')">Disponível</div>
-      <div class="chip chip-revenda" onclick="setStatusFilter(this,'REVENDA')">Revenda</div>
     </div>
     <span class="filter-vsep"></span>
     <!-- Local chips -->
@@ -12506,14 +12505,22 @@ function getProdutividade(desc){
   const dk=normProdKey(desc);
   // 1. Correspondência exata
   if(produtividadeMap[dk]) return produtividadeMap[dk];
-  // 2. Nome curto do banco está contido no nome CIGAM (ex: "DOGUINHO" ⊂ "DOGUINHO BREAD KING...")
+  // 2. Nome curto do banco está contido no nome CIGAM — prioriza entradas com dados
   for(const [k,v] of Object.entries(produtividadeMap)){
-    if(k.length>5&&dk.includes(k)) return v;
+    if(v.avgRate>0&&k.length>5&&dk.includes(k)) return v;
   }
-  // 3. Todas as palavras significativas do banco estão no nome CIGAM
+  // 3. Todas as palavras significativas do banco estão no nome CIGAM (≥4 chars)
   for(const [k,v] of Object.entries(produtividadeMap)){
+    if(v.avgRate<=0) continue;
     const kWords=k.split(' ').filter(w=>w.length>3);
     if(kWords.length>=2&&kWords.every(w=>dk.includes(w))) return v;
+  }
+  // 4. Inverso: palavras do CIGAM (sem stopwords) estão no nome do banco (para nomes informais)
+  for(const [k,v] of Object.entries(produtividadeMap)){
+    if(v.avgRate<=0) continue;
+    const STOP=new Set(['BREAD','KING','TRAD','UNID','MINI','PARA']);
+    const dkWords=dk.split(' ').filter(w=>w.length>3&&!STOP.has(w));
+    if(dkWords.length>=2&&dkWords.every(w=>k.includes(w))) return v;
   }
   return null;
 }
@@ -12675,8 +12682,6 @@ function getStockStatus(item){
   return{cls:'green',emoji:'🟢',label:'DISPONÍVEL',stripe:'row-ok'};
 }
 function shouldEnterProductionOrder(item){
-  // Produtos de revenda nunca entram na Ordem de Produção
-  if(getClassificacao(item)==='REVENDA')return false;
   return calculateAvailableStock(item)<0;
 }
 
@@ -12782,12 +12787,10 @@ document.addEventListener('keydown',function(e){
 });
 
 function renderTableRow(item){
-  const classif=getClassificacao(item);
-  const isRevenda=classif==='REVENDA';
   const saldo=calculateAvailableStock(item);
-  const need=isRevenda?0:calculateProductionNeed(item); // revenda não gera necessidade
-  const st=isRevenda?{cls:'',emoji:'',label:'REVENDA',stripe:'row-revenda'}:getStockStatus(item);
-  const pr=isRevenda?{level:99,label:''}:calculatePriority(item);
+  const need=calculateProductionNeed(item);
+  const st=getStockStatus(item);
+  const pr=calculatePriority(item);
   const locCls=item.tipo==='FABRICA'?'loc-fab':'loc-loja';
   const locLabel=item.tipo==='FABRICA'?'FÁBRICA':'LOJA';
   const sk=safeId(item);
@@ -12798,11 +12801,9 @@ function renderTableRow(item){
   }));
   const needHighlight = need > 0 ? 'need-high' : '';
   const saldoHigh = saldo < 0 ? 'saldo-neg' : saldo === 0 ? 'saldo-zero' : 'saldo-pos';
-  const btnLabel = isRevenda?'—':should_enter_op_check(item) ? '+ OP' : 'OP';
-  const btnCls = isRevenda?'btn-send-ordem btn-op-neutral':should_enter_op_check(item) ? 'btn-send-ordem' : 'btn-send-ordem btn-op-neutral';
-  const statusCell = isRevenda
-    ? `<div class="cell cell-status"><span class="badge-revenda">REVENDA</span></div>`
-    : `<div class="cell cell-status"><div class="status-pill ${st.cls}"><span class="status-dot"></span>${st.label}</div>${pr.level<=2?`<div class="status-pri">${pr.label}</div>`:''}</div>`;
+  const btnLabel = should_enter_op_check(item) ? '+ OP' : 'OP';
+  const btnCls = should_enter_op_check(item) ? 'btn-send-ordem' : 'btn-send-ordem btn-op-neutral';
+  const statusCell = `<div class="cell cell-status"><div class="status-pill ${st.cls}"><span class="status-dot"></span>${st.label}</div>${pr.level<=2?`<div class="status-pri">${pr.label}</div>`:''}</div>`;
   return`<div class="table-row ${st.stripe}">
     <div class="cell cell-produto">
       <div class="cell-desc" title="${item.descricao}">${shortDesc(item.descricao)}</div>
@@ -12963,12 +12964,9 @@ function setFabFam(v){fabFam=v;renderFab();}
 function setLojaFam(v){lojaFam=v;renderLoja();}
 
 function filterByStatus(items,filter){
-  // Filtro REVENDA: mostra só produtos classificados como revenda
-  if(filter==='REVENDA')return items.filter(i=>getClassificacao(i)==='REVENDA');
-  // Para todos os outros filtros, excluir produtos de REVENDA (não são demanda de fabricação)
-  const fabItems=items.filter(i=>getClassificacao(i)==='FABRICACAO');
-  if(filter==='ALL')return items; // ALL mostra tudo (fabricação + revenda) para consulta
-  return fabItems.filter(i=>{
+  // Sem filtro por classificação — todos os produtos são exibidos
+  if(filter==='ALL')return items;
+  return items.filter(i=>{
     const saldo=calculateAvailableStock(i);
     if(filter==='DEFICIT')return saldo<0;
     if(filter==='CRITICO')return saldo===0;
@@ -12991,7 +12989,7 @@ function renderAlerts(){
     if(q)items=items.filter(i=>(i.descricao||'').toLowerCase().includes(q)||(i.familia||'').toLowerCase().includes(q));
     items.sort((a,b)=>calculateAvailableStock(a)-calculateAvailableStock(b));
     // Contagem de déficits para o badge — apenas produtos de FABRICAÇÃO
-    const deficitCount=allItems().filter(i=>getClassificacao(i)==='FABRICACAO'&&calculateAvailableStock(i)<0).length;
+    const deficitCount=allItems().filter(i=>calculateAvailableStock(i)<0).length;
     const _ac=document.getElementById('alertCount');if(_ac)_ac.textContent=deficitCount;
     if(!items.length){
       tableEl.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div>Nenhum produto nesta categoria.</div>';
@@ -13223,6 +13221,11 @@ function renderOrdemRowCompact(setor,row,seq){
       <input class="cp-f-txt" placeholder="Obs..." value="${row.obs||''}" oninput="syncField('${setor}',${row.id},'obs',this.value)">
     </div>
     <div class="op-row-prodinfo">${(()=>{
+      // Re-lookup produtividade no render (garante dados mesmo se mapa carregou depois)
+      if(row.prodRate===0&&produtividadeLoaded&&row.desc){
+        const fresh=getProdutividade(row.desc);
+        if(fresh&&fresh.avgRate>0){row.prodRate=fresh.avgRate;row.prodRateType=fresh.rateType;row.prodUnidade=fresh.unidade||'';}
+      }
       const hasRate=row.prodRate>0;
       const qty=parseFloat(row.qtd)||0;
       const tempoStr=hasRate&&qty>0?formatHorasOP(qty/row.prodRate):'—';
