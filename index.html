@@ -12815,7 +12815,7 @@ function renderTableRow(item){
     <div class="cell cell-num cell-need ${needHighlight}">${need>0?n(need):'—'}</div>
     ${statusCell}
     <div class="cell cell-action">
-      <button id="btn-${sk}" class="${btnCls}" ${isRevenda?'disabled title="Produto de revenda — não entra em OP"':''}data-item="${itemEnc}" onclick="${isRevenda?'':'enviarParaOrdem(\''+sk+'\')'}">${btnLabel}</button>
+      <button id="btn-${sk}" class="${btnCls}" data-item="${itemEnc}" onclick="enviarParaOrdem('${sk}')">${btnLabel}</button>
     </div>
   </div>`;
 }
