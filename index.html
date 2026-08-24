@@ -13378,7 +13378,7 @@ function handleDrop(e,tipo){
 function limparDados(){
   if(!confirm('⚠️ Limpar todos os dados importados?\nEstoque Fábrica, Estoque Loja, Vendas Fábrica e Vendas Loja serão apagados.')) return;
   // Reseta dados em memória
-  currentFab=null; currentLoja=null;
+  currentFab=[]; currentLoja=[];
   vendasMap={}; vendasLojaMap={};
   uploadHistory=[];
   // Reseta cards de upload para estado inicial
