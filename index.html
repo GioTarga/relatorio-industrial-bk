@@ -12467,59 +12467,35 @@ const SETOR_ORDER=['GIRO DIA','GIRO NOITE','SALGADO','CONFEITARIA','PADARIA','FR
 async function loadProdutividade(){
   if(produtividadeLoaded) return;
   try{
-    // ── 1. Busca corridas (Salgado e outros setores) ──────────────────────────
+    // Busca corridas com tempos de masseira aninhados (mesmo join do módulo PP)
     const {data}=await SB_CLIENT.from('produtividade_corridas')
-      .select('id,produto,linha,unidades_por_hora,unidade_medida,velocidade_paes_hora');
+      .select('id,produto,linha,unidades_por_hora,unidade_medida,velocidade_paes_hora,produtividade_tempos_massa(tempo_seg)');
     if(!data) return;
 
-    // Agrupa por nome normalizado
+    // Agrupa por produto (nome normalizado)
     const groups={};
     data.forEach(r=>{
       const k=normProdKey(r.produto);
       if(!k) return;
-      if(!groups[k]) groups[k]={records:[],linha:r.linha,unidade_medida:null,corrida_ids:[]};
+      if(!groups[k]) groups[k]={records:[],linha:r.linha,unidade_medida:null};
       if(r.unidade_medida) groups[k].unidade_medida=r.unidade_medida;
       groups[k].records.push(r);
-      groups[k].corrida_ids.push(r.id);
     });
 
-    // ── 2. Para produtos Giro: busca tempo médio de batelada (Massa/hora) ──────
-    const giroIds=data.filter(r=>r.linha&&r.linha.toLowerCase().includes('giro')).map(r=>r.id);
-    let giroTempos={};
-    if(giroIds.length){
-      const {data:tempos}=await SB_CLIENT.from('produtividade_tempos_massa')
-        .select('corrida_id,tempo_seg')
-        .in('corrida_id',giroIds);
-      if(tempos){
-        // Agrupa por corrida_id e calcula média de tempo_seg por corrida
-        const byCorrida={};
-        tempos.forEach(t=>{
-          if(!byCorrida[t.corrida_id]) byCorrida[t.corrida_id]=[];
-          byCorrida[t.corrida_id].push(parseFloat(t.tempo_seg));
-        });
-        // Agrupa por produto (nome normalizado) e calcula média geral
-        data.forEach(r=>{
-          if(!r.linha||!r.linha.toLowerCase().includes('giro')) return;
-          if(!byCorrida[r.id]) return;
-          const k=normProdKey(r.produto);
-          if(!giroTempos[k]) giroTempos[k]=[];
-          // Soma as taxas de todas as masseiras da corrida (paralelas): Σ(3600/tempo_i)
-          const corridaRate=byCorrida[r.id].reduce((s,t)=>s+(3600/t),0);
-          giroTempos[k].push(corridaRate);
-        });
-      }
-    }
-
-    // ── 3. Constrói mapa final ─────────────────────────────────────────────────
+    // Constrói mapa final
     for(const [k,g] of Object.entries(groups)){
       let avgRate=0,rateType='',unidade=g.unidade_medida||'';
       const isGiro=g.linha&&g.linha.toLowerCase().includes('giro');
 
-      if(isGiro&&giroTempos[k]&&giroTempos[k].length){
-        // Giro: Massa/hora do setor = média das taxas totais por corrida (soma de todas as masseiras paralelas)
-        avgRate=Math.round((giroTempos[k].reduce((s,v)=>s+v,0)/giroTempos[k].length)*10)/10;
-        rateType='Massa/h';
-        unidade='';
+      if(isGiro){
+        // Giro: usa tempo_medio via produtividade_tempos_massa (mesmo cálculo do módulo PP)
+        const allTempos=g.records.flatMap(r=>(r.produtividade_tempos_massa||[]).map(t=>parseFloat(t.tempo_seg))).filter(v=>v>0);
+        if(allTempos.length){
+          const avgTempo=allTempos.reduce((s,v)=>s+v,0)/allTempos.length;
+          avgRate=Math.round((3600/avgTempo)*10)/10;
+          rateType='Massa/h';
+          unidade='';
+        }
       } else {
         const withUnid=g.records.filter(r=>r.unidades_por_hora!=null&&parseFloat(r.unidades_por_hora)>0);
         const withVel=g.records.filter(r=>r.velocidade_paes_hora!=null&&parseFloat(r.velocidade_paes_hora)>0);
@@ -12535,9 +12511,8 @@ async function loadProdutividade(){
     }
 
     produtividadeLoaded=true;
-    console.log('[Produtividade] Carregado:',Object.keys(produtividadeMap).length,'produtos, com dados:',
-      Object.values(produtividadeMap).filter(v=>v.avgRate>0).length,
-      'Giro c/ Massa/h:',Object.values(produtividadeMap).filter(v=>v.rateType==='Massa/h').length);
+    console.log('[Produtividade] Carregado:',Object.keys(produtividadeMap).length,'produtos, Giro c/ Massa/h:',
+      Object.values(produtividadeMap).filter(v=>v.rateType==='Massa/h').length);
     if(typeof renderOrdem==='function') renderOrdem();
   }catch(e){console.error('loadProdutividade:',e);}
 }
