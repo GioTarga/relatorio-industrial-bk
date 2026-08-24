@@ -12467,7 +12467,7 @@ const SETOR_ORDER=['GIRO DIA','GIRO NOITE','SALGADO','CONFEITARIA','PADARIA','FR
 async function loadProdutividade(){
   if(produtividadeLoaded) return;
   try{
-    const {data}=await SUPA.from('produtividade_corridas')
+    const {data}=await SB_CLIENT.from('produtividade_corridas')
       .select('produto,linha,unidades_por_hora,producao_por_hora,unidade_medida,velocidade_paes_hora');
     if(!data) return;
     // Agrupa por nome normalizado e calcula média
@@ -12493,6 +12493,9 @@ async function loadProdutividade(){
       produtividadeMap[k]={avgRate,rateType,unidade:g.unidade_medida||'',linha:g.linha};
     }
     produtividadeLoaded=true;
+    console.log('[Produtividade] Mapa carregado:',Object.keys(produtividadeMap).length,'produtos.',
+      'Com dados:',Object.values(produtividadeMap).filter(v=>v.avgRate>0).map(v=>v).length,
+      'Chaves sample:',Object.keys(produtividadeMap).slice(0,5));
     // Re-renderiza OP para atualizar tempos que ficaram sem dados antes do mapa carregar
     if(typeof renderOrdem==='function') renderOrdem();
   }catch(e){console.error('loadProdutividade:',e);}
@@ -12505,6 +12508,7 @@ function normProdKey(str){
 function getProdutividade(desc){
   if(!desc||!produtividadeLoaded) return null;
   const dk=normProdKey(desc);
+  console.log('[getProd] buscando:',dk.substring(0,40));
   // 1. Correspondência exata
   if(produtividadeMap[dk]) return produtividadeMap[dk];
   // 2. Nome curto do banco está contido no nome CIGAM — prioriza entradas com dados
