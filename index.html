@@ -13547,13 +13547,15 @@ function processFile(file,tipo){
         if(!row||row.every(c=>c==null||c===''))continue;
         const rawCod=(row[iCod]||'').toString().trim();
         if(!rawCod){semCodigo++;continue;}
-        // Pular linhas de grupo/seção CIGAM (ex: '51 - LINHA PAES') onde estoque não é número
+        // Pular linhas de grupo/seção CIGAM (ex: '51 - LINHA PAES', '00 - PAO FRANCES')
+        // onde estoque é null (célula vazia) OU NaN — isNaN(null)===false em JS, por isso o check duplo
         const rawEstCheck=row[iEst];
         const estoqueCheck=parseNumOrNull(rawEstCheck);
-        if(isNaN(estoqueCheck)){
-          // Linha de cabeçalho de família CIGAM — captura para usar nos produtos seguintes
-          const iDescH=findCol(header,['descrição produto','descricao produto','descrição','descricao','desc']);
-          const candidate=rawCod||((iDescH>=0?(row[iDescH]||''):'').toString().trim());
+        const descCheck=(row[iDesc]||'').toString().trim();
+        const isGroupHeader = estoqueCheck===null || isNaN(estoqueCheck) || (!descCheck && /^\d{1,2}\s+-\s+/.test(rawCod));
+        if(isGroupHeader){
+          // Captura nome de família para usar nos produtos seguintes
+          const candidate=rawCod||descCheck;
           if(candidate&&!candidate.match(/^\d+[\.,]?\d*$/)) currentFamilia=candidate;
           continue;
         }
