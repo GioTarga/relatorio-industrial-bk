@@ -1038,7 +1038,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .empty-icon{font-size:28px;margin-bottom:10px;display:block}
 
 
-#page-pcp-estoque .upload-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;max-width:1400px}
+#page-pcp-estoque .upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:700px}
 
 
 #page-pcp-estoque .upload-card{background:var(--paper);border:2px dashed var(--line);border-radius:var(--r-md);padding:36px;text-align:center;cursor:pointer;transition:all .2s;box-shadow:0 2px 10px rgba(161,1,1,.04)}
@@ -1985,6 +1985,7 @@ body{background:#fff;color:#000}
     <input class="search-box" type="text" placeholder="buscar produto..." oninput="renderAlerts()" id="searchAlert" style="margin-left:auto">
     <!-- Botão Importar -->
     <button id="btnImportar" class="btn" onclick="toggleUploadPanel()" style="flex-shrink:0;padding:4px 10px;font-size:10px;font-weight:700;letter-spacing:.5px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;border-radius:var(--r-sm);white-space:nowrap">📂 Importar</button>
+    <button onclick="limparDados()" title="Limpa todos os arquivos importados e reseta os dados" style="flex-shrink:0;padding:4px 10px;font-size:10px;font-weight:700;letter-spacing:.5px;border:1.5px solid #dc2626;background:#fff5f5;color:#dc2626;cursor:pointer;border-radius:var(--r-sm);white-space:nowrap;font-family:inherit">🗑 Limpar</button>
   </div>
   <div class="pcp-op-title no-print">ORDEM DE PRODUÇÃO</div>
 
@@ -13082,6 +13083,15 @@ function renderAlerts(){
     if(tableEl)tableEl.innerHTML='<div class="empty-state" style="border-color:var(--red);color:var(--red)"><div class="empty-icon">⚠</div>Erro ao renderizar tabela. Abra o console (F12).<br><small style="opacity:.7">'+err.message+'</small></div>';
   }
 }
+function renderAlertas(){
+  // Alias: re-renderiza a tabela de alertas (aba Todos)
+  if(typeof renderAlerts==='function') renderAlerts();
+  else if(document.getElementById('alertTable')){
+    let items=[...allItems()];
+    items.sort((a,b)=>calculateAvailableStock(a)-calculateAvailableStock(b));
+    document.getElementById('alertTable').innerHTML=items.map(renderTableRow).join('');
+  }
+}
 function renderFab(){
   const q=(document.getElementById('searchFab').value||'').toLowerCase();
   let items=[...fabItems()];
@@ -13365,6 +13375,38 @@ function handleDrop(e,tipo){
   const file=e.dataTransfer.files[0];
   if(file)processFile(file,tipo);
 }
+function limparDados(){
+  if(!confirm('⚠️ Limpar todos os dados importados?\nEstoque Fábrica, Estoque Loja, Vendas Fábrica e Vendas Loja serão apagados.')) return;
+  // Reseta dados em memória
+  currentFab=null; currentLoja=null;
+  vendasMap={}; vendasLojaMap={};
+  uploadHistory=[];
+  // Reseta cards de upload para estado inicial
+  [
+    {name:'fabFileName',val:'Posicao_EstoquePC1.FABRICA.xlsx'},{status:'fabStatus',val:'Exportado do CIGAM 11'},{card:'cardFab'},
+    {name:'lojaFileName',val:'Posicao_EstoquePC1.LOJA.xlsx'},{status:'lojaStatus',val:'Exportado do CIGAM 11'},{card:'cardLoja'},
+    {name:'vendaFabFileName',val:'Vendas_ProdutoPC1.VENDA.xlsx'},{status:'vendaFabStatus',val:'Exportado do CIGAM 11'},{card:'cardVendaFab'},
+    {name:'vendaLojaFileName',val:'Vendas_ProdutoPC1.VENDA_LOJA.xlsx'},{status:'vendaLojaStatus',val:'Exportado do CIGAM 11'},{card:'cardVendaLoja'},
+  ].forEach(o=>{
+    if(o.name && document.getElementById(o.name)) document.getElementById(o.name).textContent=o.val;
+    if(o.status && document.getElementById(o.status)){const el=document.getElementById(o.status);el.textContent=o.val;el.style.color='';}
+    if(o.card && document.getElementById(o.card)){const c=document.getElementById(o.card);c.style.borderColor='';c.style.opacity='';}
+  });
+  // Reseta inputs de arquivo
+  ['inputFab','inputLoja','inputVendaFab','inputVendaLoja'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  // Atualiza UI
+  renderUploadHistory();
+  renderFab(); renderLoja(); renderAlertas();
+  // Fecha painel de importação se estiver aberto
+  document.getElementById('tab-upload').style.display='none';
+  document.getElementById('btnImportar').textContent='📂 Importar';
+  // Feedback
+  const badge=document.getElementById('catalog-badge');
+  if(badge){badge.textContent='Dados limpos';badge.style.color='var(--warn)';}
+}
+
 function handleFile(input,tipo){
   if(input.files[0])processFile(input.files[0],tipo);
 }
