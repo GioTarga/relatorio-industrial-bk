@@ -2074,7 +2074,7 @@ body{background:#fff;color:#000}
         <div class="cell-num th-saldo">Saldo</div>
         <div class="cell-num th-need" style="text-align:right;white-space:nowrap">Necessidade</div>
         <div class="cell-num th-venda" style="text-align:right;white-space:nowrap">Venda Fab.</div>
-        <div class="cell-num th-venda" style="text-align:right;white-space:nowrap">Venda Loja</div>
+        <div class="cell-num th-venda" style="text-align:center;white-space:nowrap">Venda Loja</div>
         <div style="text-align:center">Status</div><div style="text-align:center">Ação</div>
       </div>
       <div id="alertTable"></div>
@@ -2097,7 +2097,7 @@ body{background:#fff;color:#000}
         <div class="cell-num th-saldo">Saldo</div>
         <div class="cell-num th-need" style="text-align:right;white-space:nowrap">Necessidade</div>
         <div class="cell-num th-venda" style="text-align:right;white-space:nowrap">Venda Fab.</div>
-        <div class="cell-num th-venda" style="text-align:right;white-space:nowrap">Venda Loja</div>
+        <div class="cell-num th-venda" style="text-align:center;white-space:nowrap">Venda Loja</div>
         <div style="text-align:center">Status</div><div style="text-align:center">Ação</div>
       </div>
       <div id="fabTable"></div>
@@ -2120,7 +2120,7 @@ body{background:#fff;color:#000}
         <div class="cell-num th-saldo">Saldo</div>
         <div class="cell-num th-need" style="text-align:right;white-space:nowrap">Necessidade</div>
         <div class="cell-num th-venda" style="text-align:right;white-space:nowrap">Venda Fab.</div>
-        <div class="cell-num th-venda" style="text-align:right;white-space:nowrap">Venda Loja</div>
+        <div class="cell-num th-venda" style="text-align:center;white-space:nowrap">Venda Loja</div>
         <div style="text-align:center">Status</div><div style="text-align:center">Ação</div>
       </div>
       <div id="lojaTable"></div>
@@ -12905,7 +12905,7 @@ function renderTableRow(item){
     <div class="cell cell-num cell-saldo ${saldoHigh}" style="text-align:right;font-variant-numeric:tabular-nums">${n(saldo)}</div>
     <div class="cell cell-num cell-need ${needHighlight}" style="text-align:right;font-variant-numeric:tabular-nums">${need>0?n(need):'—'}</div>
     <div class="cell cell-num" style="color:var(--ink-soft);font-size:11px;text-align:right;font-variant-numeric:tabular-nums">${vendasMap[item.codigo]!=null?n(vendasMap[item.codigo]):'—'}</div>
-    <div class="cell cell-num" style="color:var(--ink-soft);font-size:11px;text-align:right;font-variant-numeric:tabular-nums">${vendasLojaMap[item.codigo]!=null?n(vendasLojaMap[item.codigo]):'—'}</div>
+    <div class="cell cell-num" style="color:var(--ink-soft);font-size:11px;text-align:center;font-variant-numeric:tabular-nums">${vendasLojaMap[item.codigo]!=null?n(vendasLojaMap[item.codigo]):'—'}</div>
     ${statusCell}
     <div class="cell cell-action">
       <button id="btn-${sk}" class="${btnCls}" data-item="${itemEnc}" onclick="enviarParaOrdem('${sk}')">${btnLabel}</button>
