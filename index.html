@@ -940,6 +940,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 
 
 #page-pcp-estoque .cell{font-size:11px;padding:0 2px}
+#page-pcp-estoque .table-header>div{padding:0 2px;box-sizing:border-box}
 
 /* Old loc classes kept for backward compat */
 #page-pcp-estoque .cell-loc{font-size:9px;font-weight:700;margin-top:2px}
@@ -12641,16 +12642,17 @@ async function buildSD(){
   SD.setorMap=setorMap; // lookup direto por codigo → setor
   // Carrega vendas da semana anterior de vendas_semanais
   try{
-    const resV=await fetch(SUPA_URL+'/rest/v1/vendas_semanais?select=codigo_material,qtde_vendida&data_fim=eq.'+(await (async()=>{
+    const resV=await fetch(SUPA_URL+'/rest/v1/vendas_semanais?select=codigo_material,qtde_vendida,unidade&data_fim=eq.'+(await (async()=>{
       const rv=await fetch(SUPA_URL+'/rest/v1/vendas_semanais?select=data_fim&order=data_fim.desc&limit=1',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
       const dv=await rv.json();
       return dv[0]?.data_fim||'';
     })())+'&limit=500',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
     const vendas=await resV.json();
     vendasMap={}; vendasLojaMap={};
-    // Pega a unidade mais frequente no período como "Fábrica"; as demais = Loja
-    const unidades=[...new Set(vendas.map(v=>v.unidade).filter(Boolean))];
-    const unidadeFab=unidades[0]||'';
+    // Agrupa unidades: a mais frequente = Fábrica, demais = Loja
+    const contUnid={};
+    vendas.forEach(v=>{if(v.unidade)contUnid[v.unidade]=(contUnid[v.unidade]||0)+1;});
+    const unidadeFab=Object.keys(contUnid).sort((a,b)=>contUnid[b]-contUnid[a])[0]||'';
     vendas.forEach(v=>{
       if(!v.codigo_material)return;
       if(!unidadeFab||v.unidade===unidadeFab) vendasMap[v.codigo_material]=(vendasMap[v.codigo_material]||0)+Number(v.qtde_vendida||0);
@@ -13469,9 +13471,18 @@ function processFile(file,tipo){
           const q=parseFloat(rawQ)||0;
           if(q>0){targetMapa[cod2]=(targetMapa[cod2]||0)+q;total2++;}
         }
-        statusEl2.textContent=`✅ ${total2} produtos · semana importada`;
-        statusEl2.style.color='#2d7a2d';
-        cardEl2.style.borderColor='#4b8a4b';
+        // Conta quantos codes do arquivo batem com o estoque atual
+        const todosItens=allItems();
+        const matches=todosItens.filter(it=>targetMapa[it.codigo]!=null).length;
+        if(matches===0 && todosItens.length>0){
+          statusEl2.textContent=`⚠️ ${total2} produtos importados — nenhum encontrado no estoque atual. Verifique se o Estoque ${isFab?'Fábrica':'Loja'} foi importado.`;
+          statusEl2.style.color='#b45309';
+          cardEl2.style.borderColor='#d97706';
+        }else{
+          statusEl2.textContent=`✅ ${total2} produtos · ${matches} encontrados no estoque`;
+          statusEl2.style.color='#2d7a2d';
+          cardEl2.style.borderColor='#4b8a4b';
+        }
         const now2=new Date();
         const ts2=now2.toLocaleDateString('pt-BR')+' · '+now2.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
         uploadHistory.unshift({tipo,ts:ts2,total:total2,deficits:0,file:file.name,vendaOnly:true});
