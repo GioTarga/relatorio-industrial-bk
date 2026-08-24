@@ -1038,7 +1038,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .empty-icon{font-size:28px;margin-bottom:10px;display:block}
 
 
-#page-pcp-estoque .upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:760px}
+#page-pcp-estoque .upload-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;max-width:1100px}
 
 
 #page-pcp-estoque .upload-card{background:var(--paper);border:2px dashed var(--line);border-radius:var(--r-md);padding:36px;text-align:center;cursor:pointer;transition:all .2s;box-shadow:0 2px 10px rgba(161,1,1,.04)}
@@ -1994,7 +1994,7 @@ body{background:#fff;color:#000}
   <!-- Painel de importação (toggle via botão) -->
   <div id="tab-upload" style="display:none;padding:12px 0 16px">
     <div style="margin-bottom:16px;padding:12px 16px;background:#fff8e7;border:1px solid #f0ddc0;border-radius:12px;font-size:12px;color:#6b5c5c;max-width:760px">
-      <strong style="color:#6e0000">📋 Como importar:</strong> Exporte do CIGAM 11 os relatórios <em>Posição de Estoque</em> de Fábrica e Loja em formato XLSX. O sistema identifica automaticamente as colunas <strong>Código, Descrição, Estoque</strong> e <strong>Reserva</strong>.
+      <strong style="color:#6e0000">📋 Como importar:</strong> Exporte do CIGAM 11 os relatórios <em>Posição de Estoque</em> de Fábrica e Loja e o relatório de <em>Vendas por Produto</em> em formato XLSX. O sistema identifica automaticamente as colunas <strong>Código, Descrição, Estoque</strong> e <strong>Reserva</strong>.
     </div>
     <!-- Período dos dados — obrigatório antes de importar -->
     <div id="periodSection" style="margin-bottom:14px;max-width:760px;padding:12px 16px;background:var(--paper);border:2px solid var(--red-dark);border-radius:12px">
@@ -2030,6 +2030,16 @@ body{background:#fff;color:#000}
           <div class="upload-sub" id="lojaStatus">Exportado do CIGAM 11</div>
           <input type="file" id="inputLoja" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this,'LOJA')">
           <button class="upload-btn" onclick="document.getElementById('inputLoja').click()">📂 Selecionar arquivo</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#4a5568;margin-bottom:8px">Vendas por Produto</div>
+        <div class="upload-card" id="cardVenda" style="opacity:.85" ondragover="event.preventDefault()" ondrop="handleDrop(event,'VENDA')">
+          <div class="upload-icon">📈</div>
+          <div class="upload-title" id="vendaFileName">Vendas_ProdutoPC1.VENDA.xlsx</div>
+          <div class="upload-sub" id="vendaStatus">Exportado do CIGAM 11 · Em breve</div>
+          <input type="file" id="inputVenda" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this,'VENDA')">
+          <button class="upload-btn" style="background:#6b7280" onclick="document.getElementById('inputVenda').click()">📂 Selecionar arquivo</button>
         </div>
       </div>
     </div>
@@ -3302,10 +3312,20 @@ function planLabelText(r){
 
 function parseNumOrNull(s){
   if(s === undefined || s === null) return null;
+  // Se o XLSX já converteu para número, usa direto (evita estragar o decimal)
+  if(typeof s === 'number') return isNaN(s) ? null : s;
   const t = String(s).trim();
   if(t === '') return null;
-  const n = parseFloat(t.replace(/\./g,'').replace(',','.'));
-  return isNaN(n) ? null : n;
+  // Formato BR com ambos separadores (1.234,56): remove ponto e troca vírgula
+  if(t.includes(',') && t.includes('.')) {
+    return parseFloat(t.replace(/\./g,'').replace(',','.')) || null;
+  }
+  // Só vírgula (1234,56): decimal BR
+  if(t.includes(',')) {
+    return parseFloat(t.replace(',','.')) || null;
+  }
+  // Só ponto: preserva como decimal (não remove — pode ser 8530.01 ou 859.815)
+  return parseFloat(t) || null;
 }
 
 /* Classifica a coluna "Planejado" bruta da planilha em 3 casos:
@@ -13317,6 +13337,20 @@ function findCol(header,keywords){
 }
 
 function processFile(file,tipo){
+  // Tipo VENDA: apenas registra o arquivo, processamento futuro
+  if(tipo==='VENDA'){
+    document.getElementById('vendaFileName').textContent=file.name;
+    const s=document.getElementById('vendaStatus');
+    s.textContent='✅ Arquivo recebido · Integração em breve';
+    s.style.color='#2d7a2d';
+    const c=document.getElementById('cardVenda');
+    c.style.borderColor='#4b8a4b';c.style.opacity='1';
+    const now=new Date();
+    const ts=now.toLocaleDateString('pt-BR')+' · '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    uploadHistory.unshift({tipo:'VENDA',ts,total:0,deficits:0,file:file.name,vendaOnly:true});
+    renderUploadHistory();
+    return;
+  }
   const statusEl=document.getElementById(tipo==='FABRICA'?'fabStatus':'lojaStatus');
   const nameEl=document.getElementById(tipo==='FABRICA'?'fabFileName':'lojaFileName');
   const cardEl=document.getElementById(tipo==='FABRICA'?'cardFab':'cardLoja');
@@ -13325,9 +13359,10 @@ function processFile(file,tipo){
   const reader=new FileReader();
   reader.onload=function(e){
     try{
-      const wb=XLSX.read(e.target.result,{type:'array'});
+      const wb=XLSX.read(e.target.result,{type:'array',cellText:true});
       const ws=wb.Sheets[wb.SheetNames[0]];
-      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+      // raw:false + cellText:true → usa o texto formatado da célula (respeita o formato BR do CIGAM)
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:false});
       if(rows.length<2){statusEl.style.color='var(--red)';statusEl.textContent='❌ Arquivo vazio ou inválido';return;}
       // Detectar linha de cabeçalho CIGAM: procura linha onde col[0]~='material'
       let headerIdx=-1;
@@ -13371,7 +13406,7 @@ function processFile(file,tipo){
         if(!rawCod){semCodigo++;continue;}
         // Pular linhas de grupo/seção CIGAM (ex: '51 - LINHA PAES') onde estoque não é número
         const rawEstCheck=row[iEst];
-        const estoqueCheck=parseFloat((rawEstCheck||'').toString().replace(/\./g,'').replace(',','.'));
+        const estoqueCheck=parseNumOrNull(rawEstCheck);
         if(isNaN(estoqueCheck)){
           // Linha de cabeçalho de família CIGAM — captura para usar nos produtos seguintes
           const iDescH=findCol(header,['descrição produto','descricao produto','descrição','descricao','desc']);
@@ -13388,7 +13423,7 @@ function processFile(file,tipo){
         const rawRes=iRes>=0?row[iRes]:null;
         let reserva=0;
         if(rawRes!=null&&rawRes!==''){
-          reserva=parseFloat(rawRes.toString().replace(/\./g,'').replace(',','.'));
+          reserva=parseNumOrNull(rawRes)??0;
           if(isNaN(reserva)){reservaInvalida++;reserva=0;}
         }
         const famColIdx=findCol(header,['família','familia','fam','grupo']);
@@ -13501,13 +13536,20 @@ function showImportPreview(data){
 function renderUploadHistory(){
   const el=document.getElementById('uploadHistory');
   if(!uploadHistory.length){el.innerHTML='<div class="history-row" style="color:#a0a0a0;font-style:italic">Nenhum arquivo importado ainda.</div>';return;}
-  el.innerHTML=uploadHistory.map(h=>`
-    <div class="history-row">
-      <span style="color:${h.tipo==='FABRICA'?'#6B1111':'#2b6cb0'};font-weight:700;font-size:10px">${h.tipo}</span>
+  el.innerHTML=uploadHistory.map(h=>{
+    const cor=h.tipo==='FABRICA'?'#6B1111':h.tipo==='VENDA'?'#4b6b2d':'#2b6cb0';
+    if(h.vendaOnly) return `<div class="history-row">
+      <span style="color:${cor};font-weight:700;font-size:10px">VENDA</span>
+      ${h.ts} · <span style="color:var(--ink-soft);font-style:italic">aguardando integração</span>
+      <span style="color:var(--ink-soft);font-size:10px"> · ${h.file}</span>
+    </div>`;
+    return `<div class="history-row">
+      <span style="color:${cor};font-weight:700;font-size:10px">${h.tipo}</span>
       ${h.ts} · ${h.total} produtos ·
       <span class="${h.deficits>0?'num-red':''}">${h.deficits} em déficit</span>
       <span style="color:var(--ink-soft);font-size:10px"> · ${h.file}</span>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ─── SALVAR OP NO SUPABASE ───────────────────────────────────────────────────
