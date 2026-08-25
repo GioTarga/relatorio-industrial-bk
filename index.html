@@ -4281,8 +4281,7 @@ function renderDayChart(rows){
     let hP, hR;
     if(porSetor){
       hP = semMeta ? 0 : scaledPct(1); // trilha = linha de referência dos 100%
-      // sem meta: barra curta fixa. pct=0 com produção real>0: mínimo visível pra mostrar que algo foi produzido
-      hR = semMeta ? (baseY-topPad)*0.16 : (r.pct > 0 ? scaledPct(r.pct) : (r.real > 0 ? (baseY-topPad)*0.05 : 0));
+      hR = semMeta ? (baseY-topPad)*0.16 : scaledPct(r.pct || 0);
     } else {
       hP = semMeta ? 0 : scaledH(r.prev); // trilha = Prevista (não desenha se não tem meta)
       hR = scaledH(r.real); // preenchimento = Real
@@ -4297,8 +4296,7 @@ function renderDayChart(rows){
     } else if(porSetor){
       // r.pct agora é: (produtos que atingem) / (total com meta) — converte pra %
       const pct = r.pct !== null ? r.pct * 100 : 0;
-      // Quando pct=0 mas houve produção real, deixa claro que produção ocorreu
-      labelTexto = pct === 0 && r.real > 0 ? `0% ↓` : `${pct.toFixed(0)}%`;
+      labelTexto = `${pct.toFixed(0)}%`;
     } else {
       labelTexto = `${Math.round(r.real).toLocaleString('pt-BR')} / ${Math.round(r.prev).toLocaleString('pt-BR')}`;
     }
@@ -5458,11 +5456,19 @@ function computeChartRows(filteredDates){
         // Meta fixa: usar volume direto
         g.pct = (g.prev != null && g.prev > 0) ? (g.real / g.prev) : null;
       } else {
-        // Demais setores: contar quantos produtos atingem
+        // Demais setores: média do atendimento individual por produto
+        // (real/prev por item, somado e dividido pelo nº de itens com meta)
+        // Mais representativo que binário — um produto a 98% da meta não zera o setor
         const produtosDoSetor = source.filter(r => r.setor === g.produto);
-        const atingirram = produtosDoSetor.filter(r => r.prev !== null && r.real >= r.prev).length;
-        const totalComMeta = produtosDoSetor.filter(r => r.prev !== null).length;
-        g.pct = totalComMeta > 0 ? atingirram / totalComMeta : null;
+        const comMeta = produtosDoSetor.filter(r =>
+          r.prev !== null && r.prev > 0 && !rowIsForaDoPlano(r) && !r.semQuantidade
+        );
+        if(comMeta.length === 0){
+          g.pct = null;
+        } else {
+          const somaRazoes = comMeta.reduce((s, r) => s + (r.real / r.prev), 0);
+          g.pct = somaRazoes / comMeta.length;
+        }
       }
     });
     return groups.sort((a, b) => {
