@@ -12614,7 +12614,9 @@ function formatHorasOP(h){
 }
 
 async function buildSD(){
-  const allItems=[...RAW.fabrica.map(i=>({...i})),...RAW.loja.map(i=>({...i}))];
+  const fabSrc=currentFab&&currentFab.length?currentFab:RAW.fabrica;
+  const lojaSrc=currentLoja&&currentLoja.length?currentLoja:RAW.loja;
+  const allItems=[...fabSrc.map(i=>({...i})),...lojaSrc.map(i=>({...i}))];
   let setorMap={};
   try{
     const res=await fetch(SUPA_URL+'/rest/v1/produtos_producao?select=codigo,setor&limit=2000',
@@ -12646,6 +12648,10 @@ async function buildSD(){
   });
   SD.by_setor=bySetor;
   SD.setorMap=setorMap; // lookup direto por codigo → setor
+  // Propagar setor de volta para os arrays reais (currentFab/currentLoja) e RAW
+  const propagateSetor=arr=>{if(!arr)return;arr.forEach(i=>{const s=setorMap[i.codigo]||setorMap[normCod(i.codigo)];if(s)i.setor=s;});};
+  propagateSetor(currentFab);propagateSetor(currentLoja);
+  propagateSetor(RAW.fabrica);propagateSetor(RAW.loja);
   const all=Object.keys(bySetor);
   SD.setores=[...SETOR_ORDER.filter(s=>all.includes(s)),...all.filter(s=>!SETOR_ORDER.includes(s))].filter(s=>bySetor[s]?.length);
 }
@@ -13069,7 +13075,7 @@ function renderAlerts(){
     const q=(searchEl?searchEl.value||'':'').toLowerCase();
     let items=[...allItems()];
     if(locFilter!=='ALL')items=items.filter(i=>i.tipo===locFilter);
-    if(alertaSetor!=='ALL'){const codes=new Set((SD.by_setor[alertaSetor]||[]).map(i=>i.codigo));items=items.filter(i=>codes.has(i.codigo));}
+    if(alertaSetor!=='ALL'){items=items.filter(i=>{const s=SD.setorMap&&(SD.setorMap[i.codigo]||SD.setorMap[normCod(i.codigo)])||i.setor||'SEM SETOR';return s===alertaSetor;});}
     items=filterByStatus(items,statusFilter);
     if(q)items=items.filter(i=>(i.descricao||'').toLowerCase().includes(q)||(i.familia||'').toLowerCase().includes(q));
     items.sort((a,b)=>calculateAvailableStock(a)-calculateAvailableStock(b));
