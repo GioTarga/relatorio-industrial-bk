@@ -781,7 +781,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 
 
 /* GRID 2 COLUNAS — garante alinhamento perfeito entre tabela e OP */
-#page-pcp-estoque .pcp-container{display:grid;grid-template-columns:1fr 1fr;column-gap:16px;row-gap:0}
+#page-pcp-estoque .pcp-container{display:grid;grid-template-columns:1fr;column-gap:16px;row-gap:0}
 /* Barra de filtros — linha 1, coluna 1 */
 #page-pcp-estoque .pcp-filter-bar{grid-column:1;grid-row:1;display:flex;align-items:center;gap:8px;height:38px;border-bottom:1px solid var(--line);overflow:visible;flex-wrap:nowrap;box-sizing:border-box}
 /* Título OP — linha 1, coluna 2 */
@@ -921,9 +921,9 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 
 /* TABLE */
 
-#page-pcp-estoque .table-wrap{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);overflow-x:hidden;box-shadow:0 2px 10px rgba(161,1,1,.04)}
+#page-pcp-estoque .table-wrap{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);overflow-x:hidden;overflow-y:auto;max-height:calc(100vh - 290px);box-shadow:0 2px 10px rgba(161,1,1,.04)}
 
-#page-pcp-estoque .table-header{display:grid;grid-template-columns:1fr 58px 58px 66px 78px 78px 80px 80px 80px;gap:0;background:var(--red-dark);padding:6px 10px;font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.8);font-weight:700;border-bottom:1px solid var(--line)}
+#page-pcp-estoque .table-header{display:grid;grid-template-columns:1fr 58px 58px 66px 78px 78px 80px 80px 80px;gap:0;background:var(--red-dark);padding:6px 10px;font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.8);font-weight:700;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
 
 #page-pcp-estoque .table-row{display:grid;grid-template-columns:1fr 58px 58px 66px 78px 78px 80px 80px 80px;gap:0;padding:8px 10px;min-height:44px;border-bottom:1px solid var(--line);transition:background .1s;align-items:center}
 
@@ -1997,7 +1997,7 @@ body{background:#fff;color:#000}
     <!-- Botão Importar -->
     <button id="btnImportar" class="btn" onclick="toggleUploadPanel()" style="flex-shrink:0;padding:4px 10px;font-size:10px;font-weight:700;letter-spacing:.5px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;border-radius:var(--r-sm);white-space:nowrap">📂 Importar</button>
   </div>
-  <div class="pcp-op-title no-print">ORDEM DE PRODUÇÃO</div>
+  <div class="pcp-op-title no-print" style="display:none">ORDEM DE PRODUÇÃO</div>
 
   <!-- Linha 2: Tabela (esq) + Corpo OP (dir) -->
   <div class="pcp-left">
@@ -2132,7 +2132,7 @@ body{background:#fff;color:#000}
   </div>
 
   </div><!-- /pcp-left -->
-  <div class="pcp-right">
+  <div class="pcp-right" style="display:none">
   <div id="tab-ordem">
     <div class="print-header">
       <table><tr>
