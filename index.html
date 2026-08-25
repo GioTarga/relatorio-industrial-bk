@@ -13091,7 +13091,7 @@ function _updateSetorLabel(){
   if(alertaSetores.size===1){btn.textContent=[...alertaSetores][0];return;}
   btn.textContent=alertaSetores.size+' setores';
 }
-function toggleSetor(s,cb){
+function toggleSetorFiltro(s,cb){
   if(cb.checked)alertaSetores.add(s);
   else alertaSetores.delete(s);
   _updateSetorLabel();renderAlerts();
@@ -13112,7 +13112,7 @@ function buildAlertaSetorDropdown(){
   const list=[...SETOR_ORDER,...real].filter(s=>SD.setores&&SD.setores.includes(s)||true);
   list_el.innerHTML=list.map(s=>`
     <label style="display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;font-size:11.5px;font-weight:600;color:var(--ink);border-bottom:1px solid var(--line);transition:background .1s" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-      <input type="checkbox" value="${s}" onchange="toggleSetor('${s}',this)"
+      <input type="checkbox" value="${s}" onchange="toggleSetorFiltro('${s}',this)"
         style="accent-color:var(--red-dark);width:14px;height:14px;cursor:pointer"
         ${alertaSetores.has(s)?'checked':''}>
       ${s}
@@ -13661,12 +13661,14 @@ function processFile(file,tipo){
         const classif=FAB_FAMILIAS.has(normFamilia(famUpper))?'FABRICACAO':
                        (tipo==='LOJA'&&LOJA_REVENDA_FAM.has(normFamilia(famUpper)))?'REVENDA':'REVENDA';
         // Capturar campo Agrupado (col 6 = unidade comercial: PCT, CX, etc.)
+        const descricao=(row[iDesc]||'').toString().trim();
+        if(!descricao){semCodigo++;continue;} // linha sem descrição — descarta
         const iAgrup=findCol(header,['agrupado','qtd caixa','caixas']);
         const rawAgrup=iAgrup>=0?row[iAgrup]:null;
         const agrupado=(rawAgrup!=null&&rawAgrup!=='')?parseNumOrNull(rawAgrup)??null:null;
         items.push({
           tipo,codigo,
-          descricao:(row[iDesc]||'').toString().trim(),
+          descricao,
           estoque,reserva,
           familia:famUpper,
           classificacao:classif,
