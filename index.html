@@ -12635,8 +12635,10 @@ async function buildSD(){
     const catalog=await res.json();
     catalog.forEach(p=>{
       if(p.setor){
-        setorMap[p.codigo]=p.setor;
-        setorMap[normCod(p.codigo)]=p.setor;
+        // Normaliza legado "GIRO DIA/GIRO NOITE" → "GIRO DIA" antes de gravar
+        const sNorm=p.setor==='GIRO DIA/GIRO NOITE'?'GIRO DIA':p.setor;
+        setorMap[p.codigo]=sNorm;
+        setorMap[normCod(p.codigo)]=sNorm;
       }
     });
     document.getElementById('catalog-badge').textContent='✓ '+catalog.length+' produtos';
@@ -12659,8 +12661,12 @@ async function buildSD(){
   });
   SD.by_setor=bySetor;
   SD.setorMap=setorMap; // lookup direto por codigo → setor
-  // Propagar setor de volta para os arrays reais (currentFab/currentLoja) e RAW
-  const propagateSetor=arr=>{if(!arr)return;arr.forEach(i=>{const s=setorMap[i.codigo]||setorMap[normCod(i.codigo)];if(s)i.setor=s;});};
+  // Propagar setor para os arrays reais (sempre, com fallback 'SEM SETOR')
+  const propagateSetor=arr=>{if(!arr)return;arr.forEach(i=>{
+    let s=setorMap[i.codigo]||setorMap[normCod(i.codigo)]||'SEM SETOR';
+    if(s==='GIRO DIA/GIRO NOITE')s='GIRO DIA';
+    i.setor=s;
+  });};
   propagateSetor(currentFab);propagateSetor(currentLoja);
   propagateSetor(RAW.fabrica);propagateSetor(RAW.loja);
   const all=Object.keys(bySetor);
@@ -12981,6 +12987,18 @@ function renderTopGap(setor){
 }
 
 function buildStats(){
+  // Se nenhum dado foi importado ainda, mostrar estado vazio
+  if(!currentFab&&!currentLoja){
+    document.getElementById('statsRow').innerHTML=`
+      <div class="stat-card"><div class="stat-label">🔴 Déficit</div><div class="stat-value neutral">—</div><div class="stat-sub">Saldo negativo</div></div>
+      <div class="stat-card"><div class="stat-label">🟠 Crítico</div><div class="stat-value neutral">—</div><div class="stat-sub">Saldo = 0</div></div>
+      <div class="stat-card"><div class="stat-label">🟢 Disponível</div><div class="stat-value neutral">—</div><div class="stat-sub">Saldo positivo</div></div>
+      <div class="stat-card"><div class="stat-label">Estoque Total</div><div class="stat-value neutral" style="font-size:20px">—</div><div class="stat-sub">Fábrica + Loja</div></div>
+      <div class="stat-card"><div class="stat-label">Reserva Total</div><div class="stat-value neutral" style="font-size:20px">—</div><div class="stat-sub">Comprometido vendas</div></div>
+      <div class="stat-card"><div class="stat-label">Saldo Disponível</div><div class="stat-value neutral" style="font-size:20px">—</div><div class="stat-sub">Estoque − Reserva</div></div>
+      <div class="stat-card"><div class="stat-label">Necessidade OP</div><div class="stat-value neutral" style="font-size:20px">—</div><div class="stat-sub">Total a produzir</div></div>`;
+    return;
+  }
   const all=allItems();
   const estoqueTotal=all.reduce((s,i)=>s+(i.estoque||0),0);
   const reservaTotal=all.reduce((s,i)=>s+(i.reserva||0),0);
@@ -13121,10 +13139,15 @@ function renderAlerts(){
     const searchEl=document.getElementById('searchAlert');
     const tableEl=document.getElementById('alertTable');
     if(!tableEl)return;
+    if(!currentFab&&!currentLoja){
+      tableEl.innerHTML='<div class="empty-state"><div class="empty-icon">📂</div>Importe os dados do CIGAM para visualizar o estoque.</div>';
+      const _ac=document.getElementById('alertCount');if(_ac)_ac.textContent='0';
+      return;
+    }
     const q=(searchEl?searchEl.value||'':'').toLowerCase();
     let items=[...allItems()];
     if(locFilter!=='ALL')items=items.filter(i=>i.tipo===locFilter);
-    if(alertaSetores.size){items=items.filter(i=>{const s=SD.setorMap&&(SD.setorMap[i.codigo]||SD.setorMap[normCod(i.codigo)])||i.setor||'SEM SETOR';return alertaSetores.has(s);});}
+    if(alertaSetores.size){items=items.filter(i=>alertaSetores.has(i.setor||'SEM SETOR'));}
     items=filterByStatus(items,statusFilter);
     if(q)items=items.filter(i=>(i.descricao||'').toLowerCase().includes(q)||(i.familia||'').toLowerCase().includes(q));
     items.sort((a,b)=>calculateAvailableStock(a)-calculateAvailableStock(b));
@@ -13143,20 +13166,24 @@ function renderAlerts(){
   }
 }
 function renderFab(){
+  const tableEl=document.getElementById('fabTable');if(!tableEl)return;
+  if(!currentFab){tableEl.innerHTML='<div class="empty-state"><div class="empty-icon">📂</div>Importe o estoque de Fábrica para visualizar.</div>';return;}
   const q=(document.getElementById('searchFab').value||'').toLowerCase();
   let items=[...fabItems()];
   if(fabFam!=='ALL')items=items.filter(i=>i.familia===fabFam);
   if(q)items=items.filter(i=>i.descricao.toLowerCase().includes(q));
   items.sort((a,b)=>calculateAvailableStock(a)-calculateAvailableStock(b));
-  document.getElementById('fabTable').innerHTML=items.map(renderTableRow).join('');
+  tableEl.innerHTML=items.map(renderTableRow).join('');
 }
 function renderLoja(){
+  const tableEl=document.getElementById('lojaTable');if(!tableEl)return;
+  if(!currentLoja){tableEl.innerHTML='<div class="empty-state"><div class="empty-icon">📂</div>Importe o estoque de Loja para visualizar.</div>';return;}
   const q=(document.getElementById('searchLoja').value||'').toLowerCase();
   let items=[...lojaItems()];
   if(lojaFam!=='ALL')items=items.filter(i=>i.familia===lojaFam);
   if(q)items=items.filter(i=>i.descricao.toLowerCase().includes(q));
   items.sort((a,b)=>calculateAvailableStock(a)-calculateAvailableStock(b));
-  document.getElementById('lojaTable').innerHTML=items.map(renderTableRow).join('');
+  tableEl.innerHTML=items.map(renderTableRow).join('');
 }
 
 // ─── ORDEM DE PRODUÇÃO ────────────────────────────────────────────────────────
