@@ -2874,17 +2874,8 @@ body{background:#fff;color:#000}
             </div>
             <div class="lanc-field" style="flex:0 0 160px;">
               <label>Setor</label>
-              <select class="pr-setor">
-                <option value="">— Selecione —</option>
-                <option>GIRO DIA</option>
-                <option>GIRO NOITE</option>
-                <option>SALGADO</option>
-                <option>PADARIA</option>
-                <option>CONFEITARIA</option>
-                <option>FRITADOR</option>
-                <option>CROISSANT</option>
-                <option>PÃO C/ LINGUIÇA</option>
-                <option>COZINHA</option>
+              <select class="pr-setor" id="prSetorSelect">
+                <option value="">Carregando…</option>
               </select>
             </div>
             <div class="lanc-field" style="flex:0 0 140px;">
@@ -7020,6 +7011,7 @@ async function MQ_saveEditRow(id){
     if(idx >= 0) MQ_DATA[idx] = Object.assign({}, MQ_DATA[idx], payload);
     MQ_renderTable();
     RC_DATA = MQ_explodeToRcFormat(MQ_DATA);
+    MQ_CACHE_LP = []; // invalida cache do select de Lançamento
     feedback.textContent = '✓ Máquina atualizada.';
     feedback.className = 'lanc-feedback ok';
   }catch(err){
@@ -7039,6 +7031,7 @@ async function MQ_deleteRow(id){
     MQ_DATA = MQ_DATA.filter(r => String(r.id) !== String(id));
     MQ_renderTable();
     RC_DATA = MQ_explodeToRcFormat(MQ_DATA);
+    MQ_CACHE_LP = []; // invalida cache do select de Lançamento
     feedback.textContent = '✓ Máquina excluída.';
     feedback.className = 'lanc-feedback ok';
   }catch(err){
@@ -7077,6 +7070,7 @@ async function MQ_submitNew(ev){
     form.querySelector('.mq-capacidade-unidade').value = 'un/h';
     feedback.textContent = '✓ Máquina cadastrada.';
     feedback.className = 'lanc-feedback ok';
+    MQ_CACHE_LP = []; // invalida cache do select de Lançamento
     MQ_loadData();
   }catch(err){
     console.error('Erro ao cadastrar máquina:', err);
@@ -7099,6 +7093,7 @@ let PR_INITED = false;
 
 function PR_init(){
   PR_loadData();
+  ST_populateSelect(document.getElementById('prSetorSelect')); // popula do banco
   if(!PR_INITED){
     PR_INITED = true;
     document.getElementById('lancFormProduto').addEventListener('submit', PR_submitNew);
@@ -7171,14 +7166,16 @@ function PR_buildRowHtml(row){
 
 function PR_buildEditRowHtml(row){
   const unidadeOpts = ['Massas','Unidade','Kg','Carrinhos','Caixas','Blocos'];
-  const setorOpts = ['','GIRO DIA','GIRO NOITE','SALGADO','PADARIA','CONFEITARIA','FRITADOR','CROISSANT','PÃO C/ LINGUIÇA','COZINHA'];
+  // usa o cache já carregado; se vazio, mostra só o valor atual
+  const setorOpts = ST_CACHE.length ? ST_CACHE : (row.setor ? [row.setor] : []);
   return `
     <tr data-codigo="${row.codigo.replace(/"/g,'&quot;')}">
       <td class="center"><input type="text" class="epr-codigo" style="width:100px;" value="${row.codigo.replace(/"/g,'&quot;')}" disabled title="Código não pode ser editado — exclua e cadastre de novo se precisar trocar."></td>
       <td><input type="text" class="epr-descricao" value="${row.descricao.replace(/"/g,'&quot;')}"></td>
       <td class="center">
         <select class="epr-setor" style="font-size:12px;padding:4px 6px;width:100%;">
-          ${setorOpts.map(s => `<option value="${s}"${(row.setor||'')===s?' selected':''}>${s||'— Selecione —'}</option>`).join('')}
+          <option value="">— Selecione —</option>
+          ${setorOpts.map(s => `<option value="${s}"${(row.setor||'')===s?' selected':''}>${s}</option>`).join('')}
         </select>
       </td>
       <td class="center">
@@ -7283,6 +7280,59 @@ async function PR_submitNew(ev){
     feedback.textContent = '⚠ Erro ao cadastrar: ' + msg;
     feedback.className = 'lanc-feedback err';
   }
+}
+
+/* ============================================================================
+   SETORES — cache e utilitário compartilhado
+   Carrega uma vez, reusa em qualquer select da página.
+   ============================================================================ */
+let ST_CACHE = []; // lista de nomes, ex: ['GIRO DIA', 'SALGADO', ...]
+
+async function ST_fetchNomes(){
+  try{
+    const client = getSupabaseClient();
+    const { data, error } = await client.from('setores').select('nome').order('nome');
+    if(error) throw error;
+    ST_CACHE = (data||[]).map(r => r.nome);
+  }catch(e){
+    console.warn('ST_fetchNomes error:', e);
+  }
+  return ST_CACHE;
+}
+
+/* Preenche qualquer <select> com as opções do banco.
+   selectedValue: valor pré-selecionado (opcional). */
+async function ST_populateSelect(selectEl, selectedValue){
+  if(!selectEl) return;
+  if(!ST_CACHE.length) await ST_fetchNomes();
+  selectEl.innerHTML =
+    `<option value="">— Selecione —</option>` +
+    ST_CACHE.map(n =>
+      `<option value="${n}"${n === selectedValue ? ' selected' : ''}>${n}</option>`
+    ).join('');
+}
+
+/* ── Cache de Máquinas (maquinas) — alimenta o select de Máquina no Lançamento ── */
+let MQ_CACHE_LP = []; // [{identificacao, setor}]
+async function MQ_fetchAllLP(){
+  if(MQ_CACHE_LP.length) return MQ_CACHE_LP;
+  try{
+    const client = getSupabaseClient();
+    const { data, error } = await client.from('maquinas').select('identificacao, setor').order('setor').order('identificacao');
+    if(error) throw error;
+    MQ_CACHE_LP = data || [];
+  }catch(e){ console.warn('MQ_fetchAllLP error:', e); }
+  return MQ_CACHE_LP;
+}
+function MQ_populateSelect(selectEl, setorFiltro, valorAtual){
+  if(!selectEl) return;
+  const lista = setorFiltro
+    ? MQ_CACHE_LP.filter(m => (m.setor||'').toUpperCase() === setorFiltro.toUpperCase()).map(m => m.identificacao)
+    : MQ_CACHE_LP.map(m => m.identificacao);
+  const opts = lista.length ? lista : MQ_CACHE_LP.map(m => m.identificacao); // fallback: todas se setor não bate
+  selectEl.innerHTML =
+    `<option value="">— Selecione (opcional) —</option>` +
+    [...new Set(opts)].map(n => `<option value="${n}"${n === valorAtual ? ' selected' : ''}>${n}</option>`).join('');
 }
 
 /* ============================================================================
@@ -7391,6 +7441,7 @@ async function ST_saveEdit(id){
     const idx = ST_DATA.findIndex(r => r.id === id);
     if(idx >= 0){ ST_DATA[idx].nome = nome; ST_DATA[idx].lider = lider; }
     ST_renderTable();
+    ST_CACHE = []; // invalida cache — próxima abertura de Produtos vai rebuscar
     feedback.textContent = '✓ Setor atualizado.';
     feedback.className = 'lanc-feedback ok';
   }catch(err){
@@ -7430,6 +7481,7 @@ async function ST_submitNew(e){
     form.reset();
     feedback.textContent = '✓ Setor cadastrado.';
     feedback.className = 'lanc-feedback ok';
+    ST_CACHE = []; // invalida cache — próxima abertura de Produtos vai rebuscar
     ST_loadData();
   }catch(err){
     const msg = (err.message||'').includes('duplicate') ? `Setor "${nome}" já está cadastrado.` : (err.message || err);
@@ -7589,14 +7641,13 @@ function PRODCAT_wireCodigoLookup(inputEl){
 }
 
 function LANC_populateDropdowns(){
-  const { setores } = LANC_getKnownValues();
-
-  lpUpdateProdutoMaquinaList();
+  // Pré-carrega caches de Setores e Máquinas pra os selects dos cartões carregarem rápido
+  ST_fetchNomes();
+  MQ_fetchAllLP();
+  LP_populateHistSetorSelect();
   PRODCAT_load().then(()=>{
     PRODCAT_preencherDatalist(document.getElementById('lpProdutoList'));
-    // Re-popula também os datalists por-cartão já existentes na tela (ex:
-    // se o catálogo ainda não tinha carregado quando os cartões foram
-    // criados no restore do rascunho).
+    // Re-popula também os datalists por-cartão já existentes na tela
     document.querySelectorAll('#lpItems .lanc-item').forEach(row=>{
       const uid = row.dataset.uid;
       if(uid) PRODCAT_preencherDatalist(row.querySelector(`#lpProdutoList_${uid}`));
@@ -7609,9 +7660,15 @@ function LANC_populateDropdowns(){
    existe mais um "setor atual" único no topo do formulário (cada cartão de
    produto tem o seu próprio, ver lpUpdateRowProdutoMaquinaList). */
 function lpUpdateProdutoMaquinaList(){
-  const { produtosTodos, maquinasTodos } = LANC_getKnownValues();
-  document.getElementById('lpProdutoList').innerHTML = produtosTodos.map(p=>`<option value="${p}">`).join('');
-  document.getElementById('lpMaquinaList').innerHTML = maquinasTodos.map(m=>`<option value="${m}">`).join('');
+  // lpProdutoList/lpMaquinaList são usados pelo editor de histórico (tabela)
+  // Produto: via PRODCAT; Máquina: via MQ_CACHE_LP
+  PRODCAT_load().then(()=>PRODCAT_preencherDatalist(document.getElementById('lpProdutoList')));
+  const maqListEl = document.getElementById('lpMaquinaList');
+  if(maqListEl){
+    MQ_fetchAllLP().then(()=>{
+      maqListEl.innerHTML = MQ_CACHE_LP.map(m=>`<option value="${m.identificacao}">`).join('');
+    });
+  }
 }
 
 /* ---------- Itens (produtos) repetíveis dentro do mesmo lançamento ---------- */
@@ -7711,26 +7768,25 @@ function lpCreateItemRow(initial){
       <div class="lanc-field">
         <label>Setor</label>
         <select class="lp-item-setor">
-          <option value="">Selecione...</option>
-          <option value="__outro__">+ Outro setor</option>
+          <option value="">Carregando…</option>
         </select>
-        <input type="text" class="lp-item-setor-outro" placeholder="Nome do setor" style="display:none;margin-top:6px;">
       </div>
       <div class="lanc-field">
         <label>Cód.</label>
-        <input type="text" class="lp-cod" placeholder="Ex: 6234"
-          style="font-family:monospace;letter-spacing:.5px;"
-          title="Digite o código do produto para preenchimento automático">
+        <input type="text" class="lp-cod" placeholder="Auto"
+          style="font-family:monospace;letter-spacing:.5px;background:var(--cream);cursor:default;"
+          readonly title="Preenchido automaticamente ao selecionar o produto">
       </div>
       <div class="lanc-field span-2">
         <label>Produto</label>
-        <input type="text" class="lp-produto" list="lpProdutoList_${uid}" placeholder="Nome do produto" required>
+        <input type="text" class="lp-produto" list="lpProdutoList_${uid}" placeholder="Digite para buscar…" required>
         <datalist id="lpProdutoList_${uid}"></datalist>
       </div>
       <div class="lanc-field">
         <label>Máquina</label>
-        <input type="text" class="lp-maquina" list="lpMaquinaList_${uid}" placeholder="Opcional">
-        <datalist id="lpMaquinaList_${uid}"></datalist>
+        <select class="lp-maquina">
+          <option value="">Carregando…</option>
+        </select>
       </div>
       <div class="lanc-field">
         <label>Equipe</label>
@@ -7810,28 +7866,24 @@ function lpCreateItemRow(initial){
   // só que agora vale por produto — necessário pro Lançar Planejamento, que
   // traz produtos de vários setores misturados no mesmo arquivo.
   const setorEl = row.querySelector('.lp-item-setor');
-  const setorOutroEl = row.querySelector('.lp-item-setor-outro');
-  const { setores } = LANC_getKnownValues();
-  setorEl.innerHTML = '<option value="">Selecione...</option>'
-    + setores.map(s=>`<option value="${s}">${s}</option>`).join('')
-    + '<option value="__outro__">+ Outro setor</option>';
+  const maquinaEl = row.querySelector('.lp-maquina');
   const setorInicial = initial.setor || LP_LAST_SETOR;
-  if(setorInicial && setorInicial !== '__outro__'){
-    if(setores.includes(setorInicial)) setorEl.value = setorInicial;
-    else { setorEl.value = '__outro__'; setorOutroEl.style.display = 'block'; setorOutroEl.value = setorInicial; }
-  }
+  const maquinaInicial = initial.maquina || '';
+  // Popula SETOR e MÁQUINA a partir dos cadastros (assíncrono)
+  (async ()=>{
+    await ST_populateSelect(setorEl, setorInicial);
+    if(setorInicial) LP_LAST_SETOR = setorInicial;
+    await MQ_fetchAllLP();
+    MQ_populateSelect(maquinaEl, setorInicial, maquinaInicial);
+    lpUpdateRowProdutoMaquinaList(row, uid);
+    LP_toggleRecheioField(row, setorEl.value);
+  })();
   setorEl.addEventListener('change', ()=>{
-    if(setorEl.value === '__outro__'){
-      setorOutroEl.style.display = 'block'; setorOutroEl.focus();
-    } else {
-      setorOutroEl.style.display = 'none'; setorOutroEl.value = '';
-      if(setorEl.value) LP_LAST_SETOR = setorEl.value;
-    }
+    if(setorEl.value) LP_LAST_SETOR = setorEl.value;
+    MQ_populateSelect(maquinaEl, setorEl.value, '');
     lpUpdateRowProdutoMaquinaList(row, uid);
     LP_toggleRecheioField(row, setorEl.value);
   });
-  lpUpdateRowProdutoMaquinaList(row, uid);
-  LP_toggleRecheioField(row, setorEl.value);
   PRODCAT_wireCodigoLookup(row.querySelector('.lp-produto'));
 
   // Campo Cód. ↔ Produto: sincronização bidirecional
@@ -7913,7 +7965,7 @@ function lpCreateItemRow(initial){
   // LP_saveDraftToStorage/LP_restoreDraftFromStorage) — o Excel só traz
   // produto/unidade/planejado/setor, então esses ficam undefined nesse caso
   // e não fazem nada.
-  if(initial.maquina) row.querySelector('.lp-maquina').value = initial.maquina;
+  // initial.maquina é restaurado pelo bloco async (MQ_populateSelect) acima
   if(initial.equipe != null) row.querySelector('.lp-equipe').value = initial.equipe;
   if(initial.real != null) row.querySelector('.lp-real').value = initial.real;
   if(initial.inicio) row.querySelector('.lp-inicio').value = initial.inicio;
@@ -7945,14 +7997,8 @@ function LP_toggleRecheioField(row, setorValue){
 }
 
 function lpUpdateRowProdutoMaquinaList(row, uid){
-  const { maquinasPorSetor, maquinasTodos } = LANC_getKnownValues();
-  const setorEl = row.querySelector('.lp-item-setor');
-  const setorAtual = setorEl.value;
-  const maquinas = (setorAtual && maquinasPorSetor[setorAtual]) ? [...maquinasPorSetor[setorAtual]].sort() : maquinasTodos;
   const prodList = row.querySelector(`#lpProdutoList_${uid}`);
-  const maqList = row.querySelector(`#lpMaquinaList_${uid}`);
-  PRODCAT_preencherDatalist(prodList); // produto vem do catálogo travado, não mais do histórico digitado
-  if(maqList) maqList.innerHTML = maquinas.map(m=>`<option value="${m}">`).join('');
+  PRODCAT_preencherDatalist(prodList); // produto vem do catálogo travado
 }
 
 function lpUpdateItemNumbers(){
@@ -7972,8 +8018,7 @@ let LP_RESTORING_DRAFT = false; // trava salvamentos redundantes durante a próp
 
 function LP_collectDraftState(){
   const itens = [...document.querySelectorAll('#lpItems .lanc-item')].map(row => {
-    const setorSel = row.querySelector('.lp-item-setor').value;
-    const setor = setorSel === '__outro__' ? row.querySelector('.lp-item-setor-outro').value : setorSel;
+    const setor = row.querySelector('.lp-item-setor').value;
     const paradas = [...row.querySelectorAll('.lp-paradas-container .lanc-item')].map(p => ({
       motivo: p.querySelector('.lp-parada-motivo').value,
       duracao: p.querySelector('.lp-parada-duracao').value,
@@ -8229,8 +8274,7 @@ async function LP_saveSingleItem(row){
   }
   const produto = row.querySelector('.lp-produto').value.trim();
   const realRaw = row.querySelector('.lp-real').value;
-  const setorSel = row.querySelector('.lp-item-setor').value;
-  const setor = setorSel === '__outro__' ? row.querySelector('.lp-item-setor-outro').value.trim() : setorSel;
+  const setor = row.querySelector('.lp-item-setor').value;
 
   if(!setor){
     globalFeedback.textContent = '⚠ Selecione o Setor desse produto antes de salvar.';
@@ -8321,8 +8365,7 @@ document.getElementById('lancFormProducao').addEventListener('submit', async (e)
   for(const row of itemRows){
     const produto = row.querySelector('.lp-produto').value.trim();
     const realRaw = row.querySelector('.lp-real').value;
-    const setorSel = row.querySelector('.lp-item-setor').value;
-    const setor = setorSel === '__outro__' ? row.querySelector('.lp-item-setor-outro').value.trim() : setorSel;
+    const setor = row.querySelector('.lp-item-setor').value;
     if(!setor){
       feedback.textContent = '⚠ Cada produto precisa ter o Setor selecionado (linha "' + (produto || '(sem nome)') + '").';
       feedback.className = 'lanc-feedback err';
@@ -8426,12 +8469,12 @@ function LP_initHistFiltersIfEmpty(){
   }
 }
 
-function LP_populateHistSetorSelect(){
-  const { setores } = LANC_getKnownValues();
+async function LP_populateHistSetorSelect(){
+  if(!ST_CACHE.length) await ST_fetchNomes();
   const sel = document.getElementById('lpHistSetor');
   const atual = sel.value;
-  sel.innerHTML = '<option value="">Todos os setores</option>' + setores.map(s=>`<option value="${s}">${s}</option>`).join('');
-  if(setores.includes(atual)) sel.value = atual;
+  sel.innerHTML = '<option value="">Todos os setores</option>' + ST_CACHE.map(s=>`<option value="${s}">${s}</option>`).join('');
+  if(ST_CACHE.includes(atual)) sel.value = atual;
 }
 
 document.getElementById('lpHistBuscarBtn').addEventListener('click', LP_loadHistorico);
