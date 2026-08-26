@@ -2872,6 +2872,21 @@ body{background:#fff;color:#000}
               <label>Descrição do Produto</label>
               <input type="text" class="pr-descricao" placeholder="Ex: MINI PASTEL NATA CARNE BK 35G PCT 600G - CX C/18 UNID" required>
             </div>
+            <div class="lanc-field" style="flex:0 0 160px;">
+              <label>Setor</label>
+              <select class="pr-setor">
+                <option value="">— Selecione —</option>
+                <option>GIRO DIA</option>
+                <option>GIRO NOITE</option>
+                <option>SALGADO</option>
+                <option>PADARIA</option>
+                <option>CONFEITARIA</option>
+                <option>FRITADOR</option>
+                <option>CROISSANT</option>
+                <option>PÃO C/ LINGUIÇA</option>
+                <option>COZINHA</option>
+              </select>
+            </div>
             <div class="lanc-field" style="flex:0 0 140px;">
               <label>Unidade</label>
               <select class="pr-unidade">
@@ -2892,7 +2907,7 @@ body{background:#fff;color:#000}
           <div class="table-wrap" style="max-height:520px;">
             <table class="detail" id="prTable">
               <thead>
-                <tr><th class="center">Código</th><th>Descrição</th><th class="center" style="width:100px;">Unidade</th><th class="center">Ações</th></tr>
+                <tr><th class="center">Código</th><th>Descrição</th><th class="center" style="width:130px;">Setor</th><th class="center" style="width:100px;">Unidade</th><th class="center">Ações</th></tr>
               </thead>
               <tbody id="prTbody"></tbody>
             </table>
@@ -7145,6 +7160,7 @@ function PR_buildRowHtml(row){
     <tr data-codigo="${row.codigo.replace(/"/g,'&quot;')}">
       <td class="center" style="font-weight:600;">${row.codigo}</td>
       <td>${row.descricao}</td>
+      <td class="center" style="font-size:12px;color:var(--ink-soft);">${row.setor || '<span style="opacity:.35">—</span>'}</td>
       <td class="center" style="font-size:12px;color:var(--ink-soft);">${row.unidade || ''}</td>
       <td class="center">
         <button type="button" class="lanc-hist-btn edit">Editar</button>
@@ -7155,10 +7171,16 @@ function PR_buildRowHtml(row){
 
 function PR_buildEditRowHtml(row){
   const unidadeOpts = ['Massas','Unidade','Kg','Carrinhos','Caixas','Blocos'];
+  const setorOpts = ['','GIRO DIA','GIRO NOITE','SALGADO','PADARIA','CONFEITARIA','FRITADOR','CROISSANT','PÃO C/ LINGUIÇA','COZINHA'];
   return `
     <tr data-codigo="${row.codigo.replace(/"/g,'&quot;')}">
       <td class="center"><input type="text" class="epr-codigo" style="width:100px;" value="${row.codigo.replace(/"/g,'&quot;')}" disabled title="Código não pode ser editado — exclua e cadastre de novo se precisar trocar."></td>
       <td><input type="text" class="epr-descricao" value="${row.descricao.replace(/"/g,'&quot;')}"></td>
+      <td class="center">
+        <select class="epr-setor" style="font-size:12px;padding:4px 6px;width:100%;">
+          ${setorOpts.map(s => `<option value="${s}"${(row.setor||'')===s?' selected':''}>${s||'— Selecione —'}</option>`).join('')}
+        </select>
+      </td>
       <td class="center">
         <select class="epr-unidade" style="font-size:12px;padding:4px 6px;">
           ${unidadeOpts.map(u => `<option value="${u}"${(row.unidade||'')===u?' selected':''}>${u}</option>`).join('')}
@@ -7187,6 +7209,7 @@ async function PR_saveEditRow(codigo){
   if(!tr) return;
   const feedback = document.getElementById('prFeedback');
   const descricao = tr.querySelector('.epr-descricao').value.trim();
+  const setor     = (tr.querySelector('.epr-setor')?.value || '').trim() || null;
   const unidade   = (tr.querySelector('.epr-unidade')?.value || '').trim();
   if(!descricao){
     feedback.textContent = '⚠ Descrição é obrigatória.';
@@ -7195,10 +7218,10 @@ async function PR_saveEditRow(codigo){
   }
   try{
     const client = LANC_getClient();
-    const { error } = await client.from('produtos_producao').update({ descricao, unidade, updated_at: new Date().toISOString() }).eq('codigo', codigo);
+    const { error } = await client.from('produtos_producao').update({ descricao, setor, unidade, updated_at: new Date().toISOString() }).eq('codigo', codigo);
     if(error) throw error;
     const idx = PR_DATA.findIndex(r => r.codigo === codigo);
-    if(idx >= 0){ PR_DATA[idx].descricao = descricao; PR_DATA[idx].unidade = unidade; }
+    if(idx >= 0){ PR_DATA[idx].descricao = descricao; PR_DATA[idx].setor = setor; PR_DATA[idx].unidade = unidade; }
     PR_renderTable();
     await PR_refreshCatalogCache();
     feedback.textContent = '✓ Produto atualizado.';
@@ -7235,6 +7258,7 @@ async function PR_submitNew(ev){
   const feedback = document.getElementById('prFeedback');
   const codigo = form.querySelector('.pr-codigo').value.trim();
   const descricao = form.querySelector('.pr-descricao').value.trim();
+  const setor = (form.querySelector('.pr-setor')?.value || '').trim() || null;
   const unidade = (form.querySelector('.pr-unidade')?.value || '').trim();
   if(!codigo || !descricao){
     feedback.textContent = '⚠ Código e Descrição são obrigatórios.';
@@ -7243,7 +7267,7 @@ async function PR_submitNew(ev){
   }
   try{
     const client = LANC_getClient();
-    const { error } = await client.from('produtos_producao').insert([{ codigo, descricao, unidade }]);
+    const { error } = await client.from('produtos_producao').insert([{ codigo, descricao, setor, unidade }]);
     if(error) throw error;
     form.reset();
     feedback.textContent = '✓ Produto cadastrado.';
