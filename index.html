@@ -2367,6 +2367,7 @@ body{background:#fff;color:#000}
           <button type="button" class="lanc-tab-btn" data-lanctab="prodproc">Produtividade & Processos</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="maquinas">Máquinas</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="produtos">Produtos</button>
+          <button type="button" class="lanc-tab-btn" data-lanctab="setores">Setores</button>
         </div>
 
         <!-- Formulário: Produção Diária -->
@@ -2894,6 +2895,39 @@ body{background:#fff;color:#000}
                 <tr><th class="center">Código</th><th>Descrição</th><th class="center" style="width:100px;">Unidade</th><th class="center">Ações</th></tr>
               </thead>
               <tbody id="prTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── ABA SETORES ─────────────────────────────────────── -->
+        <div id="lancPanelSetores" class="panel" style="display:none;">
+          <div class="panel-title">Cadastro de Setores</div>
+          <div class="trend-foot" style="margin-bottom:12px;">Registre os setores da produção e seus respectivos líderes. Os setores cadastrados aqui são utilizados como referência nos lançamentos de produção diária.</div>
+          <form id="lancFormSetor" class="lanc-form">
+            <div class="lanc-field" style="flex:1 1 220px;">
+              <label>Nome do Setor</label>
+              <input type="text" class="st-nome" placeholder="Ex: GIRO DIA" required style="text-transform:uppercase;">
+            </div>
+            <div class="lanc-field" style="flex:1 1 220px;">
+              <label>Líder</label>
+              <input type="text" class="st-lider" placeholder="Nome do líder responsável">
+            </div>
+            <button type="submit" class="lanc-submit-btn">Cadastrar Setor</button>
+          </form>
+          <span class="lanc-feedback" id="stFeedback"></span>
+
+          <input type="text" id="stFiltro" placeholder="Buscar setor ou líder..." style="max-width:320px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--cream);margin:16px 0 10px;">
+
+          <div class="table-wrap" style="max-height:520px;">
+            <table class="detail" id="stTable">
+              <thead>
+                <tr>
+                  <th>Nome do Setor</th>
+                  <th>Líder</th>
+                  <th class="center" style="width:120px;">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="stTbody"></tbody>
             </table>
           </div>
         </div>
@@ -7227,6 +7261,159 @@ async function PR_submitNew(ev){
   }
 }
 
+/* ============================================================================
+   ABA SETORES — cadastro de setores e líderes (public.setores)
+   Mesmo padrão de CRUD de Produtos e Máquinas.
+   ============================================================================ */
+let ST_DATA = [];
+let ST_INITED = false;
+
+function ST_init(){
+  ST_loadData();
+  if(!ST_INITED){
+    ST_INITED = true;
+    // Filtro de busca
+    const filtro = document.getElementById('stFiltro');
+    if(filtro) filtro.addEventListener('input', ST_renderTable);
+    // Formulário de cadastro
+    const form = document.getElementById('lancFormSetor');
+    if(form) form.addEventListener('submit', ST_submitNew);
+  }
+}
+
+async function ST_loadData(){
+  const tbody = document.getElementById('stTbody');
+  const feedback = document.getElementById('stFeedback');
+  if(!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--ink-soft);padding:18px;">Carregando…</td></tr>';
+  try{
+    const client = getSupabaseClient();
+    const { data, error } = await client.from('setores').select('*').order('nome');
+    if(error) throw error;
+    ST_DATA = data || [];
+    ST_renderTable();
+  }catch(err){
+    console.error('Erro ao carregar setores:', err);
+    tbody.innerHTML = `<tr><td colspan="3" style="color:var(--red);padding:18px;">Erro: ${err.message}</td></tr>`;
+  }
+}
+
+function ST_renderTable(){
+  const tbody = document.getElementById('stTbody');
+  if(!tbody) return;
+  const q = (document.getElementById('stFiltro')?.value || '').toLowerCase();
+  const rows = ST_DATA.filter(r =>
+    (r.nome||'').toLowerCase().includes(q) ||
+    (r.lider||'').toLowerCase().includes(q)
+  );
+  if(!rows.length){
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--ink-soft);padding:18px;">Nenhum setor encontrado.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => ST_buildViewRowHtml(r)).join('');
+  // Bind botões
+  tbody.querySelectorAll('.st-btn-edit').forEach(btn => {
+    btn.addEventListener('click', () => ST_startEdit(btn.dataset.id));
+  });
+  tbody.querySelectorAll('.st-btn-del').forEach(btn => {
+    btn.addEventListener('click', () => ST_deleteRow(Number(btn.dataset.id)));
+  });
+}
+
+function ST_buildViewRowHtml(r){
+  return `<tr data-id="${r.id}">
+    <td style="font-weight:600">${r.nome}</td>
+    <td style="color:var(--ink-soft)">${r.lider || '<span style="opacity:.4">—</span>'}</td>
+    <td class="center">
+      <button class="lanc-hist-btn st-btn-edit" data-id="${r.id}" style="margin-right:4px">Editar</button>
+      <button class="lanc-hist-btn cancel st-btn-del" data-id="${r.id}">Excluir</button>
+    </td>
+  </tr>`;
+}
+
+function ST_buildEditRowHtml(r){
+  return `<tr data-id="${r.id}">
+    <td><input class="lanc-inline-input st-edit-nome" value="${r.nome}" style="text-transform:uppercase;width:100%"></td>
+    <td><input class="lanc-inline-input st-edit-lider" value="${r.lider||''}" placeholder="Nome do líder" style="width:100%"></td>
+    <td class="center">
+      <button class="lanc-hist-btn save st-btn-save" data-id="${r.id}" style="margin-right:4px">Salvar</button>
+      <button class="lanc-hist-btn cancel st-btn-cancel">Cancelar</button>
+    </td>
+  </tr>`;
+}
+
+function ST_startEdit(id){
+  const r = ST_DATA.find(x => String(x.id) === String(id));
+  if(!r) return;
+  const tr = document.querySelector(`#stTbody tr[data-id="${id}"]`);
+  if(!tr) return;
+  tr.outerHTML = ST_buildEditRowHtml(r);
+  const newTr = document.querySelector(`#stTbody tr[data-id="${id}"]`);
+  newTr.querySelector('.st-btn-save').addEventListener('click', () => ST_saveEdit(Number(id)));
+  newTr.querySelector('.st-btn-cancel').addEventListener('click', ST_renderTable);
+}
+
+async function ST_saveEdit(id){
+  const tr = document.querySelector(`#stTbody tr[data-id="${id}"]`);
+  if(!tr) return;
+  const nome = tr.querySelector('.st-edit-nome').value.trim().toUpperCase();
+  const lider = tr.querySelector('.st-edit-lider').value.trim() || null;
+  const feedback = document.getElementById('stFeedback');
+  if(!nome){ feedback.textContent = '⚠ Nome do setor obrigatório.'; feedback.className = 'lanc-feedback err'; return; }
+  try{
+    const client = getSupabaseClient();
+    const { error } = await client.from('setores').update({ nome, lider }).eq('id', id);
+    if(error) throw error;
+    const idx = ST_DATA.findIndex(r => r.id === id);
+    if(idx >= 0){ ST_DATA[idx].nome = nome; ST_DATA[idx].lider = lider; }
+    ST_renderTable();
+    feedback.textContent = '✓ Setor atualizado.';
+    feedback.className = 'lanc-feedback ok';
+  }catch(err){
+    feedback.textContent = '⚠ Erro ao atualizar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }
+}
+
+async function ST_deleteRow(id){
+  if(!confirm('Excluir este setor?')) return;
+  const feedback = document.getElementById('stFeedback');
+  try{
+    const client = getSupabaseClient();
+    const { error } = await client.from('setores').delete().eq('id', id);
+    if(error) throw error;
+    ST_DATA = ST_DATA.filter(r => r.id !== id);
+    ST_renderTable();
+    feedback.textContent = '✓ Setor excluído.';
+    feedback.className = 'lanc-feedback ok';
+  }catch(err){
+    feedback.textContent = '⚠ Erro ao excluir: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }
+}
+
+async function ST_submitNew(e){
+  e.preventDefault();
+  const form = document.getElementById('lancFormSetor');
+  const feedback = document.getElementById('stFeedback');
+  const nome = form.querySelector('.st-nome').value.trim().toUpperCase();
+  const lider = form.querySelector('.st-lider').value.trim() || null;
+  if(!nome){ feedback.textContent = '⚠ Informe o nome do setor.'; feedback.className = 'lanc-feedback err'; return; }
+  try{
+    const client = getSupabaseClient();
+    const { data, error } = await client.from('setores').insert([{ nome, lider }]).select();
+    if(error) throw error;
+    form.reset();
+    feedback.textContent = '✓ Setor cadastrado.';
+    feedback.className = 'lanc-feedback ok';
+    ST_loadData();
+  }catch(err){
+    const msg = (err.message||'').includes('duplicate') ? `Setor "${nome}" já está cadastrado.` : (err.message || err);
+    feedback.textContent = '⚠ Erro ao cadastrar: ' + msg;
+    feedback.className = 'lanc-feedback err';
+  }
+}
+
 document.querySelectorAll('.lanc-tab-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('.lanc-tab-btn').forEach(b=>b.classList.remove('active'));
@@ -7238,11 +7425,13 @@ document.querySelectorAll('.lanc-tab-btn').forEach(btn=>{
     document.getElementById('lancPanelProdProc').style.display = tab === 'prodproc' ? 'block' : 'none';
     document.getElementById('lancPanelMaquinas').style.display = tab === 'maquinas' ? 'block' : 'none';
     document.getElementById('lancPanelProdutos').style.display = tab === 'produtos' ? 'block' : 'none';
+    document.getElementById('lancPanelSetores').style.display = tab === 'setores' ? 'block' : 'none';
     if(tab === 'estoque') EQ_populateDropdowns();
     if(tab === 'producao') LANC_populateDropdowns();
     if(tab === 'prodproc') PPL_init();
     if(tab === 'maquinas') MQ_init();
     if(tab === 'produtos') PR_init();
+    if(tab === 'setores') ST_init();
   });
 });
 
