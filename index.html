@@ -920,9 +920,9 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 
 #page-pcp-estoque .table-wrap{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);overflow-x:hidden;overflow-y:auto;max-height:calc(100vh - 290px);box-shadow:0 2px 10px rgba(161,1,1,.04)}
 
-#page-pcp-estoque .table-header{display:grid;grid-template-columns:1fr 58px 58px 66px 78px 78px 80px 80px;gap:0;background:var(--red-dark);padding:6px 10px;font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.8);font-weight:700;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+#page-pcp-estoque .table-header{display:grid;grid-template-columns:1fr 58px 58px 66px 78px 78px 80px 80px 62px 72px;gap:0;background:var(--red-dark);padding:6px 10px;font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.8);font-weight:700;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
 
-#page-pcp-estoque .table-row{display:grid;grid-template-columns:1fr 58px 58px 66px 78px 78px 80px 80px;gap:0;padding:8px 10px;min-height:44px;border-bottom:1px solid var(--line);transition:background .1s;align-items:center}
+#page-pcp-estoque .table-row{display:grid;grid-template-columns:1fr 58px 58px 66px 78px 78px 80px 80px 62px 72px;gap:0;padding:8px 10px;min-height:44px;border-bottom:1px solid var(--line);transition:background .1s;align-items:center}
 
 
 #page-pcp-estoque .table-row:hover{background:#fffaf0}
@@ -2082,6 +2082,7 @@ body{background:#fff;color:#000}
         <div class="cell-num th-saldo">Saldo</div>
         <div class="cell-num">Est.Fab</div><div class="cell-num">Est.Loja</div>
         <div class="cell-num">Vda.Fab</div><div class="cell-num">Vda.Loja</div>
+        <div class="cell-num">Cobr.(d)</div><div class="cell-num">Produzir</div>
       </div>
       <div id="alertTable"></div>
     </div>
@@ -2101,6 +2102,7 @@ body{background:#fff;color:#000}
         <div class="cell-num th-saldo">Saldo</div>
         <div class="cell-num">Est.Fab</div><div class="cell-num">Est.Loja</div>
         <div class="cell-num">Vda.Fab</div><div class="cell-num">Vda.Loja</div>
+        <div class="cell-num">Cobr.(d)</div><div class="cell-num">Produzir</div>
       </div>
       <div id="fabTable"></div>
     </div>
@@ -2120,6 +2122,7 @@ body{background:#fff;color:#000}
         <div class="cell-num th-saldo">Saldo</div>
         <div class="cell-num">Est.Fab</div><div class="cell-num">Est.Loja</div>
         <div class="cell-num">Vda.Fab</div><div class="cell-num">Vda.Loja</div>
+        <div class="cell-num">Cobr.(d)</div><div class="cell-num">Produzir</div>
       </div>
       <div id="lojaTable"></div>
     </div>
@@ -12850,6 +12853,15 @@ function calculatePriority(item){
 }
 function getStockStatus(item){
   const s=calculateAvailableStock(item);
+  const cob=calculateCoverage(item);
+  // Com dados de venda: classificar por cobertura em dias
+  if(cob!==null){
+    if(s<0||cob<1)return{cls:'red',emoji:'🔴',label:'DÉFICIT',stripe:'row-deficit'};
+    if(cob<3)return{cls:'orange',emoji:'🟠',label:'CRÍTICO',stripe:'row-critical'};
+    if(cob<7)return{cls:'yellow',emoji:'🟡',label:'ATENÇÃO',stripe:'row-warning'};
+    return{cls:'green',emoji:'🟢',label:'DISPONÍVEL',stripe:'row-ok'};
+  }
+  // Sem dados de venda: fallback por saldo absoluto
   if(s<0)return{cls:'red',emoji:'🔴',label:'DÉFICIT',stripe:'row-deficit'};
   if(s===0)return{cls:'orange',emoji:'🟠',label:'CRÍTICO',stripe:'row-critical'};
   if(s>0&&s<=ATTENTION_THRESHOLD)return{cls:'yellow',emoji:'🟡',label:'ATENÇÃO',stripe:'row-warning'};
@@ -12857,6 +12869,23 @@ function getStockStatus(item){
 }
 function shouldEnterProductionOrder(item){
   return calculateAvailableStock(item)<0;
+}
+// Cobertura em dias = Saldo ÷ (VendaSemanal ÷ 7). Retorna null se não há dados de venda.
+function calculateCoverage(item){
+  const saldo=calculateAvailableStock(item);
+  const cod=normCod(item.codigo)||item.codigo;
+  const venda=item.tipo==='FABRICA'?vendaFabMap[cod]:vendaLojaMap[cod];
+  if(!venda||venda<=0)return null;
+  return saldo/(venda/7);
+}
+// Quanto produzir para atingir 7 dias de cobertura. Retorna null se não há dados de venda.
+function calculateCoverageNeed(item){
+  const saldo=calculateAvailableStock(item);
+  const cod=normCod(item.codigo)||item.codigo;
+  const venda=item.tipo==='FABRICA'?vendaFabMap[cod]:vendaLojaMap[cod];
+  if(!venda||venda<=0)return null;
+  const need=venda-saldo;
+  return need>0?need:0;
 }
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
@@ -12982,6 +13011,13 @@ function renderTableRow(item){
   const vdaLojaVal=vendaLojaMap[cod];
   const vdaFab=vdaFabVal!=null?n(vdaFabVal):'—';
   const vdaLoja=vdaLojaVal!=null?n(vdaLojaVal):'—';
+  // Cobertura em dias e quantidade a produzir
+  const cob=calculateCoverage(item);
+  const cobNeed=calculateCoverageNeed(item);
+  const cobVal=cob===null?'—':cob<=0?'0d':cob>99?'+99d':(Math.round(cob*10)/10)+'d';
+  const cobStyle=cob===null?'color:var(--ink-soft)':cob<1?'color:#c0392b;font-weight:700':cob<3?'color:#d97706;font-weight:700':cob<7?'color:#7c5a00;font-weight:600':'color:#2e7d32;font-weight:600';
+  const produzirVal=cobNeed===null?'—':cobNeed===0?'✓':n(Math.round(cobNeed));
+  const produzirStyle=cobNeed===null?'color:var(--ink-soft)':cobNeed===0?'color:#2e7d32':'color:#c0392b;font-weight:700';
   return`<div class="table-row ${st.stripe}">
     <div class="cell cell-produto">
       <div class="cell-desc" title="${item.descricao}">${shortDesc(item.descricao)}</div>
@@ -12994,6 +13030,8 @@ function renderTableRow(item){
     <div class="cell cell-num" style="color:var(--ink-soft)">${estLoja}</div>
     <div class="cell cell-num" style="color:#1a56a0">${vdaFab}</div>
     <div class="cell cell-num" style="color:#1a56a0">${vdaLoja}</div>
+    <div class="cell cell-num" style="${cobStyle}">${cobVal}</div>
+    <div class="cell cell-num" style="${produzirStyle}">${produzirVal}</div>
   </div>`;
 }
 function should_enter_op_check(item){return shouldEnterProductionOrder(item);}
@@ -13191,14 +13229,14 @@ function setFabFam(v){fabFam=v;renderFab();}
 function setLojaFam(v){lojaFam=v;renderLoja();}
 
 function filterByStatus(items,filter){
-  // Sem filtro por classificação — todos os produtos são exibidos
   if(filter==='ALL')return items;
   return items.filter(i=>{
     const saldo=calculateAvailableStock(i);
-    if(filter==='DEFICIT')return saldo<0;
-    if(filter==='CRITICO')return saldo===0;
-    if(filter==='ATENCAO')return saldo>0&&saldo<=ATTENTION_THRESHOLD;
-    if(filter==='DISPONIVEL')return saldo>ATTENTION_THRESHOLD;
+    const cob=calculateCoverage(i);
+    if(filter==='DEFICIT')return saldo<0||(cob!==null&&cob<1);
+    if(filter==='CRITICO')return saldo>=0&&cob!==null&&cob>=1&&cob<3;
+    if(filter==='ATENCAO')return cob!==null?cob>=3&&cob<7:saldo>0&&saldo<=ATTENTION_THRESHOLD;
+    if(filter==='DISPONIVEL')return cob!==null?cob>=7:saldo>ATTENTION_THRESHOLD;
     return true;
   });
 }
@@ -13219,7 +13257,8 @@ function renderAlerts(){
     if(alertaSetores.size){items=items.filter(i=>alertaSetores.has(i.setor||'SEM SETOR'));}
     items=filterByStatus(items,statusFilter);
     if(q)items=items.filter(i=>(i.descricao||'').toLowerCase().includes(q)||(i.familia||'').toLowerCase().includes(q));
-    items.sort((a,b)=>calculateAvailableStock(a)-calculateAvailableStock(b));
+    // Ordenar por cobertura ascendente: menor cobertura = mais crítico. Sem dados de venda → final da lista.
+    items.sort((a,b)=>{const ca=calculateCoverage(a),cb=calculateCoverage(b);return(ca===null?Infinity:ca)-(cb===null?Infinity:cb);});
     // Contagem de déficits para o badge — apenas produtos de FABRICAÇÃO
     const deficitCount=allItems().filter(i=>calculateAvailableStock(i)<0).length;
     const _ac=document.getElementById('alertCount');if(_ac)_ac.textContent=deficitCount;
@@ -13241,7 +13280,7 @@ function renderFab(){
   let items=[...fabItems()];
   if(fabFam!=='ALL')items=items.filter(i=>i.familia===fabFam);
   if(q)items=items.filter(i=>i.descricao.toLowerCase().includes(q));
-  items.sort((a,b)=>calculateAvailableStock(a)-calculateAvailableStock(b));
+  items.sort((a,b)=>{const ca=calculateCoverage(a),cb=calculateCoverage(b);return(ca===null?Infinity:ca)-(cb===null?Infinity:cb);});
   tableEl.innerHTML=items.map(renderTableRow).join('');
 }
 function renderLoja(){
@@ -13251,7 +13290,7 @@ function renderLoja(){
   let items=[...lojaItems()];
   if(lojaFam!=='ALL')items=items.filter(i=>i.familia===lojaFam);
   if(q)items=items.filter(i=>i.descricao.toLowerCase().includes(q));
-  items.sort((a,b)=>calculateAvailableStock(a)-calculateAvailableStock(b));
+  items.sort((a,b)=>{const ca=calculateCoverage(a),cb=calculateCoverage(b);return(ca===null?Infinity:ca)-(cb===null?Infinity:cb);});
   tableEl.innerHTML=items.map(renderTableRow).join('');
 }
 
