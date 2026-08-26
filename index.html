@@ -37,9 +37,6 @@
     --warn-bg:#fdf2dc;
     --orange:#c0560a;
     --orange-bg:#fde8d6;
-    --r-sm:7px;
-    --r-md:12px;
-    --r-lg:16px;
     --radius-pill:999px;
   }
   *{box-sizing:border-box;}
@@ -647,7 +644,7 @@
     .legend{ font-size:11px; gap:10px; }
   }
 
-/* === PCP & ESTOQUE MODULE === */
+/* ============ MÓDULO PCP & ESTOQUE — CSS ============ */
 
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -691,7 +688,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .stat-card.zero .stat-value{color:var(--red)}
 
 
-#page-pcp-estoque .top-gap-wrap{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);margin-bottom:20px;box-shadow:0 2px 10px rgba(161,1,1,.05);overflow:hidden}
+#page-pcp-estoque .top-gap-wrap{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);margin-bottom:20px;box-shadow:0 2px 10px rgba(161,1,1,.05);overflow:hidden}
 
 
 #page-pcp-estoque .top-gap-title{background:var(--red-dark);color:#fff;padding:9px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.3px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -757,7 +754,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .tg-num{text-align:right;font-weight:600;color:var(--ink-soft)}
 
 
-#page-pcp-estoque .stat-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);padding:16px 18px;text-align:center;box-shadow:0 2px 10px rgba(161,1,1,.05)}
+#page-pcp-estoque .stat-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);padding:16px 18px;text-align:center;box-shadow:0 2px 10px rgba(161,1,1,.05)}
 
 
 #page-pcp-estoque .stat-label{font-size:10px;text-transform:uppercase;letter-spacing:1.3px;color:var(--ink-soft);margin-bottom:8px;font-weight:700}
@@ -785,11 +782,11 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 /* Barra de filtros — linha 1, coluna 1 */
 #page-pcp-estoque .pcp-filter-bar{grid-column:1;grid-row:1;display:flex;align-items:center;gap:8px;height:38px;border-bottom:1px solid var(--line);overflow:visible;flex-wrap:nowrap;box-sizing:border-box}
 /* Título OP — linha 1, coluna 2 */
-#page-pcp-estoque .pcp-op-title{grid-column:2;grid-row:1;display:flex;align-items:center;padding:0 14px;background:var(--red-dark);font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.85);border-radius:var(--r-md) var(--r-md) 0 0;border:1px solid var(--line);border-bottom:1px solid rgba(0,0,0,.2)}
+#page-pcp-estoque .pcp-op-title{grid-column:2;grid-row:1;display:flex;align-items:center;padding:0 14px;background:var(--red-dark);font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.85);border-radius:var(--radius-md) var(--radius-md) 0 0;border:1px solid var(--line);border-bottom:1px solid rgba(0,0,0,.2)}
 /* Tabela — linha 2, coluna 1 */
 #page-pcp-estoque .pcp-left{grid-column:1;grid-row:2;min-width:0;overflow:hidden;padding-top:8px}
 /* Painel OP — linha 2, coluna 2 (conecta visualmente ao título acima) */
-#page-pcp-estoque .pcp-right{grid-column:2;grid-row:2;min-width:0;background:var(--paper);border:1px solid var(--line);border-top:none;border-radius:0 0 var(--r-md) var(--r-md);overflow:hidden;box-shadow:0 2px 10px rgba(161,1,1,.04);display:flex;flex-direction:column;max-height:calc(100vh - 180px)}
+#page-pcp-estoque .pcp-right{grid-column:2;grid-row:2;min-width:0;background:var(--paper);border:1px solid var(--line);border-top:none;border-radius:0 0 var(--radius-md) var(--radius-md);overflow:hidden;box-shadow:0 2px 10px rgba(161,1,1,.04);display:flex;flex-direction:column;max-height:calc(100vh - 180px)}
 /* ordemBody tem scroll vertical próprio */
 #page-pcp-estoque #ordemBody{overflow-y:auto;flex:1;min-height:0;padding-top:8px}
 
@@ -862,7 +859,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 @media(max-width:1100px){
   #page-pcp-estoque .pcp-container{grid-template-columns:1fr}
   #page-pcp-estoque .pcp-filter-bar{grid-column:1;grid-row:1}
-  #page-pcp-estoque .pcp-op-title{grid-column:1;grid-row:2;border-radius:var(--r-md) var(--r-md) 0 0}
+  #page-pcp-estoque .pcp-op-title{grid-column:1;grid-row:2;border-radius:var(--radius-md) var(--radius-md) 0 0}
   #page-pcp-estoque .pcp-left{grid-column:1;grid-row:3}
   #page-pcp-estoque .pcp-right{grid-column:1;grid-row:4;width:100%;max-height:50vh}
 }
@@ -904,14 +901,14 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .alert-filters::-webkit-scrollbar{display:none}
 
 /* Dropdown de família */
-#page-pcp-estoque .fam-select{height:28px;padding:0 26px 0 8px;border:1px solid var(--line);border-radius:var(--r-sm);font-size:10.5px;font-weight:600;font-family:var(--font-body);color:var(--ink);background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b5c5c'/%3E%3C/svg%3E") no-repeat right 8px center;-webkit-appearance:none;appearance:none;cursor:pointer;min-width:140px;max-width:220px;flex-shrink:0}
+#page-pcp-estoque .fam-select{height:28px;padding:0 26px 0 8px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:10.5px;font-weight:600;font-family:var(--font-body);color:var(--ink);background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b5c5c'/%3E%3C/svg%3E") no-repeat right 8px center;-webkit-appearance:none;appearance:none;cursor:pointer;min-width:140px;max-width:220px;flex-shrink:0}
 #page-pcp-estoque .fam-select:focus{outline:none;border-color:var(--red)}
 
 #page-pcp-estoque .chip:hover{border-color:var(--red);color:var(--red-dark)}
 
 #page-pcp-estoque .chip.active{background:var(--red);border-color:var(--red);color:#fff}
 
-#page-pcp-estoque .search-box{flex:1;min-width:80px;max-width:200px;margin-left:auto;padding:5px 10px;background:var(--cream);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--ink);font-size:11px;font-family:inherit}
+#page-pcp-estoque .search-box{flex:1;min-width:80px;max-width:200px;margin-left:auto;padding:5px 10px;background:var(--cream);border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--ink);font-size:11px;font-family:inherit}
 
 
 #page-pcp-estoque .search-box::placeholder{color:var(--ink-soft)}
@@ -921,7 +918,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 
 /* TABLE */
 
-#page-pcp-estoque .table-wrap{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);overflow-x:hidden;overflow-y:auto;max-height:calc(100vh - 290px);box-shadow:0 2px 10px rgba(161,1,1,.04)}
+#page-pcp-estoque .table-wrap{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);overflow-x:hidden;overflow-y:auto;max-height:calc(100vh - 290px);box-shadow:0 2px 10px rgba(161,1,1,.04)}
 
 #page-pcp-estoque .table-header{display:grid;grid-template-columns:1fr 58px 58px 66px 78px 78px 80px 80px;gap:0;background:var(--red-dark);padding:6px 10px;font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.8);font-weight:700;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
 
@@ -1014,23 +1011,23 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 /* → ORDEM ACTION */
 #page-pcp-estoque .row-action{display:flex;align-items:center;gap:5px}
 
-#page-pcp-estoque .qty-input{width:44px;background:var(--cream);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--ink);font-size:10px;padding:3px 4px;text-align:center;font-family:inherit}
+#page-pcp-estoque .qty-input{width:44px;background:var(--cream);border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--ink);font-size:10px;padding:3px 4px;text-align:center;font-family:inherit}
 #page-pcp-estoque .qty-input:focus{outline:none;border-color:var(--red)}
-#page-pcp-estoque .unit-input{width:58px;background:var(--cream);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--ink-soft);font-size:10px;padding:3px 4px;font-family:inherit}
+#page-pcp-estoque .unit-input{width:58px;background:var(--cream);border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--ink-soft);font-size:10px;padding:3px 4px;font-family:inherit}
 #page-pcp-estoque .unit-input:focus{outline:none;border-color:var(--red)}
 
 /* Action cell */
 #page-pcp-estoque .cell-action{display:flex;align-items:center;justify-content:center}
-#page-pcp-estoque .btn-send-ordem{background:var(--red);color:#fff;border:none;border-radius:var(--r-sm);font-size:10px;font-weight:800;padding:5px 9px;cursor:pointer;font-family:inherit;transition:background .15s;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap}
+#page-pcp-estoque .btn-send-ordem{background:var(--red);color:#fff;border:none;border-radius:var(--radius-sm);font-size:10px;font-weight:800;padding:5px 9px;cursor:pointer;font-family:inherit;transition:background .15s;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap}
 #page-pcp-estoque .btn-send-ordem:hover{background:var(--red-dark)}
 #page-pcp-estoque .btn-send-ordem.sent{background:var(--good)}
-#page-pcp-estoque .btn-op-neutral{background:var(--paper);color:var(--ink-soft);border:1px solid var(--line);border-radius:var(--r-sm);font-size:10px;font-weight:700;padding:5px 9px;cursor:pointer;font-family:inherit;transition:all .15s;text-transform:uppercase}
+#page-pcp-estoque .btn-op-neutral{background:var(--paper);color:var(--ink-soft);border:1px solid var(--line);border-radius:var(--radius-sm);font-size:10px;font-weight:700;padding:5px 9px;cursor:pointer;font-family:inherit;transition:all .15s;text-transform:uppercase}
 #page-pcp-estoque .btn-op-neutral:hover{border-color:var(--red);color:var(--red-dark)}
 
 
 /* UPLOAD */
 
-#page-pcp-estoque .empty-state{text-align:center;padding:40px 20px;color:var(--ink-soft);font-size:13px;background:var(--cream);border:1px dashed var(--line);border-radius:var(--r-md)}
+#page-pcp-estoque .empty-state{text-align:center;padding:40px 20px;color:var(--ink-soft);font-size:13px;background:var(--cream);border:1px dashed var(--line);border-radius:var(--radius-md)}
 #page-pcp-estoque .pcp-right .empty-state{padding:18px 14px;font-size:11px;text-align:center;color:var(--ink-soft)}
 /* .pcp-right.is-empty removido — painel OP sempre ocupa flex:1 no grid */
 
@@ -1041,7 +1038,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:760px}
 
 
-#page-pcp-estoque .upload-card{background:var(--paper);border:2px dashed var(--line);border-radius:var(--r-md);padding:36px;text-align:center;cursor:pointer;transition:all .2s;box-shadow:0 2px 10px rgba(161,1,1,.04)}
+#page-pcp-estoque .upload-card{background:var(--paper);border:2px dashed var(--line);border-radius:var(--radius-md);padding:36px;text-align:center;cursor:pointer;transition:all .2s;box-shadow:0 2px 10px rgba(161,1,1,.04)}
 
 
 #page-pcp-estoque .upload-card:hover{border-color:var(--red);background:var(--cream)}
@@ -1054,13 +1051,13 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .upload-sub{font-size:11px;color:var(--ink-soft)}
 
 
-#page-pcp-estoque .upload-btn{display:inline-block;margin-top:14px;padding:8px 20px;background:var(--red);color:#fff;border-radius:var(--r-sm);font-size:12px;font-weight:700;border:none;cursor:pointer;letter-spacing:.5px;text-transform:uppercase;font-family:inherit}
+#page-pcp-estoque .upload-btn{display:inline-block;margin-top:14px;padding:8px 20px;background:var(--red);color:#fff;border-radius:var(--radius-sm);font-size:12px;font-weight:700;border:none;cursor:pointer;letter-spacing:.5px;text-transform:uppercase;font-family:inherit}
 
 
 #page-pcp-estoque .upload-btn:hover{background:var(--red-dark)}
 
 
-#page-pcp-estoque .upload-history{max-width:760px;margin-top:16px;padding:14px 16px;background:var(--paper);border-radius:var(--r-md);border:1px solid var(--line)}
+#page-pcp-estoque .upload-history{max-width:760px;margin-top:16px;padding:14px 16px;background:var(--paper);border-radius:var(--radius-md);border:1px solid var(--line)}
 
 
 #page-pcp-estoque .history-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft);margin-bottom:8px}
@@ -1077,13 +1074,13 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .ordem-date-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft)}
 
 
-#page-pcp-estoque .ordem-date{padding:5px 8px;background:var(--cream);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--ink);font-size:11px;font-weight:600;font-family:inherit}
+#page-pcp-estoque .ordem-date{padding:5px 8px;background:var(--cream);border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--ink);font-size:11px;font-weight:600;font-family:inherit}
 
 
 #page-pcp-estoque .ordem-date:focus{outline:none;border-color:var(--red)}
 
 
-#page-pcp-estoque .btn{padding:5px 14px;border-radius:var(--r-sm);font-size:11px;font-weight:700;border:none;cursor:pointer;letter-spacing:.5px;text-transform:uppercase;font-family:inherit;transition:all .15s}
+#page-pcp-estoque .btn{padding:5px 14px;border-radius:var(--radius-sm);font-size:11px;font-weight:700;border:none;cursor:pointer;letter-spacing:.5px;text-transform:uppercase;font-family:inherit;transition:all .15s}
 
 
 #page-pcp-estoque .btn-wine{background:var(--red);color:#fff;box-shadow:0 2px 8px rgba(161,1,1,.25)}
@@ -1103,7 +1100,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 
 /* SETOR BLOCKS */
 
-#page-pcp-estoque .setor-block{margin-bottom:12px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;box-shadow:0 2px 10px rgba(161,1,1,.04)}
+#page-pcp-estoque .setor-block{margin-bottom:12px;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);overflow:hidden;box-shadow:0 2px 10px rgba(161,1,1,.04)}
 
 
 #page-pcp-estoque .setor-header{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--cream);border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
@@ -1167,7 +1164,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .order-loc{font-size:10px;font-weight:700;margin-top:2px}
 
 
-#page-pcp-estoque .order-input{width:100%;background:var(--cream);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--ink);padding:5px 8px;font-size:12px;font-family:inherit}
+#page-pcp-estoque .order-input{width:100%;background:var(--cream);border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--ink);padding:5px 8px;font-size:12px;font-family:inherit}
 
 
 #page-pcp-estoque .order-input:focus{outline:none;border-color:var(--red)}
@@ -1980,11 +1977,11 @@ body{background:#fff;color:#000}
     <!-- Setor multi-select dropdown -->
     <div id="setorDropdownWrap" style="position:relative;flex-shrink:0">
       <button id="setorDropdownBtn" onclick="toggleSetorDropdown(event)"
-        style="display:flex;align-items:center;gap:6px;padding:5px 10px;font-size:11px;font-weight:700;letter-spacing:.3px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;border-radius:var(--r-sm);white-space:nowrap;min-width:140px;justify-content:space-between">
+        style="display:flex;align-items:center;gap:6px;padding:5px 10px;font-size:11px;font-weight:700;letter-spacing:.3px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;border-radius:var(--radius-sm);white-space:nowrap;min-width:140px;justify-content:space-between">
         <span id="setorDropdownLabel">Todos os setores</span>
         <span style="font-size:9px;opacity:.6">▼</span>
       </button>
-      <div id="setorDropdownMenu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:999;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:0 6px 20px rgba(0,0,0,.12);min-width:180px;overflow:hidden">
+      <div id="setorDropdownMenu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:999;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:0 6px 20px rgba(0,0,0,.12);min-width:180px;overflow:hidden">
         <div style="padding:8px 10px;border-bottom:1px solid var(--line);display:flex;gap:8px">
           <button onclick="setorSelectAll()" style="flex:1;font-size:10px;font-weight:700;padding:3px 6px;border:1px solid var(--line);border-radius:4px;background:var(--cream);color:var(--ink);cursor:pointer">Todos</button>
           <button onclick="setorClearAll()" style="flex:1;font-size:10px;font-weight:700;padding:3px 6px;border:1px solid var(--line);border-radius:4px;background:var(--cream);color:var(--ink);cursor:pointer">Limpar</button>
@@ -1995,7 +1992,7 @@ body{background:#fff;color:#000}
     <!-- Busca -->
     <input class="search-box" type="text" placeholder="buscar produto..." oninput="renderAlerts()" id="searchAlert" style="margin-left:auto">
     <!-- Botão Importar -->
-    <button id="btnImportar" class="btn" onclick="toggleUploadPanel()" style="flex-shrink:0;padding:4px 10px;font-size:10px;font-weight:700;letter-spacing:.5px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;border-radius:var(--r-sm);white-space:nowrap">📂 Importar</button>
+    <button id="btnImportar" class="btn" onclick="toggleUploadPanel()" style="flex-shrink:0;padding:4px 10px;font-size:10px;font-weight:700;letter-spacing:.5px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;border-radius:var(--radius-sm);white-space:nowrap">📂 Importar</button>
   </div>
   <div class="pcp-op-title no-print" style="display:none">ORDEM DE PRODUÇÃO</div>
 
@@ -2065,7 +2062,7 @@ body{background:#fff;color:#000}
       </div>
     </div>
     <div style="margin-top:14px;max-width:760px">
-      <button onclick="limparDadosImportados()" style="padding:8px 18px;background:#2d1a1a;color:#fc8181;border:1.5px solid #744210;border-radius:var(--r-sm);font-size:11px;font-weight:700;letter-spacing:.5px;cursor:pointer;font-family:inherit" id="btnLimparDados">🗑 Limpar Dados</button>
+      <button onclick="limparDadosImportados()" style="padding:8px 18px;background:#2d1a1a;color:#fc8181;border:1.5px solid #744210;border-radius:var(--radius-sm);font-size:11px;font-weight:700;letter-spacing:.5px;cursor:pointer;font-family:inherit" id="btnLimparDados">🗑 Limpar Dados</button>
       <span style="font-size:10px;color:var(--ink-soft);margin-left:10px">Remove todos os dados importados da tela</span>
     </div>
     <div class="upload-history">
@@ -3238,111 +3235,6 @@ let DATA = {};
 
 const MONTH_NAMES_PT = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 
-/* ============================================================================
-   CARREGADOR GENÉRICO DE CSV (Google Sheets), COM FALLBACK
-   ============================================================================
-   Substitui os 7 padrões quase idênticos que existiam antes (um "loadData"
-   por página: Relatório Industrial, Máquinas, Óleo, Manutenções). Cada
-   página continua com sua própria função pública (loadData, MN_loadData,
-   etc.) — só o miolo de fetch/cache-bust/
-   fallback/estado do botão foi centralizado aqui, pra não precisar manter
-   7 cópias em sincronia quando um bug aparecer nesse trecho.
-   ============================================================================ */
-const CSV_LOADER_SIGNATURES = {}; // assinatura por fonte, só pras que usam signatureKey
-
-/**
- * @param {Object} cfg
- * @param {string} cfg.url - URL do CSV (export?format=csv&gid=...)
- * @param {boolean} [cfg.isManualRefresh] - se foi disparado pelo botão "Atualizar"
- * @param {string} [cfg.signatureKey] - ativa o "✓ Sem dados novos" vs "✓ Dados atualizados"
- * @param {(text:string)=>*} cfg.parse - transforma o texto CSV no formato interno da página
- * @param {(parsed:*)=>boolean} [cfg.isEmpty] - quando o resultado do parse deve
- *   ser tratado como "sem dado válido" (default: array/objeto vazio)
- * @param {(parsed:*, ctx:{isManualRefresh:boolean, changed:boolean})=>void} cfg.onSuccess
- * @param {()=>boolean} [cfg.hasExistingData] - já existe dado carregado nesta sessão?
- * @param {(fallbackData:*)=>void} [cfg.onFallback] - aplica os dados de exemplo
- * @param {*} [cfg.fallbackData]
- * @param {string} [cfg.btnId] - id do botão "Atualizar"
- * @param {string} [cfg.infoElId] - id do elemento de texto de status/erro
- * @param {string} [cfg.errorLabel] - nome da fonte pro console.error/mensagem de erro
- */
-async function loadCsvWithFallback(cfg){
-  const btn = cfg.btnId ? document.getElementById(cfg.btnId) : null;
-  const original = btn ? btn.textContent : null;
-  if(btn){ btn.disabled = true; btn.textContent = '⟳ Verificando...'; }
-  const isManualRefresh = !!cfg.isManualRefresh;
-
-  try{
-    const bust = (cfg.url.includes('?') ? '&' : '?') + 'cb=' + Date.now();
-    const res = await fetch(cfg.url + bust, { cache: 'no-store' });
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-
-    let changed = true;
-    if(cfg.signatureKey){
-      const signature = text.length + ':' + text.slice(0, 500);
-      changed = signature !== CSV_LOADER_SIGNATURES[cfg.signatureKey];
-      CSV_LOADER_SIGNATURES[cfg.signatureKey] = signature;
-    }
-
-    const parsed = cfg.parse(text);
-    const isEmpty = cfg.isEmpty
-      ? cfg.isEmpty(parsed)
-      : (Array.isArray(parsed) ? parsed.length === 0 : Object.keys(parsed || {}).length === 0);
-    if(isEmpty) throw new Error('Nenhum dado válido encontrado na planilha.');
-
-    cfg.onSuccess(parsed, { isManualRefresh, changed });
-
-    if(btn){
-      btn.textContent = isManualRefresh ? (changed ? '✓ Dados atualizados' : '✓ Sem dados novos') : original;
-      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 1600);
-    }
-  }catch(err){
-    console.error('Erro ao carregar ' + (cfg.errorLabel || 'dados') + ':', err);
-    if(cfg.onError) cfg.onError(err);
-    if(btn){
-      btn.textContent = '⚠ Erro ao atualizar';
-      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 2200);
-    }
-    const hasExisting = cfg.hasExistingData ? cfg.hasExistingData() : false;
-    if(!hasExisting && cfg.onFallback){
-      cfg.onFallback(cfg.fallbackData);
-      if(cfg.infoElId){
-        const hint = location.protocol === 'file:'
-          ? ' Abra este arquivo por um servidor local (http://) — Google Sheets bloqueia requisições de arquivos locais (file://).'
-          : '';
-        const el = document.getElementById(cfg.infoElId);
-        const msg = cfg.fallbackMessage
-          ? cfg.fallbackMessage(err, hint)
-          : '⚠ Não foi possível conectar à planilha (' + (err.message||err) + '). Mostrando dados de exemplo.' + hint;
-        if(el) el.textContent = msg;
-      }
-    }
-  }
-}
-
-/* ---------- Parser de CSV (RFC4180 simplificado: suporta aspas e vírgulas dentro de campos) ---------- */
-function parseCSV(text){
-  const rows = [];
-  let row = [], field = '', inQuotes = false;
-  for(let i=0;i<text.length;i++){
-    const c = text[i], next = text[i+1];
-    if(inQuotes){
-      if(c === '"' && next === '"'){ field += '"'; i++; }
-      else if(c === '"'){ inQuotes = false; }
-      else { field += c; }
-    } else {
-      if(c === '"'){ inQuotes = true; }
-      else if(c === ','){ row.push(field); field=''; }
-      else if(c === '\r'){ /* ignora */ }
-      else if(c === '\n'){ row.push(field); rows.push(row); row=[]; field=''; }
-      else { field += c; }
-    }
-  }
-  if(field.length || row.length){ row.push(field); rows.push(row); }
-  return rows;
-}
-
 /* ---------- Utilitários de parsing ---------- */
 function parseDataBR(s){
   if(!s) return null;
@@ -3828,10 +3720,7 @@ function applyDateBoundsAndRefresh(){
   refreshAll();
 }
 
-/* ====================================================================== */
-
-
-/* ====================================================================== */
+/* ---------- Controles de data e filtros globais ---------- */
 
 const dateStartInput = document.getElementById('dateStart');
 const dateEndInput = document.getElementById('dateEnd');
@@ -5975,18 +5864,6 @@ periodInfo.textContent = 'Carregando dados do banco…';
    Parametrão Padrão Prensa(6) Produtos Produzidos(7).
    ============================================================================ */
 
-const RC_CSV_URL = "https://docs.google.com/spreadsheets/d/1dPOqVznVZ3Z1AueP8o2H8nlu2AaWjIs1nqg47eUUYUg/export?format=csv&gid=600917311";
-
-const RC_FALLBACK_DATA = [
-  {setor:"Salgado", identificacao:"USIfood 2", modelo:"USIfood – Double Master Contínua", capacidade:"Até 2.500 un/h", equipe:"4", produtos:"Esfiha Carne, Esfiha Frango, Bauru Frango, Bauru Calabresa, Bauru Pizza"},
-  {setor:"Salgado", identificacao:"Panitec 1", modelo:"Panitec LYNEA-300 SUPRA", capacidade:"Até 2.500 un/h", equipe:"4", produtos:"Hamburguinho, Doguinho, Pastel Mini Bolha, Pastel Mini Nata, Mini Natinha Integral"},
-  {setor:"Salgado", identificacao:"Panitec 5", modelo:"Panitec LYNEA-600 SUPRA*", capacidade:"Até 2.500 un/h", equipe:"3", produtos:"Pastel Bolha, Pastel Mini Nata, Mini Natinha Integral"},
-  {setor:"Salgado", identificacao:"Panitec 4", modelo:"Panitec LYNEA-480 SUPRA", capacidade:"Até 4.000 un/h", equipe:"4", produtos:"Hamburguinho, Doguinho, Pastel Mini Bolha, Pastel Mini Nata, Mini Natinha Integral"},
-  {setor:"Salgado", identificacao:"Panitec 3", modelo:"Panitec LYNEA-480 SUPRA", capacidade:"Até 4.000 un/h", equipe:"3", produtos:"Pastel Nata (Frango, Carne, Calabresa), Pastel Nata de Frios, Pastel Nata de Palmito, Pastel Nata Filé com Cheddar, Pastel Mini Bolha, Pastel Mini Nata, Mini Natinha Integral"},
-  {setor:"Salgado", identificacao:"Panitec 2", modelo:"Panitec LYNEA-300 SUPRA", capacidade:"Até 2.500 un/h", equipe:"3", produtos:"Pastel para Fritar (Frango, Carne, Pizza e Queijo)"},
-  {setor:"Salgado", identificacao:"USIfood 6", modelo:"USIfood Double Master Contínua", capacidade:"Até 2.500 un/h", equipe:"4", produtos:"Pastel Mini Bolha, Pastel Mini Nata, Mini Natinha Integral"},
-];
-
 let RC_DATA = [];
 let RC_FILTERED = [];
 
@@ -6069,38 +5946,8 @@ function RC_splitProdutos(str){
   return result;
 }
 
-/* Cada equipamento vira 1 linha por produto que ele produz — assim dá pra
-   editar/configurar capacidade e meta por produto individualmente. */
-function RC_transformCsv(csvText){
-  const rows = parseCSV(csvText).filter(r => r.some(c => c && c.trim() !== ''));
-  const dataRows = rows.slice(1); // descarta o cabeçalho
-  const records = [];
-  dataRows.forEach(r=>{
-    const setor = (r[0]||'').trim();
-    const identificacao = (r[1]||'').trim();
-    if(!setor || !identificacao) return;
-    const modelo = (r[2]||'').trim();
-    const capacidade = (r[3]||'').trim();
-    const equipe = (r[4]||'').trim();
-    const paramVelocidade = (r[5]||'').trim();
-    const paramPrensa = (r[6]||'').trim();
-    const produtos = RC_splitProdutos((r[7]||'').trim());
-
-    if(produtos.length === 0){
-      records.push({ produto: '—', identificacao, capacidade, equipe, paramVelocidade, paramPrensa, modelo, setor });
-    } else {
-      produtos.forEach(produto=>{
-        records.push({ produto, identificacao, capacidade, equipe, paramVelocidade, paramPrensa, modelo, setor });
-      });
-    }
-  });
-  return records;
-}
-
-/* Antes lia de uma planilha do Google Sheets (RC_CSV_URL, ver histórico do
-   arquivo). Agora lê direto da tabela public.maquinas no Supabase — a mesma
-   fonte editada na aba Lançamento > Máquinas — pra não ter duas fontes de
-   verdade divergentes sobre capacidade nominal. */
+/* Lê direto da tabela public.maquinas no Supabase — a mesma
+   fonte editada na aba Lançamento > Máquinas. */
 async function RC_loadData(isManualRefresh){
   const infoEl = document.getElementById('rcPeriodInfo');
   const btn = document.getElementById('rcBtnRefresh');
@@ -6118,28 +5965,9 @@ async function RC_loadData(isManualRefresh){
   }catch(err){
     console.error('Erro ao buscar máquinas (Supabase):', err);
     if(infoEl) infoEl.textContent = '⚠ Erro ao buscar máquinas: ' + (err.message || err);
-    if(RC_DATA.length === 0){
-      RC_DATA = RC_transformCsvFromFallback();
-      RC_populateSetorSelect();
-      RC_renderMaquinaMultiSelect();
-      RC_renderProdutoMultiSelect();
-      RC_refreshAll();
-    }
   }finally{
     if(btn){ btn.disabled = false; btn.textContent = '⟳ Atualizar'; }
   }
-}
-
-/* Aplica a mesma explosão por produto nos dados de exemplo (fallback). */
-function RC_transformCsvFromFallback(){
-  const records = [];
-  RC_FALLBACK_DATA.forEach(eq=>{
-    const produtos = RC_splitProdutos(eq.produtos);
-    produtos.forEach(produto=>{
-      records.push({ produto, identificacao: eq.identificacao, capacidade: eq.capacidade, equipe: eq.equipe||'', paramVelocidade: eq.paramVelocidade||'', paramPrensa: eq.paramPrensa||'', modelo: eq.modelo, setor: eq.setor });
-    });
-  });
-  return records;
 }
 
 const rcSetorEl = document.getElementById('rcSetor');
@@ -6480,12 +6308,6 @@ async function OL_loadData(isManualRefresh){
 /* Migrado do Google Sheets pro Supabase (tabela manutencoes) em jul/2026 —
    a URL antiga da planilha não é mais usada. */
 
-const MN_FALLBACK_DATA = [
-  {dateISO:"2026-07-13", dateRaw:"13/07/2026", requisitante:"Paulo", executante:"Romário", setor:"FORNEARIA", horaComunicacao:"18:00", maquina:"Climatica 2", problema:"Não estava esquentando", especialidade:"Mecânica", tipoIntervencao:"Aproveitamento Parada da Produção", inicioReal:"23:10", fimReal:"23:45", observacao:"Reservatório de água seco, consequentimente derreteu a mangueira. Após substituir mangueira, foi realizado um teste e o equipamento funcionou normalmente.", duracaoMin:35, esperaMin:310},
-  {dateISO:"2026-07-13", dateRaw:"13/07/2026", requisitante:"Leonir", executante:"Romário", setor:"MECATHERM NOTURNO", horaComunicacao:"21:30", maquina:"Mecatherm", problema:"Fira separado estava travando", especialidade:"Mecânica", tipoIntervencao:"Parada para Manutenção", inicioReal:"22:40", fimReal:"22:45", observacao:"Fita substituída", duracaoMin:5, esperaMin:70},
-  {dateISO:"2026-07-10", dateRaw:"10/07/2026", requisitante:"Paulo", executante:"Romário", setor:"FORNEARIA", horaComunicacao:"18:00", maquina:"Forno 1", problema:"Base giratória com folga", especialidade:"Mecânica", tipoIntervencao:"Aproveitamento Parada da Produção", inicioReal:"00:05", fimReal:"02:20", observacao:"Desmontado base giratória, realizado limpeza, lubrificação e a base do rolamento estava desencontrado, travou da posição deixando a base giratória com folga. Após encontrar e finalizar a montagem, base ficou sem folga, liberado para uso.", duracaoMin:135, esperaMin:365},
-];
-
 let MN_DATA = [];
 let MN_FILTERED = [];
 let MN_allDates = [];
@@ -6577,10 +6399,8 @@ async function MN_loadData(isManualRefresh){
       setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 2200);
     }
     if(MN_DATA.length === 0){
-      MN_DATA = MN_FALLBACK_DATA;
-      MN_applyDateBoundsAndPopulate();
-      MN_refreshAll();
-      document.getElementById('mnPeriodInfo').textContent = '⚠ Não foi possível conectar ao Supabase (' + (err.message || err) + '). Mostrando dados de exemplo.';
+      const infoEl = document.getElementById('mnPeriodInfo');
+      if(infoEl) infoEl.textContent = '⚠ Não foi possível conectar ao Supabase (' + (err.message || err) + '. Tente atualizar a página.';
     }
   }
 }
@@ -10095,7 +9915,9 @@ function MC_renderMatriz(itens){
   }
 }
 
-/* ===== RADAR DE COBERTURA — Produtividade & Processos =====
+/* ============================================================================
+   RADAR DE COBERTURA — Produtividade & Processos
+   ============================================================================
    Varre as 3 fontes de dados (sem filtro de data) e monta um mapa
    linha → produto → { corridas, bateladas, referencia } para exibir
    quais produtos ainda precisam de coleta em cada setor. */
@@ -11248,7 +11070,7 @@ function PP_render(){
 
 }
 
-/* ===== PARETO DE PARADAS POR CATEGORIA ===== */
+/* ---------- Pareto de paradas por categoria ---------- */
 const PP_PARADA_CAT_CORES = {
   'Quebra / Falha de Equipamento':  '#A10101',
   'Setup / Troca de Produto':       '#B5640B',
@@ -12830,8 +12652,6 @@ async function loadProdutividade(){
     }
 
     produtividadeLoaded=true;
-    console.log('[Produtividade] Carregado:',Object.keys(produtividadeMap).length,'produtos, Giro c/ Massa/h:',
-      Object.values(produtividadeMap).filter(v=>v.rateType==='Massa/h').length);
     if(typeof renderOrdem==='function') renderOrdem();
   }catch(e){console.error('loadProdutividade:',e);}
 }
@@ -12843,7 +12663,6 @@ function normProdKey(str){
 function getProdutividade(desc){
   if(!desc||!produtividadeLoaded) return null;
   const dk=normProdKey(desc);
-  console.log('[getProd] buscando:',dk.substring(0,40));
   // 1. Correspondência exata
   if(produtividadeMap[dk]) return produtividadeMap[dk];
   // 2. Nome curto do banco está contido no nome CIGAM — prioriza entradas com dados
