@@ -137,6 +137,34 @@
   .btn-refresh:disabled{ opacity:0.6; cursor:default; }
   .period-bar .period-info{ font-size:12px; color:var(--ink-soft); margin-left:6px; }
 
+  /* ── Comparação de período ─────────────────────────────── */
+  .cmp-toggle-wrap{ display:flex; align-items:center; gap:7px; margin-left:4px; }
+  .cmp-toggle-wrap label{ font-size:12px; color:var(--ink-soft); font-weight:600; text-transform:uppercase; letter-spacing:.7px; cursor:pointer; user-select:none; }
+  /* switch pill */
+  .cmp-switch{ position:relative; display:inline-block; width:34px; height:18px; flex-shrink:0; }
+  .cmp-switch input{ opacity:0; width:0; height:0; }
+  .cmp-switch .cmp-slider{
+    position:absolute; inset:0; background:#ccc; border-radius:18px; cursor:pointer; transition:.2s;
+  }
+  .cmp-switch .cmp-slider:before{
+    content:''; position:absolute; width:12px; height:12px; left:3px; bottom:3px;
+    background:#fff; border-radius:50%; transition:.2s;
+  }
+  .cmp-switch input:checked + .cmp-slider{ background:var(--red); }
+  .cmp-switch input:checked + .cmp-slider:before{ transform:translateX(16px); }
+  /* chips dos dois períodos */
+  .cmp-chips{ display:none; align-items:center; gap:6px; margin-left:8px; flex-wrap:wrap; }
+  .cmp-chips.visible{ display:flex; }
+  .cmp-chip{
+    display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:var(--radius-pill);
+    font-size:11.5px; font-weight:700; letter-spacing:.3px;
+  }
+  .cmp-chip.chip-current{ background:#fdf0e0; color:#7a4500; border:1px solid #f0d2a0; }
+  .cmp-chip.chip-prev{ background:#e8f0fe; color:#1a56a0; border:1px solid #c5d8fc; }
+  .cmp-chip .chip-dot{ width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+  .cmp-chip.chip-current .chip-dot{ background:#e08020; }
+  .cmp-chip.chip-prev .chip-dot{ background:#1a56a0; }
+
   .setor-tabs{ display:flex; gap:8px; padding:16px 32px 0; flex-wrap:wrap; max-width:1600px; margin:0 auto; }
   .setor-tab-btn{
     padding:9px 20px; border-radius:var(--radius-sm) var(--radius-sm) 0 0; border:1px solid var(--line); border-bottom:none;
@@ -1358,6 +1386,18 @@ body{background:#fff;color:#000}
   <input type="date" id="dateEnd" style="display:none;">
   <button class="btn-refresh" id="btnRefreshData" title="Verificar dados novos">⟳ Atualizar</button>
   <span class="period-info" id="periodInfo"></span>
+  <div class="cmp-toggle-wrap">
+    <label class="cmp-switch" title="Comparar com período anterior">
+      <input type="checkbox" id="cmpToggle">
+      <span class="cmp-slider"></span>
+    </label>
+    <label for="cmpToggle">Comparar</label>
+  </div>
+  <div class="cmp-chips" id="cmpChips">
+    <div class="cmp-chip chip-current"><span class="chip-dot"></span><span id="cmpChipCurrent">—</span></div>
+    <span style="color:var(--ink-soft);font-size:11px;">vs</span>
+    <div class="cmp-chip chip-prev"><span class="chip-dot"></span><span id="cmpChipPrev">—</span></div>
+  </div>
 </div>
 
 <div class="setor-tabs" id="mainSetorTabs"></div>
@@ -3804,8 +3844,62 @@ function toMinutesStr(min){
   return `${h}h${String(m).padStart(2,'0')}min`;
 }
 
-/* Retorna o conjunto de dias imediatamente anterior ao período filtrado,
-   com a mesma quantidade de dias (para comparação de tendência nos KPIs) */
+// ─────────────────────────────────────────────
+// COMPARAÇÃO DE PERÍODO
+// ─────────────────────────────────────────────
+
+/* Estado do toggle de comparação */
+let comparisonEnabled = false;
+
+/* Desloca uma data ISO exatamente 1 mês para trás no calendário.
+   Ex: 2026-08-26 → 2026-07-26  |  2026-03-31 → 2026-02-28 (último dia válido) */
+function shiftMonthBack(isoDate){
+  const [y, m, d] = isoDate.split('-').map(Number);
+  const prevMonth = m === 1 ? 12 : m - 1;
+  const prevYear  = m === 1 ? y - 1 : y;
+  const lastDay   = new Date(prevYear, prevMonth, 0).getDate(); // dia 0 do mês seguinte = último dia do mês
+  const clampedDay = Math.min(d, lastDay);
+  return `${prevYear}-${String(prevMonth).padStart(2,'0')}-${String(clampedDay).padStart(2,'0')}`;
+}
+
+/* Retorna o conjunto de datas do período de comparação: mesmos dias do mês anterior.
+   Filtra apenas datas que existam em allDates (banco pode não ter todos os dias). */
+function getComparisonDates(filteredDates){
+  if(!filteredDates.length) return [];
+  const shifted = filteredDates.map(shiftMonthBack);
+  const allSet  = new Set(allDates);
+  return shifted.filter(d => allSet.has(d));
+}
+
+/* Formata um par de datas ISO em label legível para os chips */
+function formatChipLabel(dates){
+  if(!dates.length) return '—';
+  const fmt = iso => {
+    const [,m,d] = iso.split('-');
+    return `${d}/${m}`;
+  };
+  if(dates.length === 1) return fmt(dates[0]);
+  return `${fmt(dates[0])} – ${fmt(dates[dates.length-1])}`;
+}
+
+/* Atualiza os chips com os rótulos dos dois períodos e dispara re-render */
+function updateComparisonChips(filteredDates){
+  const chips  = document.getElementById('cmpChips');
+  const toggle = document.getElementById('cmpToggle');
+  if(!toggle) return;
+  comparisonEnabled = toggle.checked;
+  if(comparisonEnabled){
+    const prevDates = getComparisonDates(filteredDates);
+    document.getElementById('cmpChipCurrent').textContent = formatChipLabel(filteredDates);
+    document.getElementById('cmpChipPrev').textContent    = formatChipLabel(prevDates);
+    chips.classList.add('visible');
+  } else {
+    chips.classList.remove('visible');
+  }
+}
+
+/* Retorna o conjunto de datas do período anterior ao período filtrado
+   com a mesma quantidade de dias (mantido para uso interno legado) */
 function getPreviousPeriodDates(filteredDates){
   if(!filteredDates.length) return [];
   const idxStart = allDates.indexOf(filteredDates[0]);
@@ -3877,7 +3971,10 @@ function deltaHtml(curr, prev, lowerIsBetter){
 /* ---------- KPIs agregados no período ---------- */
 function renderKPIs(filteredDates){
   const curr = aggregateMetrics(filteredDates);
-  const prevDates = getPreviousPeriodDates(filteredDates);
+
+  // Período de comparação: mês anterior (mesmo calendário) quando toggle ativo;
+  // caso contrário sem comparação (prev = null).
+  const prevDates = comparisonEnabled ? getComparisonDates(filteredDates) : [];
   const prev = prevDates.length ? aggregateMetrics(prevDates) : null;
 
   const belowCount = curr.belowCount, aboveCount = curr.aboveCount, stopCount = curr.stopCount;
@@ -3901,6 +3998,8 @@ function renderKPIs(filteredDates){
   // aparece no fim da tabela de detalhamento), consumo de óleo de algodão no
   // período (aba própria na planilha) e o indicador de eficiência entre os
   // dois (quanto de fritura sai por litro de óleo consumido).
+  // Nota: Fritador cards não entram na comparação — dados de óleo têm
+  // lógica de período própria que tornaria o delta enganoso.
   const showFrituraCards = selectedSector === 'FRITADOR';
   let frituraCardsHtml = '';
   if(showFrituraCards){
@@ -3928,23 +4027,28 @@ function renderKPIs(filteredDates){
   if(selectedSector === ''){
     // Aba Geral: visão de atendimento consolidada, não por status de item
     const atendimentoPct = avgDif + 100;
+    const prevAtendPct   = prev ? (prev.avgDif === null ? 0 : prev.avgDif) + 100 : null;
     const atendClass = atendimentoPct >= 100 ? 'sem-good' : atendimentoPct >= 85 ? 'sem-warn' : 'sem-bad';
     document.getElementById('kpiGrid').innerHTML = `
       <div class="kpi-card ${atendClass}">
         <div class="label">Atendimento %</div>
         <div class="value">${atendimentoPct.toFixed(1)}%</div>
+        ${deltaHtml(atendimentoPct, prevAtendPct, false)}
       </div>
       <div class="kpi-card warn">
         <div class="label">Tempo Parado</div>
         <div class="value" style="font-size:22px;">${TP_fmtDuration(curr.tempoParadoMin*60)}</div>
+        ${prev ? deltaHtml(curr.tempoParadoMin, prev.tempoParadoMin, true) : ''}
       </div>
       <div class="kpi-card">
         <div class="label">Qtd. de Produções Não Planejadas</div>
         <div class="value">${curr.naoPlanejadasCount}</div>
+        ${prev ? deltaHtml(curr.naoPlanejadasCount, prev.naoPlanejadasCount, true) : ''}
       </div>
       <div class="kpi-card ${accClass}">
         <div class="label">Acurácia</div>
         <div class="value">${avgDif>0?'+':''}${avgDif.toFixed(1)}%</div>
+        ${prev ? deltaHtml(avgDif, prev.avgDif === null ? 0 : prev.avgDif, false) : ''}
       </div>
     `;
   } else {
@@ -3952,18 +4056,22 @@ function renderKPIs(filteredDates){
       <div class="kpi-card ${belowClass}">
         <div class="label">Abaixo do Planejado</div>
         <div class="value">${belowCount}</div>
+        ${prev ? deltaHtml(belowCount, prev.belowCount, true) : ''}
       </div>
       <div class="kpi-card ${aboveClass}">
         <div class="label">Igual ou Acima do Planejado</div>
         <div class="value">${aboveCount}</div>
+        ${prev ? deltaHtml(aboveCount, prev.aboveCount, false) : ''}
       </div>
       <div class="kpi-card ${stopClass}">
         <div class="label">Atrasos de Processo</div>
         <div class="value">${stopCount}</div>
+        ${prev ? deltaHtml(stopCount, prev.stopCount, true) : ''}
       </div>
       <div class="kpi-card ${accClass}">
         <div class="label">Acurácia de Produção</div>
         <div class="value">${avgDif>0?'+':''}${avgDif.toFixed(1)}%</div>
+        ${prev ? deltaHtml(avgDif, prev.avgDif === null ? 0 : prev.avgDif, false) : ''}
       </div>
     `;
   }
@@ -5544,6 +5652,8 @@ function refreshDaySelectOptions(filteredDates){
 function refreshAll(){
   if(DR_updaters.main) DR_updaters.main();
   const filteredDates = getFilteredDates();
+  // Mantém os chips de comparação sincronizados sempre que o período principal muda
+  updateComparisonChips(filteredDates);
   if(filteredDates.length === 0){
     periodInfo.textContent = 'Nenhum dia disponível no período escolhido.';
   } else if(filteredDates.length === 1){
@@ -5581,6 +5691,14 @@ dateEndInput.addEventListener('change', () => {
   refreshAll();
 });
 initDateRangePicker('main', dateStartInput, dateEndInput);
+
+// Toggle de comparação: atualiza chips e re-renderiza os KPIs
+document.getElementById('cmpToggle').addEventListener('change', () => {
+  const filteredDates = getFilteredDates();
+  updateComparisonChips(filteredDates);
+  renderKPIs(filteredDates);
+});
+
 /* Nota: o seletor de dia (daySelect) fica oculto e hoje só é usado internamente
    pelo botão de download do relatório do dia em Word (mais abaixo) — o gráfico
    "Comparativo" na tela agora soma o período inteiro automaticamente. */
