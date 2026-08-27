@@ -4055,12 +4055,20 @@ function renderKPIs(filteredDates){
       <div class="kpi-card warn">
         <div class="label">Tempo Parado</div>
         <div class="value" style="font-size:22px;">${TP_fmtDuration(curr.tempoParadoMin*60)}</div>
-        ${prev ? deltaHtml(curr.tempoParadoMin, prev.tempoParadoMin, true) : ''}
+        ${prev ? deltaHtml(
+            filteredDates.length ? curr.tempoParadoMin / filteredDates.length : 0,
+            prevDates.length     ? prev.tempoParadoMin / prevDates.length     : null,
+            true
+          ) : ''}
       </div>
       <div class="kpi-card">
         <div class="label">Qtd. de Produções Não Planejadas</div>
         <div class="value">${curr.naoPlanejadasCount}</div>
-        ${prev ? deltaHtml(curr.naoPlanejadasCount, prev.naoPlanejadasCount, true) : ''}
+        ${prev ? deltaHtml(
+            filteredDates.length ? curr.naoPlanejadasCount / filteredDates.length : 0,
+            prevDates.length     ? prev.naoPlanejadasCount / prevDates.length     : null,
+            true
+          ) : ''}
       </div>
       <div class="kpi-card ${accClass}">
         <div class="label">Acurácia</div>
@@ -4544,20 +4552,17 @@ function renderAtendimentoTrend(filteredDates){
     realDots += `<text x="${x}" y="${y-10}" font-size="10.5" font-weight="700" fill="${COR_REAL}" text-anchor="middle">${p.realizado.toFixed(0)}%</text>`;
   });
 
-  // Linha do período de comparação — alinhada por data de calendário:
-  // para cada posição i do período atual, calcula a data correspondente no mês anterior
-  // e busca no mapa de prevPoints. Isso garante que a linha ocupe todo o eixo X.
-  const prevMap = new Map(prevPoints.map(p => [p.date, p.realizado]));
+  // Linha do período de comparação — alinhada por índice de dia de produção:
+  // prevPoints[0] = 1º dia de produção de julho → posição xOf(0) = 1º dia de agosto
+  // Isso elimina gaps por fins de semana e compara "dia útil N" vs "dia útil N".
   let prevPath = '', prevDots = '', prevStarted = false;
-  points.forEach((p, i) => {
-    const shiftedDate = shiftMonthBack(p.date);
-    const realizado = prevMap.has(shiftedDate) ? prevMap.get(shiftedDate) : null;
-    if(realizado === null){ prevStarted = false; return; }
-    const x = xOf(i), y = yOf(realizado);
+  prevPoints.forEach((p, i) => {
+    if(p.realizado === null){ prevStarted = false; return; }
+    const x = xOf(i), y = yOf(p.realizado);
     prevPath += (!prevStarted ? 'M' : 'L') + x + ' ' + y + ' ';
     prevStarted = true;
     prevDots += `<circle cx="${x}" cy="${y}" r="3.5" fill="${COR_PREV}" opacity=".85"/>`;
-    prevDots += `<text x="${x}" y="${y+18}" font-size="10" font-weight="600" fill="${COR_PREV}" text-anchor="middle" opacity=".85">${realizado.toFixed(0)}%</text>`;
+    prevDots += `<text x="${x}" y="${y+18}" font-size="10" font-weight="600" fill="${COR_PREV}" text-anchor="middle" opacity=".85">${p.realizado.toFixed(0)}%</text>`;
   });
 
   let xLabels = '';
