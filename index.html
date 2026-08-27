@@ -3882,16 +3882,24 @@ function formatChipLabel(dates){
   return `${fmt(dates[0])} – ${fmt(dates[dates.length-1])}`;
 }
 
-/* Atualiza os chips com os rótulos dos dois períodos e dispara re-render */
+/* Atualiza os chips com os rótulos dos dois períodos e dispara re-render.
+   Os chips refletem o intervalo SELECIONADO pelo usuário (inputs de data),
+   não os dias com dados — evita exibir 03/08 quando o usuário selecionou 01/08. */
 function updateComparisonChips(filteredDates){
   const chips  = document.getElementById('cmpChips');
   const toggle = document.getElementById('cmpToggle');
   if(!toggle) return;
   comparisonEnabled = toggle.checked;
   if(comparisonEnabled){
-    const prevDates = getComparisonDates(filteredDates);
-    document.getElementById('cmpChipCurrent').textContent = formatChipLabel(filteredDates);
-    document.getElementById('cmpChipPrev').textContent    = formatChipLabel(prevDates);
+    const fmtISO = iso => { const [,m,d] = iso.split('-'); return `${d}/${m}`; };
+    const selStart = dateStartInput.value;
+    const selEnd   = dateEndInput.value;
+    const cmpStart = selStart ? shiftMonthBack(selStart) : null;
+    const cmpEnd   = selEnd   ? shiftMonthBack(selEnd)   : null;
+    document.getElementById('cmpChipCurrent').textContent =
+      selStart && selEnd ? `${fmtISO(selStart)} – ${fmtISO(selEnd)}` : formatChipLabel(filteredDates);
+    document.getElementById('cmpChipPrev').textContent =
+      cmpStart && cmpEnd ? `${fmtISO(cmpStart)} – ${fmtISO(cmpEnd)}` : '—';
     chips.classList.add('visible');
   } else {
     chips.classList.remove('visible');
@@ -3962,10 +3970,15 @@ function deltaHtml(curr, prev, lowerIsBetter){
   const diff = curr - prev;
   const pct = (diff/Math.abs(prev))*100;
   if(Math.abs(pct) < 1) return `<div class="kpi-delta flat">• estável vs. período anterior</div>`;
-  const improved = lowerIsBetter ? diff < 0 : diff > 0;
-  const cls = improved ? 'up' : 'down';
-  const arrow = improved ? '▲' : '▼';
-  return `<div class="kpi-delta ${cls}">${arrow} ${pct>0?'+':''}${pct.toFixed(0)}% vs. período anterior</div>`;
+  // A seta aponta na direção em que o NÚMERO se moveu (▲ subiu, ▼ desceu).
+  // A COR indica se essa direção é boa ou ruim:
+  //   lowerIsBetter=true  → subiu = ruim (vermelho), desceu = bom (verde)
+  //   lowerIsBetter=false → subiu = bom  (verde),   desceu = ruim (vermelho)
+  const wentUp   = diff > 0;
+  const improved = lowerIsBetter ? !wentUp : wentUp;
+  const arrow    = wentUp ? '▲' : '▼';
+  const cls      = improved ? 'up' : 'down'; // .up = verde, .down = vermelho (CSS)
+  return `<div class="kpi-delta ${cls}">${arrow} ${Math.abs(pct).toFixed(0)}% vs. período anterior</div>`;
 }
 
 /* ---------- KPIs agregados no período ---------- */
@@ -4472,16 +4485,25 @@ function renderAtendimentoTrend(filteredDates){
   }
   panel.style.display = '';
 
-  const points = filteredDates.map(d=>{
-    let difSum = 0, difN = 0;
-    getDayRows(d).forEach(r=>{
-      if(r.prev !== null && r.prev > 0){
-        difSum += (r.real/r.prev)*100;
-        difN++;
-      }
+  // Calcula atendimento % por dia para um conjunto de datas
+  function calcPoints(dates){
+    return dates.map(d=>{
+      let difSum = 0, difN = 0;
+      getDayRows(d).forEach(r=>{
+        if(r.prev !== null && r.prev > 0){
+          difSum += (r.real/r.prev)*100;
+          difN++;
+        }
+      });
+      return { date: d, label: shortDayLabel(d), realizado: difN ? difSum/difN : null };
     });
-    return { date: d, label: shortDayLabel(d), realizado: difN ? difSum/difN : null };
-  });
+  }
+
+  const points = calcPoints(filteredDates);
+
+  // Período de comparação: mesmo tamanho, alinhado por posição (dia 1 vs dia 1)
+  const prevDates  = comparisonEnabled ? getComparisonDates(filteredDates) : [];
+  const prevPoints = prevDates.length ? calcPoints(prevDates) : [];
 
   const wrap = document.getElementById('atendimentoTrendWrap');
   if(points.length === 0){
@@ -4492,17 +4514,22 @@ function renderAtendimentoTrend(filteredDates){
   const w = Math.max(560, points.length*90);
   const h = 280, padTop = 40, padBottom = 40, padLeft = 50, padRight = 20;
   const xStep = (w - padLeft - padRight) / Math.max(points.length-1, 1);
-  const valores = points.map(p=>p.realizado).filter(v=>v!==null);
-  const maxVal = Math.max(100, ...valores, 1) * 1.1; // sempre inclui a linha da Meta (100%) com folga
+
+  const todosValores = [
+    ...points.map(p=>p.realizado),
+    ...prevPoints.map(p=>p.realizado),
+  ].filter(v=>v!==null);
+  const maxVal = Math.max(100, ...todosValores, 1) * 1.1;
 
   function xOf(i){ return padLeft + i*xStep; }
   function yOf(val){ return h - padBottom - (val/maxVal)*(h-padTop-padBottom); }
 
-  const COR_META = '#B5640B', COR_REAL = 'var(--red)';
+  const COR_META = '#B5640B', COR_REAL = 'var(--red)', COR_PREV = '#1a56a0';
 
   const yMeta = yOf(100);
   const metaPath = `M ${padLeft} ${yMeta} L ${w-padRight} ${yMeta}`;
 
+  // Linha do período atual
   let realPath = '', realDots = '', started = false;
   points.forEach((p,i)=>{
     if(p.realizado === null){ started = false; return; }
@@ -4513,19 +4540,39 @@ function renderAtendimentoTrend(filteredDates){
     realDots += `<text x="${x}" y="${y-10}" font-size="10.5" font-weight="700" fill="${COR_REAL}" text-anchor="middle">${p.realizado.toFixed(0)}%</text>`;
   });
 
+  // Linha do período de comparação (alinhada por posição: índice 0 = primeiro dia de cada período)
+  let prevPath = '', prevDots = '', prevStarted = false;
+  prevPoints.forEach((p,i)=>{
+    if(p.realizado === null){ prevStarted = false; return; }
+    const x = xOf(i), y = yOf(p.realizado);
+    prevPath += (!prevStarted ? 'M' : 'L') + x + ' ' + y + ' ';
+    prevStarted = true;
+    prevDots += `<circle cx="${x}" cy="${y}" r="3.5" fill="${COR_PREV}" opacity=".85"/>`;
+    prevDots += `<text x="${x}" y="${y+18}" font-size="10" font-weight="600" fill="${COR_PREV}" text-anchor="middle" opacity=".85">${p.realizado.toFixed(0)}%</text>`;
+  });
+
   let xLabels = '';
   points.forEach((p,i)=>{
     xLabels += `<text x="${xOf(i)}" y="${h-14}" font-size="11" fill="#4a3a3a" text-anchor="middle">${p.label}</text>`;
   });
 
+  const prevLegend = comparisonEnabled && prevPoints.length
+    ? `<span><i class="dot" style="background:${COR_PREV};border:1px solid ${COR_PREV}"></i>Período anterior</span>`
+    : '';
+  const prevSvg = comparisonEnabled && prevPoints.length
+    ? `<path d="${prevPath}" fill="none" stroke="${COR_PREV}" stroke-width="2" stroke-dasharray="5 3" opacity=".85"/>${prevDots}`
+    : '';
+
   wrap.innerHTML = `
     <div class="legend" style="margin-bottom:8px;">
       <span><i class="dot" style="background:${COR_REAL};border:1px solid ${COR_REAL}"></i>Realizado</span>
+      ${prevLegend}
       <span><i class="dot" style="background:${COR_META};border:1px solid ${COR_META}"></i>Meta (100%)</span>
     </div>
     <svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:inline-block;">
       <line x1="${padLeft}" y1="${h-padBottom}" x2="${w-padRight}" y2="${h-padBottom}" stroke="#f0ddc0" stroke-width="1"/>
       <path d="${metaPath}" fill="none" stroke="${COR_META}" stroke-width="2" stroke-dasharray="6 4"/>
+      ${prevSvg}
       <path d="${realPath}" fill="none" stroke="${COR_REAL}" stroke-width="2.5"/>
       ${realDots}
       ${xLabels}
@@ -5692,11 +5739,12 @@ dateEndInput.addEventListener('change', () => {
 });
 initDateRangePicker('main', dateStartInput, dateEndInput);
 
-// Toggle de comparação: atualiza chips e re-renderiza os KPIs
+// Toggle de comparação: atualiza chips, KPIs e o gráfico de tendência de atendimento
 document.getElementById('cmpToggle').addEventListener('change', () => {
   const filteredDates = getFilteredDates();
   updateComparisonChips(filteredDates);
   renderKPIs(filteredDates);
+  renderAtendimentoTrend(filteredDates);
 });
 
 /* Nota: o seletor de dia (daySelect) fica oculto e hoje só é usado internamente
