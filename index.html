@@ -3862,13 +3862,17 @@ function shiftMonthBack(isoDate){
   return `${prevYear}-${String(prevMonth).padStart(2,'0')}-${String(clampedDay).padStart(2,'0')}`;
 }
 
-/* Retorna o conjunto de datas do período de comparação: mesmos dias do mês anterior.
-   Filtra apenas datas que existam em allDates (banco pode não ter todos os dias). */
+/* Retorna o conjunto de datas do período de comparação: todas as datas do banco
+   que caiam dentro do intervalo calendário equivalente do mês anterior.
+   Ex: filteredDates = [03/08 … 26/08] → retorna allDates entre 03/07 e 26/07.
+   Usamos o intervalo (start→end) em vez de mapear data a data, garantindo que
+   todos os dias com apontamento no período de comparação sejam incluídos —
+   mesmo que o mês anterior tenha dados em dias diferentes do mês atual. */
 function getComparisonDates(filteredDates){
   if(!filteredDates.length) return [];
-  const shifted = filteredDates.map(shiftMonthBack);
-  const allSet  = new Set(allDates);
-  return shifted.filter(d => allSet.has(d));
+  const cmpStart = shiftMonthBack(filteredDates[0]);
+  const cmpEnd   = shiftMonthBack(filteredDates[filteredDates.length - 1]);
+  return allDates.filter(d => d >= cmpStart && d <= cmpEnd);
 }
 
 /* Formata um par de datas ISO em label legível para os chips */
@@ -4540,15 +4544,20 @@ function renderAtendimentoTrend(filteredDates){
     realDots += `<text x="${x}" y="${y-10}" font-size="10.5" font-weight="700" fill="${COR_REAL}" text-anchor="middle">${p.realizado.toFixed(0)}%</text>`;
   });
 
-  // Linha do período de comparação (alinhada por posição: índice 0 = primeiro dia de cada período)
+  // Linha do período de comparação — alinhada por data de calendário:
+  // para cada posição i do período atual, calcula a data correspondente no mês anterior
+  // e busca no mapa de prevPoints. Isso garante que a linha ocupe todo o eixo X.
+  const prevMap = new Map(prevPoints.map(p => [p.date, p.realizado]));
   let prevPath = '', prevDots = '', prevStarted = false;
-  prevPoints.forEach((p,i)=>{
-    if(p.realizado === null){ prevStarted = false; return; }
-    const x = xOf(i), y = yOf(p.realizado);
+  points.forEach((p, i) => {
+    const shiftedDate = shiftMonthBack(p.date);
+    const realizado = prevMap.has(shiftedDate) ? prevMap.get(shiftedDate) : null;
+    if(realizado === null){ prevStarted = false; return; }
+    const x = xOf(i), y = yOf(realizado);
     prevPath += (!prevStarted ? 'M' : 'L') + x + ' ' + y + ' ';
     prevStarted = true;
     prevDots += `<circle cx="${x}" cy="${y}" r="3.5" fill="${COR_PREV}" opacity=".85"/>`;
-    prevDots += `<text x="${x}" y="${y+18}" font-size="10" font-weight="600" fill="${COR_PREV}" text-anchor="middle" opacity=".85">${p.realizado.toFixed(0)}%</text>`;
+    prevDots += `<text x="${x}" y="${y+18}" font-size="10" font-weight="600" fill="${COR_PREV}" text-anchor="middle" opacity=".85">${realizado.toFixed(0)}%</text>`;
   });
 
   let xLabels = '';
