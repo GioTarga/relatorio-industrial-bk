@@ -14441,6 +14441,18 @@ document.querySelectorAll('.ri-subtab-btn').forEach(btn => {
 // ─────────────────────────────────────────────
 // VOLUME DE PRODUÇÃO POR PRODUTO
 // ─────────────────────────────────────────────
+
+// Agrupa variantes de embalagem do mesmo produto:
+//   "EMPADA PALMITO BK 4X130G - CX C/12 PCT" → "EMPADA PALMITO BK 130G"
+// Passo 1: remove tudo após " - " (descrição de embalagem)
+// Passo 2: normaliza multiplicador NxPESO → PESO  (4X130G → 130G)
+function normalizarProduto(nome){
+  return nome
+    .split(' - ')[0]
+    .replace(/\b\d+[xX](\d+[A-Za-z]+)/g, '$1')
+    .trim();
+}
+
 let riProdSortCol   = 'curr';
 let riProdSortDir   = 'desc'; // 'asc' | 'desc'
 
@@ -14457,11 +14469,12 @@ function renderVolumePorProduto(filteredDates){
     dates.forEach(d => {
       getDayRows(d).forEach(r => {
         if(!r.produto) return;
+        const key = normalizarProduto(r.produto); // agrupa variantes de embalagem
         const vol = typeof r.real === 'number' && !isNaN(r.real) ? r.real : 0;
-        if(!map.has(r.produto)){
-          map.set(r.produto, { vol: 0, setor: r.setor || '' });
+        if(!map.has(key)){
+          map.set(key, { vol: 0, setor: r.setor || '' });
         }
-        map.get(r.produto).vol += vol;
+        map.get(key).vol += vol;
       });
     });
     return map;
