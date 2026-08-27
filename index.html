@@ -165,6 +165,47 @@
   .cmp-chip.chip-current .chip-dot{ background:#e08020; }
   .cmp-chip.chip-prev .chip-dot{ background:#1a56a0; }
 
+  /* ── Sub-tabs Relatório Industrial ─────────────────────────── */
+  .ri-subtabs{ display:flex; gap:0; border-bottom:2px solid var(--line); margin-bottom:22px; }
+  .ri-subtab-btn{
+    padding:9px 22px; font-size:12.5px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+    border:none; background:none; cursor:pointer; color:var(--ink-soft);
+    border-bottom:3px solid transparent; margin-bottom:-2px;
+    font-family:inherit; transition:color .15s;
+  }
+  .ri-subtab-btn.active{ color:var(--red-dark); border-bottom-color:var(--red); }
+  .ri-subtab-btn:hover:not(.active){ color:var(--ink); }
+
+  /* ── Painel Volume por Produto ──────────────────────────────── */
+  .ri-prod-toolbar{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:18px;
+  }
+  .ri-prod-toolbar select,
+  .ri-prod-toolbar input[type="text"]{
+    padding:7px 12px; border:1px solid var(--line); border-radius:var(--radius-sm);
+    font-size:12.5px; background:var(--cream); color:var(--ink); font-family:inherit;
+  }
+  .ri-prod-toolbar input[type="text"]{ min-width:220px; }
+  #riProdTable-wrap{
+    max-height:420px; overflow-y:auto; margin-top:18px;
+    border:1px solid var(--line); border-radius:var(--radius-sm);
+  }
+  #riProdTable-wrap table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  #riProdTable-wrap th{
+    position:sticky; top:0; background:var(--cream); border-bottom:2px solid var(--line);
+    padding:8px 12px; text-align:left; font-weight:700; color:var(--ink-soft);
+    text-transform:uppercase; letter-spacing:.5px; font-size:11px; white-space:nowrap; cursor:pointer;
+  }
+  #riProdTable-wrap th:hover{ color:var(--ink); }
+  #riProdTable-wrap th.sort-asc::after{ content:' ▲'; }
+  #riProdTable-wrap th.sort-desc::after{ content:' ▼'; }
+  #riProdTable-wrap td{ padding:7px 12px; border-bottom:1px solid var(--line); color:var(--ink); }
+  #riProdTable-wrap tr:last-child td{ border-bottom:none; }
+  #riProdTable-wrap tr:hover td{ background:var(--cream); }
+  .ri-prod-delta-up{ color:#c0392b; font-weight:700; }
+  .ri-prod-delta-down{ color:#2e7d32; font-weight:700; }
+  .ri-prod-delta-flat{ color:var(--ink-soft); }
+
   .setor-tabs{ display:flex; gap:8px; padding:16px 32px 0; flex-wrap:wrap; max-width:1600px; margin:0 auto; }
   .setor-tab-btn{
     padding:9px 20px; border-radius:var(--radius-sm) var(--radius-sm) 0 0; border:1px solid var(--line); border-bottom:none;
@@ -1404,6 +1445,15 @@ body{background:#fff;color:#000}
 
 <div class="container">
 
+  <!-- Sub-tabs do Relatório Industrial -->
+  <div class="ri-subtabs">
+    <button type="button" class="ri-subtab-btn active" data-ritab="geral">Geral</button>
+    <button type="button" class="ri-subtab-btn" data-ritab="producao">Produção</button>
+  </div>
+
+  <!-- Conteúdo: Geral -->
+  <div id="riGeralContent">
+
   <div class="kpi-grid" id="kpiGrid"></div>
   <div class="kpi-grid" id="kpiGridExtra"></div>
 
@@ -1568,6 +1618,36 @@ body{background:#fff;color:#000}
       </div>
     </div>
   </div>
+
+  </div><!-- /riGeralContent -->
+
+  <!-- Conteúdo: Produção por Produto -->
+  <div id="riProdContent" style="display:none;">
+    <div class="panel">
+      <div class="panel-title">Volume de Produção por Produto</div>
+      <div class="ri-prod-toolbar">
+        <select id="riProdSetorFiltro">
+          <option value="">Todos os setores</option>
+        </select>
+        <input type="text" id="riProdBusca" placeholder="🔍 Buscar produto...">
+      </div>
+      <div id="riProdChartWrap" style="overflow-x:auto;"></div>
+      <div id="riProdTable-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-col="produto">Produto</th>
+              <th data-col="curr" style="text-align:right;">Vol. Atual</th>
+              <th data-col="prev" id="riProdPrevTh" style="text-align:right;display:none;">Vol. Anterior</th>
+              <th data-col="delta" id="riProdDeltaTh" style="text-align:right;display:none;">Δ% / dia</th>
+            </tr>
+          </thead>
+          <tbody id="riProdTbody"></tbody>
+        </table>
+      </div>
+      <div class="trend-foot" style="margin-top:10px;">Soma de Produção Real por produto no período selecionado. Δ% normalizado por dia de produção — elimina distorções quando os períodos têm número diferente de dias.</div>
+    </div>
+  </div><!-- /riProdContent -->
 
   </div> <!-- /container -->
 
@@ -5735,6 +5815,7 @@ function refreshAll(){
   renderTable(filteredDates);
   renderQualidadeApontamento(filteredDates);
   renderAtendimentoTrend(filteredDates);
+  renderVolumePorProduto(filteredDates);
   currentChartFilteredDates = filteredDates;
   if(filteredDates.length > 0){
     renderDayDetail(filteredDates);
@@ -5753,12 +5834,13 @@ dateEndInput.addEventListener('change', () => {
 });
 initDateRangePicker('main', dateStartInput, dateEndInput);
 
-// Toggle de comparação: atualiza chips, KPIs e o gráfico de tendência de atendimento
+// Toggle de comparação: atualiza chips, KPIs, gráfico de tendência e volume por produto
 document.getElementById('cmpToggle').addEventListener('change', () => {
   const filteredDates = getFilteredDates();
   updateComparisonChips(filteredDates);
   renderKPIs(filteredDates);
   renderAtendimentoTrend(filteredDates);
+  renderVolumePorProduto(filteredDates);
 });
 
 /* Nota: o seletor de dia (daySelect) fica oculto e hoje só é usado internamente
@@ -14334,6 +14416,208 @@ async function PCP_init(){
 
 // Inicializa dropdown de setores com lista fixa ao carregar
 buildAlertaSetorDropdown();
+
+// ─────────────────────────────────────────────
+// SUB-TABS RELATÓRIO INDUSTRIAL
+// ─────────────────────────────────────────────
+let riActiveTab = 'geral';
+
+document.querySelectorAll('.ri-subtab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.ritab;
+    if(tab === riActiveTab) return;
+    riActiveTab = tab;
+    document.querySelectorAll('.ri-subtab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('riGeralContent').style.display  = tab === 'geral'     ? '' : 'none';
+    document.getElementById('riProdContent').style.display   = tab === 'producao'  ? '' : 'none';
+    if(tab === 'producao'){
+      const filteredDates = getFilteredDates();
+      renderVolumePorProduto(filteredDates);
+    }
+  });
+});
+
+// ─────────────────────────────────────────────
+// VOLUME DE PRODUÇÃO POR PRODUTO
+// ─────────────────────────────────────────────
+let riProdSortCol   = 'curr';
+let riProdSortDir   = 'desc'; // 'asc' | 'desc'
+
+function renderVolumePorProduto(filteredDates){
+  // Só renderiza se a aba estiver visível — evita trabalho desnecessário
+  if(riActiveTab !== 'producao') return;
+
+  const setorFiltro = (document.getElementById('riProdSetorFiltro')?.value || '').trim();
+  const busca       = (document.getElementById('riProdBusca')?.value || '').toLowerCase().trim();
+
+  // ── Agrega volume por produto (período atual) ──────────────────
+  function agregar(dates){
+    const map = new Map();
+    dates.forEach(d => {
+      getDayRows(d).forEach(r => {
+        if(!r.produto) return;
+        const vol = typeof r.real === 'number' && !isNaN(r.real) ? r.real : 0;
+        if(!map.has(r.produto)){
+          map.set(r.produto, { vol: 0, setor: r.setor || '' });
+        }
+        map.get(r.produto).vol += vol;
+      });
+    });
+    return map;
+  }
+
+  const currMap = agregar(filteredDates);
+
+  const prevDates = comparisonEnabled ? getComparisonDates(filteredDates) : [];
+  const prevMap   = prevDates.length  ? agregar(prevDates)               : new Map();
+
+  // ── Popula o filtro de setor (primeira vez) ────────────────────
+  const setorSel = document.getElementById('riProdSetorFiltro');
+  if(setorSel && setorSel.options.length <= 1){
+    const setores = [...new Set([...currMap.values()].map(v => v.setor).filter(Boolean))].sort();
+    setores.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s; o.textContent = s;
+      setorSel.appendChild(o);
+    });
+  }
+
+  // ── Monta lista de produtos ────────────────────────────────────
+  let items = [...currMap.entries()].map(([produto, {vol, setor}]) => {
+    const prev     = prevMap.has(produto) ? prevMap.get(produto).vol : null;
+    // Delta normalizado por dia de produção
+    const currPerDay = filteredDates.length ? vol / filteredDates.length : 0;
+    const prevPerDay = (prev !== null && prevDates.length) ? prev / prevDates.length : null;
+    let delta = null;
+    if(prevPerDay !== null && prevPerDay > 0){
+      delta = ((currPerDay - prevPerDay) / prevPerDay) * 100;
+    }
+    return { produto, setor, curr: vol, prev, delta };
+  });
+
+  // ── Filtros ────────────────────────────────────────────────────
+  if(setorFiltro) items = items.filter(i => i.setor === setorFiltro);
+  if(busca)       items = items.filter(i => i.produto.toLowerCase().includes(busca));
+
+  // ── Ordenação ─────────────────────────────────────────────────
+  items.sort((a, b) => {
+    let va = a[riProdSortCol], vb = b[riProdSortCol];
+    if(riProdSortCol === 'produto'){
+      va = va || ''; vb = vb || '';
+      return riProdSortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+    }
+    va = va ?? (riProdSortDir === 'asc' ? Infinity : -Infinity);
+    vb = vb ?? (riProdSortDir === 'asc' ? Infinity : -Infinity);
+    return riProdSortDir === 'asc' ? va - vb : vb - va;
+  });
+
+  // ── Colunas de comparação: visível/oculto ──────────────────────
+  const showCmp = comparisonEnabled && prevDates.length > 0;
+  const prevTh  = document.getElementById('riProdPrevTh');
+  const deltaTh = document.getElementById('riProdDeltaTh');
+  if(prevTh)  prevTh.style.display  = showCmp ? '' : 'none';
+  if(deltaTh) deltaTh.style.display = showCmp ? '' : 'none';
+
+  // ── Gráfico: top 20 por volume atual ──────────────────────────
+  const COR_CURR = 'var(--red)', COR_PREV = '#1a56a0';
+  const top20 = [...items].sort((a,b)=>b.curr-a.curr).slice(0,20);
+
+  if(top20.length === 0){
+    document.getElementById('riProdChartWrap').innerHTML =
+      `<div class="empty-state"><span class="empty-icon">📦</span>Nenhum produto encontrado no período.</div>`;
+  } else {
+    const barH = 22, gap = 8, labelW = 200, valueW = 70, chartPad = 16;
+    const maxVol = Math.max(...top20.map(i=>i.curr), showCmp ? Math.max(...top20.map(i=>i.prev||0)) : 0);
+    const availW = Math.max(500, 900 - labelW - valueW - chartPad*2);
+    const chartH = top20.length * (barH + gap) + (showCmp ? top20.length * (barH/2 + 4) : 0) + chartPad*2;
+    const totalW = labelW + availW + valueW + chartPad*2;
+
+    let bars = '';
+    top20.forEach((item, i) => {
+      const rowH = barH + (showCmp ? barH/2 + 4 : 0) + gap;
+      const y0 = chartPad + i * rowH;
+      const wCurr = maxVol > 0 ? (item.curr / maxVol) * availW : 0;
+
+      // Label produto
+      const label = item.produto.length > 28 ? item.produto.slice(0,26)+'…' : item.produto;
+      bars += `<text x="${labelW-8}" y="${y0 + barH/2 + 4}" font-size="11.5" fill="var(--ink)" text-anchor="end" dominant-baseline="middle"><title>${item.produto}</title>${label}</text>`;
+
+      // Barra atual
+      bars += `<rect x="${labelW}" y="${y0}" width="${wCurr}" height="${barH}" fill="${COR_CURR}" rx="3" opacity=".85"/>`;
+      bars += `<text x="${labelW + wCurr + 5}" y="${y0 + barH/2 + 4}" font-size="11" font-weight="700" fill="${COR_CURR}" dominant-baseline="middle">${item.curr.toLocaleString('pt-BR',{maximumFractionDigits:0})}</text>`;
+
+      if(showCmp && item.prev !== null){
+        const wPrev = maxVol > 0 ? (item.prev / maxVol) * availW : 0;
+        const yPrev = y0 + barH + 4;
+        bars += `<rect x="${labelW}" y="${yPrev}" width="${wPrev}" height="${barH/2}" fill="${COR_PREV}" rx="2" opacity=".55"/>`;
+        bars += `<text x="${labelW + wPrev + 5}" y="${yPrev + barH/4 + 2}" font-size="10" fill="${COR_PREV}" opacity=".85" dominant-baseline="middle">${item.prev.toLocaleString('pt-BR',{maximumFractionDigits:0})}</text>`;
+      }
+    });
+
+    // Legenda
+    const legendItems = showCmp
+      ? `<span style="display:inline-flex;align-items:center;gap:5px;margin-right:14px;"><span style="width:12px;height:12px;background:var(--red);border-radius:2px;display:inline-block;opacity:.85;"></span> Período atual</span>
+         <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:12px;height:6px;background:#1a56a0;border-radius:2px;display:inline-block;opacity:.55;"></span> Período anterior</span>`
+      : '';
+
+    document.getElementById('riProdChartWrap').innerHTML = `
+      ${legendItems ? `<div style="margin-bottom:8px;font-size:11.5px;">${legendItems}</div>` : ''}
+      <svg viewBox="0 0 ${totalW} ${chartH}" width="${totalW}" height="${chartH}" style="font-family:'Inter',Arial,sans-serif;display:block;overflow:visible;">
+        ${bars}
+      </svg>`;
+  }
+
+  // ── Tabela completa ────────────────────────────────────────────
+  const fmt = n => n !== null && n !== undefined
+    ? n.toLocaleString('pt-BR', {maximumFractionDigits: 0})
+    : '—';
+
+  const fmtDelta = delta => {
+    if(delta === null) return '<span class="ri-prod-delta-flat">—</span>';
+    if(Math.abs(delta) < 1) return '<span class="ri-prod-delta-flat">• estável</span>';
+    const arrow = delta > 0 ? '▲' : '▼';
+    const cls   = delta > 0 ? 'ri-prod-delta-up' : 'ri-prod-delta-down';
+    return `<span class="${cls}">${arrow} ${Math.abs(delta).toFixed(0)}%</span>`;
+  };
+
+  const rows = items.map(item => `
+    <tr>
+      <td>${item.produto}</td>
+      <td style="text-align:right;font-weight:600;">${fmt(item.curr)}</td>
+      ${showCmp ? `<td style="text-align:right;">${fmt(item.prev)}</td>` : ''}
+      ${showCmp ? `<td style="text-align:right;">${fmtDelta(item.delta)}</td>` : ''}
+    </tr>`).join('');
+
+  document.getElementById('riProdTbody').innerHTML =
+    rows || `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--ink-soft);">Nenhum produto encontrado.</td></tr>`;
+
+  // Atualiza headers de sort
+  document.querySelectorAll('#riProdTable-wrap th[data-col]').forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+    if(th.dataset.col === riProdSortCol) th.classList.add(riProdSortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+  });
+}
+
+// Listeners dos filtros da aba Produção
+document.getElementById('riProdSetorFiltro').addEventListener('change', () => {
+  if(riActiveTab === 'producao') renderVolumePorProduto(getFilteredDates());
+});
+document.getElementById('riProdBusca').addEventListener('input', () => {
+  if(riActiveTab === 'producao') renderVolumePorProduto(getFilteredDates());
+});
+document.querySelectorAll('#riProdTable-wrap th[data-col]').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = th.dataset.col;
+    if(riProdSortCol === col){
+      riProdSortDir = riProdSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      riProdSortCol = col;
+      riProdSortDir = col === 'produto' ? 'asc' : 'desc';
+    }
+    if(riActiveTab === 'producao') renderVolumePorProduto(getFilteredDates());
+  });
+});
 
 </script>
 </body>
