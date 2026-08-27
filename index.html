@@ -2457,7 +2457,23 @@ body{background:#fff;color:#000}
             </div>
             <div class="lanc-field">
               <label>Setor</label>
-              <input type="text" id="lmSetor" placeholder="Ex: SALGADO">
+              <select id="lmSetor">
+                <option value="">Selecione o setor…</option>
+                <option value="Salgado">Salgado</option>
+                <option value="Massa Salgado">Massa Salgado</option>
+                <option value="Croissant">Croissant</option>
+                <option value="Padaria">Padaria</option>
+                <option value="Confeitaria">Confeitaria</option>
+                <option value="Giro-Dia">Giro-Dia</option>
+                <option value="Giro-Noite">Giro-Noite</option>
+                <option value="Fritador">Fritador</option>
+                <option value="Cozinha">Cozinha</option>
+                <option value="Pão c/ Linguiça">Pão c/ Linguiça</option>
+                <option value="Pão de Queijo">Pão de Queijo</option>
+                <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
+                <option value="Química">Química</option>
+                <option value="Embalagem">Embalagem</option>
+              </select>
             </div>
             <div class="lanc-field">
               <label>Máquina</label>
@@ -2609,21 +2625,23 @@ body{background:#fff;color:#000}
               </div>
               <div class="lanc-field">
                 <label>Setor</label>
-                <input type="text" id="eqRequisicaoSetor" list="lpSetorListEstoque" placeholder="Setor que solicitou">
-                <datalist id="lpSetorListEstoque">
-                  <option value="Salgado">
-                  <option value="Massa Salgado">
-                  <option value="Croissant">
-                  <option value="Padaria">
-                  <option value="Confeitaria">
-                  <option value="Giro-Dia">
-                  <option value="Giro-Noite">
-                  <option value="Fritador">
-                  <option value="Cozinha">
-                  <option value="Pão c/ Linguiça">
-                  <option value="Pão de Queijo">
-                  <option value="Pão de Ló e Bolos">
-                </datalist>
+                <select id="eqRequisicaoSetor">
+                  <option value="">Selecione o setor…</option>
+                  <option value="Salgado">Salgado</option>
+                  <option value="Massa Salgado">Massa Salgado</option>
+                  <option value="Croissant">Croissant</option>
+                  <option value="Padaria">Padaria</option>
+                  <option value="Confeitaria">Confeitaria</option>
+                  <option value="Giro-Dia">Giro-Dia</option>
+                  <option value="Giro-Noite">Giro-Noite</option>
+                  <option value="Fritador">Fritador</option>
+                  <option value="Cozinha">Cozinha</option>
+                  <option value="Pão c/ Linguiça">Pão c/ Linguiça</option>
+                  <option value="Pão de Queijo">Pão de Queijo</option>
+                  <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
+                  <option value="Química">Química</option>
+                  <option value="Embalagem">Embalagem</option>
+                </select>
               </div>
               <div class="lanc-field">
                 <label>Líder</label>
@@ -2793,21 +2811,23 @@ body{background:#fff;color:#000}
           <form id="lancFormMaquina" class="lanc-form">
             <div class="lanc-field">
               <label>Setor</label>
-              <input type="text" class="mq-setor" list="mqSetorList" required>
-              <datalist id="mqSetorList">
-                <option value="Salgado">
-                <option value="Massa Salgado">
-                <option value="Croissant">
-                <option value="Padaria">
-                <option value="Confeitaria">
-                <option value="Giro-Dia">
-                <option value="Giro-Noite">
-                <option value="Fritador">
-                <option value="Cozinha">
-                <option value="Pão c/ Linguiça">
-                <option value="Pão de Queijo">
-                <option value="Pão de Ló e Bolos">
-              </datalist>
+              <select class="mq-setor" required>
+                <option value="">Selecione o setor…</option>
+                <option value="Salgado">Salgado</option>
+                <option value="Massa Salgado">Massa Salgado</option>
+                <option value="Croissant">Croissant</option>
+                <option value="Padaria">Padaria</option>
+                <option value="Confeitaria">Confeitaria</option>
+                <option value="Giro-Dia">Giro-Dia</option>
+                <option value="Giro-Noite">Giro-Noite</option>
+                <option value="Fritador">Fritador</option>
+                <option value="Cozinha">Cozinha</option>
+                <option value="Pão c/ Linguiça">Pão c/ Linguiça</option>
+                <option value="Pão de Queijo">Pão de Queijo</option>
+                <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
+                <option value="Química">Química</option>
+                <option value="Embalagem">Embalagem</option>
+              </select>
             </div>
             <div class="lanc-field">
               <label>Identificação</label>
@@ -6772,10 +6792,21 @@ function MQ_buildRowHtml(row){
     </tr>`;
 }
 
+// Helper: gera um <select> de setores com o valor correto pré-selecionado
+function mkSetorSelect(cls, val, extraStyle){
+  const opts=['','Salgado','Massa Salgado','Croissant','Padaria','Confeitaria',
+    'Giro-Dia','Giro-Noite','Fritador','Cozinha','Pão c/ Linguiça',
+    'Pão de Queijo','Pão de Ló e Bolos','Química','Embalagem'];
+  const style=extraStyle?` style="${extraStyle}"`:'';
+  return `<select class="${cls}"${style}>`+
+    opts.map(o=>`<option value="${o}"${o===val?' selected':''}>${o||'Selecione o setor…'}</option>`).join('')+
+    `</select>`;
+}
+
 function MQ_buildEditRowHtml(row){
   return `
     <tr data-id="${row.id}">
-      <td><input type="text" class="emq-setor" list="mqSetorList" value="${(row.setor||'').replace(/"/g,'&quot;')}"></td>
+      <td>${mkSetorSelect('emq-setor', row.setor||'', 'width:100%')}</td>
       <td><input type="text" class="emq-identificacao" value="${(row.identificacao||'').replace(/"/g,'&quot;')}"></td>
       <td><input type="text" class="emq-modelo" value="${(row.modelo||'').replace(/"/g,'&quot;')}"></td>
       <td>
@@ -8382,7 +8413,7 @@ function LP_buildHistEditRowHtml(row){
   return `
     <tr data-id="${row.id}">
       <td><input type="date" class="eh-data" value="${row.data||''}"></td>
-      <td><input type="text" class="eh-setor" value="${(row.setor||'').replace(/"/g,'&quot;')}"></td>
+      <td>${mkSetorSelect('eh-setor', row.setor||'', 'width:100%')}</td>
       <td><input type="text" class="eh-produto" list="lpProdutoList" value="${(row.produto||'').replace(/"/g,'&quot;')}"></td>
       <td><input type="text" class="eh-maquina" list="lpMaquinaList" value="${(row.maquina||'').replace(/"/g,'&quot;')}"></td>
       <td><input type="number" class="eh-equipe" value="${row.equipe ?? ''}"></td>
@@ -9334,7 +9365,7 @@ function EQ_buildHistEditRowHtml(row, tipo){
     return `<tr data-id="${row.id}">
       <td><input type="date" class="erqh-data" value="${row.data||''}"></td>
       <td><input type="date" class="erqh-data-emissao" value="${row.data_emissao||''}"></td>
-      <td><input type="text" class="erqh-setor" list="lpSetorListEstoque" value="${(row.setor||'').replace(/"/g,'&quot;')}"></td>
+      <td>${mkSetorSelect('erqh-setor', row.setor||'', 'width:100%')}</td>
       <td><input type="text" class="erqh-lider" value="${(row.lider||'').replace(/"/g,'&quot;')}"></td>
       <td><input type="text" class="erqh-item" list="eqItemList" value="${(row.item||'').replace(/"/g,'&quot;')}"></td>
       <td><input type="text" class="erqh-unidade" list="lpUnidadeListEstoque" value="${(row.unidade||'').replace(/"/g,'&quot;')}"></td>
