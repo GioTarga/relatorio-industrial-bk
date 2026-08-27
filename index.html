@@ -990,6 +990,17 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .cell-need{font-size:12px !important;font-weight:700 !important;font-variant-numeric:tabular-nums}
 #page-pcp-estoque .cell-need.need-high{color:var(--red)}
 
+/* Cobertura (dias) hierarchy */
+#page-pcp-estoque .cob-sem-dados{color:var(--ink-soft)}
+#page-pcp-estoque .cob-deficit{color:#c0392b;font-weight:700}
+#page-pcp-estoque .cob-critico{color:#d97706;font-weight:700}
+#page-pcp-estoque .cob-atencao{color:#7c5a00;font-weight:600}
+#page-pcp-estoque .cob-ok{color:#2e7d32;font-weight:600}
+/* Produzir hierarchy */
+#page-pcp-estoque .produzir-sem-dados{color:var(--ink-soft)}
+#page-pcp-estoque .produzir-ok{color:#2e7d32}
+#page-pcp-estoque .produzir-needed{color:#c0392b;font-weight:700}
+
 /* Estoque/Reserva muted */
 #page-pcp-estoque .cell-est,#page-pcp-estoque .cell-res{color:var(--ink-soft);font-size:10.5px;font-variant-numeric:tabular-nums}
 
@@ -6792,11 +6803,16 @@ function MQ_buildRowHtml(row){
     </tr>`;
 }
 
+// Setores canônicos da Bread King — fonte única de verdade para todos os <select> de setor
+const BK_SETORES = [
+  'Salgado','Massa Salgado','Croissant','Padaria','Confeitaria',
+  'Giro-Dia','Giro-Noite','Fritador','Cozinha','Pão c/ Linguiça',
+  'Pão de Queijo','Pão de Ló e Bolos','Química','Embalagem'
+];
+
 // Helper: gera um <select> de setores com o valor correto pré-selecionado
 function mkSetorSelect(cls, val, extraStyle){
-  const opts=['','Salgado','Massa Salgado','Croissant','Padaria','Confeitaria',
-    'Giro-Dia','Giro-Noite','Fritador','Cozinha','Pão c/ Linguiça',
-    'Pão de Queijo','Pão de Ló e Bolos','Química','Embalagem'];
+  const opts=['', ...BK_SETORES];
   const style=extraStyle?` style="${extraStyle}"`:'';
   return `<select class="${cls}"${style}>`+
     opts.map(o=>`<option value="${o}"${o===val?' selected':''}>${o||'Selecione o setor…'}</option>`).join('')+
@@ -13046,9 +13062,9 @@ function renderTableRow(item){
   const cob=calculateCoverage(item);
   const cobNeed=calculateCoverageNeed(item);
   const cobVal=cob===null?'—':cob<=0?'0d':cob>99?'+99d':(Math.round(cob*10)/10)+'d';
-  const cobStyle=cob===null?'color:var(--ink-soft)':cob<1?'color:#c0392b;font-weight:700':cob<3?'color:#d97706;font-weight:700':cob<7?'color:#7c5a00;font-weight:600':'color:#2e7d32;font-weight:600';
+  const cobCls=cob===null?'cob-sem-dados':cob<1?'cob-deficit':cob<3?'cob-critico':cob<7?'cob-atencao':'cob-ok';
   const produzirVal=cobNeed===null?'—':cobNeed===0?'✓':n(Math.round(cobNeed));
-  const produzirStyle=cobNeed===null?'color:var(--ink-soft)':cobNeed===0?'color:#2e7d32':'color:#c0392b;font-weight:700';
+  const produzirCls=cobNeed===null?'produzir-sem-dados':cobNeed===0?'produzir-ok':'produzir-needed';
   return`<div class="table-row ${st.stripe}">
     <div class="cell cell-produto">
       <div class="cell-desc" title="${item.descricao}">${shortDesc(item.descricao)}</div>
@@ -13061,8 +13077,8 @@ function renderTableRow(item){
     <div class="cell cell-num" style="color:#3a3a3a">${estLoja}</div>
     <div class="cell cell-num" style="color:#1a56a0">${vdaFab}</div>
     <div class="cell cell-num" style="color:#1a56a0">${vdaLoja}</div>
-    <div class="cell cell-num" style="${cobStyle}">${cobVal}</div>
-    <div class="cell cell-num" style="${produzirStyle}">${produzirVal}</div>
+    <div class="cell cell-num ${cobCls}">${cobVal}</div>
+    <div class="cell cell-num ${produzirCls}">${produzirVal}</div>
   </div>`;
 }
 function should_enter_op_check(item){return shouldEnterProductionOrder(item);}
@@ -13272,6 +13288,12 @@ function filterByStatus(items,filter){
   });
 }
 
+// Comparador de cobertura: menor cobertura primeiro; sem dados de venda → final da lista
+function sortByCoverage(a,b){
+  const ca=calculateCoverage(a), cb=calculateCoverage(b);
+  return (ca===null?Infinity:ca)-(cb===null?Infinity:cb);
+}
+
 function renderAlerts(){
   try{
     const searchEl=document.getElementById('searchAlert');
@@ -13289,7 +13311,7 @@ function renderAlerts(){
     items=filterByStatus(items,statusFilter);
     if(q)items=items.filter(i=>(i.descricao||'').toLowerCase().includes(q)||(i.familia||'').toLowerCase().includes(q));
     // Ordenar por cobertura ascendente: menor cobertura = mais crítico. Sem dados de venda → final da lista.
-    items.sort((a,b)=>{const ca=calculateCoverage(a),cb=calculateCoverage(b);return(ca===null?Infinity:ca)-(cb===null?Infinity:cb);});
+    items.sort(sortByCoverage);
     // Contagem de déficits para o badge — apenas produtos de FABRICAÇÃO
     const deficitCount=allItems().filter(i=>calculateAvailableStock(i)<0).length;
     const _ac=document.getElementById('alertCount');if(_ac)_ac.textContent=deficitCount;
@@ -13311,7 +13333,7 @@ function renderFab(){
   let items=[...fabItems()];
   if(fabFam!=='ALL')items=items.filter(i=>i.familia===fabFam);
   if(q)items=items.filter(i=>i.descricao.toLowerCase().includes(q));
-  items.sort((a,b)=>{const ca=calculateCoverage(a),cb=calculateCoverage(b);return(ca===null?Infinity:ca)-(cb===null?Infinity:cb);});
+  items.sort(sortByCoverage);
   tableEl.innerHTML=items.map(renderTableRow).join('');
 }
 function renderLoja(){
@@ -13321,7 +13343,7 @@ function renderLoja(){
   let items=[...lojaItems()];
   if(lojaFam!=='ALL')items=items.filter(i=>i.familia===lojaFam);
   if(q)items=items.filter(i=>i.descricao.toLowerCase().includes(q));
-  items.sort((a,b)=>{const ca=calculateCoverage(a),cb=calculateCoverage(b);return(ca===null?Infinity:ca)-(cb===null?Infinity:cb);});
+  items.sort(sortByCoverage);
   tableEl.innerHTML=items.map(renderTableRow).join('');
 }
 
