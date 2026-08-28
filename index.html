@@ -8297,28 +8297,20 @@ function LP_matchProdutoHistorico(produtoLimpo){
   return null;
 }
 
+// Normaliza string para comparação: uppercase, sem acentos, sem pontuação, espaços colapsados
+// Usado para casar o valor bruto do Excel com as entradas canônicas de BK_SETORES
+function LP_normStr(s){
+  return String(s).trim().toUpperCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')  // remove acentos
+    .replace(/[^A-Z0-9 ]/g,' ')                        // pontuação → espaço
+    .replace(/\s+/g,' ').trim();
+}
+
 function LP_mapSetorExcel(raw){
   if(!raw) return '';
-  const t = String(raw).trim().toUpperCase().replace(/\s+/g,' ');
-  const MAP = {
-    'GIRO NOITE':       'GIRO - NOITE',
-    'GIRO-NOITE':       'GIRO - NOITE',
-    'GIRO - NOITE':     'GIRO - NOITE',
-    'GIRO DIA':         'GIRO-DIA',
-    'GIRO-DIA':         'GIRO-DIA',
-    'PADARIA':          'PADARIA',
-    'SALGADO':          'SALGADO',
-    'CONFEITARIA':      'CONFEITARIA',
-    'CROISSANT':        'CROISSANT',
-    'FRITADOR':         'FRITADOR',
-    'COZINHA':          'COZINHA',
-    'PAO C/ LINGUICA':  'PÃO C/ LINGUIÇA',
-    'PÃO C/ LINGUIÇA':  'PÃO C/ LINGUIÇA',
-    'MASSA SALGADO':    'MASSA SALGADO',
-    'PAO DE LO E BOLOS':'PÃO DE LÓ E BOLOS',
-    'PÃO DE LÓ E BOLOS':'PÃO DE LÓ E BOLOS',
-  };
-  return MAP[t] || '';
+  const chave = LP_normStr(raw);
+  // Compara contra BK_SETORES — fonte única de verdade para nomes de setores
+  return BK_SETORES.find(s => LP_normStr(s) === chave) || '';
 }
 
 function LP_parseExcelRow(produtoRaw, qtdC, qtdD, setorExcel){
@@ -11249,7 +11241,7 @@ document.getElementById('mcGerarFormBtn').addEventListener('click', MC_gerarForm
    por isso o Giro (que tem os dois tipos) mostra tudo, e as outras linhas
    (que só têm um tipo) mostram só o bloco correspondente. */
 let PP_loadedOnce = false;
-const PP_LINHAS = ['Giro','Salgado','Massa Salgado','Confeitaria','Padaria','Pão de Ló e Bolos'];
+const PP_LINHAS = ['Giro','Salgado','Massa Salgado','Confeitaria','Padaria','Pão de Ló e Bolos','Croissant'];
 const PP_LINHA_LABELS = { 'Giro': 'Giro Dia' }; // rótulo de exibição — o valor real (usado nas consultas) continua "Giro"
 let PP_currentLinha = 'Giro';
 let PP_selectedProduto = '';
