@@ -385,6 +385,9 @@
     word-break:break-word; white-space:normal;
   }
   table.detail tbody td.center{ text-align:center; }
+  table.detail tbody td.num{ text-align:right; font-variant-numeric:tabular-nums; }
+  table.detail tbody td.pp-empty-cell{ text-align:center; color:var(--muted); font-style:italic; padding:18px 8px; }
+  table.detail tfoot td.pp-table-foot-note{ text-align:center; color:var(--muted); font-size:11px; font-style:italic; padding:6px 8px; border-top:1px dashed var(--line); }
   .kg-equiv{ display:inline-block; margin-top:2px; font-size:10.5px; color:var(--gold); font-style:italic; font-weight:600; }
   table.detail tbody tr.total-row{
     background:#fbf1da !important; border-top:2px solid var(--red);
@@ -1711,7 +1714,7 @@ body{background:#fff;color:#000}
           <div class="chart-wrap" id="ppChartLeadTime"></div>
         </div>
 
-        <div class="panel">
+        <div class="panel" id="ppPanelBateladas">
           <div class="panel-title">Registros de Batelada</div>
           <div class="table-wrap">
             <table class="detail" id="ppTableBateladas">
@@ -1746,7 +1749,7 @@ body{background:#fff;color:#000}
           <div class="chart-wrap" id="ppChartPareto"></div>
         </div>
 
-        <div class="panel">
+        <div class="panel" id="ppPanelCorridas">
           <div class="panel-title">Registros de Produção (Produtividade)</div>
           <div class="table-wrap">
             <table class="detail" id="ppTableCorridas">
@@ -1764,6 +1767,48 @@ body{background:#fff;color:#000}
         Nenhum dado registrado pra essa linha no período selecionado.
       </div>
 
+
+      <!-- Painel Croissant — rendimento + registros unificados, sempre no fim -->
+      <div id="ppPainelCroissant" style="display:none;">
+
+        <div class="panel">
+          <div class="panel-title">Rendimento do Período</div>
+          <div class="table-wrap">
+            <table class="detail" id="ppTableCroissantRendimento">
+              <thead>
+                <tr>
+                  <th class="center">Massas</th>
+                  <th class="center">Rolos Laminados</th>
+                  <th class="center">Caixas</th>
+                  <th class="center">Unidades</th>
+                </tr>
+              </thead>
+              <tbody id="ppTbodyCroissantRendimento"></tbody>
+            </table>
+          </div>
+          <div class="trend-foot" id="ppCroissantRendimentoFoot"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Registros do Período</div>
+          <div class="table-wrap">
+            <table class="detail" id="ppTableCroissantRegistros">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th class="center">Tipo</th>
+                  <th>Produto</th>
+                  <th>Equipamento</th>
+                  <th class="center">Lead Time</th>
+                  <th class="center">Produtividade</th>
+                </tr>
+              </thead>
+              <tbody id="ppTbodyCroissantRegistros"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
 
       <!-- Painel de Etapas de Referência — visível só na aba Confeitaria -->
       <div id="ppPainelReferencia" style="display:none;" class="container">
@@ -11366,10 +11411,13 @@ async function PP_loadData(){
 function PP_render(){
   const temEtapas = PP_BATELADAS.length > 0;
   const temVelocidade = PP_CORRIDAS.length > 0;
-  document.getElementById('ppBlocoEtapas').style.display = temEtapas ? 'block' : 'none';
-  document.getElementById('ppBlocoVelocidade').style.display = temVelocidade ? 'block' : 'none';
+  // Croissant usa painel unificado próprio — os blocos padrão ficam ocultos
+  const eCroissant = PP_currentLinha === 'Croissant';
+  document.getElementById('ppBlocoEtapas').style.display = (!eCroissant && temEtapas) ? 'block' : 'none';
+  document.getElementById('ppBlocoVelocidade').style.display = (!eCroissant && temVelocidade) ? 'block' : 'none';
   const emptyEl = document.getElementById('ppEmptyState');
-  emptyEl.style.display = (!temEtapas && !temVelocidade) ? 'block' : 'none';
+  // Croissant tem painel próprio — empty state só para os demais setores
+  emptyEl.style.display = (!eCroissant && !temEtapas && !temVelocidade) ? 'block' : 'none';
   emptyEl.innerHTML = `<span class="empty-icon">📊</span>Nenhum dado registrado pra essa linha${PP_selectedProduto ? ' / produto' : ''} no período selecionado.`;
 
   PP_renderKPIs();
@@ -11401,12 +11449,95 @@ function PP_render(){
     }
   }
 
+  // Painel Croissant — painel unificado de rendimento + registros
+  const painelCroissant = document.getElementById('ppPainelCroissant');
+  if(painelCroissant){
+    if(eCroissant){
+      painelCroissant.style.display = 'block';
+      PP_renderCroissantTabelas();
+    } else {
+      painelCroissant.style.display = 'none';
+    }
+  }
+
   // Pareto de paradas — visível quando há paradas com categoria no período
   const todasParadas = PP_CORRIDAS.flatMap(c => c.produtividade_paradas || []);
   const temParadas = todasParadas.some(p => p.categoria);
   document.getElementById('ppPainelPareto').style.display = (temVelocidade && todasParadas.length > 0) ? 'block' : 'none';
   if(temVelocidade && todasParadas.length > 0) PP_renderPareto(todasParadas);
 
+}
+
+/* ---------- Croissant — tabelas de rendimento e registros unificados ---------- */
+function PP_renderCroissantTabelas(){
+  // ── Rendimento do Período ──
+  // Conta bateladas como "massas" e deriva a cadeia de rendimento
+  const totalMassas = PP_BATELADAS.length;
+  const totalRolos  = totalMassas * CROISSANT_ROLOS_POR_MASSA;
+  const totalCaixas = totalRolos  * CROISSANT_CAIXAS_POR_ROLO;
+  const totalUnid   = totalCaixas * CROISSANT_UNID_POR_CAIXA;
+
+  const tbody = document.getElementById('ppTbodyCroissantRendimento');
+  const foot  = document.getElementById('ppCroissantRendimentoFoot');
+  if(tbody){
+    if(totalMassas === 0){
+      tbody.innerHTML = `<tr><td colspan="4" class="pp-empty-cell">Nenhuma batelada registrada no período.</td></tr>`;
+    } else {
+      tbody.innerHTML = `<tr>
+        <td class="num">${totalMassas}</td>
+        <td class="num">${totalRolos.toLocaleString('pt-BR')}</td>
+        <td class="num">${totalCaixas.toLocaleString('pt-BR')}</td>
+        <td class="num">${totalUnid.toLocaleString('pt-BR')}</td>
+      </tr>`;
+    }
+  }
+  if(foot){
+    // ppCroissantRendimentoFoot é uma <div>, não um tfoot — usar texto simples
+    foot.innerHTML = `Cadeia de rendimento: 1 massa → ${CROISSANT_ROLOS_POR_MASSA} rolos → ${CROISSANT_CAIXAS_POR_ROLO} cx/rolo → ${CROISSANT_UNID_POR_CAIXA} unid/cx`;
+  }
+
+  // ── Registros do Período (bateladas + corridas unificadas) ──
+  // Cada batelada vira uma linha de tipo "⏱ Processo"; cada corrida vira "📊 Produção"
+  const linhasBateladas = PP_BATELADAS.map(b => ({
+    _data: b.data || '',
+    tipo: '⏱ Processo',
+    produto: b.produto || '—',
+    equip: b.equipamento || '—',
+    leadTime: b.lead_time_min != null ? `${b.lead_time_min} min` : '—',
+    produt: '—',
+  }));
+
+  const linhasCorridas = PP_CORRIDAS.map(c => ({
+    _data: c.data || '',
+    tipo: '📊 Produção',
+    produto: c.produto || '—',
+    equip: c.turno || '—',
+    leadTime: '—',
+    produt: c.produtividade_real != null ? `${c.produtividade_real} ${c.unidade || ''}`.trim() : '—',
+  }));
+
+  // Ordenação: mais recente primeiro (ISO date string comparável diretamente)
+  const linhasUnificadas = [...linhasBateladas, ...linhasCorridas]
+    .sort((a, b) => (b._data > a._data ? 1 : b._data < a._data ? -1 : 0));
+
+  const tbodyReg = document.getElementById('ppTbodyCroissantRegistros');
+  if(tbodyReg){
+    if(linhasUnificadas.length === 0){
+      tbodyReg.innerHTML = `<tr><td colspan="6" class="pp-empty-cell">Nenhum registro no período.</td></tr>`;
+    } else {
+      tbodyReg.innerHTML = linhasUnificadas.map(l => {
+        const dataFmt = l._data ? l._data.split('-').reverse().join('/') : '—';
+        return `<tr>
+          <td>${dataFmt}</td>
+          <td>${l.tipo}</td>
+          <td>${l.produto}</td>
+          <td>${l.equip}</td>
+          <td class="num">${l.leadTime}</td>
+          <td class="num">${l.produt}</td>
+        </tr>`;
+      }).join('');
+    }
+  }
 }
 
 /* ---------- Pareto de paradas por categoria ---------- */
