@@ -8297,27 +8297,54 @@ function LP_matchProdutoHistorico(produtoLimpo){
   return null;
 }
 
-function LP_parseExcelRow(produtoRaw, qtdC, qtdD){
+function LP_mapSetorExcel(raw){
+  if(!raw) return '';
+  const t = String(raw).trim().toUpperCase().replace(/\s+/g,' ');
+  const MAP = {
+    'GIRO NOITE':       'GIRO - NOITE',
+    'GIRO-NOITE':       'GIRO - NOITE',
+    'GIRO - NOITE':     'GIRO - NOITE',
+    'GIRO DIA':         'GIRO-DIA',
+    'GIRO-DIA':         'GIRO-DIA',
+    'PADARIA':          'PADARIA',
+    'SALGADO':          'SALGADO',
+    'CONFEITARIA':      'CONFEITARIA',
+    'CROISSANT':        'CROISSANT',
+    'FRITADOR':         'FRITADOR',
+    'COZINHA':          'COZINHA',
+    'PAO C/ LINGUICA':  'PÃO C/ LINGUIÇA',
+    'PÃO C/ LINGUIÇA':  'PÃO C/ LINGUIÇA',
+    'MASSA SALGADO':    'MASSA SALGADO',
+    'PAO DE LO E BOLOS':'PÃO DE LÓ E BOLOS',
+    'PÃO DE LÓ E BOLOS':'PÃO DE LÓ E BOLOS',
+  };
+  return MAP[t] || '';
+}
+
+function LP_parseExcelRow(produtoRaw, qtdC, qtdD, setorExcel){
   const parsed = LP_parseQuantidadeExcel(qtdC) || LP_parseQuantidadeExcel(qtdD);
   const produtoLimpo = LP_limparNomeProdutoExcel(produtoRaw);
-  const match = LP_matchProdutoHistorico(produtoLimpo); // só usado pra sugerir o Setor
+  // Setor: prioriza o que veio direto do Excel (col A) — só cai no histórico se não houver
+  const setorDoExcel = LP_mapSetorExcel(setorExcel);
+  const match = setorDoExcel ? null : LP_matchProdutoHistorico(produtoLimpo);
   // O nome do produto só é aceito automaticamente se bater exatamente (ou
   // via correspondência de histórico já normalizada) com o catálogo
   // produtos_producao — senão fica pendente de revisão manual, pra não
   // deixar entrar uma variação nova de nome sem querer.
   const candidatoNome = match ? match.produto : produtoLimpo;
   const produtoCatalogo = PRODCAT_validar(candidatoNome);
+  const setor = setorDoExcel || (match ? match.setor : '');
   let motivo = '';
   if(!parsed && !produtoCatalogo) motivo = 'Sem quantidade clara nesta linha e produto não está no catálogo padrão — confira Planejado e Produto.';
   else if(!parsed) motivo = `Sem quantidade numérica clara ("${qtdC || qtdD || ''}") — confira o Planejado.`;
   else if(!produtoCatalogo) motivo = 'Produto não está no catálogo padrão — escolha o nome certo na lista.';
-  else if(!match) motivo = 'Produto reconhecido no catálogo, mas Setor não identificado no histórico — confira o Setor.';
+  else if(!setor) motivo = 'Produto reconhecido no catálogo, mas Setor não identificado — confira o Setor.';
   return {
     produto: produtoCatalogo ? produtoCatalogo.descricao : produtoLimpo,
     unidade: parsed ? parsed.unidade : '',
     planejado: parsed ? String(parsed.valor) : '',
-    setor: match ? match.setor : '',
-    pendente: !parsed || !produtoCatalogo || !match,
+    setor,
+    pendente: !parsed || !produtoCatalogo || !setor,
     pendenteMotivo: motivo,
   };
 }
@@ -8364,7 +8391,7 @@ async function LP_handleExcelImport(ev){
       const r = rows[i] || [];
       const produtoRaw = r[1];
       if(!produtoRaw || !String(produtoRaw).trim()) continue; // linha em branco no meio da lista — pula, não interrompe a leitura
-      itens.push(LP_parseExcelRow(String(produtoRaw).trim(), r[2], r[3]));
+      itens.push(LP_parseExcelRow(String(produtoRaw).trim(), r[2], r[3], r[0])); // r[0] = SETOR (col A do Excel)
     }
 
     if(itens.length === 0) throw new Error('Não encontrei nenhum produto na lista desse arquivo.');
