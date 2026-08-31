@@ -9372,6 +9372,22 @@ EQ_setDefaultDate('eqContagemData');
    uma vez só ao confirmar. ============================================================================ */
 let EQ_CONTAGEM_IMPORT_ROWS = [];
 
+// Converte valor de célula Excel para número, suportando formato BR
+// (ponto = separador de milhar, vírgula = separador decimal).
+// Ex: "78,020,00" → 78020.00 · "1.234,56" → 1234.56 · 184.92 → 184.92
+// Retorna null quando o valor não puder ser convertido (célula vazia, texto, NaN).
+function EQ_parseQtdExcel(raw){
+  if(raw === null || raw === undefined || raw === '') return null;
+  if(typeof raw === 'number') return isNaN(raw) ? null : raw;
+  // Remove pontos (milhar) → separa em partes pela vírgula → reconstrói como decimal
+  const s = String(raw).trim().replace(/\./g, '');
+  const partes = s.split(',');
+  const n = partes.length <= 1
+    ? Number(partes[0])
+    : Number(partes.slice(0, -1).join('') + '.' + partes[partes.length - 1]);
+  return isNaN(n) ? null : n;
+}
+
 function EQ_normalizarUnidadeImport(u){
   const t = (u||'').trim().toUpperCase();
   if(t === 'KG') return 'Kg';
@@ -9427,12 +9443,15 @@ document.getElementById('eqContagemFile').addEventListener('change', async (ev)=
       const r = rows[i] || [];
       const [categoria, codigo, descricao, unidade, contagem] = r;
       if(!descricao || String(descricao).trim() === '') continue; // linha em branco no meio da lista — pula, não interrompe a leitura
-      if(contagem === null || contagem === undefined || contagem === '') continue;
+      const qtd = EQ_parseQtdExcel(contagem);
+      // Quantidade não numérica (célula vazia, texto ou NaN) → pula a linha para evitar
+      // null constraint no Supabase. Strings BR como "78,020,00" são normalizadas pelo helper.
+      if(qtd === null) continue;
       itens.push({
         categoria: categoria ? String(categoria).trim() : null,
         codigo: (codigo !== null && codigo !== undefined) ? String(codigo).trim() : null,
         item: String(descricao).trim(),
-        quantidade: Number(contagem),
+        quantidade: qtd,
         unidade: EQ_normalizarUnidadeImport(unidade),
       });
     }
