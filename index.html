@@ -11442,6 +11442,8 @@ function PP_render(){
   // Croissant usa painel unificado próprio — os blocos padrão ficam ocultos
   const eCroissant = PP_currentLinha === 'Croissant';
   document.getElementById('ppBlocoEtapas').style.display = temEtapas ? 'block' : 'none';
+  // Croissant não exibe a tabela de bateladas — os dados ficam no painel unificado
+  document.getElementById('ppPanelBateladas').style.display = eCroissant ? 'none' : 'block';
   document.getElementById('ppBlocoVelocidade').style.display = (!eCroissant && temVelocidade) ? 'block' : 'none';
   const emptyEl = document.getElementById('ppEmptyState');
   // Croissant tem painel próprio — empty state só para os demais setores
