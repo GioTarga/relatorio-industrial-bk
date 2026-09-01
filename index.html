@@ -2991,7 +2991,6 @@ body{background:#fff;color:#000}
               <select class="mq-setor" required>
                 <option value="">Selecione o setor…</option>
                 <option value="Salgado">Salgado</option>
-                <option value="Massa Salgado">Massa Salgado</option>
                 <option value="Croissant">Croissant</option>
                 <option value="Padaria">Padaria</option>
                 <option value="Confeitaria">Confeitaria</option>
@@ -11320,8 +11319,7 @@ document.getElementById('mcGerarFormBtn').addEventListener('click', MC_gerarForm
    estudo de "Pão de Ló e Bolos" era do mesmo tipo dos estudos de etapas do
    processo, só que morava na aba errada).
 
-   Cada linha (Giro, Salgado, Massa Salgado, Pão de Queijo, Padaria, Pão de
-   Ló e Bolos) pode ter dois tipos de dado — "etapas" (tempo_processo_*) e/ou
+   Cada linha (Giro, Salgado, Padaria, Pão de Ló e Bolos, Confeitaria, Croissant) pode ter dois tipos de dado — "etapas" (tempo_processo_*) e/ou
    "velocidade" (produtividade_*). A página busca os dois e só mostra os
    painéis do tipo que realmente tiver dado pra aquela linha no período —
    por isso o Giro (que tem os dois tipos) mostra tudo, e as outras linhas
@@ -12493,7 +12491,7 @@ function PP_renderVelocidade(){
    ============================================================================
    Um lançamento por vez: Setor/Linha + Tipo (Etapas ou Velocidade) definem
    quais campos aparecem — cada linha tem um formato bem diferente (a
-   quantidade e o nome das etapas variam, e Salgado/Massa Salgado só têm
+   quantidade e o nome das etapas variam, e Salgado só tem
    velocidade, não etapas). Os campos são montados dinamicamente conforme
    a combinação escolhida, em vez de ter uma tela fixa por linha. */
 
