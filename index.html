@@ -2634,26 +2634,14 @@ body{background:#fff;color:#000}
             <div class="lanc-field">
               <label>Setor</label>
               <select id="lmSetor">
-                <option value="">Selecione o setor…</option>
-                <option value="Salgado">Salgado</option>
-                <option value="Massa Salgado">Massa Salgado</option>
-                <option value="Croissant">Croissant</option>
-                <option value="Padaria">Padaria</option>
-                <option value="Confeitaria">Confeitaria</option>
-                <option value="Giro-Dia">Giro-Dia</option>
-                <option value="Giro-Noite">Giro-Noite</option>
-                <option value="Fritador">Fritador</option>
-                <option value="Cozinha">Cozinha</option>
-                <option value="Pão c/ Linguiça">Pão c/ Linguiça</option>
-                <option value="Pão de Queijo">Pão de Queijo</option>
-                <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
-                <option value="Química">Química</option>
-                <option value="Embalagem">Embalagem</option>
+                <option value="">— Selecione o setor —</option>
               </select>
             </div>
             <div class="lanc-field">
               <label>Máquina</label>
-              <input type="text" id="lmMaquina">
+              <select id="lmMaquina">
+                <option value="">— Selecione (opcional) —</option>
+              </select>
             </div>
             <div class="lanc-field">
               <label>Requisitante</label>
@@ -7465,14 +7453,17 @@ async function PR_submitNew(ev){
    SETORES — cache e utilitário compartilhado
    Carrega uma vez, reusa em qualquer select da página.
    ============================================================================ */
-let ST_CACHE = []; // lista de nomes, ex: ['GIRO DIA', 'SALGADO', ...]
+let ST_CACHE = [];      // lista de nomes, ex: ['Giro Dia', 'Salgado', ...]
+let ST_LIDER_MAP = {};  // {nome: lider} — alimenta auto-fill do Requisitante na Manutenção
 
 async function ST_fetchNomes(){
   try{
     const client = getSupabaseClient();
-    const { data, error } = await client.from('setores').select('nome').order('nome');
+    // Busca nome + lider: lider alimenta o auto-fill de Requisitante no form de Manutenção
+    const { data, error } = await client.from('setores').select('nome, lider').order('nome');
     if(error) throw error;
     ST_CACHE = (data||[]).map(r => r.nome);
+    ST_LIDER_MAP = Object.fromEntries((data||[]).map(r => [r.nome, r.lider || '']));
   }catch(e){
     console.warn('ST_fetchNomes error:', e);
   }
@@ -7687,8 +7678,36 @@ document.querySelectorAll('.lanc-tab-btn').forEach(btn=>{
     if(tab === 'maquinas') MQ_init();
     if(tab === 'produtos') PR_init();
     if(tab === 'setores') ST_init();
+    if(tab === 'manutencao') LM_initForm();
   });
 });
+
+// ─────────────────────────────────────────────
+// FORMULÁRIO MANUTENÇÃO — init de selects e auto-fill
+// ─────────────────────────────────────────────
+
+/* Chamado toda vez que o usuário abre a aba Manutenção.
+   Popula lmSetor e lmMaquina do banco e registra o handler de setor
+   uma única vez (dataset.lmInited evita listeners duplicados). */
+async function LM_initForm(){
+  const setorSel = document.getElementById('lmSetor');
+  const maquinaSel = document.getElementById('lmMaquina');
+  await ST_populateSelect(setorSel);          // preenche com cadastro de setores
+  await MQ_fetchAllLP();                       // garante cache de máquinas carregado
+  MQ_populateSelect(maquinaSel, '');           // exibe todas as máquinas inicialmente
+  if(!setorSel.dataset.lmInited){
+    setorSel.dataset.lmInited = '1';
+    setorSel.addEventListener('change', LM_onSetorChange);
+  }
+}
+
+/* Ao trocar o setor: preenche Requisitante com o líder cadastrado
+   e filtra a lista de máquinas para as do setor escolhido. */
+function LM_onSetorChange(){
+  const setor = document.getElementById('lmSetor').value;
+  document.getElementById('lmRequisitante').value = ST_LIDER_MAP[setor] || '';
+  MQ_populateSelect(document.getElementById('lmMaquina'), setor);
+}
 
 /* ---------- Listas de Setor/Produto/Máquina já conhecidos ----------
    Evita erro de digitação que cria uma aba de setor duplicada no
@@ -8312,7 +8331,6 @@ function LP_parseQuantidadeExcel(cell){
    banco em vez deste. */
 function LP_limparNomeProdutoExcel(raw){
   let s = String(raw||'').trim();
-  s = s.replace(/\s*-\s*(CX\s*)?(C\/|FD\s*C\/|PCT\s*)[\d.,]+.*$/i, '');
   s = s.replace(/\(\d+\s*ARM[ÁA]RIOS?\)/i, '').trim();
   s = s.toLowerCase().replace(/(^|\s)([a-zà-ú])/g, (m,p1,p2)=> p1+p2.toUpperCase());
   s = s.replace(/\bBk\b/g, 'BK');
