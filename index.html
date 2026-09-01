@@ -2797,7 +2797,7 @@ body{background:#fff;color:#000}
                 <select id="eqRequisicaoSetor">
                   <option value="">Selecione o setor…</option>
                   <option value="Salgado">Salgado</option>
-                  <option value="Massa Salgado">Massa Salgado</option>
+
                   <option value="Croissant">Croissant</option>
                   <option value="Padaria">Padaria</option>
                   <option value="Confeitaria">Confeitaria</option>
@@ -2910,7 +2910,7 @@ body{background:#fff;color:#000}
                   <option value="">Selecione...</option>
                   <option value="Giro">Giro Dia</option>
                   <option value="Salgado">Salgado</option>
-                  <option value="Massa Salgado">Massa Salgado</option>
+
                   <option value="Confeitaria">Confeitaria</option>
                   <option value="Padaria">Padaria</option>
                   <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
@@ -2961,7 +2961,7 @@ body{background:#fff;color:#000}
                   <option value="">Todas</option>
                   <option value="Giro">Giro Dia</option>
                   <option value="Salgado">Salgado</option>
-                  <option value="Massa Salgado">Massa Salgado</option>
+
                   <option value="Confeitaria">Confeitaria</option>
                   <option value="Padaria">Padaria</option>
                   <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
@@ -10342,7 +10342,7 @@ function MC_renderMatriz(itens){
 let MC_RADAR = null; // cache do último carregamento
 
 /* Sectores rastreados pelo radar — mesmo conjunto do módulo PP */
-const MC_RADAR_LINHAS = ['Giro','Salgado','Massa Salgado','Confeitaria','Padaria','Pão de Ló e Bolos'];
+const MC_RADAR_LINHAS = ['Giro','Salgado','Confeitaria','Padaria','Pão de Ló e Bolos','Croissant'];
 const MC_RADAR_LABELS = { 'Giro': 'Giro Dia' };
 
 async function MC_loadRadar(){
@@ -11327,7 +11327,7 @@ document.getElementById('mcGerarFormBtn').addEventListener('click', MC_gerarForm
    por isso o Giro (que tem os dois tipos) mostra tudo, e as outras linhas
    (que só têm um tipo) mostram só o bloco correspondente. */
 let PP_loadedOnce = false;
-const PP_LINHAS = ['Giro','Salgado','Massa Salgado','Confeitaria','Padaria','Pão de Ló e Bolos','Croissant'];
+const PP_LINHAS = ['Giro','Salgado','Confeitaria','Padaria','Pão de Ló e Bolos','Croissant'];
 const PP_LINHA_LABELS = { 'Giro': 'Giro Dia' }; // rótulo de exibição — o valor real (usado nas consultas) continua "Giro"
 
 // Fatores de rendimento do Croissant — fonte única para os cálculos de KPI
@@ -11715,6 +11715,32 @@ function PP_renderKPIs(){
   // velocidade, cruzando com a Capacidade dos Equipamentos quando existe
   // registro daquela máquina/produto na página Máquinas)
   if(PP_currentLinha === 'Salgado'){
+    // Bloco de Massa e Rolos Laminados têm KPIs próprios — detecta quando o filtro
+    // de produto está nesses itens (antes pertenciam à linha "Massa Salgado")
+    const temBloco = PP_CORRIDAS.some(c => (c.produto||'').toLowerCase().includes('bloco'));
+    const temRolo  = PP_CORRIDAS.some(c => (c.produto||'').toLowerCase().includes('rolo'));
+    if(temBloco || temRolo){
+      const blocos = PP_CORRIDAS.filter(c => (c.produto||'').toLowerCase().includes('bloco'));
+      const rolos  = PP_CORRIDAS.filter(c => (c.produto||'').toLowerCase().includes('rolo'));
+      const taxaBlocos = blocos.map(c => PP_getProdutividadeValor(c)).filter(v => v != null);
+      const taxaRolos  = rolos.map(c  => PP_getProdutividadeValor(c)).filter(v => v != null);
+      const mediaBlocosHora = taxaBlocos.length ? taxaBlocos.reduce((a,b)=>a+b,0)/taxaBlocos.length : null;
+      const mediaRolosHora  = taxaRolos.length  ? taxaRolos.reduce((a,b)=>a+b,0)/taxaRolos.length   : null;
+      const tempoBlocos = blocos.map(c=>c.tempo_medio_seg).filter(v=>v!=null).map(Number);
+      const tempoRolos  = rolos.map(c=>c.tempo_medio_seg).filter(v=>v!=null).map(Number);
+      const mediaTempoBlocos = tempoBlocos.length ? tempoBlocos.reduce((a,b)=>a+b,0)/tempoBlocos.length : null;
+      const mediaTempoRolos  = tempoRolos.length  ? tempoRolos.reduce((a,b)=>a+b,0)/tempoRolos.length   : null;
+      const kpis = [
+        { label:'Blocos de Massa/hora',          value: mediaBlocosHora   != null ? mediaBlocosHora.toLocaleString('pt-BR',{maximumFractionDigits:1})   : '—' },
+        { label:'Rolos Laminados/hora',           value: mediaRolosHora    != null ? mediaRolosHora.toLocaleString('pt-BR',{maximumFractionDigits:1})    : '—' },
+        { label:'Tempo Médio Rolos Laminados',    value: mediaTempoRolos   != null ? PP_fmtDuracao(mediaTempoRolos)   : '—' },
+        { label:'Tempo Médio Blocos de Massa',    value: mediaTempoBlocos  != null ? PP_fmtDuracao(mediaTempoBlocos)  : '—' },
+      ];
+      grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
+      grid.innerHTML = kpis.map(k=>`<div class="kpi-card"><div class="label">${k.label}</div><div class="value">${k.value}</div></div>`).join('');
+      return;
+    }
+
     const comProdRecipiente = PP_CORRIDAS.filter(c => c.producao_por_hora != null);
     const unidadeRecipiente = (comProdRecipiente.find(c=>c.unidade_medida) || {}).unidade_medida || 'Caixas';
     const mediaRecipiente = comProdRecipiente.length
@@ -11740,36 +11766,6 @@ function PP_renderKPIs(){
       { label:'Unidades/h', value: mediaUnidadesHora != null ? mediaUnidadesHora.toLocaleString('pt-BR',{maximumFractionDigits:0}) : '—' },
       { label:`Tempo Médio por ${unidadeSingular}`, value: mediaTempo != null ? PP_fmtDuracao(mediaTempo) : '—' },
       { label:'Capacidade da Máquina (Unid/h)', value: mediaCapacidade != null ? mediaCapacidade.toLocaleString('pt-BR') : 'Sem registro' },
-    ];
-    grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
-    grid.innerHTML = kpis.map(k=>`
-      <div class="kpi-card"><div class="label">${k.label}</div><div class="value">${k.value}</div></div>
-    `).join('');
-    return;
-  }
-
-  // Massa Salgado: os dois produtos dessa linha (Bloco de Massa e Rolos
-  // Laminados) têm ritmos e tempos bem diferentes, então os cards separam
-  // por produto em vez de misturar tudo numa média só.
-  if(PP_currentLinha === 'Massa Salgado'){
-    const blocos = PP_CORRIDAS.filter(c => (c.produto||'').toLowerCase().includes('bloco'));
-    const rolos = PP_CORRIDAS.filter(c => (c.produto||'').toLowerCase().includes('rolo'));
-
-    const taxaBlocos = blocos.map(c => PP_getProdutividadeValor(c)).filter(v => v != null);
-    const taxaRolos = rolos.map(c => PP_getProdutividadeValor(c)).filter(v => v != null);
-    const mediaBlocosHora = taxaBlocos.length ? taxaBlocos.reduce((a,b)=>a+b,0)/taxaBlocos.length : null;
-    const mediaRolosHora = taxaRolos.length ? taxaRolos.reduce((a,b)=>a+b,0)/taxaRolos.length : null;
-
-    const tempoBlocos = blocos.map(c=>c.tempo_medio_seg).filter(v=>v!=null).map(Number);
-    const tempoRolos = rolos.map(c=>c.tempo_medio_seg).filter(v=>v!=null).map(Number);
-    const mediaTempoBlocos = tempoBlocos.length ? tempoBlocos.reduce((a,b)=>a+b,0)/tempoBlocos.length : null;
-    const mediaTempoRolos = tempoRolos.length ? tempoRolos.reduce((a,b)=>a+b,0)/tempoRolos.length : null;
-
-    const kpis = [
-      { label:'Blocos de Massa/hora', value: mediaBlocosHora != null ? mediaBlocosHora.toLocaleString('pt-BR',{maximumFractionDigits:1}) : '—' },
-      { label:'Rolos Laminados/hora', value: mediaRolosHora != null ? mediaRolosHora.toLocaleString('pt-BR',{maximumFractionDigits:1}) : '—' },
-      { label:'Tempo Médio Rolos Laminados', value: mediaTempoRolos != null ? PP_fmtDuracao(mediaTempoRolos) : '—' },
-      { label:'Tempo Médio Blocos de Massa', value: mediaTempoBlocos != null ? PP_fmtDuracao(mediaTempoBlocos) : '—' },
     ];
     grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
     grid.innerHTML = kpis.map(k=>`
@@ -12517,7 +12513,7 @@ const PPL_VELOCIDADE_CONFIG = {
   // da Massa saiu — não é informação que costuma ser coletada.
   'Giro': { campos:['inicio','fim','produtividade_paes_hora','tamanho_pao_g'] },
   'Salgado': { campos:['maquina','inicio','fim','produtividade_prensa','qtd_colaboradores','unidades_por_hora','producao_por_hora','tempo_medio_seg','unidade_medida','unidades_por_recipiente','duracao_rolo_seg'] },
-  'Massa Salgado': { campos:['inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
+
   'Padaria': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
   'Confeitaria': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
   'Pão de Ló e Bolos': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_batelada_massa'] },
