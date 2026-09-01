@@ -1709,7 +1709,7 @@ body{background:#fff;color:#000}
           <div class="chart-wrap" id="ppChartEtapas"></div>
         </div>
 
-        <div class="panel">
+        <div class="panel" id="ppPanelLeadTime">
           <div class="panel-title">Lead Time Médio por Produto</div>
           <div class="chart-wrap" id="ppChartLeadTime"></div>
         </div>
@@ -11442,8 +11442,9 @@ function PP_render(){
   // Croissant usa painel unificado próprio — os blocos padrão ficam ocultos
   const eCroissant = PP_currentLinha === 'Croissant';
   document.getElementById('ppBlocoEtapas').style.display = temEtapas ? 'block' : 'none';
-  // Croissant não exibe a tabela de bateladas — os dados ficam no painel unificado
+  // Croissant não exibe tabela de bateladas nem lead time — dados ficam no painel unificado
   document.getElementById('ppPanelBateladas').style.display = eCroissant ? 'none' : 'block';
+  document.getElementById('ppPanelLeadTime').style.display  = eCroissant ? 'none' : 'block';
   document.getElementById('ppBlocoVelocidade').style.display = (!eCroissant && temVelocidade) ? 'block' : 'none';
   const emptyEl = document.getElementById('ppEmptyState');
   // Croissant tem painel próprio — empty state só para os demais setores
