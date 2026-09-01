@@ -7100,16 +7100,10 @@ function MQ_buildRowHtml(row){
     </tr>`;
 }
 
-// Setores canônicos da Bread King — fonte única de verdade para todos os <select> de setor
-const BK_SETORES = [
-  'Salgado','Massa Salgado','Croissant','Padaria','Confeitaria',
-  'Giro-Dia','Giro-Noite','Fritador','Cozinha','Pão c/ Linguiça',
-  'Pão de Queijo','Pão de Ló e Bolos','Química','Embalagem'
-];
-
 // Helper: gera um <select> de setores com o valor correto pré-selecionado
+// Usa ST_CACHE — carregado do cadastro de setores no Supabase (tabela: setores)
 function mkSetorSelect(cls, val, extraStyle){
-  const opts=['', ...BK_SETORES];
+  const opts=['', ...ST_CACHE];
   const style=extraStyle?` style="${extraStyle}"`:'';
   return `<select class="${cls}"${style}>`+
     opts.map(o=>`<option value="${o}"${o===val?' selected':''}>${o||'Selecione o setor…'}</option>`).join('')+
@@ -7718,13 +7712,9 @@ function LM_onSetorChange(){
    Produto e Máquina também são filtrados pelo setor selecionado, pra não
    sugerir produto de outro setor no meio da lista. */
 function LANC_getKnownValues(){
-  // Setores fixos da Bread King — sempre disponíveis independente do DATA
-  const SETORES_BK = [
-    'Giro Dia','Giro Noite','Salgado','Massa Salgado',
-    'Confeitaria','Padaria','Pão de Ló e Bolos','Fritador',
-    'Cozinha','Pão c/ Linguiça'
-  ];
-  const setores = new Set(SETORES_BK);
+  // Setores vindos do cadastro no Supabase (ST_CACHE) — fonte única de verdade
+  // Complementados pelos setores já presentes no histórico carregado (DATA)
+  const setores = new Set(ST_CACHE);
   const produtosPorSetor = {}, maquinasPorSetor = {};
   const produtosTodos = new Set(), maquinasTodos = new Set();
   Object.values(DATA || {}).forEach(day=>{
@@ -8363,7 +8353,6 @@ function LP_matchProdutoHistorico(produtoLimpo){
 }
 
 // Normaliza string para comparação: uppercase, sem acentos, sem pontuação, espaços colapsados
-// Usado para casar o valor bruto do Excel com as entradas canônicas de BK_SETORES
 function LP_normStr(s){
   return String(s).trim().toUpperCase()
     .normalize('NFD').replace(/[̀-ͯ]/g,'')  // remove acentos
@@ -8374,8 +8363,10 @@ function LP_normStr(s){
 function LP_mapSetorExcel(raw){
   if(!raw) return '';
   const chave = LP_normStr(raw);
-  // Compara contra BK_SETORES — fonte única de verdade para nomes de setores
-  return BK_SETORES.find(s => LP_normStr(s) === chave) || '';
+  // Compara contra ST_CACHE — carregado do cadastro de setores no Supabase
+  // Garante que qualquer setor novo cadastrado no painel seja reconhecido no import
+  if(!ST_CACHE.length) console.warn('LP_mapSetorExcel: ST_CACHE vazio — ST_fetchNomes() ainda não rodou?');
+  return ST_CACHE.find(s => LP_normStr(s) === chave) || '';
 }
 
 function LP_parseExcelRow(produtoRaw, qtdC, qtdD, setorExcel){
