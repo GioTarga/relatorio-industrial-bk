@@ -1789,6 +1789,11 @@ body{background:#fff;color:#000}
           <div class="trend-foot" id="ppCroissantRendimentoFoot"></div>
         </div>
 
+        <div class="panel" id="ppCroissantObsPanel" style="display:none;">
+          <div class="panel-title">📝 Observações do Período</div>
+          <ol id="ppCroissantObsList" style="margin:0;padding-left:20px;line-height:1.8;font-size:13px;color:var(--ink-body);"></ol>
+        </div>
+
         <div class="panel">
           <div class="panel-title">Registros do Período</div>
           <div class="table-wrap">
@@ -2930,6 +2935,12 @@ body{background:#fff;color:#000}
 
               <div class="lanc-field span-3" id="pplCamposWrap">
                 <div id="pplCamposDinamicos"></div>
+              </div>
+
+              <div class="lanc-field span-3">
+                <label>Observação (opcional)</label>
+                <textarea id="pplObservacao" rows="2" placeholder="Registre aqui qualquer observação feita durante a coleta…"
+                  style="width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px 12px;font-size:13px;font-family:inherit;background:var(--cream);resize:vertical;"></textarea>
               </div>
 
               <div class="lanc-submit-row">
@@ -11527,6 +11538,27 @@ function PP_renderCroissantTabelas(){
     foot.innerHTML = `Cadeia de rendimento: 1 massa → ${CROISSANT_ROLOS_POR_MASSA} rolos → ${CROISSANT_CAIXAS_POR_ROLO} cx/rolo → ${CROISSANT_UNID_POR_CAIXA} unid/cx`;
   }
 
+  // ── Observações do Período ──
+  const obsPanel = document.getElementById('ppCroissantObsPanel');
+  const obsList  = document.getElementById('ppCroissantObsList');
+  if(obsPanel && obsList){
+    // Coleta observações de bateladas e corridas com data para ordenação
+    const todasObs = [
+      ...PP_BATELADAS.filter(b => b.observacao && b.observacao.trim()).map(b => ({ data: b.data, texto: b.observacao.trim() })),
+      ...PP_CORRIDAS.filter(c => c.observacao && c.observacao.trim()).map(c => ({ data: c.data, texto: c.observacao.trim() })),
+    ].sort((a, b) => (a.data > b.data ? 1 : a.data < b.data ? -1 : 0));
+
+    if(todasObs.length > 0){
+      obsList.innerHTML = todasObs.map(o => {
+        const dataFmt = o.data ? o.data.split('-').reverse().join('/') : '';
+        return `<li><span style="font-size:11px;color:var(--ink-soft);margin-right:6px;">${dataFmt}</span>${o.texto}</li>`;
+      }).join('');
+      obsPanel.style.display = 'block';
+    } else {
+      obsPanel.style.display = 'none';
+    }
+  }
+
   // ── Registros do Período (bateladas + corridas unificadas) ──
   // Cada batelada vira uma linha de tipo "⏱ Processo"; cada corrida vira "📊 Produção"
   const linhasBateladas = PP_BATELADAS.map(b => ({
@@ -12885,12 +12917,14 @@ async function PPL_handleSubmit(e){
       const retencaoEl = document.getElementById('pplRetencao');
       const duracaoTotalEl = document.getElementById('pplDuracaoTotal');
 
+      const obsEl = document.getElementById('pplObservacao');
       const bateladaPayload = {
         linha, data, produto: produtoFinal,
         batelada: bateladaEl && bateladaEl.value ? parseFloat(bateladaEl.value) : null,
         masseira: masseiraEl && masseiraEl.value.trim() ? masseiraEl.value.trim() : null,
         retencao_seg: retencaoEl ? PPL_timeToSeconds(retencaoEl.value) : null,
         duracao_total_seg: duracaoTotalEl ? PPL_timeToSeconds(duracaoTotalEl.value) : null,
+        observacao: obsEl && obsEl.value.trim() ? obsEl.value.trim() : null,
       };
       const { data: batInserted, error: batErr } = await client.from('tempo_processo_bateladas').insert([bateladaPayload]).select().single();
       if(batErr) throw batErr;
@@ -12946,11 +12980,13 @@ async function PPL_handleSubmit(e){
           : null;
 
         // Salva corrida (com média das formas)
+        const obsElPdL = document.getElementById('pplObservacao');
         const corridaPayload = {
           linha, data, produto: produtoFinal,
           unidade_medida: 'Forma',
           unidades_por_recipiente: unidadesPorForma,
           tempo_medio_seg: mediaFormaSeg,
+          observacao: obsElPdL && obsElPdL.value.trim() ? obsElPdL.value.trim() : null,
         };
         const { data: corInserted, error: corErr } = await client.from('produtividade_corridas').insert([corridaPayload]).select().single();
         if(corErr) throw corErr;
@@ -12979,7 +13015,8 @@ async function PPL_handleSubmit(e){
       } else {
       /* ── Demais linhas: lógica genérica ── */
       const cfg = PPL_VELOCIDADE_CONFIG[linha] || { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] };
-      const corridaPayload = { linha, data, produto: produtoFinal };
+      const obsElVel = document.getElementById('pplObservacao');
+      const corridaPayload = { linha, data, produto: produtoFinal, observacao: obsElVel && obsElVel.value.trim() ? obsElVel.value.trim() : null };
       if(linha === 'Giro') corridaPayload.unidade_medida = 'Massa'; // fixo — não tem campo no formulário pra essa linha
       cfg.campos.forEach(campo=>{
         const meta = PPL_CAMPO_META[campo];
@@ -13010,6 +13047,8 @@ async function PPL_handleSubmit(e){
     feedback.textContent = '✓ Lançamento salvo com sucesso!';
     feedback.className = 'lanc-feedback ok';
     document.getElementById('pplProduto').value = '';
+    const obsReset = document.getElementById('pplObservacao');
+    if(obsReset) obsReset.value = '';
     PPL_renderCamposDinamicos();
     PPL_populateProdutoList();
   }catch(err){
