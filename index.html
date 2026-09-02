@@ -11895,31 +11895,60 @@ function PP_renderKPIs(){
     return;
   }
 
-  // Croissant: cadeia de rendimento derivada do tempo real das bateladas
-  // 1 massa → CROISSANT_ROLOS_POR_MASSA rolos → CROISSANT_CAIXAS_POR_ROLO cx/rolo → CROISSANT_UNID_POR_CAIXA unid/cx
+  // Croissant:
+  // - Tempo Médio/Massa, Massa/hora, Rolos Laminados/hora → batelada (tempo_processo)
+  // - Telas/hora, Unidades/hora, Carrinhos/hora → produtividade (PP_CORRIDAS)
   if(PP_currentLinha === 'Croissant'){
+    // ── Batelada: tempo de processo ──────────────────────────────────────
     const batelTimes = PP_BATELADAS.map(b => {
-      // prefere duracao_total_seg; fallback = soma das etapas
       if(b.duracao_total_seg != null && Number(b.duracao_total_seg) > 0) return Number(b.duracao_total_seg);
       const somaEtapas = (b.tempo_processo_etapas || []).reduce((s,e) => s + (Number(e.duracao_seg)||0), 0);
       return somaEtapas > 0 ? somaEtapas : null;
     }).filter(v => v != null && v > 0);
 
-    const tempoMedioSeg  = batelTimes.length ? batelTimes.reduce((a,b)=>a+b,0)/batelTimes.length : null;
-    const massasPorHora  = tempoMedioSeg ? 3600 / tempoMedioSeg : null;
-    const rolosPorHora   = massasPorHora != null ? massasPorHora * CROISSANT_ROLOS_POR_MASSA  : null;
-    const caixasPorHora  = rolosPorHora  != null ? rolosPorHora  * CROISSANT_CAIXAS_POR_ROLO  : null;
-    const unidPorHora    = caixasPorHora != null ? caixasPorHora * CROISSANT_UNID_POR_CAIXA   : null;
+    const tempoMedioSeg = batelTimes.length ? batelTimes.reduce((a,b)=>a+b,0)/batelTimes.length : null;
+    const massasPorHora = tempoMedioSeg ? 3600 / tempoMedioSeg : null;
+    const rolosPorHora  = massasPorHora != null ? massasPorHora * CROISSANT_ROLOS_POR_MASSA : null;
+
+    // ── Produtividade: telas/caixas e unidades ───────────────────────────
+    const corridasValidas = PP_CORRIDAS.filter(c =>
+      c.tempo_medio_seg != null && Number(c.tempo_medio_seg) > 0 &&
+      c.unidades_por_recipiente != null && Number(c.unidades_por_recipiente) > 0
+    );
+
+    // Rótulo dinâmico: usa unidade_medida do primeiro registro ("Telas", "Caixas"…)
+    const unidadeRecipiente = (corridasValidas.find(c => c.unidade_medida) || {}).unidade_medida || 'Caixas';
+
+    const recipientesPorHoraVals = corridasValidas.map(c => 3600 / Number(c.tempo_medio_seg));
+    const mediaRecipientesPorHora = recipientesPorHoraVals.length
+      ? recipientesPorHoraVals.reduce((a,b)=>a+b,0) / recipientesPorHoraVals.length : null;
+
+    const unidPorHoraVals = corridasValidas.map(c =>
+      (3600 / Number(c.tempo_medio_seg)) * Number(c.unidades_por_recipiente)
+    );
+    const mediaUnidPorHora = unidPorHoraVals.length
+      ? unidPorHoraVals.reduce((a,b)=>a+b,0) / unidPorHoraVals.length : null;
+
+    // Carrinhos/hora: 840 unid/carrinho p/ Mini Croissant, 700 p/ demais
+    const carrinhosPorHoraVals = corridasValidas.map(c => {
+      const unidH = (3600 / Number(c.tempo_medio_seg)) * Number(c.unidades_por_recipiente);
+      const isMini = (c.produto || '').toUpperCase().includes('MINI');
+      const unidCarrinho = isMini ? 840 : 700;
+      return unidH / unidCarrinho;
+    });
+    const mediaCarrinhosPorHora = carrinhosPorHoraVals.length
+      ? carrinhosPorHoraVals.reduce((a,b)=>a+b,0) / carrinhosPorHoraVals.length : null;
 
     const fmt1 = v => v != null ? v.toLocaleString('pt-BR',{maximumFractionDigits:1}) : '—';
     const fmt0 = v => v != null ? v.toLocaleString('pt-BR',{maximumFractionDigits:0}) : '—';
 
     const kpis = [
-      { label:'Tempo Médio/Massa',  value: tempoMedioSeg != null ? PP_fmtDuracao(tempoMedioSeg) : '—' },
-      { label:'Massa/hora',         value: fmt1(massasPorHora) },
-      { label:'Rolos Laminados/hora', value: fmt1(rolosPorHora) },
-      { label:'Caixas/hora',        value: fmt1(caixasPorHora) },
-      { label:'Unidades/hora',      value: fmt0(unidPorHora)   },
+      { label:'Tempo Médio/Massa',        value: tempoMedioSeg       != null ? PP_fmtDuracao(tempoMedioSeg) : '—' },
+      { label:'Massa/hora',               value: fmt1(massasPorHora)  },
+      { label:'Rolos Laminados/hora',     value: fmt1(rolosPorHora)   },
+      { label:`${unidadeRecipiente}/hora`, value: fmt1(mediaRecipientesPorHora) },
+      { label:'Unidades/hora',            value: fmt0(mediaUnidPorHora)   },
+      { label:'Carrinhos/hora',           value: fmt1(mediaCarrinhosPorHora) },
     ];
     grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
     grid.innerHTML = kpis.map(k=>`
