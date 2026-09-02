@@ -992,9 +992,9 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 
 #page-pcp-estoque .table-wrap{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 290px);box-shadow:0 2px 10px rgba(161,1,1,.04)}
 
-#page-pcp-estoque .table-header{display:grid;grid-template-columns:200px 72px 70px 92px 86px 74px 70px 96px 86px 56px 80px 80px;gap:0;min-width:1068px;background:var(--red-dark);padding:7px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;color:rgba(255,255,255,.9);font-weight:700;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+#page-pcp-estoque .table-header{display:grid;grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 56px;gap:0;min-width:1062px;background:var(--red-dark);padding:7px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;color:rgba(255,255,255,.9);font-weight:700;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
 
-#page-pcp-estoque .table-row{display:grid;grid-template-columns:200px 72px 70px 92px 86px 74px 70px 96px 86px 56px 80px 80px;gap:0;min-width:1068px;padding:9px 10px;min-height:48px;border-bottom:1px solid var(--line);transition:background .1s;align-items:center}
+#page-pcp-estoque .table-row{display:grid;grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 56px;gap:0;min-width:1062px;padding:9px 10px;min-height:48px;border-bottom:1px solid var(--line);transition:background .1s;align-items:center}
 
 
 #page-pcp-estoque .table-row:hover{background:#fffaf0}
@@ -1100,7 +1100,10 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .unit-input:focus{outline:none;border-color:var(--red)}
 
 /* Action cell */
-#page-pcp-estoque .cell-venda{border-left:1px solid var(--line);padding-left:6px}
+#page-pcp-estoque .cell-fab{background:rgba(192,57,43,0.055)}
+#page-pcp-estoque .cell-loja{background:rgba(26,86,160,0.055)}
+#page-pcp-estoque .table-header .th-fab{background:rgba(255,255,255,0.07);border-bottom:2px solid rgba(255,160,140,0.7)}
+#page-pcp-estoque .table-header .th-loja{background:rgba(26,86,160,0.25);border-bottom:2px solid rgba(140,180,255,0.7)}
 #page-pcp-estoque .cell-action{display:flex;align-items:center;justify-content:center}
 #page-pcp-estoque .btn-send-ordem{background:var(--red);color:#fff;border:none;border-radius:var(--radius-sm);font-size:10px;font-weight:800;padding:5px 9px;cursor:pointer;font-family:inherit;transition:background .15s;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap}
 #page-pcp-estoque .btn-send-ordem:hover{background:var(--red-dark)}
@@ -2260,12 +2263,13 @@ body{background:#fff;color:#000}
     <div class="table-wrap">
       <div class="table-header">
         <div>Produto</div>
-        <div class="cell-num">Est.Fab</div><div class="cell-num">Res.Fab</div>
-        <div class="cell-num">Agrup.Fab</div><div class="cell-num th-saldo">Saldo Fab</div>
-        <div class="cell-num">Est.Loja</div><div class="cell-num">Res.Loja</div>
-        <div class="cell-num">Agrup.Loja</div><div class="cell-num th-saldo">Saldo Loja</div>
+        <div class="cell-num th-fab">Est.Fab</div><div class="cell-num th-fab">Res.Fab</div>
+        <div class="cell-num th-fab">Agrup.Fab</div><div class="cell-num th-saldo th-fab">Saldo Fab</div>
+        <div class="cell-num th-fab">Venda.Fab</div>
+        <div class="cell-num th-loja">Est.Loja</div><div class="cell-num th-loja">Res.Loja</div>
+        <div class="cell-num th-loja">Agrup.Loja</div><div class="cell-num th-saldo th-loja">Saldo Loja</div>
+        <div class="cell-num th-loja">Venda.Loja</div>
         <div class="cell-num">Dias</div>
-        <div class="cell-num cell-venda">Venda.Fab</div><div class="cell-num">Venda.Loja</div>
       </div>
       <div id="alertTable"></div>
     </div>
@@ -2281,12 +2285,13 @@ body{background:#fff;color:#000}
     <div class="table-wrap">
       <div class="table-header">
         <div>Produto</div>
-        <div class="cell-num">Est.Fab</div><div class="cell-num">Res.Fab</div>
-        <div class="cell-num">Agrup.Fab</div><div class="cell-num th-saldo">Saldo Fab</div>
-        <div class="cell-num">Est.Loja</div><div class="cell-num">Res.Loja</div>
-        <div class="cell-num">Agrup.Loja</div><div class="cell-num th-saldo">Saldo Loja</div>
+        <div class="cell-num th-fab">Est.Fab</div><div class="cell-num th-fab">Res.Fab</div>
+        <div class="cell-num th-fab">Agrup.Fab</div><div class="cell-num th-saldo th-fab">Saldo Fab</div>
+        <div class="cell-num th-fab">Venda.Fab</div>
+        <div class="cell-num th-loja">Est.Loja</div><div class="cell-num th-loja">Res.Loja</div>
+        <div class="cell-num th-loja">Agrup.Loja</div><div class="cell-num th-saldo th-loja">Saldo Loja</div>
+        <div class="cell-num th-loja">Venda.Loja</div>
         <div class="cell-num">Dias</div>
-        <div class="cell-num cell-venda">Venda.Fab</div><div class="cell-num">Venda.Loja</div>
       </div>
       <div id="fabTable"></div>
     </div>
@@ -2302,12 +2307,13 @@ body{background:#fff;color:#000}
     <div class="table-wrap">
       <div class="table-header">
         <div>Produto</div>
-        <div class="cell-num">Est.Fab</div><div class="cell-num">Res.Fab</div>
-        <div class="cell-num">Agrup.Fab</div><div class="cell-num th-saldo">Saldo Fab</div>
-        <div class="cell-num">Est.Loja</div><div class="cell-num">Res.Loja</div>
-        <div class="cell-num">Agrup.Loja</div><div class="cell-num th-saldo">Saldo Loja</div>
+        <div class="cell-num th-fab">Est.Fab</div><div class="cell-num th-fab">Res.Fab</div>
+        <div class="cell-num th-fab">Agrup.Fab</div><div class="cell-num th-saldo th-fab">Saldo Fab</div>
+        <div class="cell-num th-fab">Venda.Fab</div>
+        <div class="cell-num th-loja">Est.Loja</div><div class="cell-num th-loja">Res.Loja</div>
+        <div class="cell-num th-loja">Agrup.Loja</div><div class="cell-num th-saldo th-loja">Saldo Loja</div>
+        <div class="cell-num th-loja">Venda.Loja</div>
         <div class="cell-num">Dias</div>
-        <div class="cell-num cell-venda">Venda.Fab</div><div class="cell-num">Venda.Loja</div>
       </div>
       <div id="lojaTable"></div>
     </div>
@@ -13701,17 +13707,17 @@ function renderTableRow(item){
       <div class="cell-desc" title="${item.descricao}">${shortDesc(item.descricao)}</div>
       <div class="cell-sub"><span class="cell-fam-badge">${item.familia}</span><span class="cell-loc-badge ${locCls}">${locLabel}</span></div>
     </div>
-    <div class="cell cell-num" style="color:#3a3a3a">${estFab}</div>
-    <div class="cell cell-num" style="color:#888">${resFab}</div>
-    <div class="cell cell-num" style="color:#5a7a3a;font-size:10.5px">${agrupFab}</div>
-    <div class="cell cell-num cell-saldo ${saldoFabCls}">${saldoFab}</div>
-    <div class="cell cell-num" style="color:#3a3a3a">${estLoja}</div>
-    <div class="cell cell-num" style="color:#888">${resLoja}</div>
-    <div class="cell cell-num" style="color:#5a7a3a;font-size:10.5px">${agrupLoja}</div>
-    <div class="cell cell-num cell-saldo ${saldoLojaCls}">${saldoLoja}</div>
+    <div class="cell cell-num cell-fab" style="color:#3a3a3a">${estFab}</div>
+    <div class="cell cell-num cell-fab" style="color:#888">${resFab}</div>
+    <div class="cell cell-num cell-fab" style="color:#5a7a3a;font-size:10.5px">${agrupFab}</div>
+    <div class="cell cell-num cell-saldo cell-fab ${saldoFabCls}">${saldoFab}</div>
+    <div class="cell cell-num cell-fab" style="color:#7a5a5a">${vendaFabVal}</div>
+    <div class="cell cell-num cell-loja" style="color:#3a3a3a">${estLoja}</div>
+    <div class="cell cell-num cell-loja" style="color:#888">${resLoja}</div>
+    <div class="cell cell-num cell-loja" style="color:#5a7a3a;font-size:10.5px">${agrupLoja}</div>
+    <div class="cell cell-num cell-saldo cell-loja ${saldoLojaCls}">${saldoLoja}</div>
+    <div class="cell cell-num cell-loja" style="color:#5a6a8a">${vendaLojaVal}</div>
     <div class="cell cell-num ${cobCls}">${cobVal}</div>
-    <div class="cell cell-num cell-venda" style="color:#5a5a8a">${vendaFabVal}</div>
-    <div class="cell cell-num" style="color:#5a5a8a">${vendaLojaVal}</div>
   </div>`;
 }
 function should_enter_op_check(item){return shouldEnterProductionOrder(item);}
