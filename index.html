@@ -1102,6 +1102,10 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 /* Action cell */
 #page-pcp-estoque .cell-fab{background:#fddbd8!important}
 #page-pcp-estoque .cell-loja{background:#d6e9f8!important}
+#page-pcp-estoque .row-is-fab .cell-produto{background:#fddbd8!important}
+#page-pcp-estoque .row-is-fab .cell-dias{background:#fddbd8!important}
+#page-pcp-estoque .row-is-loja .cell-produto{background:#d6e9f8!important}
+#page-pcp-estoque .row-is-loja .cell-dias{background:#d6e9f8!important}
 #page-pcp-estoque .table-header .th-fab{background:transparent}
 #page-pcp-estoque .table-header .th-loja{background:transparent}
 #page-pcp-estoque .cell-action{display:flex;align-items:center;justify-content:center}
@@ -13702,7 +13706,8 @@ function renderTableRow(item){
   const vLoja=vendaLojaMap[cod];
   const vendaFabVal=vFab!=null?n(vFab):'—';
   const vendaLojaVal=vLoja!=null?n(vLoja):'—';
-  return`<div class="table-row ${st.stripe}">
+  const rowTypeCls=isFab?'row-is-fab':'row-is-loja';
+  return`<div class="table-row ${st.stripe} ${rowTypeCls}">
     <div class="cell cell-produto">
       <div class="cell-desc" title="${item.descricao}">${shortDesc(item.descricao)}</div>
       <div class="cell-sub"><span class="cell-fam-badge">${item.familia}</span><span class="cell-loc-badge ${locCls}">${locLabel}</span></div>
@@ -13717,7 +13722,7 @@ function renderTableRow(item){
     <div class="cell cell-num cell-loja" style="color:#5a7a3a;font-size:10.5px">${agrupLoja}</div>
     <div class="cell cell-num cell-saldo cell-loja ${saldoLojaCls}">${saldoLoja}</div>
     <div class="cell cell-num cell-loja" style="color:#5a6a8a">${vendaLojaVal}</div>
-    <div class="cell cell-num ${cobCls}">${cobVal}</div>
+    <div class="cell cell-num cell-dias ${cobCls}">${cobVal}</div>
   </div>`;
 }
 function should_enter_op_check(item){return shouldEnterProductionOrder(item);}
