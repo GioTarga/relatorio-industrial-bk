@@ -13368,9 +13368,48 @@ let importMetadata = {ts:null, periodo:null}; // período e hora da última impo
 let vendaFabMap = {};   // normCod(codigo) → qtde vendida (VendasFabrica)
 let vendaLojaMap = {};  // normCod(codigo) → qtde vendida (VendasLoja)
 
-// ─── PERSISTÊNCIA localStorage ───────────────────────────────────────────────
-// Dados importados sobrevivem a deploys e reloads; limpam só com botão "Limpar Dados"
+// ─── PERSISTÊNCIA LOCAL + SUPABASE ──────────────────────────────────────────
+// localStorage = cache rápido por navegador (fallback offline)
+// Supabase pcp_cache = fonte de verdade compartilhada entre todos os usuários
 const LS_KEYS={fab:'bk360_estoque_fab',loja:'bk360_estoque_loja',vendaFab:'bk360_venda_fab',vendaLoja:'bk360_venda_loja',meta:'bk360_import_meta'};
+
+// ── Supabase helpers ──
+async function sbSaveCache(tipo,dados){
+  try{
+    const sb=getSupabaseClient();
+    await sb.from('pcp_cache').upsert({tipo,dados,updated_at:new Date().toISOString()},{onConflict:'tipo'});
+  }catch(e){}
+}
+async function sbClearCache(){
+  try{
+    const sb=getSupabaseClient();
+    await sb.from('pcp_cache').delete().in('tipo',['FABRICA','LOJA','VENDA_FAB','VENDA_LOJA','META']);
+  }catch(e){}
+}
+async function sbRestoreCache(){
+  try{
+    const sb=getSupabaseClient();
+    const {data,error}=await sb.from('pcp_cache').select('tipo,dados');
+    if(error||!data||!data.length)return false;
+    data.forEach(row=>{
+      if(row.tipo==='FABRICA')currentFab=row.dados;
+      else if(row.tipo==='LOJA')currentLoja=row.dados;
+      else if(row.tipo==='VENDA_FAB')vendaFabMap=row.dados||{};
+      else if(row.tipo==='VENDA_LOJA')vendaLojaMap=row.dados||{};
+      else if(row.tipo==='META'){const m=row.dados||{};importMetadata={...m,ts:m.ts?new Date(m.ts):null};}
+    });
+    // Atualiza localStorage com dado fresco do servidor (mantém fallback em dia)
+    try{
+      if(currentFab)localStorage.setItem(LS_KEYS.fab,JSON.stringify(currentFab));
+      if(currentLoja)localStorage.setItem(LS_KEYS.loja,JSON.stringify(currentLoja));
+      localStorage.setItem(LS_KEYS.vendaFab,JSON.stringify(vendaFabMap));
+      localStorage.setItem(LS_KEYS.vendaLoja,JSON.stringify(vendaLojaMap));
+    }catch(_){}
+    return true;
+  }catch(e){return false;}
+}
+
+// ── Funções de save/restore (localStorage + Supabase) ──
 function lsSaveEstoque(){
   try{
     if(currentFab)localStorage.setItem(LS_KEYS.fab,JSON.stringify(currentFab));
@@ -13378,15 +13417,23 @@ function lsSaveEstoque(){
     const m={...importMetadata,ts:importMetadata.ts?importMetadata.ts.toISOString():null};
     localStorage.setItem(LS_KEYS.meta,JSON.stringify(m));
   }catch(e){}
+  // Salva no Supabase (async, fire-and-forget — todos os usuários verão)
+  if(currentFab)sbSaveCache('FABRICA',currentFab);
+  if(currentLoja)sbSaveCache('LOJA',currentLoja);
+  sbSaveCache('META',{...importMetadata,ts:importMetadata.ts?importMetadata.ts.toISOString():null});
 }
 function lsSaveVendas(){
   try{
     localStorage.setItem(LS_KEYS.vendaFab,JSON.stringify(vendaFabMap));
     localStorage.setItem(LS_KEYS.vendaLoja,JSON.stringify(vendaLojaMap));
   }catch(e){}
+  // Salva no Supabase (async, fire-and-forget)
+  sbSaveCache('VENDA_FAB',vendaFabMap);
+  sbSaveCache('VENDA_LOJA',vendaLojaMap);
 }
 function lsClear(){
   try{Object.values(LS_KEYS).forEach(k=>localStorage.removeItem(k));}catch(e){}
+  sbClearCache(); // limpa no Supabase também
 }
 function lsRestore(){
   try{
@@ -14712,10 +14759,12 @@ async function PCP_init(){
   document.body.appendChild(ov);
   await Promise.all([
     buildSD().catch(e=>console.error('buildSD:',e)),
-    loadProdutividade().catch(e=>console.error('loadProdutividade:',e))
+    loadProdutividade().catch(e=>console.error('loadProdutividade:',e)),
+    // Restaura estoque do Supabase (compartilhado entre todos os usuários)
+    // Fallback para localStorage se Supabase falhar ou não tiver dados
+    sbRestoreCache().then(ok=>{ if(!ok) lsRestore(); }).catch(()=>{ lsRestore(); })
   ]);
   ov.remove();
-  lsRestore(); // restaura dados importados anteriormente (persiste entre deploys)
   renderDataInfo();
   buildStats();
   buildChips('fabFamChips',fabItems(),'setFabFam');
