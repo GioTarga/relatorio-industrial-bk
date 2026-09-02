@@ -13373,24 +13373,33 @@ let vendaLojaMap = {};  // normCod(codigo) → qtde vendida (VendasLoja)
 // Supabase pcp_cache = fonte de verdade compartilhada entre todos os usuários
 const LS_KEYS={fab:'bk360_estoque_fab',loja:'bk360_estoque_loja',vendaFab:'bk360_venda_fab',vendaLoja:'bk360_venda_loja',meta:'bk360_import_meta'};
 
-// ── Supabase helpers ──
+// ── Supabase helpers — usa fetch REST (mesmo padrão do restante do app) ──
+const SB_CACHE_HEADERS={'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY,'Content-Type':'application/json','Prefer':'return=minimal'};
 async function sbSaveCache(tipo,dados){
   try{
-    const sb=getSupabaseClient();
-    await sb.from('pcp_cache').upsert({tipo,dados,updated_at:new Date().toISOString()},{onConflict:'tipo'});
+    await fetch(SUPABASE_URL+'/rest/v1/pcp_cache',{
+      method:'POST',
+      headers:{...SB_CACHE_HEADERS,'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify({tipo,dados,updated_at:new Date().toISOString()})
+    });
   }catch(e){}
 }
 async function sbClearCache(){
   try{
-    const sb=getSupabaseClient();
-    await sb.from('pcp_cache').delete().in('tipo',['FABRICA','LOJA','VENDA_FAB','VENDA_LOJA','META']);
+    await fetch(SUPABASE_URL+'/rest/v1/pcp_cache?tipo=in.(FABRICA,LOJA,VENDA_FAB,VENDA_LOJA,META)',{
+      method:'DELETE',
+      headers:SB_CACHE_HEADERS
+    });
   }catch(e){}
 }
 async function sbRestoreCache(){
   try{
-    const sb=getSupabaseClient();
-    const {data,error}=await sb.from('pcp_cache').select('tipo,dados');
-    if(error||!data||!data.length)return false;
+    const res=await fetch(SUPABASE_URL+'/rest/v1/pcp_cache?select=tipo,dados',{
+      headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY}
+    });
+    if(!res.ok)return false;
+    const data=await res.json();
+    if(!data||!data.length)return false;
     data.forEach(row=>{
       if(row.tipo==='FABRICA')currentFab=row.dados;
       else if(row.tipo==='LOJA')currentLoja=row.dados;
