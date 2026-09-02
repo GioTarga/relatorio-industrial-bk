@@ -2796,20 +2796,6 @@ body{background:#fff;color:#000}
                 <label>Setor</label>
                 <select id="eqRequisicaoSetor">
                   <option value="">Selecione o setor…</option>
-                  <option value="Salgado">Salgado</option>
-
-                  <option value="Croissant">Croissant</option>
-                  <option value="Padaria">Padaria</option>
-                  <option value="Confeitaria">Confeitaria</option>
-                  <option value="Giro-Dia">Giro-Dia</option>
-                  <option value="Giro-Noite">Giro-Noite</option>
-                  <option value="Fritador">Fritador</option>
-                  <option value="Cozinha">Cozinha</option>
-                  <option value="Pão c/ Linguiça">Pão c/ Linguiça</option>
-                  <option value="Pão de Queijo">Pão de Queijo</option>
-                  <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
-                  <option value="Química">Química</option>
-                  <option value="Embalagem">Embalagem</option>
                 </select>
               </div>
               <div class="lanc-field">
@@ -9009,8 +8995,21 @@ document.querySelectorAll('[data-eqview]').forEach(btn=>{
     document.getElementById('eqViewRequisicao').style.display = view === 'requisicao' ? 'block' : 'none';
     document.getElementById('eqViewHistorico').style.display = view === 'historico' ? 'block' : 'none';
     if(view === 'historico') EQ_loadHistorico();
+    if(view === 'requisicao') EQ_populateRequisicaoSetorSelect();
   });
 });
+
+/* Popula o <select> de setor da Lançar Requisição a partir do cadastro de setores
+   (ST_CACHE, carregado do Supabase). Garante que o usuário só possa escolher
+   setores cadastrados — sem digitação livre. */
+async function EQ_populateRequisicaoSetorSelect(){
+  if(!ST_CACHE.length) await ST_fetchNomes();
+  const sel = document.getElementById('eqRequisicaoSetor');
+  if(!sel) return;
+  const atual = sel.value;
+  sel.innerHTML = '<option value="">Selecione o setor…</option>' +
+    ST_CACHE.map(s=>`<option value="${s}"${s===atual?' selected':''}>${s}</option>`).join('');
+}
 
 /* ---------- Cartões de item: Entrada ---------- */
 let EQ_ENTRADA_UID = 0;
