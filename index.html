@@ -992,9 +992,9 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 
 #page-pcp-estoque .table-wrap{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);overflow-x:hidden;overflow-y:auto;max-height:calc(100vh - 290px);box-shadow:0 2px 10px rgba(161,1,1,.04)}
 
-#page-pcp-estoque .table-header{display:grid;grid-template-columns:200px 64px 64px 72px 82px 82px 74px 74px 86px 86px 68px 78px;gap:0;background:var(--red-dark);padding:7px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.9);font-weight:700;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+#page-pcp-estoque .table-header{display:grid;grid-template-columns:200px 72px 66px 80px 72px 72px 66px 80px 72px 56px;gap:0;background:var(--red-dark);padding:7px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.9);font-weight:700;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
 
-#page-pcp-estoque .table-row{display:grid;grid-template-columns:200px 64px 64px 72px 82px 82px 74px 74px 86px 86px 68px 78px;gap:0;padding:9px 10px;min-height:48px;border-bottom:1px solid var(--line);transition:background .1s;align-items:center}
+#page-pcp-estoque .table-row{display:grid;grid-template-columns:200px 72px 66px 80px 72px 72px 66px 80px 72px 56px;gap:0;padding:9px 10px;min-height:48px;border-bottom:1px solid var(--line);transition:background .1s;align-items:center}
 
 
 #page-pcp-estoque .table-row:hover{background:#fffaf0}
@@ -2259,12 +2259,11 @@ body{background:#fff;color:#000}
     <div class="table-wrap">
       <div class="table-header">
         <div>Produto</div>
-        <div class="cell-num">Est.</div><div class="cell-num">Res.</div>
-        <div class="cell-num th-saldo">Saldo</div>
-        <div class="cell-num">Est.Fab</div><div class="cell-num">Est.Loja</div>
-        <div class="cell-num">Agrup.Fab</div><div class="cell-num">Agrup.Loja</div>
-        <div class="cell-num">Vda.Fab</div><div class="cell-num">Vda.Loja</div>
-        <div class="cell-num">Cobr.(d)</div><div class="cell-num">Produzir</div>
+        <div class="cell-num">Est.Fab</div><div class="cell-num">Res.Fab</div>
+        <div class="cell-num">Agrup.Fab</div><div class="cell-num th-saldo">Saldo Fab</div>
+        <div class="cell-num">Est.Loja</div><div class="cell-num">Res.Loja</div>
+        <div class="cell-num">Agrup.Loja</div><div class="cell-num th-saldo">Saldo Loja</div>
+        <div class="cell-num">Dias</div>
       </div>
       <div id="alertTable"></div>
     </div>
@@ -2280,12 +2279,11 @@ body{background:#fff;color:#000}
     <div class="table-wrap">
       <div class="table-header">
         <div>Produto</div>
-        <div class="cell-num">Est.</div><div class="cell-num">Res.</div>
-        <div class="cell-num th-saldo">Saldo</div>
-        <div class="cell-num">Est.Fab</div><div class="cell-num">Est.Loja</div>
-        <div class="cell-num">Agrup.Fab</div><div class="cell-num">Agrup.Loja</div>
-        <div class="cell-num">Vda.Fab</div><div class="cell-num">Vda.Loja</div>
-        <div class="cell-num">Cobr.(d)</div><div class="cell-num">Produzir</div>
+        <div class="cell-num">Est.Fab</div><div class="cell-num">Res.Fab</div>
+        <div class="cell-num">Agrup.Fab</div><div class="cell-num th-saldo">Saldo Fab</div>
+        <div class="cell-num">Est.Loja</div><div class="cell-num">Res.Loja</div>
+        <div class="cell-num">Agrup.Loja</div><div class="cell-num th-saldo">Saldo Loja</div>
+        <div class="cell-num">Dias</div>
       </div>
       <div id="fabTable"></div>
     </div>
@@ -2301,12 +2299,11 @@ body{background:#fff;color:#000}
     <div class="table-wrap">
       <div class="table-header">
         <div>Produto</div>
-        <div class="cell-num">Est.</div><div class="cell-num">Res.</div>
-        <div class="cell-num th-saldo">Saldo</div>
-        <div class="cell-num">Est.Fab</div><div class="cell-num">Est.Loja</div>
-        <div class="cell-num">Agrup.Fab</div><div class="cell-num">Agrup.Loja</div>
-        <div class="cell-num">Vda.Fab</div><div class="cell-num">Vda.Loja</div>
-        <div class="cell-num">Cobr.(d)</div><div class="cell-num">Produzir</div>
+        <div class="cell-num">Est.Fab</div><div class="cell-num">Res.Fab</div>
+        <div class="cell-num">Agrup.Fab</div><div class="cell-num th-saldo">Saldo Fab</div>
+        <div class="cell-num">Est.Loja</div><div class="cell-num">Res.Loja</div>
+        <div class="cell-num">Agrup.Loja</div><div class="cell-num th-saldo">Saldo Loja</div>
+        <div class="cell-num">Dias</div>
       </div>
       <div id="lojaTable"></div>
     </div>
@@ -13371,6 +13368,41 @@ let importMetadata = {ts:null, periodo:null}; // período e hora da última impo
 let vendaFabMap = {};   // normCod(codigo) → qtde vendida (VendasFabrica)
 let vendaLojaMap = {};  // normCod(codigo) → qtde vendida (VendasLoja)
 
+// ─── PERSISTÊNCIA localStorage ───────────────────────────────────────────────
+// Dados importados sobrevivem a deploys e reloads; limpam só com botão "Limpar Dados"
+const LS_KEYS={fab:'bk360_estoque_fab',loja:'bk360_estoque_loja',vendaFab:'bk360_venda_fab',vendaLoja:'bk360_venda_loja',meta:'bk360_import_meta'};
+function lsSaveEstoque(){
+  try{
+    if(currentFab)localStorage.setItem(LS_KEYS.fab,JSON.stringify(currentFab));
+    if(currentLoja)localStorage.setItem(LS_KEYS.loja,JSON.stringify(currentLoja));
+    const m={...importMetadata,ts:importMetadata.ts?importMetadata.ts.toISOString():null};
+    localStorage.setItem(LS_KEYS.meta,JSON.stringify(m));
+  }catch(e){}
+}
+function lsSaveVendas(){
+  try{
+    localStorage.setItem(LS_KEYS.vendaFab,JSON.stringify(vendaFabMap));
+    localStorage.setItem(LS_KEYS.vendaLoja,JSON.stringify(vendaLojaMap));
+  }catch(e){}
+}
+function lsClear(){
+  try{Object.values(LS_KEYS).forEach(k=>localStorage.removeItem(k));}catch(e){}
+}
+function lsRestore(){
+  try{
+    const fab=localStorage.getItem(LS_KEYS.fab);
+    const loja=localStorage.getItem(LS_KEYS.loja);
+    const vf=localStorage.getItem(LS_KEYS.vendaFab);
+    const vl=localStorage.getItem(LS_KEYS.vendaLoja);
+    const meta=localStorage.getItem(LS_KEYS.meta);
+    if(fab)currentFab=JSON.parse(fab);
+    if(loja)currentLoja=JSON.parse(loja);
+    if(vf)vendaFabMap=JSON.parse(vf);
+    if(vl)vendaLojaMap=JSON.parse(vl);
+    if(meta){const m=JSON.parse(meta);importMetadata={...m,ts:m.ts?new Date(m.ts):null};}
+  }catch(e){}
+}
+
 function validarPeriodo(){
   const el=document.getElementById('periodoStatus');
   const v=document.getElementById('periodoInicio')?.value;
@@ -13570,41 +13602,48 @@ function renderTableRow(item){
   const saldoHigh = saldo < 0 ? 'saldo-neg' : saldo === 0 ? 'saldo-zero' : 'saldo-pos';
   const btnLabel = should_enter_op_check(item) ? '+ OP' : 'OP';
   const btnCls = should_enter_op_check(item) ? 'btn-send-ordem' : 'btn-send-ordem btn-op-neutral';
-  // Campos de estoque por canal e agrupado (caixas/fardos) por canal
-  const cod=normCod(item.codigo)||item.codigo;
-  const estFab=item.tipo==='FABRICA'?(item.agrupado!=null?n(item.agrupado):'—'):'—';
-  const estLoja=item.tipo==='LOJA'?(item.agrupado!=null?n(item.agrupado):'—'):'—';
+  // Dados por canal — cada item é FABRICA ou LOJA
+  const isFab=item.tipo==='FABRICA';
+  const isLoja=item.tipo==='LOJA';
+  // Est / Res / Saldo Fábrica
+  const estFabVal=isFab?(item.estoque??0):null;
+  const resFabVal=isFab?(item.reserva??0):null;
+  const saldoFabVal=isFab?(estFabVal-resFabVal):null;
+  const estFab=estFabVal!==null?n(estFabVal):'—';
+  const resFab=resFabVal!==null?n(resFabVal):'—';
+  const saldoFab=saldoFabVal!==null?n(saldoFabVal):'—';
+  const saldoFabCls=saldoFabVal===null?'':saldoFabVal<0?'saldo-neg':saldoFabVal===0?'saldo-zero':'saldo-pos';
+  // Est / Res / Saldo Loja
+  const estLojaVal=isLoja?(item.estoque??0):null;
+  const resLojaVal=isLoja?(item.reserva??0):null;
+  const saldoLojaVal=isLoja?(estLojaVal-resLojaVal):null;
+  const estLoja=estLojaVal!==null?n(estLojaVal):'—';
+  const resLoja=resLojaVal!==null?n(resLojaVal):'—';
+  const saldoLoja=saldoLojaVal!==null?n(saldoLojaVal):'—';
+  const saldoLojaCls=saldoLojaVal===null?'':saldoLojaVal<0?'saldo-neg':saldoLojaVal===0?'saldo-zero':'saldo-pos';
+  // Agrupado (caixas/fardos)
   const _agrupUn=item.agrupado_un||'';
   const _agrupStr=item.agrupado!=null?(n(item.agrupado)+(_agrupUn?' '+_agrupUn:'')):'—';
-  const agrupFab=item.tipo==='FABRICA'?_agrupStr:'—';
-  const agrupLoja=item.tipo==='LOJA'?_agrupStr:'—';
-  const vdaFabVal=vendaFabMap[cod];
-  const vdaLojaVal=vendaLojaMap[cod];
-  const vdaFab=vdaFabVal!=null?n(vdaFabVal):'—';
-  const vdaLoja=vdaLojaVal!=null?n(vdaLojaVal):'—';
-  // Cobertura em dias e quantidade a produzir
+  const agrupFab=isFab?_agrupStr:'—';
+  const agrupLoja=isLoja?_agrupStr:'—';
+  // Dias de cobertura
   const cob=calculateCoverage(item);
-  const cobNeed=calculateCoverageNeed(item);
   const cobVal=cob===null?'—':cob<=0?'0d':cob>99?'+99d':(Math.round(cob*10)/10)+'d';
   const cobCls=cob===null?'cob-sem-dados':cob<1?'cob-deficit':cob<3?'cob-critico':cob<7?'cob-atencao':'cob-ok';
-  const produzirVal=cobNeed===null?'—':cobNeed===0?'✓':n(Math.round(cobNeed));
-  const produzirCls=cobNeed===null?'produzir-sem-dados':cobNeed===0?'produzir-ok':'produzir-needed';
   return`<div class="table-row ${st.stripe}">
     <div class="cell cell-produto">
       <div class="cell-desc" title="${item.descricao}">${shortDesc(item.descricao)}</div>
       <div class="cell-sub"><span class="cell-fam-badge">${item.familia}</span><span class="cell-loc-badge ${locCls}">${locLabel}</span></div>
     </div>
-    <div class="cell cell-num cell-est">${n(item.estoque)}</div>
-    <div class="cell cell-num cell-res">${n(item.reserva||0)}</div>
-    <div class="cell cell-num cell-saldo ${saldoHigh}">${n(saldo)}</div>
     <div class="cell cell-num" style="color:#3a3a3a">${estFab}</div>
-    <div class="cell cell-num" style="color:#3a3a3a">${estLoja}</div>
+    <div class="cell cell-num" style="color:#888">${resFab}</div>
     <div class="cell cell-num" style="color:#5a7a3a;font-size:10.5px">${agrupFab}</div>
+    <div class="cell cell-num cell-saldo ${saldoFabCls}">${saldoFab}</div>
+    <div class="cell cell-num" style="color:#3a3a3a">${estLoja}</div>
+    <div class="cell cell-num" style="color:#888">${resLoja}</div>
     <div class="cell cell-num" style="color:#5a7a3a;font-size:10.5px">${agrupLoja}</div>
-    <div class="cell cell-num" style="color:#1a56a0">${vdaFab}</div>
-    <div class="cell cell-num" style="color:#1a56a0">${vdaLoja}</div>
+    <div class="cell cell-num cell-saldo ${saldoLojaCls}">${saldoLoja}</div>
     <div class="cell cell-num ${cobCls}">${cobVal}</div>
-    <div class="cell cell-num ${produzirCls}">${produzirVal}</div>
   </div>`;
 }
 function should_enter_op_check(item){return shouldEnterProductionOrder(item);}
@@ -14158,9 +14197,10 @@ function limparDadosImportados(){
     },3000);
     return;
   }
-  // Limpar tudo
+  // Limpar tudo (memória + localStorage)
   currentFab=null;currentLoja=null;
   vendaFabMap={};vendaLojaMap={};
+  lsClear();
   uploadHistory=[];
   importMetadata={ts:null,periodo:null};
   // Resetar cards de upload
@@ -14249,6 +14289,7 @@ function processFile(file,tipo){
         }
         if(isFab)vendaFabMap=map;
         else vendaLojaMap=map;
+        lsSaveVendas(); // persiste no localStorage
         const now=new Date();
         const ts=now.toLocaleDateString('pt-BR')+' · '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
         uploadHistory.unshift({tipo,ts,total,deficits:0,file:file.name,vendaOnly:false});
@@ -14396,6 +14437,7 @@ function processFile(file,tipo){
         // Registra metadados da importação
         const now=new Date();
         importMetadata={ts:now,periodo:{inicio:periodoInicio,fim:periodoFim}};
+        lsSaveEstoque(); // persiste no localStorage
         // Atualiza Supabase SD
         buildSD().then(()=>{
           buildStats();
@@ -14673,6 +14715,8 @@ async function PCP_init(){
     loadProdutividade().catch(e=>console.error('loadProdutividade:',e))
   ]);
   ov.remove();
+  lsRestore(); // restaura dados importados anteriormente (persiste entre deploys)
+  renderDataInfo();
   buildStats();
   buildChips('fabFamChips',fabItems(),'setFabFam');
   buildChips('lojaFamChips',lojaItems(),'setLojaFam');
