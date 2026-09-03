@@ -1348,6 +1348,495 @@ body{background:#fff;color:#000}
 </style>
 
 </style>
+<style>
+/* ═══════════════════════════════════════════════
+   MÓDULO EXPEDIÇÃO — Câmara Fria
+   CSS isolado sob #page-expedicao
+═══════════════════════════════════════════════ */
+  #page-expedicao{
+    /* Paleta BK360 — espelha o :root do dashboard para consistência visual */
+    --brand:#A10101;        /* vermelho BK (= --red do BK360) */
+    --brand-dim:#6e0000;    /* vinho escuro (= --red-dark do BK360) */
+    --frost:#B5640B;        /* dourado BK (= --gold do BK360) */
+    --frost-dim:#7a4208;    /* dourado escuro */
+    --extra:#c0560a;        /* laranja BK (= --orange do BK360) */
+    --extra-dim:#7a3608;
+    --bg:#FFF8E7;           /* creme (= --cream do BK360) */
+    --bg-soft:#ffffff;      /* papel (= --paper do BK360) */
+    --panel:#fdf6e8;        /* painel claro */
+    --ice-line:#f0ddc0;     /* divisórias (= --line do BK360) */
+    --text:#2a1a1a;         /* tinta escura (= --ink do BK360) */
+    --text-soft:#6b5c5c;    /* tinta suave (= --ink-soft do BK360) */
+    --red:#c0392b;          /* vermelho de alerta — distinto do --brand */
+    --highlight:#2f7d52;    /* verde de destaque (= --good do BK360) */
+    --font-display:'Fraunces', Georgia, serif;   /* = fonte BK360 */
+    --font-body:'Inter', 'Helvetica Neue', Arial, sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+  }
+  #page-expedicao *{box-sizing:border-box;}
+  #page-expedicao{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    min-height:100vh;
+  }
+
+  #page-expedicao .topbar{
+    padding:26px 28px 20px;
+    border-bottom:3px solid var(--brand);
+    position:relative;
+    overflow:hidden;
+  }
+  #page-expedicao .topbar::before{
+    /* textura sutil — linhas diagonais finas, tom quente */
+    content:"";
+    position:absolute; inset:0;
+    background-image:repeating-linear-gradient(115deg, rgba(217,164,65,0.045) 0px, rgba(217,164,65,0.045) 1px, transparent 1px, transparent 14px);
+    pointer-events:none;
+  }
+  #page-expedicao .topbar-inner{ position:relative; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; max-width:1400px; margin:0 auto; }
+  #page-expedicao .brand-block .eyebrow{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:3px; text-transform:uppercase; color:var(--brand); font-weight:600; margin-bottom:6px; }
+  #page-expedicao .brand-block h1{ margin:0; font-family:var(--font-display); font-size:29px; font-weight:600; letter-spacing:0.3px; text-transform:uppercase; }
+  #page-expedicao .brand-block .subtitle{ font-size:13px; color:var(--text-soft); margin-top:5px; font-style:normal; }
+  #page-expedicao .camara-switch{ display:flex; gap:8px; }
+  #page-expedicao .camara-switch-btn{
+    font-family:var(--font-mono); font-size:12px; font-weight:700; letter-spacing:0.5px;
+    padding:9px 16px; border-radius:8px; border:1px solid var(--frost-dim);
+    background:var(--bg-soft); color:var(--text-soft); cursor:pointer; transition:all .15s;
+  }
+  #page-expedicao .camara-switch-btn:hover{ color:var(--text); border-color:var(--brand); }
+  #page-expedicao .camara-switch-btn.active{ background:var(--brand); border-color:var(--brand); color:#fff; }
+
+  #page-expedicao .container{ max-width:1400px; margin:0 auto; padding:26px 28px 60px; }
+
+  /* Painel elevador: seletor de andar, estilo painel de controle */
+  #page-expedicao .layout{ display:flex; gap:24px; align-items:flex-start; }
+  #page-expedicao .floor-panel{
+    background:var(--panel); border:1px solid var(--ice-line); border-radius:14px;
+    padding:16px 12px; display:flex; flex-direction:column; gap:8px; align-items:center;
+    position:sticky; top:20px;
+  }
+  #page-expedicao .floor-panel .fp-label{ font-size:9.5px; letter-spacing:2px; text-transform:uppercase; color:var(--text-soft); font-weight:700; margin-bottom:4px; text-align:center; }
+  #page-expedicao .floor-btn{
+    width:52px; height:52px; border-radius:10px; border:1px solid var(--ice-line);
+    background:var(--bg-soft); color:var(--text-soft); font-size:18px; font-weight:800;
+    cursor:pointer; font-family:var(--font-mono); transition:all 0.15s;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #page-expedicao .floor-btn:hover{ border-color:var(--frost-dim); color:var(--text); }
+  #page-expedicao .floor-btn.active{
+    background:linear-gradient(135deg, rgba(217,164,65,0.22), rgba(217,164,65,0.06));
+    border-color:var(--frost); color:var(--frost);
+    box-shadow:0 0 16px rgba(217,164,65,0.35), inset 0 0 10px rgba(217,164,65,0.15);
+  }
+  #page-expedicao .floor-btn-divisor{ width:32px; height:1px; background:var(--ice-line); margin:2px 0; }
+  #page-expedicao .floor-btn-camara{
+    width:52px; height:36px; font-size:11px; letter-spacing:0.5px; padding:0 4px;
+  }
+
+  #page-expedicao .content{ flex:1; min-width:0; }
+
+  #page-expedicao .rua-panel{
+    background:var(--panel); border:1px solid var(--ice-line); border-radius:14px;
+    padding:20px 22px; margin-bottom:18px;
+  }
+  #page-expedicao .rua-head{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+  #page-expedicao .rua-head h2{ margin:0; font-family:var(--font-display); font-size:16px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text); font-weight:600; }
+  #page-expedicao .rua-head .meta{ font-size:11.5px; color:var(--text-soft); }
+
+  #page-expedicao .rack-scroll{ overflow-x:auto; padding-bottom:6px; }
+  #page-expedicao .lado-label{ font-size:10px; color:var(--frost-dim); text-transform:uppercase; letter-spacing:1.5px; font-weight:700; margin:4px 0; }
+  #page-expedicao .rua-mid-label{
+    font-size:15px; color:var(--frost); text-transform:uppercase; letter-spacing:3px;
+    text-align:center; padding:10px 0; font-weight:800; font-family:var(--font-mono);
+    opacity:0.9;
+  }
+  #page-expedicao .andar-secao-titulo{
+    font-size:18px; color:var(--brand); text-transform:uppercase; letter-spacing:3px;
+    text-align:center; padding:22px 0 12px; font-weight:800; font-family:var(--font-mono);
+    border-top:2px solid var(--frost-dim); margin-top:18px;
+  }
+  #page-expedicao .andar-secao-titulo:first-child{ border-top:none; margin-top:0; }
+  #page-expedicao .nav-andar-mapa{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin-bottom:14px; padding:10px 14px; background:var(--panel);
+    border:1px solid var(--ice-line); border-radius:12px;
+  }
+  #page-expedicao .nav-andar-atual{ font-family:var(--font-mono); font-weight:800; letter-spacing:1px; color:var(--frost); font-size:13px; }
+  #page-expedicao .btn-nav-andar{
+    background:var(--bg-soft); border:1px solid var(--ice-line); color:var(--text);
+    font-family:inherit; font-size:12.5px; font-weight:600; padding:8px 14px;
+    border-radius:8px; cursor:pointer; transition:all 0.15s;
+  }
+  #page-expedicao .btn-nav-andar:hover:not(:disabled){ border-color:var(--frost-dim); color:var(--frost); }
+  #page-expedicao .btn-nav-andar:disabled{ opacity:0.35; cursor:not-allowed; }
+
+  #page-expedicao .legend{ display:flex; gap:20px; font-size:11.5px; color:var(--text-soft); margin-bottom:16px; flex-wrap:wrap; }
+  #page-expedicao .legend span{ display:inline-flex; align-items:center; gap:7px; }
+  #page-expedicao .legend .sw{ width:14px; height:14px; border-radius:3px; display:inline-block; }
+  #page-expedicao .familia-legend-title{
+    font-size:10.5px; letter-spacing:1px; text-transform:uppercase; color:var(--frost-dim);
+    font-weight:700; margin-bottom:10px;
+  }
+  #page-expedicao .familia-legend-scroll{ max-height:280px; overflow-y:auto; margin-bottom:16px; }
+  #page-expedicao .familia-legend-grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(168px, 1fr)); gap:8px;
+  }
+  #page-expedicao .familia-legend-chip{
+    display:flex; align-items:center; gap:7px; background:var(--bg-soft); border:1px solid var(--ice-line);
+    border-radius:8px; padding:7px 10px; font-size:12px; color:var(--text);
+    cursor:pointer; transition:opacity 0.15s, border-color 0.15s; user-select:none;
+  }
+  #page-expedicao .familia-legend-chip:hover{ border-color:var(--frost-dim); }
+  #page-expedicao .familia-legend-chip.ativo{ border-color:var(--frost); background:rgba(217,164,65,0.1); }
+  #page-expedicao .familia-legend-chip.apagado{ opacity:0.32; }
+  #page-expedicao .familia-legend-chip .dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; display:inline-block; }
+
+  #page-expedicao .sync-row{ display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+  #page-expedicao .btn-sync{
+    background:var(--panel); border:1px solid var(--frost-dim); color:var(--frost);
+    border-radius:9px; padding:8px 16px; font-size:12.5px; font-weight:700; cursor:pointer;
+    transition:all 0.15s;
+  }
+  #page-expedicao .btn-sync:hover{ background:rgba(217,164,65,0.1); }
+  #page-expedicao .btn-sync:disabled{ opacity:0.5; cursor:default; }
+  #page-expedicao .sync-status{ font-size:11.5px; color:var(--text-soft); }
+
+  #page-expedicao .aloc-card{
+    background:var(--bg-soft); border:1px solid var(--ice-line); border-radius:10px; padding:12px 14px;
+  }
+  #page-expedicao .aloc-card .familia{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+  #page-expedicao .aloc-card .aloc-rua{ font-size:12px; color:var(--text-soft); margin-bottom:8px; }
+  #page-expedicao .aloc-card .aloc-destino{ font-size:12.5px; color:var(--text); line-height:1.5; }
+  #page-expedicao .aloc-card .aloc-destino strong{ color:var(--frost); }
+  #page-expedicao .aloc-card .aloc-sub{ font-size:11px; color:var(--text-soft); margin-top:4px; }
+  #page-expedicao .aloc-card.cheio{ border-color:var(--red); background:rgba(194,59,59,0.08); }
+  #page-expedicao .aloc-card.cheio .aloc-destino{ color:#F0998A; }
+
+  #page-expedicao .saida-panel{
+    background:var(--panel); border:1px solid var(--ice-line); border-radius:12px;
+    padding:16px 20px; margin-bottom:18px;
+  }
+  #page-expedicao .saida-panel .saida-title{
+    font-weight:700; text-transform:uppercase; font-size:11px; letter-spacing:1.5px;
+    color:var(--frost); margin-bottom:12px; display:flex; align-items:center; gap:9px;
+  }
+  #page-expedicao .saida-panel .saida-title::before{ content:''; width:4px; height:12px; background:currentColor; border-radius:1px; flex-shrink:0; }
+  #page-expedicao .saida-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px,1fr)); gap:10px; }
+  #page-expedicao .saida-card{
+    background:var(--bg-soft); border:1px solid var(--ice-line); border-radius:10px; padding:12px 14px;
+  }
+  #page-expedicao .saida-card .familia{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; }
+  #page-expedicao .saida-card .item-wrap{ padding:4px 0; border-top:1px dashed var(--ice-line); }
+  #page-expedicao .saida-card .item-wrap:first-of-type{ border-top:none; }
+  #page-expedicao .saida-card .item{ display:flex; justify-content:space-between; align-items:baseline; font-size:12px; }
+  #page-expedicao .saida-card .item .pos{ font-family:var(--font-mono); color:var(--text); }
+  #page-expedicao .saida-card .item .dias{ color:var(--extra); font-weight:700; white-space:nowrap; margin-left:8px; }
+  #page-expedicao .saida-card .item-produto{ font-size:11px; color:var(--text-soft); margin-top:1px; }
+  #page-expedicao .produtos-list{ margin:2px 0 0; padding-left:14px; }
+  #page-expedicao .produtos-list li{ margin-bottom:1px; }
+
+  #page-expedicao .busca-row{
+    display:flex; align-items:center; gap:8px; background:var(--panel);
+    border:1px solid var(--ice-line); border-radius:10px; padding:9px 14px;
+    margin-bottom:16px;
+  }
+  #page-expedicao .busca-row:focus-within{ border-color:var(--frost-dim); }
+  #page-expedicao .busca-ico{ font-size:13px; opacity:0.7; }
+  #page-expedicao .busca-input{
+    flex:1; min-width:0; background:none; border:none; outline:none; color:var(--text);
+    font-size:13.5px; font-family:inherit;
+  }
+  #page-expedicao .busca-input::placeholder{ color:var(--text-soft); }
+  #page-expedicao .btn-limpar-busca{
+    background:var(--bg-soft); border:1px solid var(--ice-line); color:var(--text-soft);
+    border-radius:6px; width:22px; height:22px; cursor:pointer; font-size:12px; line-height:1;
+  }
+  #page-expedicao .btn-limpar-busca:hover{ color:var(--text); border-color:var(--frost-dim); }
+  #page-expedicao .busca-resultado{ font-size:11.5px; color:var(--text-soft); margin:-10px 0 16px 2px; }
+
+  #page-expedicao .ocupacao-panel{
+    background:var(--panel); border:1px solid var(--ice-line); border-radius:12px;
+    padding:16px 20px; margin-bottom:18px;
+  }
+  #page-expedicao .ocupacao-head{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
+  #page-expedicao .ocupacao-title{
+    font-weight:700; text-transform:uppercase; font-size:11px; letter-spacing:1.5px; color:var(--frost);
+    display:flex; align-items:center; gap:9px; margin-bottom:6px;
+  }
+  #page-expedicao .ocupacao-title::before{ content:''; width:4px; height:12px; background:currentColor; border-radius:1px; flex-shrink:0; }
+  #page-expedicao .ocupacao-tabs{ display:flex; gap:6px; }
+  #page-expedicao .ocupacao-tab{
+    background:var(--bg-soft); border:1px solid var(--ice-line); color:var(--text-soft);
+    font-size:11px; font-weight:700; padding:6px 12px; border-radius:20px; cursor:pointer;
+    text-transform:uppercase; letter-spacing:0.5px;
+  }
+  #page-expedicao .ocupacao-tab:hover{ color:var(--text); border-color:var(--frost-dim); }
+  #page-expedicao .ocupacao-tab.active{ background:var(--frost); color:#0F0D0C; border-color:var(--frost); }
+  #page-expedicao .ocupacao-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:10px; }
+  #page-expedicao .ocupacao-card{
+    background:var(--bg-soft); border:1px solid var(--ice-line); border-radius:10px; padding:12px 14px;
+  }
+  #page-expedicao .ocupacao-card .oc-label{ font-size:11.5px; font-weight:700; color:var(--text); margin-bottom:8px; }
+  #page-expedicao .oc-bar-wrap{ background:var(--bg); border-radius:6px; height:8px; overflow:hidden; margin-bottom:6px; }
+  #page-expedicao .oc-bar{ height:100%; background:var(--frost); border-radius:6px; transition:width 0.3s; }
+  #page-expedicao .ocupacao-card.alto .oc-bar{ background:var(--extra); }
+  #page-expedicao .ocupacao-card.critico .oc-bar{ background:var(--red); }
+  #page-expedicao .oc-nums{ display:flex; justify-content:space-between; align-items:baseline; }
+  #page-expedicao .oc-pct{ font-family:var(--font-mono); font-weight:800; font-size:15px; color:var(--frost); }
+  #page-expedicao .ocupacao-card.alto .oc-pct{ color:var(--extra); }
+  #page-expedicao .ocupacao-card.critico .oc-pct{ color:#F0998A; }
+  #page-expedicao .oc-count{ font-size:10.5px; color:var(--text-soft); }
+
+  #page-expedicao .grafico-panel{
+    background:var(--panel); border:1px solid var(--ice-line); border-radius:12px;
+    padding:16px 20px; margin-bottom:18px;
+  }
+  #page-expedicao .grafico-sub{ font-size:11px; color:var(--text-soft); margin:0 0 14px; }
+  #page-expedicao .grafico-wrap{ position:relative; height:270px; }
+  #page-expedicao .grafico-wrap-bar{ height:290px; }
+  #page-expedicao .grafico-filtros{ display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+  #page-expedicao .grafico-filtros .entrada-select{ width:auto; min-width:200px; flex:1; }
+  #page-expedicao .btn-voltar-grafico{
+    background:none; border:none; color:var(--frost); font-size:11.5px; font-weight:600;
+    cursor:pointer; margin:-4px 0 10px; padding:0; text-decoration:underline; font-family:var(--font-body);
+    display:block;
+  }
+
+  #page-expedicao .estoque-list{ display:flex; flex-direction:column; gap:2px; max-height:360px; overflow-y:auto; }
+  #page-expedicao .estoque-row{
+    display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px;
+    font-size:12.5px; border-bottom:1px solid var(--ice-line);
+  }
+  #page-expedicao .estoque-row:last-child{ border-bottom:none; }
+  #page-expedicao .estoque-row:hover{ background:var(--bg-soft); }
+  #page-expedicao .estoque-swatch{ width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+  #page-expedicao .estoque-nome{ flex:1; color:var(--text); }
+  #page-expedicao .estoque-qtd{ font-family:var(--font-mono); font-weight:700; color:var(--frost); font-size:12px; white-space:nowrap; }
+
+  #page-expedicao .conflito-panel{
+    background:rgba(194,59,59,0.12); border:1px solid var(--red); border-radius:12px;
+    padding:14px 18px; margin-bottom:18px; font-size:12.5px; line-height:1.6; color:var(--text);
+  }
+  #page-expedicao .conflito-panel .conflito-title{
+    font-weight:700; text-transform:uppercase; font-size:11px; letter-spacing:1.5px;
+    color:var(--red); margin-bottom:8px; display:flex; align-items:center; gap:9px;
+  }
+  #page-expedicao .conflito-panel .conflito-title::before{ content:''; width:4px; height:12px; background:currentColor; border-radius:1px; flex-shrink:0; }
+  #page-expedicao .conflito-panel ul{ margin:0; padding-left:18px; }
+  #page-expedicao .conflito-panel li{ margin-bottom:6px; }
+  #page-expedicao .conflito-panel .sub{ display:block; font-size:11px; color:var(--text-soft); margin-top:2px; margin-left:2px; }
+
+  #page-expedicao .ignoradas-panel{
+    background:rgba(226,163,61,0.10); border:1px solid var(--extra); border-radius:12px;
+    padding:14px 18px; margin-bottom:18px; font-size:12.5px; line-height:1.6; color:var(--text);
+  }
+  #page-expedicao .ignoradas-panel .ignoradas-title{
+    font-weight:700; text-transform:uppercase; font-size:11px; letter-spacing:1.5px;
+    color:var(--extra); margin-bottom:8px; display:flex; align-items:center; gap:9px;
+  }
+  #page-expedicao .ignoradas-panel .ignoradas-title::before{ content:''; width:4px; height:12px; background:currentColor; border-radius:1px; flex-shrink:0; }
+  #page-expedicao .ignoradas-panel ul{ margin:0; padding-left:18px; }
+  #page-expedicao .ignoradas-panel li{ margin-bottom:4px; }
+
+  #page-expedicao .conflito-pulse{ animation: conflitoPulse 1.1s ease-in-out infinite; }
+  @keyframes conflitoPulse{
+    0%, 100% { stroke-opacity: 1; }
+    50% { stroke-opacity: 0.25; }
+  }
+
+  #page-expedicao .tip{
+    position:fixed; pointer-events:none; background:#0F0D0C; border:1px solid var(--frost-dim);
+    color:var(--frost); font-family:var(--font-mono); font-size:12px; padding:8px 12px;
+    border-radius:6px; opacity:0; transition:opacity 0.1s; z-index:50;
+    max-width:250px; white-space:pre-line; line-height:1.4; box-shadow:0 4px 16px rgba(0,0,0,0.4);
+  }
+
+  #page-expedicao footer{ text-align:center; font-size:11px; color:var(--text-soft); padding:20px; }
+
+  #page-expedicao .app-shell{ display:flex; min-height:100vh; align-items:stretch; }
+  #page-expedicao .app-main{ flex:1; min-width:0; }
+
+  #page-expedicao .side-nav{
+    width:220px; flex-shrink:0; background:var(--panel); border-right:1px solid var(--ice-line);
+    display:flex; flex-direction:column; padding:22px 0; position:sticky; top:0; height:100vh; overflow-y:auto;
+  }
+  #page-expedicao .side-nav-brand{ padding:0 22px 20px; border-bottom:1px solid var(--ice-line); margin-bottom:10px; }
+  #page-expedicao .side-nav-brand .eyebrow{
+    font-family:var(--font-mono); font-size:10px; letter-spacing:2px; text-transform:uppercase;
+    color:var(--brand); font-weight:600; margin-bottom:3px;
+  }
+  #page-expedicao .side-nav-title{ font-family:var(--font-display); font-size:16px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text); }
+  #page-expedicao .side-nav-btn{
+    background:none; border:none; border-left:3px solid transparent; text-align:left; color:var(--text-soft);
+    font-family:var(--font-display); font-size:13px; font-weight:500; letter-spacing:0.3px;
+    text-transform:uppercase; padding:13px 22px; cursor:pointer;
+  }
+  #page-expedicao .side-nav-btn:hover{ color:var(--text); background:var(--bg-soft); }
+  #page-expedicao .side-nav-btn.active{ color:var(--brand); border-left-color:var(--brand); background:var(--bg-soft); font-weight:600; }
+
+  #page-expedicao .carga-layout{ display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap; }
+  #page-expedicao .carga-col-produtos{ flex:1 1 320px; min-width:280px; }
+  #page-expedicao .carga-col-caminhao{ flex:1.4 1 420px; min-width:320px; }
+  #page-expedicao .carga-panel-title{
+    font-weight:700; text-transform:uppercase; font-size:11px; letter-spacing:1.5px;
+    color:var(--frost); margin-bottom:12px; display:flex; align-items:center; gap:9px;
+  }
+  #page-expedicao .carga-panel-title::before{ content:''; width:4px; height:12px; background:currentColor; border-radius:1px; flex-shrink:0; }
+  #page-expedicao .carga-dica{ font-size:11px; color:var(--text-soft); margin:8px 0 12px; line-height:1.5; }
+
+  #page-expedicao .carga-produtos-lista{
+    display:flex; flex-direction:column; gap:6px; max-height:520px; overflow-y:auto;
+    padding-right:4px;
+  }
+  #page-expedicao .produto-chip{
+    display:flex; align-items:center; gap:10px; background:var(--panel); border:1px solid var(--ice-line);
+    border-radius:9px; padding:10px 12px; cursor:grab; user-select:none; transition:border-color 0.15s, transform 0.1s;
+  }
+  #page-expedicao .produto-chip:hover{ border-color:var(--frost-dim); }
+  #page-expedicao .produto-chip:active{ cursor:grabbing; transform:scale(0.98); }
+  #page-expedicao .produto-chip.chip-esgotado{ opacity:0.4; cursor:not-allowed; }
+  #page-expedicao .produto-chip .estoque-swatch{ width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+  #page-expedicao .produto-chip .chip-nome{ flex:1; font-size:12.5px; color:var(--text); }
+  #page-expedicao .produto-chip .chip-qtd{ font-family:var(--font-mono); font-size:11px; color:var(--text-soft); white-space:nowrap; }
+  #page-expedicao .produto-chip.chip-flash{ animation: chipFlash 0.4s ease; }
+  @keyframes chipFlash{ 0%{ background:rgba(217,164,65,0.25); } 100%{ background:var(--panel); } }
+
+  #page-expedicao .caminhao-drop{
+    background:var(--panel); border:1px solid var(--ice-line); border-radius:12px;
+    padding:16px; display:flex; align-items:center; justify-content:center; margin-bottom:14px;
+    transition:border-color 0.15s, background 0.15s;
+  }
+  #page-expedicao .caminhao-drop.drop-ativo{ border-color:var(--frost); background:rgba(217,164,65,0.06); }
+  #page-expedicao .caminhao-svg{ width:100%; max-width:320px; height:auto; }
+
+  #page-expedicao .carga-resumo{ font-size:12px; color:var(--text-soft); margin-bottom:10px; }
+  #page-expedicao .carga-resumo strong{ color:var(--frost); font-family:var(--font-mono); }
+
+  #page-expedicao .carga-lista{ display:flex; flex-direction:column; gap:6px; margin-bottom:16px; max-height:320px; overflow-y:auto; }
+  #page-expedicao .carga-row{
+    display:flex; align-items:center; gap:10px; background:var(--bg-soft); border:1px solid var(--ice-line);
+    border-radius:9px; padding:9px 12px;
+  }
+  #page-expedicao .carga-row .estoque-swatch{ width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+  #page-expedicao .carga-row .cr-nome{ flex:1; font-size:12.5px; color:var(--text); }
+  #page-expedicao .carga-row .cr-steppers{ display:flex; align-items:center; gap:6px; }
+  #page-expedicao .cr-step-btn{
+    width:24px; height:24px; border-radius:6px; border:1px solid var(--ice-line); background:var(--panel);
+    color:var(--text); cursor:pointer; font-size:14px; line-height:1; font-family:inherit;
+  }
+  #page-expedicao .cr-step-btn:hover{ border-color:var(--frost-dim); }
+  #page-expedicao .cr-step-btn:disabled{ opacity:0.35; cursor:not-allowed; }
+  #page-expedicao .cr-qtd{ font-family:var(--font-mono); font-weight:700; font-size:13px; min-width:18px; text-align:center; }
+  #page-expedicao .cr-remover{
+    background:none; border:none; color:var(--text-soft); cursor:pointer; font-size:14px; padding:2px 4px;
+  }
+  #page-expedicao .cr-remover:hover{ color:var(--red); }
+  #page-expedicao .carga-vazio{ font-size:12px; color:var(--text-soft); text-align:center; padding:20px 0; }
+
+  #page-expedicao .carga-acoes{ display:flex; gap:10px; margin-bottom:14px; }
+  #page-expedicao .btn-secundario{ background:var(--bg-soft); color:var(--text-soft); }
+  #page-expedicao .btn-secundario:hover{ color:var(--text); border-color:var(--frost-dim); }
+  #page-expedicao .btn-confirmar{ border-color:var(--highlight); color:var(--highlight); }
+  #page-expedicao .btn-confirmar:hover{ background:rgba(186,255,41,0.1); }
+  #page-expedicao .btn-confirmar:disabled{ border-color:var(--ice-line); color:var(--text-soft); }
+
+  #page-expedicao .carga-aviso{
+    font-size:11px; color:var(--extra); line-height:1.5; background:rgba(226,163,61,0.08);
+    border:1px solid var(--extra-dim); border-radius:8px; padding:10px 12px;
+  }
+
+  #page-expedicao .entrada-selecionado-vazio{ font-size:12.5px; color:var(--text-soft); padding:10px 0; }
+  #page-expedicao .entrada-label{
+    display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:1px;
+    color:var(--text-soft); font-weight:700; margin:14px 0 6px;
+  }
+  #page-expedicao .entrada-label:first-of-type{ margin-top:4px; }
+  #page-expedicao .entrada-select{
+    width:100%; background:var(--bg-soft); border:1px solid var(--ice-line); color:var(--text);
+    border-radius:8px; padding:8px 10px; font-size:12.5px; font-family:inherit;
+  }
+  #page-expedicao .entrada-data-input{
+    background:var(--bg-soft); border:1px solid var(--ice-line); color:var(--text);
+    border-radius:8px; padding:8px 10px; font-size:12.5px; font-family:inherit;
+    width:100%; box-sizing:border-box;
+  }
+  #page-expedicao .entrada-qtd-row{ display:flex; align-items:center; gap:10px; }
+  #page-expedicao .entrada-qtd-row .cr-qtd{ font-size:16px; min-width:26px; }
+  #page-expedicao .entrada-vagas-lista{
+    display:flex; flex-direction:column; gap:4px; margin-top:12px; max-height:260px; overflow-y:auto;
+  }
+  #page-expedicao .entrada-vaga-row{
+    background:var(--bg-soft); border:1px solid var(--ice-line); border-radius:7px;
+    padding:7px 10px; font-size:12px; font-family:var(--font-mono); color:var(--text);
+  }
+  #page-expedicao .palete-busca-lista{
+    display:flex; flex-direction:column; gap:10px; margin-top:12px; max-height:420px; overflow-y:auto;
+  }
+  #page-expedicao .entradas-hoje-lista{
+    display:flex; flex-direction:column; gap:0; margin-top:10px; max-height:440px; overflow-y:auto;
+    border:1px solid var(--ice-line); border-radius:10px; background:var(--bg-soft);
+  }
+  #page-expedicao .entrada-hoje-row{
+    display:flex; align-items:center; gap:10px; padding:8px 14px; font-size:12.5px;
+    border-bottom:1px solid var(--ice-line);
+  }
+  #page-expedicao .entrada-hoje-row:last-child{ border-bottom:none; }
+  #page-expedicao .entrada-hoje-hora{ font-family:var(--font-mono); color:var(--frost); font-weight:700; min-width:42px; }
+  #page-expedicao .entrada-hoje-info{ flex:1; color:var(--text); line-height:1.5; }
+  #page-expedicao .entrada-hoje-endereco{ font-family:var(--font-mono); color:var(--text-soft); font-size:11px; }
+  #page-expedicao .palete-busca-card{
+    background:var(--bg-soft); border:1px solid var(--ice-line); border-radius:10px; padding:12px 14px;
+  }
+  #page-expedicao .palete-busca-titulo{ font-weight:700; font-size:13.5px; color:var(--text); margin-bottom:4px; }
+  #page-expedicao .palete-busca-total{ font-size:12.5px; color:var(--frost); font-weight:600; margin-bottom:2px; }
+  #page-expedicao .palete-busca-endereco{ font-size:11px; color:var(--text-soft); font-family:var(--font-mono); margin-bottom:10px; }
+  #page-expedicao .palete-busca-acao{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  #page-expedicao .entrada-familia-auto{
+    display:flex; align-items:center; gap:8px; background:var(--bg-soft); border:1px solid var(--ice-line);
+    border-radius:8px; padding:9px 12px; flex-wrap:wrap;
+  }
+  #page-expedicao .entrada-familia-nome{ font-size:12.5px; font-weight:700; color:var(--text); }
+  #page-expedicao .entrada-familia-tag{ font-size:10px; color:var(--text-soft); text-transform:uppercase; letter-spacing:0.5px; }
+  #page-expedicao .entrada-familia-trocar{
+    margin-left:auto; background:none; border:none; color:var(--frost); font-size:11px;
+    text-decoration:underline; cursor:pointer; font-family:inherit;
+  }
+
+  @media (max-width:900px){
+    #page-expedicao .app-shell{ flex-direction:column; }
+    #page-expedicao .side-nav{
+      width:100%; height:auto; position:sticky; top:0; z-index:20;
+      flex-direction:row; align-items:center; padding:6px 10px; overflow-x:auto;
+      border-right:none; border-bottom:1px solid var(--ice-line);
+    }
+    #page-expedicao .side-nav-brand{
+      padding:0 14px 0 0; border-bottom:none; border-right:1px solid var(--ice-line);
+      margin-bottom:0; flex-shrink:0; white-space:nowrap;
+    }
+    #page-expedicao .side-nav-btn{
+      border-left:none; border-bottom:3px solid transparent; white-space:nowrap; padding:12px 14px;
+    }
+    #page-expedicao .side-nav-btn.active{ border-left-color:transparent; border-bottom-color:var(--brand); }
+    #page-expedicao .container{ padding:18px 14px 50px; }
+    #page-expedicao .layout{ flex-direction:column; }
+    #page-expedicao .carga-col-produtos,
+#page-expedicao .carga-col-caminhao{ min-width:0; flex-basis:100%; }
+    #page-expedicao .floor-panel{ flex-direction:row; position:static; width:100%; overflow-x:auto; }
+    #page-expedicao .floor-btn-divisor{ width:1px; height:32px; margin:0 2px; }
+  }
+
+  @media (max-width:520px){
+    #page-expedicao .cr-step-btn{ width:34px; height:34px; font-size:16px; }
+    #page-expedicao .cr-remover{ width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; padding:0; }
+  }
+
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -1390,6 +1879,10 @@ body{background:#fff;color:#000}
       <button class="nav-item" data-page="lancamento">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
         Lançamento
+      </button>
+      <button class="nav-item" data-page="expedicao">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="17"/><line x1="9.5" y1="14.5" x2="14.5" y2="14.5"/></svg>
+        Expedição
       </button>
     </nav>
   </aside>
@@ -3132,6 +3625,266 @@ body{background:#fff;color:#000}
 
   </div> <!-- /page-lancamento -->
 
+  <!-- ═══════════════════════════════════════════════
+       MÓDULO EXPEDIÇÃO — Câmara Fria
+  ═══════════════════════════════════════════════ -->
+  <div id="page-expedicao" class="report-page" style="display:none; padding:0; overflow:auto; height:calc(100vh - 0px);">
+
+<div class="app-shell">
+
+  <nav class="side-nav">
+    <div class="side-nav-brand">
+      <div class="eyebrow">Bread King</div>
+      <div class="side-nav-title">Logística</div>
+    </div>
+    <button class="side-nav-btn active" id="tabMapa" data-view="mapa">Câmara Fria</button>
+    <button class="side-nav-btn" id="tabCarga" data-view="carga">Saída de Produto</button>
+    <button class="side-nav-btn" id="tabEntrada" data-view="entrada">Entrada de Produto</button>
+  </nav>
+
+  <div class="app-main">
+
+    <div class="topbar">
+      <div class="topbar-inner">
+        <div class="brand-block">
+          <div class="eyebrow">Bread King · Logística</div>
+          <h1>Planta da Câmara Fria</h1>
+          <div class="subtitle">Mapa de endereçamento por rua e andar</div>
+        </div>
+        <div class="camara-switch" id="camaraSwitch">
+          <button class="camara-switch-btn active" data-camara="1">Câmara 1</button>
+          <button class="camara-switch-btn" data-camara="2">Câmara 2</button>
+          <button class="camara-switch-btn" data-camara="3">Câmara 3</button>
+          <button class="camara-switch-btn" data-camara="4">Câmara 4</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="viewMapa" class="container">
+      <div class="layout">
+
+        <div class="floor-panel" id="floorPanel">
+          <div class="fp-label">Andar</div>
+          <!-- botões gerados via JS, do 4 (topo) ao 1 (base), como um painel de elevador -->
+        </div>
+
+    <div class="content">
+
+      <div class="sync-row">
+        <button id="btnAtualizar" class="btn-sync">↻ Atualizar dados</button>
+        <span id="syncStatus" class="sync-status">Carregando…</span>
+      </div>
+
+      <div class="busca-row">
+        <span class="busca-ico">🔍</span>
+        <input type="text" id="buscaProduto" class="busca-input" placeholder="Buscar por nome ou código…" autocomplete="off">
+        <button id="btnLimparBusca" class="btn-limpar-busca" style="display:none;" title="Limpar busca">✕</button>
+      </div>
+
+      <div id="ocupacaoPainel"></div>
+
+      <div id="graficoFamiliasPainel"></div>
+
+      <div id="graficoAgingPainel"></div>
+
+      <div id="graficoHistoricoPainel"></div>
+
+      <div id="conflitosAlerta"></div>
+
+      <div id="linhasIgnoradasAlerta"></div>
+
+      <div id="posicoes01Alerta"></div>
+
+      <div class="legend">
+        <span><i class="sw" style="background:var(--bg-soft);border:1px solid var(--frost-dim);"></i>Posição padrão (livre)</span>
+        <span><i class="sw" style="background:var(--extra);border:1px solid var(--extra-dim);"></i>Posição extra (+2) — só andares 3 e 4</span>
+        <span><i class="sw" style="background:repeating-linear-gradient(45deg,var(--bg-soft),var(--bg-soft) 2px,var(--text-soft) 2px,var(--text-soft) 3px);border:1px solid var(--text-soft);"></i>Sem posição neste andar</span>
+        <span style="opacity:0.85;">Cada posição = 2 paletes lado a lado (P1 / P2) — passe o mouse pra ver cada um</span>
+      </div>
+
+      <div id="familyLegend"></div>
+
+      <div id="ruasWrap"></div>
+
+    </div>
+  </div>
+</div>
+
+<div id="viewCarga" class="container" style="display:none;">
+  <div class="carga-layout">
+
+    <div class="carga-col-produtos">
+      <div class="carga-panel-title">Produtos em estoque</div>
+      <div class="busca-row">
+        <span class="busca-ico">🔍</span>
+        <input type="text" id="buscaCarga" class="busca-input" placeholder="Filtrar por nome ou código…" autocomplete="off">
+      </div>
+      <div class="carga-dica">Toque num produto (ou arraste, no computador) pra adicionar 1 palete à carga.</div>
+      <div id="listaProdutosCarga" class="carga-produtos-lista"></div>
+
+      <div class="carga-panel-title" style="margin-top:22px;">Ou buscar palete pelo código</div>
+      <div class="busca-row">
+        <span class="busca-ico">📦</span>
+        <input type="text" id="buscaCodigoPalete" class="busca-input" placeholder="Código do palete (ex.: 20260725-1432)…" autocomplete="off">
+        <button id="btnBuscarCodigoPalete" class="btn-sync" style="padding:8px 14px;">Buscar</button>
+      </div>
+      <div class="carga-dica">Útil quando você já sabe o código (ex.: veio num romaneio) — acha de uma vez todos os produtos daquele palete, sem precisar buscar um por um.</div>
+      <div id="resultadoBuscaCodigo"></div>
+    </div>
+
+    <div class="carga-col-caminhao">
+      <div class="carga-panel-title">Carga do caminhão</div>
+      <div id="caminhaoDrop" class="caminhao-drop">
+        <svg viewBox="0 0 300 120" class="caminhao-svg" id="caminhaoSvg">
+          <rect x="8" y="30" width="180" height="62" rx="4" fill="none" stroke="var(--frost-dim)" stroke-width="2" stroke-dasharray="6 4"></rect>
+          <text x="98" y="65" text-anchor="middle" fill="var(--text-soft)" font-size="11" font-family="Consolas, monospace">solte aqui</text>
+          <path d="M188 46 h46 l24 24 v20 h-70 z" fill="none" stroke="var(--frost-dim)" stroke-width="2"></path>
+          <line x1="188" y1="46" x2="188" y2="90" stroke="var(--frost-dim)" stroke-width="2"></line>
+          <rect x="205" y="52" width="24" height="18" rx="1.5" fill="none" stroke="var(--frost-dim)" stroke-width="1.6"></rect>
+          <circle cx="55" cy="94" r="11" fill="var(--bg)" stroke="var(--frost-dim)" stroke-width="2.5"></circle>
+          <circle cx="130" cy="94" r="11" fill="var(--bg)" stroke="var(--frost-dim)" stroke-width="2.5"></circle>
+          <circle cx="238" cy="94" r="11" fill="var(--bg)" stroke="var(--frost-dim)" stroke-width="2.5"></circle>
+        </svg>
+      </div>
+      <div id="cargaResumo" class="carga-resumo"></div>
+
+      <label class="entrada-label" style="margin-top:10px;">Identificação do caminhão</label>
+      <input type="text" id="inputCaminhao" class="entrada-data-input" placeholder="ex.: BK-1042 ou 1042" style="max-width:220px;text-transform:uppercase;" maxlength="20">
+
+      <div id="cargaLista" class="carga-lista"></div>
+      <div id="cargaRevisaoMistos"></div>
+      <div class="carga-acoes">
+        <button id="btnLimparCarga" class="btn-sync btn-secundario">🗑 Limpar carga</button>
+        <button id="btnGerarPdf" class="btn-sync">📄 Gerar PDF da carga</button>
+        <button id="btnConfirmarCarga" class="btn-sync btn-confirmar">✅ Confirmar carga retirada</button>
+      </div>
+      <button id="btnReimprimirPdf" class="btn-sync btn-secundario" style="display:none;margin-bottom:14px;">🖨 Reimprimir PDF da última carga confirmada</button>
+      <div class="carga-aviso">⚠ "Confirmar carga retirada" registra a DATA SAÍDA de hoje direto no banco e libera as posições no mapa. Só use depois que os paletes já tiverem saído fisicamente da câmara.</div>
+    </div>
+
+  </div>
+
+  <div class="carga-panel-title" style="margin-top:26px;">Saídas de hoje</div>
+  <div id="saidasDeHojeLista"></div>
+</div>
+
+<div id="viewEntrada" class="container" style="display:none;">
+  <div class="carga-panel-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <span>Que tipo de entrada é essa?</span>
+    <div style="display:flex;gap:8px;">
+      <button id="btnModoSimples" class="btn-sync btn-confirmar" type="button" style="padding:7px 14px;">Palete simples</button>
+      <button id="btnModoMisto" class="btn-sync btn-secundario" type="button" style="padding:7px 14px;">Palete misto</button>
+    </div>
+  </div>
+  <div class="carga-dica" style="margin-bottom:14px;">
+    <strong>Palete simples</strong>: um produto só, um ou mais paletes iguais. <strong>Palete misto</strong>: um único palete físico com produtos diferentes (cada um com sua quantidade de pacotes) — todos ganham o mesmo código de rastreio.
+  </div>
+
+  <div class="carga-layout" id="layoutEntradaSimples">
+
+    <div class="carga-col-produtos">
+      <div class="carga-panel-title">Produto que está entrando</div>
+      <div class="busca-row">
+        <span class="busca-ico">🔍</span>
+        <input type="text" id="buscaEntradaProduto" class="busca-input" placeholder="Buscar por nome ou código…" autocomplete="off">
+      </div>
+      <div class="carga-dica">A lista vem do catálogo oficial do CIGAM — só escolher, sem digitar nome de produto.</div>
+      <div id="listaProdutosEntrada" class="carga-produtos-lista"></div>
+    </div>
+
+    <div class="carga-col-caminhao">
+      <div class="carga-panel-title">Detalhes da entrada</div>
+      <div id="entradaSelecionado" class="entrada-selecionado-vazio">Escolha um produto na lista ao lado.</div>
+
+      <div id="entradaCampos" style="display:none;">
+        <label class="entrada-label">Família</label>
+        <div id="entradaFamiliaWrap"></div>
+
+        <label class="entrada-label">Quantidade de paletes entrando</label>
+        <div class="entrada-qtd-row">
+          <button class="cr-step-btn" id="entradaQtdMenos" type="button">−</button>
+          <span class="cr-qtd" id="entradaQtdValor">1</span>
+          <button class="cr-step-btn" id="entradaQtdMais" type="button">+</button>
+        </div>
+
+        <label class="entrada-label">Pacotes por palete</label>
+        <input type="number" min="1" id="entradaPacotes" class="entrada-data-input" placeholder="ex.: 170">
+
+        <label class="entrada-label">Data de produção</label>
+        <input type="date" id="entradaDataProducao" class="entrada-data-input">
+
+        <label class="entrada-label">Data de entrada</label>
+        <div class="carga-dica" id="entradaDataHojeInfo" style="margin-top:4px;">Sempre hoje — <strong id="entradaDataHojeTexto"></strong></div>
+
+        <button id="btnCalcularVagas" class="btn-sync" style="margin-top:14px;">📍 Calcular posições sugeridas</button>
+
+        <div id="entradaVagasPreview"></div>
+
+        <button id="btnConfirmarEntrada" class="btn-sync btn-confirmar" style="display:none;margin-top:12px;">✅ Confirmar entrada</button>
+      </div>
+
+      <div class="carga-aviso" style="margin-top:16px;">⚠ As posições são sugeridas automaticamente (mesma regra de FIFO do "Onde guardar"). "Confirmar entrada" grava direto no banco.</div>
+    </div>
+
+  </div>
+
+  <div class="carga-layout" id="layoutEntradaMisto" style="display:none;">
+
+    <div class="carga-col-produtos">
+      <div class="carga-panel-title">Produtos desse palete</div>
+      <div class="busca-row">
+        <span class="busca-ico">🔍</span>
+        <input type="text" id="buscaEntradaMistoProduto" class="busca-input" placeholder="Buscar por nome ou código…" autocomplete="off">
+      </div>
+      <div class="carga-dica">Toque num produto pra adicionar ele à lista do palete misto, ao lado — com a quantidade de pacotes dele.</div>
+      <div id="listaProdutosEntradaMisto" class="carga-produtos-lista"></div>
+    </div>
+
+    <div class="carga-col-caminhao">
+      <div class="carga-panel-title">Produtos adicionados a esse palete</div>
+      <div id="listaItensPaleteMisto"></div>
+
+      <div id="entradaMistoCampos" style="display:none;">
+        <label class="entrada-label">Data de entrada</label>
+        <div class="carga-dica" style="margin-top:4px;">Sempre hoje — <strong id="entradaMistoDataHojeTexto"></strong></div>
+
+        <button id="btnCalcularVagaMisto" class="btn-sync" style="margin-top:14px;">📍 Calcular posição do palete</button>
+
+        <div id="entradaVagaMistoPreview"></div>
+
+        <div id="entradaMistoCodigoPreview"></div>
+
+        <button id="btnConfirmarEntradaMisto" class="btn-sync btn-confirmar" style="display:none;margin-top:12px;">✅ CONFIRMAR PALETE</button>
+      </div>
+
+      <div class="carga-aviso" style="margin-top:16px;">⚠ Palete misto ocupa 1 vaga só — todos os produtos adicionados aqui vão pro mesmo endereço, com o mesmo código de rastreio.</div>
+    </div>
+
+  </div>
+
+  <div class="carga-panel-title" style="margin-top:26px;">Consultar palete pelo código</div>
+  <div class="busca-row" style="max-width:420px;">
+    <span class="busca-ico">📦</span>
+    <input type="text" id="buscaCodigoConsulta" class="busca-input" placeholder="Código do palete (ex.: 20260727-0920)…" autocomplete="off">
+    <button id="btnBuscarCodigoConsulta" class="btn-sync" style="padding:8px 14px;">Buscar</button>
+  </div>
+  <div class="carga-dica">Digite o código pra ver quais produtos tem naquele palete e a quantidade de pacotes de cada um.</div>
+  <div id="resultadoBuscaCodigoConsulta"></div>
+
+  <div class="carga-panel-title" style="margin-top:26px;">Lançamentos de hoje</div>
+  <div id="entradasDeHojeLista"></div>
+</div>
+
+<footer>Planta de Endereçamento · Câmara Fria · Bread King</footer>
+    <div class="tip" id="tip"></div>
+
+  </div>
+</div>
+
+
+  </div> <!-- /page-expedicao -->
+
+
   </div> <!-- /main-content -->
 </div> <!-- /app-shell -->
 
@@ -3193,6 +3946,7 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     document.getElementById('page-pcp-estoque').style.display = target === 'pcp-estoque' ? 'block' : 'none';
     document.getElementById('page-melhoria').style.display = target === 'melhoria' ? 'block' : 'none';
     document.getElementById('page-lancamento').style.display = target === 'lancamento' ? 'block' : 'none';
+    document.getElementById('page-expedicao').style.display = target === 'expedicao' ? 'block' : 'none';
     if(target === 'lancamento' && typeof LANC_populateDropdowns === 'function'){
       LANC_populateDropdowns();
     }
@@ -3219,11 +3973,16 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
       EQ_DASH_loadedOnce = true;
       EQ_DASH_init();
     }
+    if(target === 'expedicao' && !EXP_loadedOnce){
+      EXP_loadedOnce = true;
+      EXP_init();
+    }
   });
 });
 let RC_loadedOnce = false;
 let MN_loadedOnce = false;
 let MC_loadedOnce = false;
+let EXP_loadedOnce = false;
 
 /* ============================================================
    FONTE DE DADOS — Supabase (tabela producao_diaria)
@@ -15047,6 +15806,2956 @@ document.querySelectorAll('#riProdTable-wrap th[data-col]').forEach(th => {
     if(riActiveTab === 'producao') renderVolumePorProduto(getFilteredDates());
   });
 });
+
+
+/* ═══════════════════════════════════════════════
+   MÓDULO EXPEDIÇÃO — Câmara Fria
+   Escopo isolado em IIFE — variáveis não vazam para o BK360
+═══════════════════════════════════════════════ */
+;(function(){
+'use strict';
+/* ======================================================================
+   MAPA DA CÂMARA 1 — endereçamento por posição sequencial
+   Substitui o antigo endereçamento por rua+lado+andar+posição-local.
+   Cada posição (1 a 560) já identifica sozinha onde ela fica fisicamente
+   — rua, longarina, andar, segmento (esquerda/corredor/direita) — não
+   precisa mais de colunas separadas pra isso. Essa é a MESMA lógica do
+   Manifesto Técnico da Câmara Fria 1 (validado por levantamento físico).
+   ====================================================================== */
+function gerarMapaCamara(qtdEsquerda, qtdDireita){
+  const mapa = {};
+  let n = 0;
+  function montaLongarina(rua, longarina, ordemAndares){
+    ordemAndares.forEach(andar => {
+      const temExtra = (andar === 3 || andar === 4);
+      for(let i=1; i<=qtdEsquerda; i++){
+        n++;
+        mapa[n] = { posicao:n, rua, longarina, andar, segmento:'esquerda', posLocal:i, capacidade: i===1 ? 1 : 2 };
+      }
+      if(temExtra){
+        [1,2].forEach(e=>{
+          n++;
+          mapa[n] = { posicao:n, rua, longarina, andar, segmento:'corredor', posLocal:e, capacidade:2, extra:`E${e}` };
+        });
+      }
+      for(let i=1; i<=qtdDireita; i++){
+        n++;
+        mapa[n] = { posicao:n, rua, longarina, andar, segmento:'direita', posLocal:i, capacidade: i===1 ? 1 : 2 };
+      }
+    });
+  }
+  montaLongarina(1, 'única', [4,3,2,1]);
+  [2,3,4].forEach(rua=>{
+    montaLongarina(rua, 'A', [4,3,2,1]);
+    montaLongarina(rua, 'B', [1,2,3,4]);
+  });
+  return mapa;
+}
+
+/* Câmara 1: segmento esquerdo com 10 posições, direito com 9 (validado
+   por levantamento físico — ver Manifesto Técnico).
+   Câmaras 2 e 3: mesma estrutura (4 ruas, 4 andares, extras E1/E2 nos
+   andares 3 e 4, 1ª posição de cada segmento com 1 palete só), mas
+   segmento esquerdo com 3 posições e direito com 5. */
+const CAMARA1_MAPA = gerarMapaCamara(10, 9);
+const CAMARA2_MAPA = gerarMapaCamara(3, 5);
+const CAMARA3_MAPA = gerarMapaCamara(3, 5);
+
+/* Câmara 4: estrutura diferente das outras — 2 ruas (01 e 02), 4
+   longarinas numeradas 1 a 4 (não A/B), 3 andares (não 4), sem segmento
+   esquerda/corredor/direita (fileira única de "espaços"), sem posições
+   extras, e todo espaço comporta 2 paletes (sem exceção de 1 palete).
+   Rua 01 fica entre Longarina 1 e Longarina 2; Rua 02 entre Longarina 3
+   e Longarina 4. Longarinas 1, 2 e 3 têm 6 espaços cada; a Longarina 4
+   tem 7. Só existe 1 porta (entrada e saída juntas), do lado da Rua 01/
+   Longarina 1 — por isso a numeração começa ali e segue em "cobra"
+   (Long 1 do andar 3 ao 1, Long 2 do 1 ao 3, Long 3 do 3 ao 1, Long 4 do
+   1 ao 3), igual ao padrão das outras câmaras. */
+function gerarMapaCamara4(){
+  const mapa = {};
+  let n = 0;
+  function montaLongarina(rua, longarina, qtdEspacos, ordemAndares){
+    ordemAndares.forEach(andar => {
+      for(let i=1; i<=qtdEspacos; i++){
+        n++;
+        mapa[n] = { posicao:n, rua, longarina, andar, segmento:'unico', posLocal:i, capacidade:2 };
+      }
+    });
+  }
+  montaLongarina(1, '1', 6, [3,2,1]);
+  montaLongarina(1, '2', 6, [1,2,3]);
+  montaLongarina(2, '3', 6, [3,2,1]);
+  montaLongarina(2, '4', 7, [1,2,3]);
+  return mapa;
+}
+const CAMARA4_MAPA = gerarMapaCamara4();
+
+const MAPAS_POR_CAMARA = { 1: CAMARA1_MAPA, 2: CAMARA2_MAPA, 3: CAMARA3_MAPA, 4: CAMARA4_MAPA };
+
+let CAMARA_ATUAL = 1; // 1, 2, 3 ou 4 — qual câmara está sendo exibida/editada agora
+
+function mapaAtual(){ return MAPAS_POR_CAMARA[CAMARA_ATUAL]; }
+function infoPosicao(numero){ return mapaAtual()[numero] || null; }
+function capacidadeDaPosicao(numero){ const info = infoPosicao(numero); return info ? info.capacidade : 2; }
+
+/* Endereço em texto (pra mensagens, listas de carga, etiquetas) — deriva
+   tudo a partir da posição sequencial, já que ela sozinha já diz onde
+   fica (rua, longarina, andar). */
+function enderecoTexto(posicao, palete){
+  const info = infoPosicao(posicao);
+  const paleteTxt = palete ? `-P${palete}` : '';
+  if(!info) return `Câmara ${CAMARA_ATUAL} · Posição ${posicao}${paleteTxt}`;
+  const longarinaTxt = info.longarina === 'única' ? '' : ` Longarina ${info.longarina}`;
+  const ruaTxt = CAMARA_ATUAL === 4 ? `0${info.rua}` : info.rua;
+  return `Câmara ${CAMARA_ATUAL} · Rua ${ruaTxt}${longarinaTxt} · And.${info.andar} · Pos.${posicao}${paleteTxt}`;
+}
+
+/* Lista as ruas e as longarinas de cada uma, na ordem certa de exibição —
+   derivado direto do mapa, não é mais uma constante separada. */
+function ruasExistentes(){
+  const set = new Set();
+  Object.values(mapaAtual()).forEach(p => set.add(p.rua));
+  return [...set].sort((a,b)=>a-b);
+}
+function longarinasDaRua(rua){
+  const set = new Set();
+  Object.values(mapaAtual()).forEach(p => { if(p.rua === rua) set.add(p.longarina); });
+  return [...set].sort();
+}
+/* Quais andares existem na câmara atualmente selecionada — deriva do
+   mapa, igual ruasExistentes()/longarinasDaRua(). Câmaras 1/2/3 têm 4
+   andares; a Câmara 4 tem só 3. */
+function andaresAtuais(){
+  const set = new Set();
+  Object.values(mapaAtual()).forEach(p => set.add(p.andar));
+  return [...set].sort((a,b)=>a-b);
+}
+
+/* Todas as posições (números sequenciais) de uma fileira específica
+   (rua+longarina+andar), já na ordem física de leitura (esquerda →
+   corredor → direita) — é isso que desenha uma linha do mapa. */
+function posicoesDaFileira(rua, longarina, andar){
+  return Object.values(mapaAtual())
+    .filter(p => p.rua === rua && p.longarina === longarina && p.andar === andar)
+    .sort((a,b) => a.posicao - b.posicao);
+}
+
+let andarAtual = 4; // andar mais alto como padrão; null = "CÂMARA" (todos os andares somados)
+let andarMapaCamara = 4; // qual andar o mapa mostra quando a visão é "CÂMARA" (navegação por botões laterais)
+
+/* Lista de andares a considerar nos cálculos do painel: só o selecionado,
+   ou todos quando o botão "CÂMARA" está ativo (andarAtual === null). */
+function andaresConsiderados(){
+  return andarAtual === null ? andaresAtuais() : [andarAtual];
+}
+
+/* Registros de ocupação filtrados pelo andar selecionado no painel tipo
+   elevador — usado por todos os cálculos de dashboard (ocupação, família,
+   aging, estoque) pra que "mudar de andar" realmente mude os números
+   mostrados, não só o desenho do mapa lá embaixo. O andar de cada
+   registro agora vem do mapa (a partir da posição), não de uma coluna. */
+function registrosDoAndarSelecionado(){
+  if(andarAtual === null) return OCUPACAO_REGISTROS;
+  return OCUPACAO_REGISTROS.filter(r => {
+    const info = infoPosicao(r.posicao);
+    return info && info.andar === andarAtual;
+  });
+}
+
+/* Texto curto pra deixar claro, nos títulos dos painéis, se os números
+   mostrados são de um andar específico ou da câmara toda. */
+function rotuloAndarSelecionado(){
+  return andarAtual === null ? 'Câmara toda' : `Andar ${andarAtual}`;
+}
+
+/* ======================================================================
+   INTEGRAÇÃO COM SUPABASE
+   Substitui a antiga integração com Google Sheets/Apps Script. As três
+   tabelas (ocupacao, familias, produtos) foram migradas com a mesma
+   estrutura de dados da planilha BD_EXPEDIÇÃO — ver schema.sql/dados.sql.
+   ====================================================================== */
+// Reutiliza o cliente Supabase do BK360 (projeto yymdbciabdmkvaydxzrj)
+const sb = getSupabaseClient();
+
+let OCUPACAO_REGISTROS = [];   // todos os registros válidos da tabela "ocupacao"
+let LINHAS_IGNORADAS = [];     // registros descartados por dado incompleto (id + motivo)
+let POSICOES_01_INVALIDAS = []; // posições 01 (só cabe 1 palete) que têm um P2 cadastrado por engano
+let OCUPACAO_MAP = {};         // key = código da posição (igual ao cellCode) -> registro ocupado
+let FAMILIAS_CATALOGO = [];    // linhas da aba Famílias
+let ultimaAtualizacao = null;
+
+let FILTRO_PRODUTO = '';       // texto de busca (minúsculo, sem espaço nas pontas) — aba do mapa
+let FILTRO_FAMILIA_MAPA = null; // família clicada na legenda — null = nenhuma selecionada (mostra tudo aceso)
+let OCUPACAO_VISAO = 'camara'; // 'camara' | 'rua' | 'andar' — modo do painel de ocupação
+let FILTRO_CARGA = '';         // texto de busca — aba Montar Carga
+let CARGA_ITENS = [];          // [{ produto, quantidade }] — carga em montagem via busca por produto (FIFO)
+let CARGA_ITENS_LINHA = [];    // [{ linha, produto, rua, lado, andar, posicao, palete, pacotes, produtosOriginais }] — linhas exatas adicionadas via código de palete (bipagem)
+let BUSCA_CODIGO_RESULTADO = null; // resultado da última busca por código de palete, aguardando escolha de quais produtos entram na carga
+let ULTIMA_CARGA_CONFIRMADA = null; // retrato da última carga confirmada, pra poder reimprimir o PDF depois
+let ULTIMA_CARGA_CONFIRMADA_CAMINHAO = ''; // caminhão usado naquela carga, pra reimpressão manter a mesma info
+
+let PRODUTOS_CATALOGO = [];    // [{ codigo, descricao }] — catálogo oficial vindo do CIGAM (aba "Produtos")
+let FILTRO_ENTRADA = '';       // texto de busca — aba Nova Entrada (modo simples)
+let FILTRO_ENTRADA_MISTO = ''; // texto de busca — aba Nova Entrada (modo palete misto)
+let ENTRADA_PRODUTO = null;    // descrição do produto selecionado na Nova Entrada
+let ENTRADA_PRODUTO_CODIGO = ''; // código do produto selecionado (catálogo CIGAM)
+let ENTRADA_QTD = 1;
+let ENTRADA_PACOTES = null;    // pacotes por palete (modo simples) — mesmo valor pra todos os paletes do lote
+let ENTRADA_VAGAS = [];        // posições sugeridas calculadas pro lote atual
+
+let ENTRADA_MODO = 'simples';  // 'simples' (1 produto, N paletes iguais) | 'misto' (1 palete só, vários produtos diferentes)
+let ITENS_PALETE_MISTO = [];   // [{ produto, codigo, familia, pacotes }] — produtos adicionados ao palete misto em montagem
+let VAGA_MISTO = null;         // única vaga calculada pro palete misto (é sempre 1 palete físico só)
+
+/* Confere se algum produto de um palete bate com a busca ativa.
+   Sem busca ativa, tudo "combina" (não filtra nada). */
+function produtoCombina(produtos){
+  if(!FILTRO_PRODUTO) return true;
+  if(!produtos || produtos.length === 0) return false;
+
+  const buscaSoDigitos = /^\d+$/.test(FILTRO_PRODUTO);
+  const filtroSemZeros = FILTRO_PRODUTO.replace(/^0+/, '');
+
+  return produtos.some(p => {
+    if(p.toLowerCase().includes(FILTRO_PRODUTO)) return true;
+    const codigo = codigoDoProduto(p);
+    if(!codigo) return false;
+    if(codigo.toLowerCase().includes(FILTRO_PRODUTO)) return true;
+    // tolera zero à esquerda que o Google Sheets costuma comer (ex: "007306" -> "7306")
+    if(buscaSoDigitos && filtroSemZeros && codigo.replace(/^0+/, '') === filtroSemZeros) return true;
+    return false;
+  });
+}
+
+/* Converte um valor de data vindo do Supabase (ISO) pro formato
+   brasileiro que o resto do painel já espera (dd/mm/aaaa, com hora
+   opcional). Trata "date" (só data, ex.: "2026-07-27") e "timestamptz"
+   (data+hora com fuso, ex.: "2026-07-27T14:32:00+00:00") diferente:
+   string "date" pura NUNCA passa pelo construtor Date() (ele assume UTC
+   pra strings assim, o que pode "voltar" um dia em fusos atrás de UTC,
+   como o do Brasil) — por isso essa é fatiada na mão. */
+function timestampParaBR(iso){
+  if(!iso) return '';
+  if(!iso.includes('T')){
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  }
+  const dt = new Date(iso);
+  if(isNaN(dt.getTime())) return '';
+  const p = n => String(n).padStart(2, '0');
+  const dataTxt = `${p(dt.getDate())}/${p(dt.getMonth()+1)}/${dt.getFullYear()}`;
+  const temHora = dt.getHours() !== 0 || dt.getMinutes() !== 0;
+  return temHora ? `${dataTxt} ${p(dt.getHours())}:${p(dt.getMinutes())}` : dataTxt;
+}
+
+/* Escapa texto vindo da planilha antes de inserir no HTML — a planilha é
+   editada por várias pessoas, então tratamos qualquer campo de texto (família,
+   produto, lado, datas) como entrada não confiável pra evitar que um valor
+   digitado errado quebre a página ou injete HTML/script. */
+function escapeHtml(str){
+  return String(str ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
+
+/* Formata a lista de produtos de um palete. `tooltip` é texto puro (usado
+   no balão do rack, que não interpreta HTML) — cada produto vira uma linha
+   com marcador "•", em vez de um texto corrido separado por vírgula.
+   `html` gera uma lista <ul>/<li> de verdade, usada nos cards. */
+function produtosTexto(produtos){
+  if(!produtos || produtos.length === 0) return '';
+  if(produtos.length === 1) return produtos[0];
+  return '\n' + produtos.map(p => `• ${p}`).join('\n');
+}
+function produtosHtml(produtos){
+  if(!produtos || produtos.length === 0) return '';
+  if(produtos.length === 1) return escapeHtml(produtos[0]);
+  return `<ul class="produtos-list">${produtos.map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ul>`;
+}
+
+/* Cor determinística por família, pra não precisar cadastrar cor manualmente */
+function familyHue(nome){
+  let hash = 0;
+  for(let i=0; i<nome.length; i++) hash = nome.charCodeAt(i) + ((hash<<5)-hash);
+  return Math.abs(hash) % 360;
+}
+function familyColor(nome){
+  return `hsl(${familyHue(nome)}, 58%, 42%)`;
+}
+/* Variação de tom (mesmo matiz da família, luminosidade diferente) — usada
+   no drill-down de produtos, pra cada barra continuar visualmente "da
+   família", em vez de cores soltas sem relação com o resto do painel. */
+function tomDaFamilia(nome, indice, total){
+  const hue = familyHue(nome);
+  const min = 28, max = 62;
+  const passo = total > 1 ? (max - min) / (total - 1) : 0;
+  const l = Math.round(max - indice * passo);
+  return `hsl(${hue}, 58%, ${l}%)`;
+}
+
+/* Valida e normaliza uma linha da aba "Ocupação". Em vez de só descartar
+   silenciosamente linhas com dado faltando, devolve o motivo — isso alimenta
+   o aviso "N linhas ignoradas" na tela, pra quem está de olho na planilha
+   saber exatamente o que corrigir (e em qual campo). */
+function normalizeOcupacaoRow(row){
+  const posicao = row.posicao;
+  const paleteNum = row.palete != null ? String(row.palete) : '';
+  const familia = (row.familia || '').trim();
+  const produto = (row.produto || '').trim();
+  // um palete pode ter mais de um produto quando nenhum deles sozinho
+  // fecha o palete inteiro — nesse caso o campo produto vem como
+  // "Produto 1, Produto 2, Produto 3" (formato antigo, de antes do
+  // palete misto virar 1 linha por produto)
+  const produtos = produto ? produto.split(',').map(p => p.trim()).filter(Boolean) : [];
+  const dataProducao = timestampParaBR(row.data_producao);
+  const dataEntrada = timestampParaBR(row.data_entrada);
+  const dataSaida = timestampParaBR(row.data_saida);
+  const pacotes = row.pacotes != null ? row.pacotes : null;
+  const codigoPalete = (row.codigo_rastreio || '').trim();
+  const caminhao = (row.caminhao || '').trim();
+
+  const faltando = [];
+  if(!posicao) faltando.push('POSIÇÃO');
+  if(!infoPosicao(posicao)) faltando.push('POSIÇÃO (número fora da faixa 1-560)');
+  if(!paleteNum) faltando.push('PALETE');
+
+  if(faltando.length){
+    return { ok:false, motivo: `faltando ${faltando.join(', ')}` };
+  }
+  return { ok:true, data: { posicao, palete: paleteNum, familia, produto, produtos, dataProducao, dataEntrada, dataSaida, pacotes, codigoPalete, caminhao, ocupado: !dataSaida, linha: row.id } };
+}
+
+let OCUPACAO_CONFLITOS = []; // posições com mais de 1 registro ocupado ao mesmo tempo (erro de apontamento)
+let OCUPACAO_CONFLITOS_SET = new Set(); // mesma info, em Set, pra lookup rápido no desenho
+
+let CARREGANDO_DADOS = false; // trava pra não empilhar chamadas quando o intervalo é curto (2s) e a rede demora a responder
+
+async function carregarDados(){
+  if(CARREGANDO_DADOS) return; // já tem uma busca em andamento, pula esse ciclo
+  CARREGANDO_DADOS = true;
+  const statusEl = document.getElementById('syncStatus');
+  if(statusEl) statusEl.textContent = 'Atualizando…';
+  try{
+    const [ocupResp, famResp, prodResp] = await Promise.all([
+      sb.from('ocupacao').select('*').eq('camara', CAMARA_ATUAL),
+      sb.from('familias').select('*'),
+      sb.from('produtos').select('*'),
+    ]);
+    if(ocupResp.error) throw ocupResp.error;
+    if(famResp.error) throw famResp.error;
+    if(prodResp.error) throw prodResp.error;
+
+    // mantém as mesmas chaves em maiúsculo que o resto do código já usava
+    // com o CSV — assim não precisou reescrever quem lê esse catálogo
+    FAMILIAS_CATALOGO = (famResp.data || []).map(r => ({
+      FAMILIA: r.familia, CÓDIGO: r.codigo_produto, PRODUTO: r.produto, RUA: r.rua,
+    }));
+    PRODUTOS_CATALOGO = (prodResp.data || [])
+      .map(r => ({
+        codigo: (r.codigo ?? '').toString().trim(),
+        descricao: (r.descricao || '').trim(),
+        familia: '', // a tabela produtos não guarda família — vem de "familias" ou do estoque atual
+      }))
+      .filter(p => p.descricao);
+
+    OCUPACAO_REGISTROS = [];
+    LINHAS_IGNORADAS = [];
+    (ocupResp.data || []).forEach(row=>{
+      const resultado = normalizeOcupacaoRow(row);
+      if(resultado.ok) OCUPACAO_REGISTROS.push(resultado.data);
+      else LINHAS_IGNORADAS.push({ linha: row.id, motivo: resultado.motivo });
+    });
+
+    // agrupa por posição+palete pra achar onde há mais de 1 registro "aberto"
+    // (sem data de saída) ao mesmo tempo — isso é sempre um erro de
+    // apontamento, já que fisicamente só cabe 1 produto por vaga de palete
+    const porChave = {};
+    OCUPACAO_REGISTROS.forEach(r=>{
+      if(!r.ocupado) return;
+      const key = cellCode(r.posicao, r.palete);
+      (porChave[key] = porChave[key] || []).push(r);
+    });
+
+    OCUPACAO_MAP = {};
+    OCUPACAO_CONFLITOS = [];
+    OCUPACAO_CONFLITOS_SET = new Set();
+    Object.entries(porChave).forEach(([key, regs])=>{
+      OCUPACAO_MAP[key] = regs[regs.length-1]; // usa o mais recente pra colorir/mostrar
+      // mais de 1 registro no mesmo endereço só é erro de apontamento se
+      // eles NÃO tiverem todos o mesmo código de palete preenchido — se
+      // tiverem, é um palete misto de verdade (vários produtos, cada um
+      // com sua própria linha, mesmo código de rastreio)
+      const codigos = new Set(regs.map(r => r.codigoPalete).filter(Boolean));
+      const todosComMesmoCodigo = codigos.size === 1 && regs.every(r => r.codigoPalete === regs[0].codigoPalete);
+      if(regs.length > 1 && !todosComMesmoCodigo){
+        OCUPACAO_CONFLITOS.push({ key, registros: regs });
+        OCUPACAO_CONFLITOS_SET.add(key);
+      }
+    });
+
+    // posições de 1 só palete (a 1ª de cada segmento) — se tiver um P2
+    // cadastrado ali (dado de antes dessa regra existir), aponta pra
+    // corrigir em vez de só esconder no mapa
+    POSICOES_01_INVALIDAS = OCUPACAO_REGISTROS.filter(r => r.ocupado && capacidadeDaPosicao(r.posicao) === 1 && r.palete === '2');
+
+    ultimaAtualizacao = new Date();
+    const sufixoIgnoradas = LINHAS_IGNORADAS.length
+      ? ` · ⚠ ${LINHAS_IGNORADAS.length} registro(s) ignorado(s)`
+      : '';
+    if(statusEl) statusEl.textContent = `Atualizado às ${ultimaAtualizacao.toLocaleTimeString('pt-BR')}${sufixoIgnoradas}`;
+  } catch(err){
+    console.error('Erro ao carregar dados do Supabase:', err);
+    if(statusEl) statusEl.textContent = 'Erro ao buscar dados — tentando de novo em breve';
+  } finally {
+    CARREGANDO_DADOS = false;
+  }
+  renderAll();
+}
+
+/* Gera a lista de células (x, posição local, segmento) pro desenho de uma
+   fileira — o layout visual (onde cada bloco fica) é igual em toda
+   fileira que tem extra, e igual em toda fileira que não tem, então só
+   precisamos de 2 variantes (não uma por rua/andar). */
+function buildRackCells(temExtra, qtdEsquerda, qtdDireita, cellW = 26, cellH = 30){
+  const gap = 2, groupGap = 11;
+  const cells = [];
+  let x = 0;
+  for(let i=1; i<=qtdEsquerda; i++){
+    cells.push({ x, w: cellW, h: cellH, posLocal: i, segmento: 'esquerda' });
+    x += cellW + gap;
+  }
+  x += groupGap - gap;
+  if(temExtra){
+    [1,2].forEach(e=>{
+      cells.push({ x, w: cellW, h: cellH, posLocal: e, segmento: 'corredor' });
+      x += cellW + gap;
+    });
+    x += groupGap - gap;
+  } else {
+    x += 2*cellW + gap + (groupGap - gap); // vão vazio do mesmo tamanho de 2 posições
+  }
+  for(let i=1; i<=qtdDireita; i++){
+    cells.push({ x, w: cellW, h: cellH, posLocal: i, segmento: 'direita' });
+    x += cellW + gap;
+  }
+  return { cells, totalWidth: x - gap };
+}
+/* Câmara 1: 10 + 9 (21 posições por fileira) → célula de 26px já enche
+   bem a largura da tela quando esticada pra 100%.
+   Câmaras 2 e 3: só 3 + 5 (10 posições por fileira) — com a mesma
+   célula de 26px, o SVG tinha que esticar mais que o dobro pra preencher
+   a mesma largura, e isso distorcia (esticava) os números e o texto de
+   Entrada/Saída. Usando uma célula bem mais larga (57px), a largura
+   "natural" da fileira já fica próxima da largura da Câmara 1, então o
+   esticamento final é parecido nas duas e o texto sai legível. */
+const RACKS_POR_CAMARA = {
+  1: { comExtra: buildRackCells(true, 10, 9), semExtra: buildRackCells(false, 10, 9) },
+  2: { comExtra: buildRackCells(true, 3, 5, 57, 30), semExtra: buildRackCells(false, 3, 5, 57, 30) },
+  3: { comExtra: buildRackCells(true, 3, 5, 57, 30), semExtra: buildRackCells(false, 3, 5, 57, 30) },
+};
+
+/* Câmara 4: estrutura totalmente diferente — sem segmento esquerda/
+   corredor/direita, é só uma fileira contínua de "espaços" (cada um com
+   2 paletes, sem exceção de 1 palete). Longarinas 1, 2 e 3 têm 6 espaços;
+   a Longarina 4 tem 7. Célula de 98px pra chegar numa largura natural
+   parecida com a das outras câmaras (evita o mesmo esticamento/distorção
+   que a Câmara 2/3 tinha). */
+function buildRackSimples(qtdEspacos, cellW = 98, cellH = 30){
+  const gap = 2;
+  const cells = [];
+  let x = 0;
+  for(let i=1; i<=qtdEspacos; i++){
+    cells.push({ x, w: cellW, h: cellH, posLocal: i, segmento: 'unico' });
+    x += cellW + gap;
+  }
+  return { cells, totalWidth: x - gap };
+}
+const RACKS_CAMARA4 = {
+  '1': buildRackSimples(6),
+  '2': buildRackSimples(6),
+  '3': buildRackSimples(6),
+  '4': buildRackSimples(7),
+};
+
+function rackDoAndar(andar, longarina){
+  if(CAMARA_ATUAL === 4) return RACKS_CAMARA4[longarina];
+  const racks = RACKS_POR_CAMARA[CAMARA_ATUAL];
+  return (andar === 3 || andar === 4) ? racks.comExtra : racks.semExtra;
+}
+
+/* Endereço em texto agora é só "posição + palete" — a posição sequencial
+   já carrega rua/longarina/andar/segmento sozinha (ver mapaAtual()). */
+function cellCode(posicao, palete){
+  return palete ? `P${posicao}-${palete}` : `P${posicao}`;
+}
+
+/* Constrói o SVG de uma fileira (rua+longarina+andar). Cada posição normal
+   vira 2 retângulos lado a lado (P1 à esquerda, P2 à direita); a 1ª
+   posição de cada segmento (esquerda e direita) só comporta 1 palete. */
+function renderRackSvg(rua, longarina, andar){
+  const rack = rackDoAndar(andar, longarina);
+  const posicoes = posicoesDaFileira(rua, longarina, andar); // mesma ordem dos cells
+  const h = rack.cells[0].h;
+  const hLabel = 12; // espaço reservado embaixo pro número da posição
+  const hTotal = h + hLabel;
+  let rects = '';
+  let labels = '';
+  rack.cells.forEach((c, idx)=>{
+    const p = posicoes[idx];
+    if(!p) return;
+    const numero = p.posicao;
+    const isExtra = c.segmento === 'corredor';
+    const codeOuter = cellCode(numero);
+    const fill = isExtra ? 'var(--extra)' : 'var(--bg-soft)';
+    const stroke = isExtra ? 'var(--extra-dim)' : 'var(--frost-dim)';
+    const codeP1 = cellCode(numero, 1);
+    const codeP2 = cellCode(numero, 2);
+    const ocupP1 = OCUPACAO_MAP[codeP1];
+    const ocupP2 = OCUPACAO_MAP[codeP2];
+    const fillP1 = ocupP1 ? familyColor(ocupP1.familia) : fill;
+    const fillP2 = ocupP2 ? familyColor(ocupP2.familia) : fill;
+    const conflitoP1 = OCUPACAO_CONFLITOS_SET.has(codeP1);
+    const conflitoP2 = OCUPACAO_CONFLITOS_SET.has(codeP2);
+    const dataP1 = ocupP1 ? `Posição ${numero}-P1 · ${escapeHtml(ocupP1.familia || 'sem família')}${ocupP1.produtos.length ? ' · ' + escapeHtml(produtosTexto(ocupP1.produtos)) : ''}${ocupP1.dataProducao ? ' · produzido ' + escapeHtml(ocupP1.dataProducao) : ''} · desde ${escapeHtml(ocupP1.dataEntrada || '?')}${conflitoP1 ? ' · ⚠ CONFLITO, confira fisicamente' : ''}` : `Posição ${numero}-P1`;
+    const dataP2 = ocupP2 ? `Posição ${numero}-P2 · ${escapeHtml(ocupP2.familia || 'sem família')}${ocupP2.produtos.length ? ' · ' + escapeHtml(produtosTexto(ocupP2.produtos)) : ''}${ocupP2.dataProducao ? ' · produzido ' + escapeHtml(ocupP2.dataProducao) : ''} · desde ${escapeHtml(ocupP2.dataEntrada || '?')}${conflitoP2 ? ' · ⚠ CONFLITO, confira fisicamente' : ''}` : `Posição ${numero}-P2`;
+    const halfW = (c.w - 2) / 2;
+
+    const buscaAtiva = !!FILTRO_PRODUTO || !!FILTRO_FAMILIA_MAPA;
+    const matchP1 = ocupP1 && produtoCombina(ocupP1.produtos) && (!FILTRO_FAMILIA_MAPA || ocupP1.familia === FILTRO_FAMILIA_MAPA);
+    const matchP2 = ocupP2 && produtoCombina(ocupP2.produtos) && (!FILTRO_FAMILIA_MAPA || ocupP2.familia === FILTRO_FAMILIA_MAPA);
+    const strokeP1 = conflitoP1 ? 'var(--red)' : (buscaAtiva && matchP1 ? 'var(--highlight)' : stroke);
+    const strokeP2 = conflitoP2 ? 'var(--red)' : (buscaAtiva && matchP2 ? 'var(--highlight)' : stroke);
+    const swP1 = conflitoP1 ? '2' : (buscaAtiva && matchP1 ? '2.2' : '0.6');
+    const swP2 = conflitoP2 ? '2' : (buscaAtiva && matchP2 ? '2.2' : '0.6');
+    const opP1 = buscaAtiva ? (matchP1 ? '1' : '0.12') : '1';
+    const opP2 = buscaAtiva ? (matchP2 ? '0.72' : '0.12') : '0.72';
+
+    labels += `<text x="${c.x + c.w/2}" y="${h + 9}" font-size="7" fill="var(--text-soft)" text-anchor="middle" font-family="var(--font-mono)">${numero}</text>`;
+
+    // 1ª posição de cada segmento só comporta 1 palete — desenha uma vaga
+    // única, não duas. Exceção: se já existir um registro de P2 aqui
+    // (dado incorreto), mantém o desenho normal, pra sinalizar o problema
+    // em vez de escondê-lo.
+    if(p.capacidade === 1 && !ocupP2){
+      rects += `<rect x="${c.x}" y="0" width="${c.w}" height="${c.h}" rx="2.5"
+                  fill="none" stroke="${stroke}" stroke-width="1.4" data-code="${codeOuter} · só 1 palete cabe aqui"></rect>`;
+      rects += `<rect x="${c.x+1.5}" y="1.5" width="${c.w-3}" height="${c.h-3}" rx="1.5"
+                  fill="${fillP1}" stroke="${strokeP1}" stroke-width="${swP1}" opacity="${opP1}"
+                  class="rack-cell${conflitoP1 ? ' conflito-pulse' : ''}" data-code="${dataP1}" style="cursor:pointer;"></rect>`;
+      return;
+    }
+
+    rects += `<rect x="${c.x}" y="0" width="${c.w}" height="${c.h}" rx="2.5"
+                fill="none" stroke="${stroke}" stroke-width="1.4" data-code="${codeOuter}"></rect>`;
+    rects += `<rect x="${c.x+1.5}" y="1.5" width="${halfW-1.5}" height="${c.h-3}" rx="1.5"
+                fill="${fillP1}" stroke="${strokeP1}" stroke-width="${swP1}" opacity="${opP1}"
+                class="rack-cell${conflitoP1 ? ' conflito-pulse' : ''}" data-code="${dataP1}" style="cursor:pointer;"></rect>`;
+    rects += `<rect x="${c.x+halfW+1.5}" y="1.5" width="${halfW-1.5}" height="${c.h-3}" rx="1.5"
+                fill="${fillP2}" stroke="${strokeP2}" stroke-width="${swP2}" opacity="${opP2}"
+                class="rack-cell${conflitoP2 ? ' conflito-pulse' : ''}" data-code="${dataP2}" style="cursor:pointer;"></rect>`;
+  });
+  return `<svg width="100%" height="${hTotal}" viewBox="0 0 ${rack.totalWidth} ${hTotal}" preserveAspectRatio="none" style="display:block;">${rects}${labels}</svg>`;
+}
+
+/* Porta desenhada no mesmo estilo da planta baixa: um trecho de parede com
+   um vão + o arco de abertura, alinhado ao centro do corredor interno
+   (ou do vão vazio, nos andares sem extra).
+   side='top'    -> parede fica ACIMA do rack — usada na Rua 1.
+   side='bottom' -> parede fica ABAIXO do rack — usada na Rua 4. */
+function doorWallHtml(portaLabel, side, rack){
+  const corredorCells = rack.cells.filter(c => c.segmento === 'corredor');
+  let centerX;
+  if(corredorCells.length){
+    const first = corredorCells[0], last = corredorCells[corredorCells.length-1];
+    centerX = (first.x + last.x + last.w) / 2;
+  } else {
+    const esqCells = rack.cells.filter(c => c.segmento === 'esquerda');
+    const dirCells = rack.cells.filter(c => c.segmento === 'direita');
+    if(esqCells.length && dirCells.length){
+      const lastEsq = esqCells[esqCells.length-1], firstDir = dirCells[0];
+      centerX = (lastEsq.x + lastEsq.w + firstDir.x) / 2;
+    } else {
+      centerX = rack.totalWidth / 2; // sem segmentação (Câmara 4) — centraliza no meio da fileira
+    }
+  }
+  const doorW = 40, wallColor = '#5C5049', h = 66;
+  const isTop = side === 'top';
+  const wallY = isTop ? h - 12 : 12;
+  const leafEndY = isTop ? wallY - doorW : wallY + doorW;
+  const sweep = isTop ? 0 : 1;
+  const labelY = isTop ? leafEndY - 10 : leafEndY + 18;
+  return `
+    <svg width="100%" height="${h}" viewBox="0 0 ${rack.totalWidth} ${h}" preserveAspectRatio="none" style="display:block;overflow:visible;">
+      <line x1="0" y1="${wallY}" x2="${centerX-doorW/2}" y2="${wallY}" stroke="${wallColor}" stroke-width="4"></line>
+      <line x1="${centerX+doorW/2}" y1="${wallY}" x2="${rack.totalWidth}" y2="${wallY}" stroke="${wallColor}" stroke-width="4"></line>
+      <line x1="${centerX-doorW/2}" y1="${wallY}" x2="${centerX-doorW/2}" y2="${leafEndY}" stroke="${wallColor}" stroke-width="2"></line>
+      <path d="M ${centerX-doorW/2} ${leafEndY} A ${doorW} ${doorW} 0 0 ${sweep} ${centerX+doorW/2} ${wallY}" fill="none" stroke="${wallColor}" stroke-width="1" stroke-dasharray="3,3" opacity="0.65"></path>
+      <text x="${centerX}" y="${labelY}" font-size="11" fill="var(--extra)" font-weight="800" text-anchor="middle" letter-spacing="0.5">${portaLabel}</text>
+    </svg>
+  `;
+}
+
+function renderRua(ruaNumero, andar){
+  if(CAMARA_ATUAL === 4) return renderRuaCamara4(ruaNumero, andar);
+  const longarinas = longarinasDaRua(ruaNumero); // ['A','B'] ou ['única']
+  const isDouble = longarinas.length === 2;
+  const rack = rackDoAndar(andar);
+  const capacidade = longarinas.length * rack.cells.length;
+  const temExtra = (andar === 3 || andar === 4);
+  const portaLabel = ruaNumero === 1 ? 'Entrada' : (ruaNumero === 4 ? 'Saída' : null);
+  // A ordem visual das ruas foi invertida (Rua 4 no topo da página, Rua 1
+  // no fim) — então a Entrada (Rua 1) agora fica embaixo do seu painel, e
+  // a Saída (Rua 4) fica em cima do painel dela, pra continuarem nas
+  // pontas opostas da página.
+  const portaSide = ruaNumero === 1 ? 'bottom' : (ruaNumero === 4 ? 'top' : null);
+  const portaHtml = portaLabel ? doorWallHtml(portaLabel, portaSide, rack) : '';
+
+  let body = '';
+  if(isDouble){
+    // Física real: na Rua 4, a porta de Saída fica atrás da Longarina A
+    // (não da B) — então nessa rua a ordem de exibição é invertida
+    // (B em cima, A embaixo) pra a porta ficar encostada na A.
+    const primeira = (ruaNumero === 4) ? 'B' : 'A';
+    const segunda = (ruaNumero === 4) ? 'A' : 'B';
+    body = `
+      ${portaSide === 'top' ? portaHtml : ''}
+      <div class="lado-label">Longarina ${primeira}</div>
+      <div class="rack-scroll">${renderRackSvg(ruaNumero, primeira, andar)}</div>
+      <div class="rua-mid-label">Rua ${ruaNumero}</div>
+      <div class="lado-label">Longarina ${segunda}</div>
+      <div class="rack-scroll">${renderRackSvg(ruaNumero, segunda, andar)}</div>
+      ${portaSide === 'bottom' ? portaHtml : ''}
+    `;
+  } else {
+    // Rua 1 tem só uma longarina, e fisicamente ela é a Longarina A
+    // (não existe B na Rua 1).
+    body = `
+      ${portaSide === 'top' ? portaHtml : ''}
+      <div class="rua-mid-label">Rua ${ruaNumero}</div>
+      <div class="lado-label">Longarina A</div>
+      <div class="rack-scroll">${renderRackSvg(ruaNumero, longarinas[0], andar)}</div>
+      ${portaSide === 'bottom' ? portaHtml : ''}
+    `;
+  }
+
+  const qtdEsquerda = rack.cells.filter(c => c.segmento === 'esquerda').length;
+  const qtdDireita = rack.cells.filter(c => c.segmento === 'direita').length;
+  const paletesNesteAndar = longarinas.length * paletesTotaisNoAndar(andar);
+  return `
+    <div class="rua-panel">
+      <div class="rua-head">
+        <span class="meta">${capacidade} posições (${paletesNesteAndar} paletes) neste andar · ${isDouble ? '2 longarinas' : '1 longarina'} · ${qtdEsquerda} + ${temExtra ? 'E1/E2 + ' : ''}${qtdDireita}${isDouble ? ' por longarina' : ''}${!temExtra ? ' · corredor vazio neste andar' : ''}</span>
+      </div>
+      ${body}
+    </div>
+  `;
+}
+
+/* Câmara 4: 2 ruas (01 e 02), 4 longarinas (1, 2, 3, 4) — Rua 01 fica
+   entre Long 1 e Long 2, Rua 02 entre Long 3 e Long 4. Sem segmento
+   esquerda/corredor/direita (fileira única de "espaços"), sem posições
+   extras, e todo espaço comporta 2 paletes (sem exceção de 1 palete).
+   Só existe 1 porta (entrada e saída juntas), do lado da Rua 01/Long 1. */
+function renderRuaCamara4(ruaNumero, andar){
+  const longarinas = longarinasDaRua(ruaNumero); // ['1','2'] (Rua 01) ou ['3','4'] (Rua 02)
+  const rackPrimeira = rackDoAndar(andar, longarinas[0]);
+  const rackSegunda = rackDoAndar(andar, longarinas[1]);
+  const capacidade = rackPrimeira.cells.length + rackSegunda.cells.length;
+  const paletesNesteAndar = capacidade * 2;
+  const portaLabel = ruaNumero === 1 ? 'Entrada / Saída' : null;
+  const portaHtml = portaLabel ? doorWallHtml(portaLabel, 'bottom', rackPrimeira) : '';
+
+  const body = `
+    <div class="lado-label">Longarina ${longarinas[0]}</div>
+    <div class="rack-scroll">${renderRackSvg(ruaNumero, longarinas[0], andar)}</div>
+    <div class="rua-mid-label">Rua 0${ruaNumero}</div>
+    <div class="lado-label">Longarina ${longarinas[1]}</div>
+    <div class="rack-scroll">${renderRackSvg(ruaNumero, longarinas[1], andar)}</div>
+    ${portaHtml}
+  `;
+
+  return `
+    <div class="rua-panel">
+      <div class="rua-head">
+        <span class="meta">${capacidade} posições (${paletesNesteAndar} paletes) neste andar · 2 longarinas · sem espaços extras · Longarina ${longarinas[0]}: ${rackPrimeira.cells.length} espaços · Longarina ${longarinas[1]}: ${rackSegunda.cells.length} espaços</span>
+      </div>
+      ${body}
+    </div>
+  `;
+}
+
+function posicoesPorAndar(andar){
+  let total = 0;
+  ruasExistentes().forEach(rua => {
+    longarinasDaRua(rua).forEach(longarina => { total += rackDoAndar(andar, longarina).cells.length; });
+  });
+  return total;
+}
+
+/* Conta quantos paletes (P1+P2) estão ocupados numa rua/longarina/andar específicos */
+function paletesOcupados(rua, longarina, andar){
+  let count = 0;
+  posicoesDaFileira(rua, longarina, andar).forEach(p=>{
+    [1,2].forEach(pal=>{
+      if(OCUPACAO_MAP[cellCode(p.posicao, pal)]) count++;
+    });
+  });
+  return count;
+}
+
+function paletesTotaisNoAndar(andar, longarina){
+  const rack = rackDoAndar(andar, longarina);
+  if(CAMARA_ATUAL === 4) return rack.cells.length * 2; // aqui todo espaço comporta 2 paletes, sem exceção
+  let total = 0;
+  rack.cells.forEach(c=>{
+    total += (c.segmento === 'corredor') ? 2 : (c.posLocal === 1 ? 1 : 2);
+  });
+  return total;
+}
+
+/* Regra de FIFO: dentro de cada rua/lado, o andar 1 deve ser preenchido
+   antes do 2, o 2 antes do 3, e assim por diante. Uma violação acontece
+   quando um andar tem paletes ocupados enquanto um andar ABAIXO dele
+   (na mesma rua/lado) ainda tem posições livres. */
+/* Converte "dd/mm/aaaa" em Date pra dar pra ordenar/comparar. Retorna null
+   se a data estiver vazia ou mal formatada (linha some da lista, não quebra
+   o resto). */
+function parseDateBR(str){
+  if(!str) return null;
+  const s = str.trim();
+
+  // formato ISO (AAAA-MM-DD ou AAAA/MM/DD), com hora opcional no final
+  // (ex.: "2026-07-27 14:32") — o Google Sheets pode exportar a data
+  // assim quando a coluna está com formatação de data numérica, mesmo
+  // que o valor tenha sido gravado como texto DD/MM/AAAA
+  let m = s.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})(?:[ T](\d{1,2}):(\d{2}))?$/);
+  if(m){
+    const [, y, mo, d, h, mi] = m;
+    const dt = new Date(Number(y), Number(mo) - 1, Number(d), Number(h||0), Number(mi||0));
+    return isNaN(dt.getTime()) ? null : dt;
+  }
+
+  // formato brasileiro (DD/MM/AAAA ou DD-MM-AAAA), com hora opcional no
+  // final (ex.: "27/07/2026 14:32" — é assim que a DATA SAÍDA é gravada
+  // agora, pra guardar também o horário exato da retirada)
+  m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})(?:[ T](\d{1,2}):(\d{2}))?$/);
+  if(!m) return null;
+  const [, d, mo, y, h, mi] = m;
+  const yyyy = y.length === 2 ? `20${y}` : y;
+  const dt = new Date(Number(yyyy), Number(mo)-1, Number(d), Number(h||0), Number(mi||0));
+  return isNaN(dt.getTime()) ? null : dt;
+}
+
+function diasEmEstoque(dataEntrada){
+  const dt = parseDateBR(dataEntrada);
+  if(!dt) return null;
+  const ms = Date.now() - dt.getTime();
+  return Math.max(0, Math.floor(ms / (1000*60*60*24)));
+}
+
+/* Mostra quais linhas da aba Ocupação foram descartadas por dado
+   incompleto e por quê — sem isso, um erro de digitação faz um palete
+   inteiro sumir do painel sem ninguém perceber. */
+function renderLinhasIgnoradas(){
+  const el = document.getElementById('linhasIgnoradasAlerta');
+  if(LINHAS_IGNORADAS.length === 0){ el.innerHTML = ''; return; }
+
+  const itens = LINHAS_IGNORADAS
+    .map(l => `<li>Registro #${l.linha} (tabela "ocupacao") — ${escapeHtml(l.motivo)}</li>`)
+    .join('');
+
+  el.innerHTML = `
+    <div class="ignoradas-panel">
+      <span class="ignoradas-title">${LINHAS_IGNORADAS.length} linha(s) ignorada(s) na planilha</span>
+      <ul>${itens}</ul>
+    </div>
+  `;
+}
+
+/* A posição 01 de cada rua/lado/andar só tem espaço físico pra 1 palete
+   (P1). Se algum registro de P2 existir ali — geralmente dado lançado
+   antes dessa regra estar configurada no sistema — o mapa mostra as duas
+   caixas de propósito (não esconde), e esse painel lista o endereço
+   exato pra corrigir na planilha (mover o palete pra uma posição real). */
+function renderPosicoes01Invalidas(){
+  const el = document.getElementById('posicoes01Alerta');
+  if(POSICOES_01_INVALIDAS.length === 0){ el.innerHTML = ''; return; }
+
+  const itens = POSICOES_01_INVALIDAS.map(r => {
+    const info = infoPosicao(r.posicao);
+    const longarinaTxt = info.longarina === 'única' ? '' : ` Longarina ${escapeHtml(info.longarina)}`;
+    return `<li>Posição ${r.posicao} (Rua ${info.rua}${longarinaTxt} · Andar ${info.andar}) · P2 indevido — ${escapeHtml(r.familia || 'sem família')}${r.produtos.length ? ' · ' + escapeHtml(r.produtos.join(', ')) : ''}</li>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="ignoradas-panel">
+      <span class="ignoradas-title">${POSICOES_01_INVALIDAS.length} posição(ões) de 1 palete com um 2º palete indevido</span>
+      <ul>${itens}</ul>
+    </div>
+  `;
+}
+
+function renderConflitos(){
+  const el = document.getElementById('conflitosAlerta');
+  if(OCUPACAO_CONFLITOS.length === 0){ el.innerHTML = ''; return; }
+
+  const itens = OCUPACAO_CONFLITOS.map(c=>{
+    const regsHtml = c.registros.map(r=>
+      `<span class="sub">→ ${escapeHtml(r.familia || 'sem família')}${r.produtos.length ? ' · ' + produtosHtml(r.produtos) : ''} · entrada ${escapeHtml(r.dataEntrada || '?')}</span>`
+    ).join('');
+    return `<li><strong>${c.key}</strong> tem ${c.registros.length} lançamentos em aberto ao mesmo tempo — vá até a câmara conferir o que está de fato nessa vaga.${regsHtml}</li>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="conflito-panel">
+      <span class="conflito-title">${OCUPACAO_CONFLITOS.length} posição(ões) com registro duplicado</span>
+      <ul>${itens}</ul>
+    </div>
+  `;
+}
+
+/* Acha a primeira vaga livre (posição + palete) dentro de um andar, numa
+   rua/longarina específica. */
+function encontrarPrimeiraVagaLivre(rua, longarina, andar){
+  for(const p of posicoesDaFileira(rua, longarina, andar)){
+    const paletesDaPosicao = p.capacidade === 1 ? [1] : [1, 2];
+    for(const pal of paletesDaPosicao){
+      const key = cellCode(p.posicao, pal);
+      if(!OCUPACAO_MAP[key]) return { posicao: p.posicao, palete: pal };
+    }
+  }
+  return null;
+}
+
+/* Calcula o status de vaga de UMA rua/longarina: em qual andar entraria o
+   próximo palete (regra "de baixo pra cima"), quanto ainda cabe nesse
+   andar, e quanto ainda cabe NA RUA TODA (soma de todos os andares) —
+   esse último número é o que usamos pra decidir qual rua "fechar" primeiro
+   quando uma família está espalhada em mais de uma. */
+function statusRuaLado(rua, longarina){
+  let andarAlvo = null;
+  for(const andar of andaresAtuais()){
+    if(paletesOcupados(rua, longarina, andar) < paletesTotaisNoAndar(andar, longarina)){ andarAlvo = andar; break; }
+  }
+  let livresTotal = 0;
+  andaresAtuais().forEach(andar => livresTotal += paletesTotaisNoAndar(andar, longarina) - paletesOcupados(rua, longarina, andar));
+  const posicoesDestaLongarina = new Set(Object.values(mapaAtual()).filter(p => p.rua === rua && p.longarina === longarina).map(p => p.posicao));
+  const temAlgumaFamilia = OCUPACAO_REGISTROS.some(r => r.ocupado && posicoesDestaLongarina.has(r.posicao));
+  return {
+    rua, lado: longarina, andarAlvo, livresTotal, temAlgumaFamilia,
+    vaga: andarAlvo !== null ? encontrarPrimeiraVagaLivre(rua, longarina, andarAlvo) : null,
+    livresAndar: andarAlvo !== null ? (paletesTotaisNoAndar(andarAlvo, longarina) - paletesOcupados(rua, longarina, andarAlvo)) : 0,
+  };
+}
+
+function renderFamilyLegend(){
+  const el = document.getElementById('familyLegend');
+  const familias = [...new Set(OCUPACAO_REGISTROS.filter(r=>r.ocupado && r.familia).map(r=>r.familia))].sort();
+  if(familias.length === 0){ el.innerHTML = ''; return; }
+  // se a família selecionada sumiu do estoque (ex.: depois de uma saída),
+  // limpa o filtro em vez de deixar o mapa apagado sem nenhum motivo visível
+  if(FILTRO_FAMILIA_MAPA && !familias.includes(FILTRO_FAMILIA_MAPA)) FILTRO_FAMILIA_MAPA = null;
+
+  const temSelecao = !!FILTRO_FAMILIA_MAPA;
+  const chips = familias.map(f=>{
+    const ativo = f === FILTRO_FAMILIA_MAPA;
+    const classe = temSelecao ? (ativo ? ' ativo' : ' apagado') : '';
+    return `<span class="familia-legend-chip${classe}" data-familia="${escapeHtml(f)}"><i class="dot" style="background:${familyColor(f)};"></i>${escapeHtml(f)}</span>`;
+  }).join('');
+  el.innerHTML = `
+    <div class="familia-legend-title">Famílias em estoque${temSelecao ? ' — clique de novo pra desmarcar' : ' — clique pra destacar no mapa'}</div>
+    <div class="familia-legend-scroll"><div class="familia-legend-grid">${chips}</div></div>
+  `;
+
+  el.querySelectorAll('.familia-legend-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      const familia = chip.getAttribute('data-familia');
+      FILTRO_FAMILIA_MAPA = FILTRO_FAMILIA_MAPA === familia ? null : familia;
+      renderAll();
+    });
+  });
+}
+
+/* Nível de ocupação em 3 recortes: câmara toda, por rua/lado, ou por andar.
+   Sempre em paletes (não em posições), porque é a unidade que a operação
+   realmente usa pra saber "quanto ainda cabe". */
+function calcularOcupacaoCamara(){
+  let ocupados = 0, capacidade = 0;
+  ruasExistentes().forEach(rua => longarinasDaRua(rua).forEach(longarina => {
+    andaresConsiderados().forEach(andar => {
+      ocupados += paletesOcupados(rua, longarina, andar);
+      capacidade += paletesTotaisNoAndar(andar, longarina);
+    });
+  }));
+  const label = andarAtual === null ? 'Câmara fria — total geral' : `Câmara fria — Andar ${andarAtual}`;
+  return [{ label, ocupados, capacidade }];
+}
+function calcularOcupacaoPorRua(){
+  return ruasExistentes().flatMap(rua => longarinasDaRua(rua).map(longarina => {
+    let ocupados = 0, capacidade = 0;
+    andaresConsiderados().forEach(andar => {
+      ocupados += paletesOcupados(rua, longarina, andar);
+      capacidade += paletesTotaisNoAndar(andar, longarina);
+    });
+    const label = longarina === 'única' ? `Rua ${rua}` : `Rua ${rua} · Longarina ${longarina}`;
+    return { label, ocupados, capacidade };
+  }));
+}
+function calcularOcupacaoPorAndar(){
+  return andaresConsiderados().map(andar => {
+    let ocupados = 0, capacidade = 0;
+    ruasExistentes().forEach(rua => longarinasDaRua(rua).forEach(longarina => {
+      ocupados += paletesOcupados(rua, longarina, andar);
+      capacidade += paletesTotaisNoAndar(andar, longarina);
+    }));
+    return { label: `Andar ${andar}`, ocupados, capacidade };
+  });
+}
+
+function ocupacaoCardHtml(label, ocupados, capacidade){
+  const pct = capacidade ? Math.round((ocupados / capacidade) * 100) : 0;
+  const nivel = pct >= 90 ? 'critico' : (pct >= 70 ? 'alto' : '');
+  return `<div class="ocupacao-card ${nivel}">
+    <div class="oc-label">${escapeHtml(label)}</div>
+    <div class="oc-bar-wrap"><div class="oc-bar" style="width:${Math.min(pct,100)}%"></div></div>
+    <div class="oc-nums"><span class="oc-pct">${pct}%</span><span class="oc-count">${ocupados}/${capacidade} paletes</span></div>
+  </div>`;
+}
+
+/* ======================================================================
+   GRÁFICOS: ocupação por família (com drill-down por produto) e produtos
+   parados há mais tempo. Usam Chart.js, que desenha em <canvas> — por
+   isso não dá pra passar var(--x) direto nas cores do gráfico (canvas
+   não interpreta CSS), precisa ler o valor computado primeiro.
+   ====================================================================== */
+function cssVar(nome){
+  return getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
+}
+
+let CHART_FAMILIAS = null;
+let CHART_AGING = null;
+let GRAFICO_FAMILIA_ATUAL = null; // null = visão por família; nome da família = drill-down por produto
+
+function calcularOcupacaoPorFamilia(){
+  const porFamilia = {};
+  let total = 0;
+  registrosDoAndarSelecionado().forEach(r => {
+    if(!r.ocupado || !r.familia) return;
+    porFamilia[r.familia] = (porFamilia[r.familia] || 0) + 1;
+    total++;
+  });
+  return { porFamilia, total };
+}
+
+function calcularProdutosDaFamilia(familia){
+  const porProduto = {};
+  let total = 0;
+  registrosDoAndarSelecionado().forEach(r => {
+    if(!r.ocupado || r.familia !== familia) return;
+    total++; // conta o palete uma vez, mesmo que ele carregue mais de um produto
+    r.produtos.forEach(p => { porProduto[p] = (porProduto[p] || 0) + 1; });
+  });
+  return { porProduto, total };
+}
+
+function renderGraficoFamilias(){
+  const el = document.getElementById('graficoFamiliasPainel');
+  if(OCUPACAO_REGISTROS.length === 0){ el.innerHTML = ''; return; }
+  if(!window.Chart){ el.innerHTML = '<div class="grafico-panel"><div class="carga-vazio">Gráfico indisponível (sem conexão com a internet).</div></div>'; return; }
+
+  const visaoFamilia = GRAFICO_FAMILIA_ATUAL === null;
+  let labels, valores, cores, totalBase, titulo, subtitulo;
+
+  if(visaoFamilia){
+    const { porFamilia, total } = calcularOcupacaoPorFamilia();
+    labels = Object.keys(porFamilia).sort((a, b) => porFamilia[b] - porFamilia[a]);
+    valores = labels.map(f => porFamilia[f]);
+    totalBase = total;
+    titulo = `Ocupação por família — ${rotuloAndarSelecionado()}`;
+    subtitulo = 'Barra = % dos paletes ocupados hoje. Clique numa família pra ver os produtos dela.';
+  } else {
+    const { porProduto, total } = calcularProdutosDaFamilia(GRAFICO_FAMILIA_ATUAL);
+    labels = Object.keys(porProduto).sort((a, b) => porProduto[b] - porProduto[a]);
+    valores = labels.map(p => porProduto[p]);
+    totalBase = total;
+    titulo = `Produtos da família "${GRAFICO_FAMILIA_ATUAL}" — ${rotuloAndarSelecionado()}`;
+    subtitulo = 'Paletes mistos contam pra mais de um produto — a soma pode passar de 100%.';
+  }
+
+  if(labels.length === 0){
+    el.innerHTML = `<div class="grafico-panel"><div class="carga-vazio">Sem dados suficientes pra esse gráfico.</div></div>`;
+    return;
+  }
+
+  cores = visaoFamilia
+    ? labels.map(f => familyColor(f))
+    : labels.map((_, i) => tomDaFamilia(GRAFICO_FAMILIA_ATUAL, i, labels.length));
+
+  // altura fixa pra caber 8 barras visíveis; o resto rola dentro do
+  // container, sem esconder nenhum item nem precisar agrupar em "outras"
+  const ALTURA_POR_BARRA = 34;
+  const alturaTotal = labels.length * ALTURA_POR_BARRA;
+  const alturaVisivel = Math.min(alturaTotal, ALTURA_POR_BARRA * 8);
+
+  el.innerHTML = `
+    <div class="grafico-panel">
+      <div class="ocupacao-title">${escapeHtml(titulo)}</div>
+      <div class="grafico-sub">${subtitulo}</div>
+      ${!visaoFamilia ? `<button id="btnVoltarFamilias" class="btn-voltar-grafico">&larr; Voltar para famílias</button>` : ''}
+      <div style="max-height:${alturaVisivel}px;overflow-y:auto;margin-top:10px;border:1px solid var(--ice-line);border-radius:10px;background:var(--bg-soft);">
+        <div style="position:relative;width:100%;height:${alturaTotal}px;">
+          <canvas id="canvasFamilias" role="img" aria-label="${escapeHtml(titulo)}"></canvas>
+        </div>
+      </div>
+    </div>
+  `;
+
+  if(!visaoFamilia){
+    document.getElementById('btnVoltarFamilias').addEventListener('click', () => {
+      GRAFICO_FAMILIA_ATUAL = null;
+      renderGraficoFamilias();
+    });
+  }
+
+  if(CHART_FAMILIAS) CHART_FAMILIAS.destroy();
+  const ctx = document.getElementById('canvasFamilias').getContext('2d');
+  CHART_FAMILIAS = new Chart(ctx, {
+    type: 'bar',
+    plugins: window.ChartDataLabels ? [window.ChartDataLabels] : [],
+    data: {
+      labels,
+      datasets: [{ data: valores, backgroundColor: cores, borderRadius: 4, barThickness: 20 }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { right: 46 } }, // espaço pro rótulo de % não cortar na borda
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (item) => {
+              const pct = totalBase ? Math.round((item.parsed.x / totalBase) * 100) : 0;
+              return ` ${item.label}: ${pct}% (${item.parsed.x} palete${item.parsed.x === 1 ? '' : 's'})`;
+            },
+          },
+        },
+        datalabels: {
+          anchor: 'end',
+          align: 'end',
+          color: cssVar('--text-soft'),
+          font: { family: 'Inter', weight: '700', size: 10.5 },
+          formatter: (valor) => `${totalBase ? Math.round((valor / totalBase) * 100) : 0}%`,
+        },
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Paletes ocupados', color: cssVar('--text-soft'), font: { size: 11 } },
+          grid: { color: cssVar('--ice-line') },
+          ticks: { color: cssVar('--text-soft') },
+        },
+        y: { grid: { display: false }, ticks: { color: cssVar('--text'), font: { size: 11.5 } } },
+      },
+      onClick: visaoFamilia ? (evt, elementos) => {
+        if(!elementos.length) return;
+        GRAFICO_FAMILIA_ATUAL = labels[elementos[0].index];
+        renderGraficoFamilias();
+      } : undefined,
+      onHover: visaoFamilia ? (evt, elementos) => {
+        evt.native.target.style.cursor = elementos.length ? 'pointer' : 'default';
+      } : undefined,
+    },
+  });
+}
+
+/* Maior quantidade de dias em estoque, por produto — pega o palete mais
+   antigo de cada produto (o "pior caso"), pra apontar pro time comercial
+   o que priorizar na venda antes que fique parado tempo demais. */
+function calcularProdutosMaisAntigos(limite){
+  const porProduto = {}; // produto -> { dias (do palete mais antigo), paletes (quantos tem no total) }
+  registrosDoAndarSelecionado().forEach(r => {
+    if(!r.ocupado) return;
+    const dias = diasEmEstoque(r.dataEntrada);
+    r.produtos.forEach(p => {
+      if(!porProduto[p]) porProduto[p] = { dias: -1, paletes: 0 };
+      porProduto[p].paletes++;
+      if(dias !== null && dias > porProduto[p].dias) porProduto[p].dias = dias;
+    });
+  });
+  return Object.entries(porProduto)
+    .filter(([, v]) => v.dias >= 0)
+    .map(([produto, v]) => ({ produto, dias: v.dias, paletes: v.paletes }))
+    .sort((a, b) => b.dias - a.dias)
+    .slice(0, limite);
+}
+
+function renderGraficoAging(){
+  const el = document.getElementById('graficoAgingPainel');
+  if(OCUPACAO_REGISTROS.length === 0){ el.innerHTML = ''; return; }
+  if(!window.Chart){ el.innerHTML = ''; return; }
+
+  const dados = calcularProdutosMaisAntigos(10);
+  if(dados.length === 0){ el.innerHTML = ''; return; }
+
+  el.innerHTML = `
+    <div class="grafico-panel">
+      <div class="ocupacao-title">Produtos parados há mais tempo — ${rotuloAndarSelecionado()}</div>
+      <div class="grafico-sub">Palete mais antigo de cada produto — indicador pro time comercial priorizar venda/giro.</div>
+      <div class="grafico-wrap grafico-wrap-bar"><canvas id="canvasAging"></canvas></div>
+    </div>
+  `;
+
+  const labels = dados.map(d => d.produto);
+  const valores = dados.map(d => d.dias);
+  const cores = valores.map(d => d >= 30 ? cssVar('--red') : d >= 15 ? cssVar('--extra') : cssVar('--frost'));
+
+  if(CHART_AGING) CHART_AGING.destroy();
+  const ctx = document.getElementById('canvasAging').getContext('2d');
+  CHART_AGING = new Chart(ctx, {
+    type: 'bar',
+    plugins: window.ChartDataLabels ? [window.ChartDataLabels] : [],
+    data: { labels, datasets: [{ data: valores, backgroundColor: cores, borderRadius: 4, maxBarThickness: 22 }] },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { right: 60 } }, // espaço pro rótulo "Xd · Y pal." não cortar
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (item) => {
+              const d = dados[item.dataIndex];
+              return [` ${d.dias} dia(s) em estoque`, ` ${d.paletes} palete(s) armazenado(s)`];
+            },
+          },
+        },
+        datalabels: {
+          color: cssVar('--text'),
+          anchor: 'end', align: 'end', offset: 4,
+          font: { family: 'Inter', size: 10, weight: '600' },
+          formatter: (valor, contexto) => {
+            const d = dados[contexto.dataIndex];
+            return `${d.dias}d · ${d.paletes} pal.`;
+          },
+        },
+      },
+      scales: {
+        x: {
+          grace: '12%',
+          ticks: { color: cssVar('--text-soft'), font: { family: 'Inter', size: 10.5 } },
+          grid: { color: cssVar('--ice-line') },
+          title: { display: true, text: 'Dias em estoque', color: cssVar('--text-soft'), font: { family: 'Inter', size: 10.5 } },
+        },
+        y: {
+          ticks: { color: cssVar('--text'), font: { family: 'Inter', size: 10.5 } },
+          grid: { display: false },
+        },
+      },
+    },
+  });
+}
+
+/* ======================================================================
+   GRÁFICO: histórico de saídas ao longo do tempo, com filtro de família
+   e/ou produto. Agrupa por mês (dia a dia ficaria ruidoso demais pro
+   volume de dados). O filtro de produto sempre respeita a família
+   escolhida — se trocar a família, o produto selecionado é limpo, pra
+   nunca ficar um produto de outra família escondido no filtro.
+   ====================================================================== */
+let HIST_FILTRO_FAMILIA = '';
+let HIST_FILTRO_PRODUTO = '';
+let CHART_HISTORICO = null;
+
+function familiasHistorico(){
+  return [...new Set(OCUPACAO_REGISTROS.filter(r => r.familia).map(r => r.familia))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+
+function produtosDaFamiliaHistorico(familia){
+  const set = new Set();
+  OCUPACAO_REGISTROS.forEach(r => {
+    if(familia && r.familia !== familia) return;
+    r.produtos.forEach(p => set.add(p));
+  });
+  return [...set].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+
+const NOMES_MES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+function calcularHistoricoSaidas(familia, produto){
+  const porMes = {};
+  OCUPACAO_REGISTROS.forEach(r => {
+    if(!r.dataSaida) return;
+    if(familia && r.familia !== familia) return;
+    if(produto && !r.produtos.includes(produto)) return;
+    const partes = r.dataSaida.split('/'); // dd/mm/aaaa
+    if(partes.length !== 3) return;
+    const chave = `${partes[2]}-${partes[1].padStart(2, '0')}`;
+    porMes[chave] = (porMes[chave] || 0) + 1;
+  });
+  const chaves = Object.keys(porMes).sort();
+  const labels = chaves.map(k => {
+    const [ano, mes] = k.split('-');
+    return `${NOMES_MES[parseInt(mes, 10) - 1]}/${ano.slice(2)}`;
+  });
+  return { labels, valores: chaves.map(k => porMes[k]) };
+}
+
+function renderGraficoHistorico(){
+  const el = document.getElementById('graficoHistoricoPainel');
+  if(OCUPACAO_REGISTROS.length === 0){ el.innerHTML = ''; return; }
+  if(!window.Chart){ el.innerHTML = ''; return; }
+
+  const familias = familiasHistorico();
+  const produtosDisponiveis = produtosDaFamiliaHistorico(HIST_FILTRO_FAMILIA);
+  if(HIST_FILTRO_PRODUTO && !produtosDisponiveis.includes(HIST_FILTRO_PRODUTO)){
+    HIST_FILTRO_PRODUTO = ''; // produto não pertence mais à família filtrada
+  }
+
+  const { labels, valores } = calcularHistoricoSaidas(HIST_FILTRO_FAMILIA, HIST_FILTRO_PRODUTO);
+  const semDados = labels.length === 0;
+
+  el.innerHTML = `
+    <div class="grafico-panel">
+      <div class="ocupacao-title">Histórico de saídas</div>
+      <div class="grafico-sub">Paletes retirados por mês. Filtre por família e/ou produto pra ver a tendência de um item específico.</div>
+      <div class="grafico-filtros">
+        <select id="histFamiliaSelect" class="entrada-select">
+          <option value="">Todas as famílias</option>
+          ${familias.map(f => `<option value="${escapeHtml(f)}" ${f === HIST_FILTRO_FAMILIA ? 'selected' : ''}>${escapeHtml(f)}</option>`).join('')}
+        </select>
+        <select id="histProdutoSelect" class="entrada-select">
+          <option value="">Todos os produtos${HIST_FILTRO_FAMILIA ? ' dessa família' : ''}</option>
+          ${produtosDisponiveis.map(p => `<option value="${escapeHtml(p)}" ${p === HIST_FILTRO_PRODUTO ? 'selected' : ''}>${escapeHtml(p)}</option>`).join('')}
+        </select>
+      </div>
+      ${semDados
+        ? `<div class="carga-vazio">Nenhuma saída registrada ainda${(HIST_FILTRO_FAMILIA || HIST_FILTRO_PRODUTO) ? ' pra esse filtro' : ''}.</div>`
+        : `<div class="grafico-wrap"><canvas id="canvasHistorico"></canvas></div>`}
+    </div>
+  `;
+
+  document.getElementById('histFamiliaSelect').addEventListener('change', e => {
+    HIST_FILTRO_FAMILIA = e.target.value;
+    HIST_FILTRO_PRODUTO = '';
+    renderGraficoHistorico();
+  });
+  document.getElementById('histProdutoSelect').addEventListener('change', e => {
+    HIST_FILTRO_PRODUTO = e.target.value;
+    renderGraficoHistorico();
+  });
+
+  if(semDados) return;
+
+  if(CHART_HISTORICO) CHART_HISTORICO.destroy();
+  const ctx = document.getElementById('canvasHistorico').getContext('2d');
+  CHART_HISTORICO = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: valores,
+        borderColor: cssVar('--frost'),
+        backgroundColor: 'rgba(217,164,65,0.15)',
+        fill: true,
+        tension: 0.3,
+        pointBackgroundColor: cssVar('--frost'),
+        pointBorderColor: cssVar('--panel'),
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (item) => ` ${item.parsed.y} palete(s) retirado(s)` } },
+      },
+      scales: {
+        x: { ticks: { color: cssVar('--text-soft'), font: { family: 'Inter', size: 10.5 } }, grid: { color: cssVar('--ice-line') } },
+        y: { beginAtZero: true, ticks: { color: cssVar('--text-soft'), precision: 0, font: { family: 'Inter', size: 10.5 } }, grid: { color: cssVar('--ice-line') } },
+      },
+    },
+  });
+}
+
+function renderOcupacaoPainel(){
+  const el = document.getElementById('ocupacaoPainel');
+  const dados = OCUPACAO_VISAO === 'rua' ? calcularOcupacaoPorRua()
+    : OCUPACAO_VISAO === 'andar' ? calcularOcupacaoPorAndar()
+    : calcularOcupacaoCamara();
+  const cards = dados.map(d => ocupacaoCardHtml(d.label, d.ocupados, d.capacidade)).join('');
+
+  const tab = (visao, texto) =>
+    `<button class="ocupacao-tab${OCUPACAO_VISAO===visao ? ' active':''}" data-visao="${visao}">${texto}</button>`;
+
+  el.innerHTML = `
+    <div class="ocupacao-panel">
+      <div class="ocupacao-head">
+        <span class="ocupacao-title">Nível de ocupação</span>
+        <div class="ocupacao-tabs">
+          ${tab('camara','Câmara toda')}
+          ${tab('rua','Por rua')}
+          ${tab('andar','Por andar')}
+        </div>
+      </div>
+      <div class="ocupacao-grid">${cards}</div>
+    </div>
+  `;
+  el.querySelectorAll('.ocupacao-tab').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      OCUPACAO_VISAO = btn.getAttribute('data-visao');
+      renderOcupacaoPainel(); // só esse painel precisa re-renderizar
+    });
+  });
+}
+
+/* ======================================================================
+   ABA "MONTAR CARGA"
+   Ferramenta de planejamento: o estoquista monta a carga arrastando (ou
+   tocando) produtos até o desenho do caminhão, e no fim gera um PDF com
+   o endereço de cada palete pro operador de empilhadeira ir buscar.
+   Importante: isso NÃO altera a planilha — é só um apoio pra montar o
+   romaneio. A baixa de estoque continua sendo feita preenchendo a DATA
+   SAÍDA na aba "Ocupação", como sempre.
+   ====================================================================== */
+
+/* Quantos paletes de um produto existem em estoque agora (conta 1 palete
+   por produto que ele carrega, igual ao painel de estoque). */
+function estoqueDisponivelProduto(produto){
+  let n = 0;
+  OCUPACAO_REGISTROS.forEach(r=>{
+    if(r.ocupado && r.produtos.includes(produto)) n++;
+  });
+  return n;
+}
+
+/* Família associada a um produto, só pra colorir o chip/linha (pega a
+   primeira ocorrência encontrada). */
+function familiaDoProduto(produto){
+  const achado = OCUPACAO_REGISTROS.find(r => r.ocupado && r.produtos.includes(produto) && r.familia);
+  return achado ? achado.familia : '';
+}
+
+/* Lista de todos os produtos em estoque agora, com quantidade disponível,
+   já aplicando o filtro de busca da própria aba Montar Carga. */
+/* Acha o código (catálogo CIGAM) de um produto pelo nome exato — usado
+   pra deixar a busca da Montar Carga também aceitar código, já que o
+   estoque em si (aba CAMARA 1) só guarda o nome do produto. */
+function codigoDoProduto(produto){
+  const achado = PRODUTOS_CATALOGO.find(p => p.descricao === produto);
+  return achado ? achado.codigo : '';
+}
+
+function listaProdutosDisponiveis(){
+  const porProduto = {};
+  OCUPACAO_REGISTROS.forEach(r=>{
+    if(!r.ocupado) return;
+    r.produtos.forEach(p=>{
+      porProduto[p] = (porProduto[p] || 0) + 1;
+    });
+  });
+
+  const buscaSoDigitos = /^\d+$/.test(FILTRO_CARGA);
+  const filtroSemZeros = FILTRO_CARGA.replace(/^0+/, '');
+
+  return Object.keys(porProduto)
+    .filter(p => {
+      if(!FILTRO_CARGA) return true;
+      if(p.toLowerCase().includes(FILTRO_CARGA)) return true;
+      const codigo = codigoDoProduto(p);
+      if(!codigo) return false;
+      if(codigo.toLowerCase().includes(FILTRO_CARGA)) return true;
+      // tolera zero à esquerda que o Google Sheets costuma comer (ex: "007306" -> "7306")
+      if(buscaSoDigitos && filtroSemZeros && codigo.replace(/^0+/, '') === filtroSemZeros) return true;
+      return false;
+    })
+    .map(p => ({ produto: p, disponivel: porProduto[p], familia: familiaDoProduto(p) }))
+    .sort((a,b) => a.produto.localeCompare(b.produto, 'pt-BR'));
+}
+
+/* Escolhe QUAIS paletes exatos entram na carga pra um produto, seguindo
+   o mesmo critério do painel "Retirar primeiro": os que estão há mais
+   tempo em estoque saem primeiro. */
+function selecionarPaletesParaProduto(produto, quantidade){
+  const candidatos = OCUPACAO_REGISTROS
+    .filter(r => r.ocupado && r.produtos.includes(produto))
+    .map(r => ({ ...r, dias: diasEmEstoque(r.dataEntrada) ?? -1 }))
+    .sort((a,b) => b.dias - a.dias);
+  return candidatos.slice(0, quantidade);
+}
+
+/* Acha todas as linhas ocupadas com um determinado código de palete —
+   usado pela busca/bipagem na aba Saída de Produto. Comparação sem
+   diferenciar maiúsculas/minúsculas e sem espaço nas pontas, pra tolerar
+   leitor de código de barras que às vezes manda espaço extra. */
+function buscarRegistrosPorCodigoPalete(codigo){
+  const alvo = codigo.trim().toLowerCase();
+  if(!alvo) return [];
+  return OCUPACAO_REGISTROS.filter(r => r.ocupado && r.codigoPalete && r.codigoPalete.trim().toLowerCase() === alvo);
+}
+
+/* Igual à de cima, mas pra consulta informativa (aba Entrada de Produto)
+   — não filtra por "ocupado", porque a pessoa pode querer conferir os
+   produtos de um palete que já saiu da câmara, não só o que ainda está
+   nela. */
+function buscarQualquerRegistroPorCodigoPalete(codigo){
+  const alvo = codigo.trim().toLowerCase();
+  if(!alvo) return [];
+  return OCUPACAO_REGISTROS.filter(r => r.codigoPalete && r.codigoPalete.trim().toLowerCase() === alvo);
+}
+
+function executarBuscaCodigoConsulta(codigo){
+  const registros = buscarQualquerRegistroPorCodigoPalete(codigo);
+  renderResultadoBuscaCodigoConsulta(codigo.trim(), registros);
+}
+
+function renderResultadoBuscaCodigoConsulta(codigo, registros){
+  const el = document.getElementById('resultadoBuscaCodigoConsulta');
+  if(!el) return;
+  if(registros.length === 0){
+    el.innerHTML = `<div class="carga-aviso" style="margin-top:10px;">⚠ Nenhum palete encontrado com o código "${escapeHtml(codigo)}".</div>`;
+    return;
+  }
+  const primeiro = registros[0];
+  const linhas = registros.map(r => {
+    const statusTxt = r.ocupado ? '' : ` <span style="opacity:.65;">· já saiu (${escapeHtml(r.dataSaida)})</span>`;
+    return `<div class="entrada-vaga-row">${escapeHtml(r.produto)} — <strong>${r.pacotes ? `${r.pacotes} pacote${r.pacotes===1?'':'s'}` : 'sem pacotes registrados'}</strong>${statusTxt}</div>`;
+  }).join('');
+  el.innerHTML = `
+    <div class="carga-dica" style="margin-top:10px;">Palete <strong>${escapeHtml(codigo)}</strong> — ${enderecoTexto(primeiro.posicao, primeiro.palete)} · ${registros.length} produto${registros.length===1?'':'s'}:</div>
+    <div class="entrada-vagas-lista">${linhas}</div>
+  `;
+}
+
+/* Junta os dois jeitos de escolher o que sai na carga — busca por
+   produto (FIFO, em CARGA_ITENS) e linhas exatas adicionadas via código
+   de palete (em CARGA_ITENS_LINHA) — numa lista só de "unidades": cada
+   uma é 1 linha real da planilha + qual produto dela está sendo retirado
+   (produtoAlvo). É a partir dessa lista única que o PDF e a confirmação
+   de saída são montados, então os dois caminhos sempre se comportam do
+   mesmo jeito dali pra frente. */
+function unidadesSelecionadasNaCarga(){
+  const unidades = [];
+  CARGA_ITENS.forEach(item=>{
+    selecionarPaletesParaProduto(item.produto, item.quantidade).forEach(r=>{
+      // vindo da busca por produto (FIFO) — sempre palete inteiro, sem opção de parcial
+      unidades.push({ ...r, produtoAlvo: item.produto, pacotesRetirar: null });
+    });
+  });
+  CARGA_ITENS_LINHA.forEach(entrada=>{
+    // busca a versão mais atual do registro (caso os dados tenham sido
+    // resincronizados desde que o código foi bipado), pelo número da linha
+    const atual = OCUPACAO_REGISTROS.find(r => r.linha === entrada.linha && r.ocupado);
+    if(atual) unidades.push({ ...atual, produtoAlvo: entrada.produto, pacotesRetirar: entrada.pacotesRetirar });
+  });
+  return unidades;
+}
+
+function adicionarProdutoNaCarga(produto){
+  const disponivel = estoqueDisponivelProduto(produto);
+  if(disponivel === 0) return;
+  const item = CARGA_ITENS.find(i => i.produto === produto);
+  if(item){
+    if(item.quantidade < disponivel) item.quantidade++;
+  } else {
+    CARGA_ITENS.push({ produto, quantidade: 1 });
+  }
+  renderCargaTudo();
+  flashCaminhao();
+}
+
+function alterarQuantidadeCarga(produto, delta){
+  const item = CARGA_ITENS.find(i => i.produto === produto);
+  if(!item) return;
+  const disponivel = estoqueDisponivelProduto(produto);
+  item.quantidade = Math.max(1, Math.min(disponivel, item.quantidade + delta));
+  renderCargaTudo();
+}
+
+function removerDaCarga(produto){
+  CARGA_ITENS = CARGA_ITENS.filter(i => i.produto !== produto);
+  renderCargaTudo();
+}
+
+/* Busca por código de palete (aba Saída de Produto) — mostra os produtos
+   daquele palete pra pessoa escolher quais entram na carga, em vez de
+   remontar isso por conta própria pelo endereço. */
+function executarBuscaCodigoPalete(codigo){
+  const registros = buscarRegistrosPorCodigoPalete(codigo);
+  BUSCA_CODIGO_RESULTADO = { codigo: codigo.trim(), registros, naoEncontrado: registros.length === 0 };
+  renderResultadoBuscaCodigo();
+}
+
+function adicionarLinhaDaCargaPorCodigo(linha, produto, pacotesRetirar){
+  const registro = OCUPACAO_REGISTROS.find(r => r.linha === linha && r.ocupado);
+  if(!registro) return;
+  const jaAdicionado = CARGA_ITENS_LINHA.some(e => e.linha === linha && e.produto === produto);
+  if(jaAdicionado) return;
+  // se o produto tem PACOTES registrado, valida e permite retirada parcial;
+  // sem PACOTES conhecido (dado legado), só dá pra retirar o palete inteiro
+  let pacotesFinal = null;
+  if(registro.pacotes){
+    pacotesFinal = pacotesRetirar ? Math.max(1, Math.min(registro.pacotes, Math.round(pacotesRetirar))) : registro.pacotes;
+  }
+  CARGA_ITENS_LINHA.push({
+    linha, produto,
+    pacotesTotalNoMomento: registro.pacotes, // pra comparar depois se foi parcial ou não
+    pacotesRetirar: pacotesFinal,             // null = sem info de pacotes (retira o palete inteiro, sem opção de parcial)
+    posicao: registro.posicao, palete: registro.palete,
+    produtosOriginais: registro.produtos, codigoPalete: registro.codigoPalete,
+  });
+  renderCargaTudo();
+  flashCaminhao();
+}
+
+function removerLinhaDaCarga(linha, produto){
+  CARGA_ITENS_LINHA = CARGA_ITENS_LINHA.filter(e => !(e.linha === linha && e.produto === produto));
+  renderCargaTudo();
+}
+
+function limparCarga(){
+  if(CARGA_ITENS.length === 0 && CARGA_ITENS_LINHA.length === 0) return;
+  if(!confirm('Limpar toda a carga montada até agora?')) return;
+  CARGA_ITENS = [];
+  CARGA_ITENS_LINHA = [];
+  BUSCA_CODIGO_RESULTADO = null;
+  document.getElementById('cargaRevisaoMistos').innerHTML = '';
+  const resultadoEl = document.getElementById('resultadoBuscaCodigo');
+  if(resultadoEl) resultadoEl.innerHTML = '';
+  renderCargaTudo();
+}
+
+function flashCaminhao(){
+  const drop = document.getElementById('caminhaoDrop');
+  drop.classList.add('drop-ativo');
+  setTimeout(()=> drop.classList.remove('drop-ativo'), 250);
+}
+
+function renderListaProdutosCarga(){
+  const el = document.getElementById('listaProdutosCarga');
+  const lista = listaProdutosDisponiveis();
+  if(lista.length === 0){
+    el.innerHTML = `<div class="carga-vazio">${FILTRO_CARGA ? 'Nenhum produto bate com a busca.' : 'Nenhum produto em estoque no momento.'}</div>`;
+    return;
+  }
+  el.innerHTML = lista.map(item=>{
+    const jaNaCarga = CARGA_ITENS.find(i => i.produto === item.produto);
+    const restante = item.disponivel - (jaNaCarga ? jaNaCarga.quantidade : 0);
+    const esgotado = restante <= 0;
+    const cor = item.familia ? familyColor(item.familia) : 'var(--text-soft)';
+    return `<div class="produto-chip${esgotado ? ' chip-esgotado' : ''}" draggable="${!esgotado}" data-produto="${escapeHtml(item.produto)}" title="${esgotado ? 'Todo o estoque desse produto já está na carga' : 'Toque ou arraste pra adicionar à carga'}">
+      <span class="estoque-swatch" style="background:${cor}"></span>
+      <span class="chip-nome">${escapeHtml(item.produto)}</span>
+      <span class="chip-qtd">${restante}/${item.disponivel} palete${item.disponivel===1?'':'s'}</span>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('.produto-chip').forEach(chip=>{
+    const produto = chip.getAttribute('data-produto');
+    chip.addEventListener('dragstart', e=>{
+      e.dataTransfer.setData('text/plain', produto);
+      e.dataTransfer.effectAllowed = 'copy';
+    });
+    // toque/clique também adiciona — essencial pra quem usa tablet, onde
+    // não existe "arrastar e soltar" nativo de verdade
+    chip.addEventListener('click', ()=>{
+      if(chip.classList.contains('chip-esgotado')) return;
+      adicionarProdutoNaCarga(produto);
+      chip.classList.add('chip-flash');
+      setTimeout(()=> chip.classList.remove('chip-flash'), 400);
+    });
+  });
+}
+
+function renderCargaLista(){
+  const listaEl = document.getElementById('cargaLista');
+  const resumoEl = document.getElementById('cargaResumo');
+
+  const vazia = CARGA_ITENS.length === 0 && CARGA_ITENS_LINHA.length === 0;
+  if(vazia){
+    listaEl.innerHTML = `<div class="carga-vazio">Nenhum produto adicionado ainda.</div>`;
+    resumoEl.innerHTML = '';
+    document.getElementById('btnGerarPdf').disabled = true;
+    document.getElementById('btnLimparCarga').disabled = true;
+    document.getElementById('btnConfirmarCarga').disabled = true;
+    return;
+  }
+
+  document.getElementById('btnGerarPdf').disabled = false;
+  document.getElementById('btnLimparCarga').disabled = false;
+  document.getElementById('btnConfirmarCarga').disabled = false;
+
+  const totalPaletes = CARGA_ITENS.reduce((s,i)=> s + i.quantidade, 0) + CARGA_ITENS_LINHA.length;
+  const totalProdutos = CARGA_ITENS.length + CARGA_ITENS_LINHA.length;
+  resumoEl.innerHTML = `<strong>${totalPaletes}</strong> palete${totalPaletes===1?'':'s'} · <strong>${totalProdutos}</strong> produto${totalProdutos===1?'':'s'} diferente${totalProdutos===1?'':'s'}`;
+
+  const linhasBusca = CARGA_ITENS_LINHA.map(entrada=>{
+    const familia = familiaDoProduto(entrada.produto);
+    const cor = familia ? familyColor(familia) : 'var(--text-soft)';
+    const ehParcial = entrada.pacotesTotalNoMomento && entrada.pacotesRetirar && entrada.pacotesRetirar < entrada.pacotesTotalNoMomento;
+    const qtdTxt = ehParcial
+      ? ` · <strong style="color:var(--extra);">${entrada.pacotesRetirar} de ${entrada.pacotesTotalNoMomento} pacotes (parcial)</strong>`
+      : (entrada.pacotesTotalNoMomento ? ` · ${entrada.pacotesTotalNoMomento} pacotes (palete inteiro)` : ' · palete inteiro');
+    return `<div class="carga-row">
+      <span class="estoque-swatch" style="background:${cor}"></span>
+      <span class="cr-nome">${escapeHtml(entrada.produto)}${qtdTxt}<br><small style="opacity:.65;">${enderecoTexto(entrada.posicao, entrada.palete)} · código ${escapeHtml(entrada.codigoPalete || '—')}</small></span>
+      <button class="cr-remover" data-acao="remover-linha" data-linha="${entrada.linha}" data-produto="${escapeHtml(entrada.produto)}" title="Remover">✕</button>
+    </div>`;
+  }).join('');
+
+  const linhasProduto = CARGA_ITENS.map(item=>{
+    const disponivel = estoqueDisponivelProduto(item.produto);
+    const familia = familiaDoProduto(item.produto);
+    const cor = familia ? familyColor(familia) : 'var(--text-soft)';
+    return `<div class="carga-row">
+      <span class="estoque-swatch" style="background:${cor}"></span>
+      <span class="cr-nome">${escapeHtml(item.produto)}</span>
+      <div class="cr-steppers">
+        <button class="cr-step-btn" data-acao="menos" data-produto="${escapeHtml(item.produto)}" ${item.quantidade<=1?'disabled':''}>−</button>
+        <span class="cr-qtd">${item.quantidade}</span>
+        <button class="cr-step-btn" data-acao="mais" data-produto="${escapeHtml(item.produto)}" ${item.quantidade>=disponivel?'disabled':''}>+</button>
+      </div>
+      <button class="cr-remover" data-acao="remover" data-produto="${escapeHtml(item.produto)}" title="Remover">✕</button>
+    </div>`;
+  }).join('');
+
+  listaEl.innerHTML = linhasBusca + linhasProduto;
+
+  listaEl.querySelectorAll('[data-acao]').forEach(btn=>{
+    const produto = btn.getAttribute('data-produto');
+    const acao = btn.getAttribute('data-acao');
+    btn.addEventListener('click', ()=>{
+      if(acao === 'mais') alterarQuantidadeCarga(produto, 1);
+      else if(acao === 'menos') alterarQuantidadeCarga(produto, -1);
+      else if(acao === 'remover') removerDaCarga(produto);
+      else if(acao === 'remover-linha') removerLinhaDaCarga(Number(btn.getAttribute('data-linha')), produto);
+    });
+  });
+}
+
+/* Desenha o resultado da busca por código de palete: lista os produtos
+   daquele palete, cada um com um campo pra escolher quantos pacotes
+   retirar (retirada parcial fica só reduzindo o número — o palete
+   continua na mesma posição até os pacotes chegarem a zero) e um botão
+   "adicionar"; ou avisa se não achou nada (código digitado errado, ou
+   palete que já saiu). Produtos sem PACOTES registrado (dado antigo) só
+   podem ser retirados por inteiro, já que não tem quantidade pra
+   comparar. */
+function renderResultadoBuscaCodigo(){
+  const el = document.getElementById('resultadoBuscaCodigo');
+  if(!el) return;
+  if(!BUSCA_CODIGO_RESULTADO){ el.innerHTML = ''; return; }
+
+  if(BUSCA_CODIGO_RESULTADO.naoEncontrado){
+    el.innerHTML = `<div class="carga-aviso" style="margin-top:10px;">⚠ Nenhum palete ocupado encontrado com o código "${escapeHtml(BUSCA_CODIGO_RESULTADO.codigo)}".</div>`;
+    return;
+  }
+
+  const linhas = BUSCA_CODIGO_RESULTADO.registros.map(r=>{
+    const jaAdicionado = CARGA_ITENS_LINHA.some(e => e.linha === r.linha && e.produto === r.produto);
+    const temPacotes = !!r.pacotes;
+    const campoQtd = temPacotes
+      ? `<input type="number" min="1" max="${r.pacotes}" placeholder="Qtd. a retirar" class="entrada-data-input" style="width:120px;" data-qtd-linha="${r.linha}" data-qtd-produto="${escapeHtml(r.produto)}" ${jaAdicionado ? 'disabled' : ''}>`
+      : '';
+    return `<div class="palete-busca-card">
+      <div class="palete-busca-titulo">${escapeHtml(r.produto)}</div>
+      <div class="palete-busca-total">${temPacotes ? `${r.pacotes} pacote${r.pacotes===1?'':'s'} no palete` : 'Sem pacotes registrados — só dá pra retirar o palete inteiro'}</div>
+      <div class="palete-busca-endereco">${enderecoTexto(r.posicao, r.palete)}</div>
+      <div class="palete-busca-acao">
+        ${campoQtd}
+        <button class="btn-sync${jaAdicionado ? ' btn-secundario' : ''}" style="padding:6px 12px;" data-linha="${r.linha}" data-produto="${escapeHtml(r.produto)}" ${jaAdicionado ? 'disabled' : ''}>${jaAdicionado ? '✓ na carga' : '+ Adicionar'}</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="carga-dica" style="margin-top:10px;">Palete <strong>${escapeHtml(BUSCA_CODIGO_RESULTADO.codigo)}</strong> — ${BUSCA_CODIGO_RESULTADO.registros.length} produto${BUSCA_CODIGO_RESULTADO.registros.length===1?'':'s'}. Deixe o campo de quantidade em branco pra retirar o palete inteiro, ou digite quantos pacotes quer retirar pra uma retirada parcial.</div>
+    <div class="palete-busca-lista">${linhas}</div>
+  `;
+  el.querySelectorAll('button[data-linha]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const linha = Number(btn.getAttribute('data-linha'));
+      const produto = btn.getAttribute('data-produto');
+      const qtdInput = el.querySelector(`input[data-qtd-linha="${linha}"][data-qtd-produto="${CSS.escape(produto)}"]`);
+      const pacotesRetirar = qtdInput ? Number(qtdInput.value) : null;
+      adicionarLinhaDaCargaPorCodigo(linha, produto, pacotesRetirar);
+      renderResultadoBuscaCodigo();
+    });
+  });
+}
+
+function renderCargaTudo(){
+  renderListaProdutosCarga();
+  renderCargaLista();
+  const revisao = document.getElementById('cargaRevisaoMistos');
+  if(revisao) revisao.innerHTML = ''; // a carga mudou, qualquer revisão pendente ficou desatualizada
+}
+
+/* Monta a estrutura de dados do romaneio (produto + paletes exatos que
+   atendem aquela quantidade), sem desenhar nada ainda. Separado da função
+   de desenho porque precisa ser "congelado" no momento da confirmação —
+   depois que a carga é confirmada, o estoque muda, e recalcular do zero
+   ia dar endereços diferentes (ou nenhum) do que realmente foi retirado.
+   Usa a lista unificada (busca por produto + código de palete), agrupada
+   por produtoAlvo pra sair uma seção por produto no PDF, como já era. */
+function construirEstruturaPdf(){
+  const porProduto = {};
+  unidadesSelecionadasNaCarga().forEach(u=>{
+    (porProduto[u.produtoAlvo] = porProduto[u.produtoAlvo] || []).push(u);
+  });
+  return Object.entries(porProduto).map(([produto, paletes]) => ({ produto, paletes }));
+}
+
+/* Desenha o romaneio em PDF a partir de uma estrutura já pronta (ver
+   construirEstruturaPdf). Usa jspdf-autotable pra sair como tabela de
+   verdade — alinhada, com cabeçalho e sem depender de espaçamento manual
+   por texto solto. Evita emoji no PDF (a fonte padrão do jsPDF não
+   suporta e vira caractere quebrado); avisos usam texto + cor em vez
+   disso. */
+function renderizarPdfRomaneio(estrutura, caminhao){
+  if(!estrutura || estrutura.length === 0) return;
+  if(!window.jspdf || !window.jspdf.jsPDF){
+    alert('Não foi possível carregar a biblioteca de PDF (sem conexão com a internet?). Tente novamente.');
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const agora = new Date();
+  const margemX = 14;
+  const larguraUtil = 210 - margemX * 2;
+  let y = 18;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(20, 20, 20);
+  doc.text(`Romaneio de Carga - Camara Fria ${CAMARA_ATUAL}`, margemX, y);
+
+  y += 6;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(110, 110, 110);
+  doc.text(`Bread King   -   Gerado em ${agora.toLocaleDateString('pt-BR')} as ${agora.toLocaleTimeString('pt-BR')}`, margemX, y);
+
+  y += 4;
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.3);
+  doc.line(margemX, y, margemX + larguraUtil, y);
+
+  y += 7;
+  const totalPaletes = estrutura.reduce((s, item) => s + item.paletes.length, 0);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(40, 40, 40);
+  doc.text(`Total da carga: ${totalPaletes} palete(s)  -  ${estrutura.length} produto(s) diferente(s)${caminhao ? `  -  Caminhao: ${caminhao}` : ''}`, margemX, y);
+  y += 6;
+
+  estrutura.forEach(item => {
+    if(y > 258){ doc.addPage(); y = 18; }
+
+    // faixa de título da seção (fundo escuro, nome do produto + contagem)
+    doc.setFillColor(19, 32, 41);
+    doc.rect(margemX, y, larguraUtil, 7.5, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.text(item.produto, margemX + 2.5, y + 5.2);
+    doc.setFontSize(8.5);
+    doc.text(`${item.paletes.length} palete(s)`, margemX + larguraUtil - 2.5, y + 5.2, { align: 'right' });
+    y += 7.5;
+
+    const linhas = item.paletes.map((p, i) => {
+      const info = infoPosicao(p.posicao);
+      const longarinaTxt = info && info.longarina !== 'única' ? ` Longarina ${info.longarina}` : '';
+      const endereco = info
+        ? `Rua ${info.rua}${longarinaTxt}  ·  Andar ${info.andar}  ·  Posicao ${p.posicao}  ·  Palete ${p.palete}`
+        : `Posicao ${p.posicao}  ·  Palete ${p.palete}`;
+      const outros = p.produtos.filter(x => x !== item.produto);
+      const obs = outros.length ? `PALETE MISTO - tambem contem: ${outros.join(', ')}` : '';
+      const pacotesTxt = p.pacotesRetirar
+        ? `${p.pacotesRetirar} (parcial)`
+        : (p.pacotes ? String(p.pacotes) : '-');
+      return [String(i + 1), p.codigoPalete || '-', endereco, pacotesTxt, obs];
+    });
+
+    doc.autoTable({
+      startY: y,
+      margin: { left: margemX, right: margemX },
+      head: [['#', 'Codigo', 'Endereco', 'Pacotes', 'Observacao']],
+      body: linhas,
+      theme: 'grid',
+      styles: { font: 'helvetica', fontSize: 9, cellPadding: 2.2, textColor: [30, 30, 30], lineColor: [215, 215, 215], lineWidth: 0.2 },
+      headStyles: { fillColor: [235, 235, 235], textColor: [50, 50, 50], fontStyle: 'bold', fontSize: 8.5 },
+      columnStyles: {
+        0: { cellWidth: 9, halign: 'center' },
+        1: { cellWidth: 30, fontSize: 7.6 },
+        2: { cellWidth: 78 },
+        3: { cellWidth: 20, halign: 'center', fontStyle: 'bold' },
+        4: { cellWidth: larguraUtil - 9 - 30 - 78 - 20, textColor: [175, 95, 20], fontStyle: 'bold', fontSize: 7.6 },
+      },
+    });
+
+    y = doc.lastAutoTable.finalY + 6;
+  });
+
+  // espaço de assinatura no fim do documento
+  if(y > 250){ doc.addPage(); y = 18; }
+  y += 4;
+  doc.setDrawColor(180, 180, 180);
+  doc.line(margemX, y, margemX + 75, y);
+  doc.line(margemX + 105, y, margemX + larguraUtil, y);
+  y += 4;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(110, 110, 110);
+  doc.text('Operador de empilhadeira', margemX, y);
+  doc.text('Horario da retirada', margemX + 105, y);
+
+  // numeração de página em todas as páginas geradas
+  const totalPaginas = doc.internal.getNumberOfPages();
+  for(let p = 1; p <= totalPaginas; p++){
+    doc.setPage(p);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text(`Pagina ${p} de ${totalPaginas}`, 210 - margemX, 290, { align: 'right' });
+  }
+
+  const nomeArquivo = `romaneio_carga_${agora.toISOString().slice(0,10)}_${String(agora.getHours()).padStart(2, '0')}${String(agora.getMinutes()).padStart(2, '0')}.pdf`;
+  doc.save(nomeArquivo);
+}
+
+function gerarPDFCarga(){
+  if(CARGA_ITENS.length === 0 && CARGA_ITENS_LINHA.length === 0) return;
+  const caminhaoEl = document.getElementById('inputCaminhao');
+  renderizarPdfRomaneio(construirEstruturaPdf(), caminhaoEl ? caminhaoEl.value.trim() : '');
+}
+
+/* Manda a carga montada pro Apps Script, que preenche a DATA SAÍDA de hoje
+   nas linhas correspondentes da aba "Ocupação". Usa a MESMA função
+   selecionarPaletesParaProduto do PDF, então os paletes confirmados são
+   exatamente os mesmos que saíram impressos no romaneio. */
+/* Agrupa os paletes escolhidos pela carga (um por endereço físico, mesmo
+   que dois itens da carga apontem pro mesmo palete misto), e marca quais
+   ficaram "ambíguos": paletes mistos onde nem todo produto que ele carrega
+   está na carga — nesse caso não dá pra saber sozinho se o palete inteiro
+   sai ou só a parte pedida, então isso vira pergunta pro usuário. */
+function montarPaletesDaCarga(){
+  const mapa = {};
+  unidadesSelecionadasNaCarga().forEach(p=>{
+    // chave = linha real da planilha, não o endereço. Duas seleções
+    // caem na mesma chave só quando forem literalmente a MESMA linha
+    // (ex.: um palete misto escolhido por dois produtos do carrinho).
+    // Se duas linhas diferentes tiverem o mesmo endereço por erro de
+    // apontamento, elas continuam separadas aqui — cada uma manda sua
+    // própria confirmação pro Apps Script.
+    const key = p.linha;
+    if(!mapa[key]){
+      mapa[key] = { linha: p.linha, posicao: p.posicao, palete: p.palete, produtosOriginais: p.produtos, produtosRetirar: new Set(), pacotesTotalAtual: p.pacotes, pacotesRetirar: null };
+    }
+    mapa[key].produtosRetirar.add(p.produtoAlvo);
+    // guarda a quantidade de pacotes pedida, se essa unidade veio com uma
+    // (busca por código); se vier sem (busca por produto/FIFO), o palete
+    // é retirado inteiro, então não sobrescreve um valor parcial já visto
+    if(p.pacotesRetirar) mapa[key].pacotesRetirar = p.pacotesRetirar;
+  });
+  return Object.values(mapa).map(e=>{
+    const produtosQueFicam = e.produtosOriginais.filter(p => !e.produtosRetirar.has(p));
+    const ambiguo = produtosQueFicam.length > 0;
+    // retirada parcial por pacotes só se aplica quando NÃO é o caso antigo
+    // de palete misto ambíguo (comma-list) e quando a quantidade pedida é
+    // menor que o total do palete — do contrário é uma retirada completa
+    const ehParcialPacotes = !ambiguo && e.pacotesRetirar && e.pacotesTotalAtual && e.pacotesRetirar < e.pacotesTotalAtual;
+    return {
+      linha: e.linha,
+      posicao: e.posicao, palete: e.palete,
+      produtosOriginais: e.produtosOriginais,
+      produtosRetirar: [...e.produtosRetirar],
+      ambiguo,
+      tipo: ambiguo ? 'parcial' : (ehParcialPacotes ? 'pacotes_parcial' : 'completo'), // sugestão inicial
+      pacotesRetirar: ehParcialPacotes ? e.pacotesRetirar : null,
+    };
+  });
+}
+
+async function confirmarCargaRetirada(){
+  if(CARGA_ITENS.length === 0 && CARGA_ITENS_LINHA.length === 0) return;
+
+  const caminhao = document.getElementById('inputCaminhao').value.trim();
+  if(!caminhao){ alert('Informe a identificação do caminhão antes de confirmar a carga.'); return; }
+
+  const paletes = montarPaletesDaCarga();
+  const ambiguos = paletes.filter(p => p.ambiguo);
+
+  if(ambiguos.length > 0){
+    mostrarRevisaoPaletesMistos(paletes, caminhao);
+    return; // espera a decisão da pessoa pra cada palete misto antes de seguir
+  }
+
+  await enviarConfirmacaoCarga(paletes, caminhao);
+}
+
+/* Mostra, pra cada palete misto ambíguo, o que está indo na carga e o que
+   ele também carrega — a pessoa escolhe se leva o palete inteiro ou só o
+   que foi pedido (deixando o resto na câmara, posição continua ocupada). */
+function mostrarRevisaoPaletesMistos(paletes, caminhao){
+  const el = document.getElementById('cargaRevisaoMistos');
+  const ambiguos = paletes.filter(p => p.ambiguo);
+
+  el.innerHTML = `
+    <div class="carga-aviso" style="border-color:var(--frost-dim);color:var(--frost);background:rgba(217,164,65,0.06);margin-bottom:12px;">
+      ⚠ ${ambiguos.length} palete(s) misto(s) nessa carga — confirme o que sai de cada um antes de seguir.
+    </div>
+    <div class="entrada-vagas-lista" style="margin-bottom:12px;">
+      ${ambiguos.map((p, i)=>{
+        const ficam = p.produtosOriginais.filter(x => !p.produtosRetirar.includes(x));
+        return `
+          <div class="entrada-vaga-row" style="display:block;line-height:1.6;">
+            <strong>${enderecoTexto(p.posicao, p.palete)}</strong><br>
+            Na carga: ${escapeHtml(p.produtosRetirar.join(', '))}<br>
+            Também tem nesse palete: ${escapeHtml(ficam.join(', '))}
+            <div style="margin-top:6px;">
+              <label style="display:block;margin-bottom:4px;"><input type="radio" name="misto_${i}" value="parcial" checked> Retirar só o que está na carga (o resto fica na câmara)</label>
+              <label style="display:block;"><input type="radio" name="misto_${i}" value="completo"> Retirar o palete inteiro</label>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button id="btnCancelarRevisaoMistos" class="btn-sync btn-secundario">Cancelar</button>
+      <button id="btnConfirmarRevisaoMistos" class="btn-sync btn-confirmar">✅ Confirmar retirada</button>
+    </div>
+  `;
+
+  document.getElementById('btnCancelarRevisaoMistos').addEventListener('click', ()=>{ el.innerHTML = ''; });
+  document.getElementById('btnConfirmarRevisaoMistos').addEventListener('click', async ()=>{
+    ambiguos.forEach((p, i)=>{
+      const escolhido = document.querySelector(`input[name="misto_${i}"]:checked`).value;
+      p.tipo = escolhido;
+    });
+    el.innerHTML = '';
+    await enviarConfirmacaoCarga(paletes, caminhao);
+  });
+}
+
+/* Manda o lote definitivo pro Apps Script. Paletes "completo" preenchem a
+   DATA SAÍDA (posição libera). Paletes "parcial" só tiram os produtos
+   pedidos da lista da coluna PRODUTO daquela linha — a posição continua
+   ocupada, porque ainda sobrou produto físico nela. */
+/* Endereço em texto, só pra mensagens de erro/confirmação — ver
+   enderecoTexto(posicao, palete), definida junto do módulo de mapeamento. */
+
+/* Manda o lote definitivo pro Supabase. Paletes "completo" preenchem a
+   DATA SAÍDA (posição libera). Paletes "parcial" (formato antigo, vários
+   produtos numa linha só) só tiram os produtos pedidos da lista da
+   coluna produto daquela linha. Paletes "pacotes_parcial" reduzem a
+   coluna pacotes; se chegar a zero, vira uma retirada completa.
+   Antes de aplicar, busca os dados atuais de pacotes/produto direto do
+   banco (não confia só no que já está carregado na tela) — evita
+   confusão se alguém mais mexeu nesse mesmo palete há pouco. */
+async function enviarConfirmacaoCarga(paletes, caminhao){
+  if(!confirm(`Confirmar a retirada de ${paletes.length} palete(s) no caminhão ${caminhao}?\n\nIsso atualiza o banco agora mesmo. Só confirme depois que os paletes já tiverem saído fisicamente da câmara.`)) return;
+
+  const btn = document.getElementById('btnConfirmarCarga');
+  const textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ Confirmando…';
+
+  try{
+    const ids = paletes.map(p => p.linha);
+    const { data: atuais, error: erroAtuais } = await sb.from('ocupacao').select('id, pacotes, produto').in('id', ids);
+    if(erroAtuais) throw erroAtuais;
+    const atualPorId = Object.fromEntries((atuais || []).map(r => [r.id, r]));
+    const agoraIso = new Date().toISOString();
+
+    const resultados = await Promise.all(paletes.map(async (p) => {
+      const produtoLabel = (p.produtosRetirar && p.produtosRetirar.length) ? p.produtosRetirar.join(', ') : '';
+      const endereco = enderecoTexto(p.posicao, p.palete);
+      const atual = atualPorId[p.linha];
+
+      if(!atual){
+        return { produto: produtoLabel, endereco, ok: false };
+      }
+
+      let patch = { caminhao: caminhao || null };
+
+      if(p.tipo === 'parcial'){
+        const produtosAtuais = String(atual.produto || '').split(',').map(s => s.trim()).filter(Boolean);
+        const remover = (p.produtosRetirar || []).map(s => s.trim());
+        const restantes = produtosAtuais.filter(prod => !remover.includes(prod));
+        if(restantes.length === 0){
+          patch.data_saida = agoraIso;
+        } else {
+          patch.produto = restantes.join(', ');
+        }
+      } else if(p.tipo === 'pacotes_parcial'){
+        const pacotesAtuais = parseInt(atual.pacotes, 10);
+        const pacotesRetirar = parseInt(p.pacotesRetirar, 10);
+        if(!pacotesAtuais || !pacotesRetirar || pacotesRetirar <= 0){
+          return { produto: produtoLabel, endereco, ok: false };
+        }
+        const restam = pacotesAtuais - pacotesRetirar;
+        if(restam <= 0){
+          patch.pacotes = 0;
+          patch.data_saida = agoraIso;
+        } else {
+          patch.pacotes = restam;
+        }
+      } else {
+        patch.data_saida = agoraIso;
+      }
+
+      const { error } = await sb.from('ocupacao').update(patch).eq('id', p.linha);
+      if(error){ console.error('Erro ao atualizar palete', p.linha, error); return { produto: produtoLabel, endereco, ok: false }; }
+      return { produto: produtoLabel, endereco, ok: true };
+    }));
+
+    const falhas = resultados.filter(r => !r.ok);
+    if(falhas.length){
+      alert(`${resultados.length - falhas.length} de ${resultados.length} paletes processados.\n\n${falhas.length} não foram encontrados/atualizados (confira manualmente):\n\n` +
+        falhas.map(f => `• ${f.endereco} (${f.produto})`).join('\n'));
+    } else {
+      alert(`✅ ${resultados.length} palete(s) processados! O banco já foi atualizado.`);
+    }
+
+    // guarda um retrato exato do que foi confirmado — depois que o banco
+    // for resincronizado (carregarDados, logo abaixo) o estoque já vai
+    // estar diferente, então recalcular do zero não serviria mais pra
+    // reimprimir o mesmo romaneio
+    ULTIMA_CARGA_CONFIRMADA = construirEstruturaPdf();
+    ULTIMA_CARGA_CONFIRMADA_CAMINHAO = caminhao;
+    document.getElementById('btnReimprimirPdf').style.display = '';
+
+    CARGA_ITENS = [];
+    CARGA_ITENS_LINHA = [];
+    BUSCA_CODIGO_RESULTADO = null;
+    document.getElementById('inputCaminhao').value = '';
+    const resultadoEl = document.getElementById('resultadoBuscaCodigo');
+    if(resultadoEl) resultadoEl.innerHTML = '';
+    renderCargaTudo();
+    await carregarDados(); // resincroniza o mapa com o banco já atualizado
+  } catch(err){
+    console.error('Erro ao confirmar carga:', err);
+    alert('Erro ao falar com o banco. Confira sua conexão com a internet.\n\n' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+  }
+}
+
+/* ======================================================================
+   ABA "NOVA ENTRADA"
+   Em vez de digitar rua/lado/andar/posição/palete na mão pra cada palete
+   que chega, a estoquista escolhe o produto (do catálogo oficial do
+   CIGAM, sem digitação) e a quantidade — o sistema sugere sozinho onde
+   guardar cada palete, seguindo a mesma regra de FIFO já usada no
+   "Onde guardar o próximo palete", e grava tudo de uma vez na planilha.
+   ====================================================================== */
+
+function listaProdutosCatalogoFiltrada(filtro){
+  if(filtro === undefined) filtro = FILTRO_ENTRADA;
+  if(!filtro) return PRODUTOS_CATALOGO;
+
+  // o Google Sheets costuma converter a coluna CÓDIGO pra número e comer
+  // o zero à esquerda (ex: "007306" vira "7306") — por isso, além da
+  // busca normal, compara também os dois lados sem zeros na frente
+  const buscaSoDigitos = /^\d+$/.test(filtro);
+  const filtroSemZeros = filtro.replace(/^0+/, '');
+
+  return PRODUTOS_CATALOGO.filter(p => {
+    if(p.descricao.toLowerCase().includes(filtro)) return true;
+    if(p.codigo.toLowerCase().includes(filtro)) return true;
+    if(buscaSoDigitos && filtroSemZeros){
+      const codigoSemZeros = p.codigo.replace(/^0+/, '');
+      if(codigoSemZeros === filtroSemZeros) return true;
+    }
+    return false;
+  });
+}
+
+function familiasConhecidas(){
+  return [...new Set(OCUPACAO_REGISTROS.filter(r => r.ocupado && r.familia).map(r => r.familia))].sort();
+}
+
+/* Família do produto, na ordem de confiança: 1) cadastrada no catálogo
+   (aba "Produtos", coluna FAMÍLIA) — mais confiável, cobre até produto
+   que nunca entrou na câmara ainda; 2) histórico de paletes já
+   registrados desse mesmo produto. Se nenhuma das duas achar nada,
+   quem decide é a pessoa mesmo, no seletor manual. */
+function familiaAutomaticaDoProduto(produto){
+  const doCatalogo = PRODUTOS_CATALOGO.find(p => p.descricao === produto && p.familia);
+  if(doCatalogo) return doCatalogo.familia;
+  return familiaDoProduto(produto);
+}
+
+/* Simula, palete por palete, onde a família deveria guardar os próximos
+   N paletes — reaproveita statusRuaLado (mesma função do painel "Onde
+   guardar"), só que trocando OCUPACAO_MAP por uma cópia temporária que
+   vai sendo preenchida a cada palete simulado, pra não repetir a mesma
+   vaga duas vezes. Restaura o mapa real no final, sempre. */
+function sugerirVagasParaEntrada(familia, quantidade){
+  const mapaReal = OCUPACAO_MAP;
+  OCUPACAO_MAP = { ...OCUPACAO_MAP };
+
+  const ruasAtivas = new Set();
+  OCUPACAO_REGISTROS.forEach(r => {
+    if(r.ocupado && r.familia === familia){
+      const info = infoPosicao(r.posicao);
+      if(info) ruasAtivas.add(`${info.rua}-${info.longarina}`);
+    }
+  });
+
+  const vagas = [];
+  try{
+    for(let i = 0; i < quantidade; i++){
+      let alvo = null;
+
+      // 1) continua numa rua onde a família já está, priorizando a mais cheia (consolidar)
+      const candidatas = [...ruasAtivas]
+        .map(k => { const [rua, longarina] = k.split('-'); return statusRuaLado(Number(rua), longarina); })
+        .filter(s => s.andarAlvo !== null)
+        .sort((a, b) => a.livresTotal - b.livresTotal);
+      if(candidatas.length) alvo = candidatas[0];
+
+      // 2) senão, abre em outra rua com vaga — prioriza uma totalmente
+      // livre (nenhuma família ainda); se não existir nenhuma assim, usa
+      // a que tiver mais espaço livre mesmo que já tenha outra família,
+      // pra uma família nova sempre conseguir entrar quando sobra espaço
+      // físico em algum lugar da câmara
+      if(!alvo){
+        const todas = [];
+        ruasExistentes().forEach(rua => longarinasDaRua(rua).forEach(longarina => todas.push(statusRuaLado(rua, longarina))));
+        const comVaga = todas.filter(s => s.andarAlvo !== null);
+        const virgem = comVaga.find(s => !s.temAlgumaFamilia);
+        alvo = virgem || comVaga.sort((a, b) => b.livresTotal - a.livresTotal)[0] || null;
+      }
+
+      if(!alvo) break; // não sobrou vaga em lugar nenhum pra essa família
+
+      vagas.push({ posicao: alvo.vaga.posicao, palete: alvo.vaga.palete });
+      ruasAtivas.add(`${alvo.rua}-${alvo.lado}`);
+      OCUPACAO_MAP[cellCode(alvo.vaga.posicao, alvo.vaga.palete)] = { familia };
+    }
+  } finally {
+    OCUPACAO_MAP = mapaReal; // sempre restaura o mapa real, mesmo se algo der errado acima
+  }
+
+  return vagas;
+}
+
+function renderListaProdutosEntrada(){
+  const el = document.getElementById('listaProdutosEntrada');
+  if(!el) return;
+  const lista = listaProdutosCatalogoFiltrada();
+  if(lista.length === 0){
+    el.innerHTML = `<div class="carga-vazio">${PRODUTOS_CATALOGO.length === 0 ? 'Catálogo ainda não carregado.' : 'Nenhum produto encontrado.'}</div>`;
+    return;
+  }
+  el.innerHTML = lista.map(p => `
+    <div class="produto-chip" data-descricao="${escapeHtml(p.descricao)}">
+      <span class="chip-nome">${escapeHtml(p.descricao)}</span>
+      <span class="chip-qtd">#${escapeHtml(p.codigo)}</span>
+    </div>
+  `).join('');
+  el.querySelectorAll('.produto-chip').forEach(chip => {
+    chip.addEventListener('click', () => selecionarProdutoEntrada(chip.getAttribute('data-descricao')));
+  });
+}
+
+/* ===== Modo "Palete misto" — um palete só, vários produtos ===== */
+
+function renderListaProdutosEntradaMisto(){
+  const el = document.getElementById('listaProdutosEntradaMisto');
+  if(!el) return;
+  const lista = listaProdutosCatalogoFiltrada(FILTRO_ENTRADA_MISTO);
+  if(lista.length === 0){
+    el.innerHTML = `<div class="carga-vazio">${PRODUTOS_CATALOGO.length === 0 ? 'Catálogo ainda não carregado.' : 'Nenhum produto encontrado.'}</div>`;
+    return;
+  }
+  el.innerHTML = lista.map(p => `
+    <div class="produto-chip" data-descricao="${escapeHtml(p.descricao)}" data-codigo="${escapeHtml(p.codigo)}">
+      <span class="chip-nome">${escapeHtml(p.descricao)}</span>
+      <span class="chip-qtd">#${escapeHtml(p.codigo)}</span>
+    </div>
+  `).join('');
+  el.querySelectorAll('.produto-chip').forEach(chip => {
+    chip.addEventListener('click', () => adicionarItemPaleteMisto(chip.getAttribute('data-descricao'), chip.getAttribute('data-codigo')));
+  });
+}
+
+function adicionarItemPaleteMisto(descricao, codigo){
+  if(ITENS_PALETE_MISTO.some(i => i.produto === descricao)) return; // já está na lista
+  const familia = familiaAutomaticaDoProduto(descricao) || '';
+  ITENS_PALETE_MISTO.push({ produto: descricao, codigo, familia, pacotes: null, dataProducao: '' });
+  renderItensPaleteMisto();
+}
+
+function removerItemPaleteMisto(produto){
+  ITENS_PALETE_MISTO = ITENS_PALETE_MISTO.filter(i => i.produto !== produto);
+  renderItensPaleteMisto();
+}
+
+function atualizarFamiliaItemPaleteMisto(produto, familia){
+  const item = ITENS_PALETE_MISTO.find(i => i.produto === produto);
+  if(item) item.familia = familia;
+}
+
+function atualizarPacotesItemPaleteMisto(produto, valor){
+  const item = ITENS_PALETE_MISTO.find(i => i.produto === produto);
+  if(item) item.pacotes = valor ? parseInt(valor, 10) : null;
+}
+
+function atualizarDataProducaoItemPaleteMisto(produto, valor){
+  const item = ITENS_PALETE_MISTO.find(i => i.produto === produto);
+  if(item) item.dataProducao = valor;
+}
+
+function renderItensPaleteMisto(){
+  const el = document.getElementById('listaItensPaleteMisto');
+  const camposEl = document.getElementById('entradaMistoCampos');
+  if(ITENS_PALETE_MISTO.length === 0){
+    el.innerHTML = `<div class="carga-vazio">Nenhum produto adicionado ainda — escolha ao lado.</div>`;
+    camposEl.style.display = 'none';
+    return;
+  }
+  camposEl.style.display = '';
+  document.getElementById('entradaMistoDataHojeTexto').textContent = dataHojeBR();
+  el.innerHTML = ITENS_PALETE_MISTO.map(item=>{
+    const familiasOpcoes = familiasConhecidas();
+    const semFamiliaConhecida = item.familia && !familiasOpcoes.includes(item.familia);
+    return `<div class="carga-row" style="align-items:flex-start;flex-wrap:wrap;">
+      <div style="flex:2 1 200px;min-width:160px;">
+        <div class="cr-nome">${escapeHtml(item.produto)}</div>
+        <select class="entrada-select" style="margin-top:6px;" data-acao="familia" data-produto="${escapeHtml(item.produto)}">
+          ${familiasOpcoes.map(f => `<option value="${escapeHtml(f)}" ${item.familia===f?'selected':''}>${escapeHtml(f)}</option>`).join('')}
+          ${(!item.familia || semFamiliaConhecida) ? `<option value="${escapeHtml(item.familia||'')}" selected>${item.familia ? escapeHtml(item.familia) : 'Escolher família…'}</option>` : ''}
+        </select>
+      </div>
+      <div style="flex:1 1 90px;min-width:90px;">
+        <label class="entrada-label" style="margin-top:0;">Pacotes</label>
+        <input type="number" min="1" class="entrada-data-input" value="${item.pacotes ?? ''}" placeholder="ex.: 40" data-acao="pacotes" data-produto="${escapeHtml(item.produto)}">
+      </div>
+      <div style="flex:1 1 140px;min-width:140px;">
+        <label class="entrada-label" style="margin-top:0;">Data de produção</label>
+        <input type="date" class="entrada-data-input" value="${item.dataProducao || ''}" data-acao="data-producao" data-produto="${escapeHtml(item.produto)}">
+      </div>
+      <button class="cr-remover" data-acao="remover-item" data-produto="${escapeHtml(item.produto)}" title="Remover">✕</button>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('[data-acao="familia"]').forEach(sel=>{
+    sel.addEventListener('change', () => atualizarFamiliaItemPaleteMisto(sel.getAttribute('data-produto'), sel.value));
+  });
+  el.querySelectorAll('[data-acao="pacotes"]').forEach(inp=>{
+    inp.addEventListener('input', () => atualizarPacotesItemPaleteMisto(inp.getAttribute('data-produto'), inp.value));
+  });
+  el.querySelectorAll('[data-acao="data-producao"]').forEach(inp=>{
+    inp.addEventListener('input', () => atualizarDataProducaoItemPaleteMisto(inp.getAttribute('data-produto'), inp.value));
+  });
+  el.querySelectorAll('[data-acao="remover-item"]').forEach(btn=>{
+    btn.addEventListener('click', () => removerItemPaleteMisto(btn.getAttribute('data-produto')));
+  });
+}
+
+function renderVagaMistoPreview(){
+  const elPrev = document.getElementById('entradaVagaMistoPreview');
+  const elCodigo = document.getElementById('entradaMistoCodigoPreview');
+  const btn = document.getElementById('btnConfirmarEntradaMisto');
+  if(!VAGA_MISTO){
+    elPrev.innerHTML = `<div class="carga-vazio">Não sobrou vaga em lugar nenhum pra essa família.</div>`;
+    elCodigo.innerHTML = '';
+    btn.style.display = 'none';
+    return;
+  }
+  elPrev.innerHTML = `<div class="entrada-vagas-lista"><div class="entrada-vaga-row">${enderecoTexto(VAGA_MISTO.posicao, VAGA_MISTO.palete)}</div></div>`;
+  elCodigo.innerHTML = `<div class="carga-dica" style="margin-top:8px;">Código do palete (se confirmar agora): <strong style="color:var(--frost);font-family:var(--font-mono);">${formatarDataHoraLocal()}</strong> <span style="opacity:.65;">— pode variar 1 minuto até o clique em confirmar.</span></div>`;
+  btn.style.display = '';
+}
+
+/* Gera o código do palete no MESMO formato que o Apps Script usa
+   (data/hora), só pra mostrar antes de confirmar — o valor que de fato
+   vale é o que o Apps Script grava (evita depender do relógio do
+   navegador estar certo). */
+/* Data de hoje em dd/mm/aaaa, usando o relógio local do navegador (não
+   toISOString/UTC, que pode "voltar" um dia perto da meia-noite conforme
+   o fuso horário). Usada porque a Data de Entrada do palete é sempre
+   hoje — não é mais um campo que a pessoa escolhe na mão. */
+function dataHojeBR(){
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()}`;
+}
+
+function formatarDataHoraLocal(){
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
+}
+
+/* Agrupa os registros lançados HOJE por palete físico (código de
+   rastreio — ou pelo número da linha, pra dado antigo sem código), pra
+   mostrar 1 linha de histórico por palete que entrou, mesmo quando é um
+   palete misto com vários produtos/linhas. Ordena do mais recente pro
+   mais antigo, usando o horário embutido no próprio código. */
+function calcularEntradasDeHoje(){
+  const hoje = new Date();
+  const ehHoje = (dt) => dt && dt.getFullYear() === hoje.getFullYear() && dt.getMonth() === hoje.getMonth() && dt.getDate() === hoje.getDate();
+
+  const porPalete = {};
+  OCUPACAO_REGISTROS.forEach(r=>{
+    if(!ehHoje(parseDateBR(r.dataEntrada))) return;
+    const key = r.codigoPalete || `linha-${r.linha}`;
+    if(!porPalete[key]){
+      porPalete[key] = {
+        codigo: r.codigoPalete, linha: r.linha, familia: r.familia,
+        posicao: r.posicao, palete: r.palete,
+        produtos: [],
+      };
+    }
+    porPalete[key].produtos.push({ produto: r.produto, pacotes: r.pacotes });
+  });
+
+  return Object.values(porPalete).sort((a,b)=>{
+    const horaA = (a.codigo && a.codigo.includes('-')) ? a.codigo.split('-')[1] : '';
+    const horaB = (b.codigo && b.codigo.includes('-')) ? b.codigo.split('-')[1] : '';
+    if(horaA !== horaB) return horaB.localeCompare(horaA); // mais recente primeiro
+    return b.linha - a.linha;
+  });
+}
+
+/* Monta a linha "Produto A · 40 pac., Produto B · 25 pac." usada tanto no
+   histórico de entrada quanto no de saída — junta produto e pacotes de
+   cada linha daquele palete numa string só, curta o bastante pra caber
+   na lista sem virar bagunça visual. */
+function textoProdutosPacotes(produtos){
+  return produtos.map(p => `${escapeHtml(p.produto)}${p.pacotes ? ` · ${p.pacotes} pac.` : ''}`).join(', ');
+}
+
+function renderEntradasDeHoje(){
+  const el = document.getElementById('entradasDeHojeLista');
+  if(!el) return;
+  const entradas = calcularEntradasDeHoje();
+  if(entradas.length === 0){
+    el.innerHTML = `<div class="carga-vazio">Nenhum palete lançado hoje ainda.</div>`;
+    return;
+  }
+  el.innerHTML = `<div class="entradas-hoje-lista">${entradas.map(e=>{
+    const partesCodigo = (e.codigo || '').split('-');
+    const dataParte = partesCodigo[0] || '';
+    const horaParte = partesCodigo[1] || '';
+    const hora = horaParte.length === 4 ? `${horaParte.slice(0,2)}:${horaParte.slice(2,4)}` : '—';
+    const dataTxt = dataParte.length === 8 ? `${dataParte.slice(6,8)}/${dataParte.slice(4,6)}/${dataParte.slice(0,4)}` : dataHojeBR();
+    const misto = e.produtos.length > 1;
+    const tipoTxt = misto ? 'Palete misto' : 'Palete simples';
+    const tipoCor = misto ? 'var(--extra)' : 'var(--text-soft)';
+    return `<div class="entrada-hoje-row">
+      <span class="entrada-hoje-hora">${hora}</span>
+      <div class="entrada-hoje-info">
+        <div><strong style="font-family:var(--font-mono);color:var(--frost);">${escapeHtml(e.codigo || '—')}</strong></div>
+        <div class="entrada-hoje-endereco">${dataTxt} · <span style="color:${tipoCor};font-weight:600;">${tipoTxt}</span></div>
+        <div class="entrada-hoje-endereco">${textoProdutosPacotes(e.produtos)}</div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+/* Mesma ideia da lista de entradas, só que pro lado da saída: agrupa por
+   palete físico (código, ou linha se não tiver código) as linhas cuja
+   DATA SAÍDA é hoje. IMPORTANTE: isso só pega retiradas COMPLETAS — uma
+   retirada parcial por pacotes não preenche DATA SAÍDA (o palete
+   continua na câmara), então ela não tem nenhum carimbo de data/hora
+   registrado em lugar nenhum hoje, e por isso não aparece aqui. Sem uma
+   aba de log dedicada na planilha, não tem como listar essas à parte. */
+function calcularSaidasDeHoje(){
+  const hoje = new Date();
+  const ehHoje = (dt) => dt && dt.getFullYear() === hoje.getFullYear() && dt.getMonth() === hoje.getMonth() && dt.getDate() === hoje.getDate();
+
+  const porPalete = {};
+  OCUPACAO_REGISTROS.forEach(r=>{
+    const dt = parseDateBR(r.dataSaida);
+    if(!ehHoje(dt)) return;
+    const key = r.codigoPalete || `linha-${r.linha}`;
+    if(!porPalete[key]){
+      porPalete[key] = {
+        codigo: r.codigoPalete, linha: r.linha, familia: r.familia,
+        posicao: r.posicao, palete: r.palete,
+        dataSaidaDt: dt, caminhao: r.caminhao, produtos: [],
+      };
+    }
+    porPalete[key].produtos.push({ produto: r.produto, pacotes: r.pacotes });
+  });
+
+  // agora que a DATA SAÍDA grava horário também, dá pra ordenar pelo
+  // horário de verdade (mais recente primeiro)
+  return Object.values(porPalete).sort((a,b) => b.dataSaidaDt - a.dataSaidaDt);
+}
+
+function renderSaidasDeHoje(){
+  const el = document.getElementById('saidasDeHojeLista');
+  if(!el) return;
+  const saidas = calcularSaidasDeHoje();
+  if(saidas.length === 0){
+    el.innerHTML = `<div class="carga-vazio">Nenhum palete saiu hoje ainda.</div>`;
+    return;
+  }
+  el.innerHTML = `<div class="entradas-hoje-lista">${saidas.map(e=>{
+    const misto = e.produtos.length > 1;
+    const tipoTxt = misto ? 'Palete misto' : 'Palete simples';
+    const tipoCor = misto ? 'var(--extra)' : 'var(--text-soft)';
+    const temHora = e.dataSaidaDt && (e.dataSaidaDt.getHours() !== 0 || e.dataSaidaDt.getMinutes() !== 0);
+    const hora = temHora ? `${String(e.dataSaidaDt.getHours()).padStart(2,'0')}:${String(e.dataSaidaDt.getMinutes()).padStart(2,'0')}` : '—';
+    const caminhaoTxt = e.caminhao ? ` · 🚚 ${escapeHtml(e.caminhao)}` : '';
+    return `<div class="entrada-hoje-row">
+      <span class="entrada-hoje-hora">${hora}</span>
+      <div class="entrada-hoje-info">
+        <div><strong style="font-family:var(--font-mono);color:var(--frost);">${escapeHtml(e.codigo || '—')}</strong>${caminhaoTxt}</div>
+        <div class="entrada-hoje-endereco">${escapeHtml(dataHojeBR())} · <span style="color:${tipoCor};font-weight:600;">${tipoTxt}</span></div>
+        <div class="entrada-hoje-endereco">${textoProdutosPacotes(e.produtos)}</div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+async function confirmarEntradaMisto(){
+  if(ITENS_PALETE_MISTO.length === 0 || !VAGA_MISTO) return;
+  const semFamilia = ITENS_PALETE_MISTO.find(i => !i.familia);
+  if(semFamilia){ alert(`Escolha a família de "${semFamilia.produto}" antes de confirmar.`); return; }
+  const semPacotes = ITENS_PALETE_MISTO.find(i => !i.pacotes || i.pacotes <= 0);
+  if(semPacotes){ alert(`Informe a quantidade de pacotes de "${semPacotes.produto}" antes de confirmar.`); return; }
+  const semDataProducao = ITENS_PALETE_MISTO.find(i => !i.dataProducao);
+  if(semDataProducao){ alert(`Escolha a data de produção de "${semDataProducao.produto}" antes de confirmar.`); return; }
+
+  if(!confirm(`Confirmar a entrada desse palete misto com ${ITENS_PALETE_MISTO.length} produto(s)?\n\nIsso vai criar ${ITENS_PALETE_MISTO.length} registro(s) novo(s) no banco, todos com o mesmo código de rastreio.`)) return;
+
+  const btn = document.getElementById('btnConfirmarEntradaMisto');
+  const textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ Registrando…';
+
+  try{
+    const codigo = gerarCodigoUnico(codigosJaUsados()); // todos os produtos são o MESMO palete físico — mesmo código de rastreio
+    const agoraIso = new Date().toISOString();
+    const linhasNovas = ITENS_PALETE_MISTO.map(item => ({
+      codigo_rastreio: codigo,
+      familia: item.familia, produto: item.produto, pacotes: item.pacotes,
+      posicao: VAGA_MISTO.posicao, palete: VAGA_MISTO.palete,
+      data_producao: item.dataProducao, // já vem "aaaa-mm-dd" do input
+      data_entrada: agoraIso,
+      camara: CAMARA_ATUAL,
+    }));
+
+    const { error } = await sb.from('ocupacao').insert(linhasNovas);
+    if(error){
+      alert('Não deu pra registrar: ' + error.message);
+      return;
+    }
+    for(const item of ITENS_PALETE_MISTO){
+      await registrarFamiliaSeNova(item.familia, item.produto, item.codigo);
+    }
+
+    alert(`✅ Palete misto registrado! ${linhasNovas.length} produto(s), código ${codigo}.`);
+    ITENS_PALETE_MISTO = [];
+    VAGA_MISTO = null;
+    renderItensPaleteMisto();
+    renderVagaMistoPreview();
+    await carregarDados();
+  } catch(err){
+    console.error('Erro ao confirmar entrada de palete misto:', err);
+    alert('Erro ao falar com o banco. Confira sua conexão com a internet.\n\n' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+  }
+}
+
+function alternarModoEntrada(modo){
+  ENTRADA_MODO = modo;
+  document.getElementById('layoutEntradaSimples').style.display = modo === 'simples' ? '' : 'none';
+  document.getElementById('layoutEntradaMisto').style.display = modo === 'misto' ? '' : 'none';
+  document.getElementById('btnModoSimples').className = modo === 'simples' ? 'btn-sync btn-confirmar' : 'btn-sync btn-secundario';
+  document.getElementById('btnModoMisto').className = modo === 'misto' ? 'btn-sync btn-confirmar' : 'btn-sync btn-secundario';
+}
+
+function renderFamiliaEntrada(){
+  const sugerida = familiaAutomaticaDoProduto(ENTRADA_PRODUTO);
+  if(sugerida){
+    mostrarFamiliaAutomatica(sugerida);
+  } else {
+    mostrarSeletorFamilia();
+  }
+}
+
+function mostrarFamiliaAutomatica(familia){
+  const wrap = document.getElementById('entradaFamiliaWrap');
+  const cor = familyColor(familia);
+  wrap.innerHTML = `
+    <div class="entrada-familia-auto">
+      <span class="estoque-swatch" style="background:${cor}"></span>
+      <span class="entrada-familia-nome">${escapeHtml(familia)}</span>
+      <span class="entrada-familia-tag">identificado automaticamente</span>
+      <button type="button" id="btnTrocarFamilia" class="entrada-familia-trocar">trocar</button>
+    </div>
+    <input type="hidden" id="entradaFamiliaValor" value="${escapeHtml(familia)}">
+  `;
+  document.getElementById('btnTrocarFamilia').addEventListener('click', mostrarSeletorFamilia);
+}
+
+function mostrarSeletorFamilia(){
+  const wrap = document.getElementById('entradaFamiliaWrap');
+  const conhecidas = familiasConhecidas();
+  wrap.innerHTML = `
+    <select id="entradaFamiliaSelect" class="entrada-select">
+      <option value="">Selecione…</option>
+      ${conhecidas.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('')}
+      <option value="__nova__">+ nova família…</option>
+    </select>
+    <input type="text" id="entradaFamiliaNova" class="entrada-select" placeholder="Nome da nova família" style="display:none;margin-top:6px;">
+  `;
+  document.getElementById('entradaFamiliaSelect').addEventListener('change', e => {
+    document.getElementById('entradaFamiliaNova').style.display = e.target.value === '__nova__' ? 'block' : 'none';
+  });
+}
+
+function familiaEntradaEscolhida(){
+  const valorAuto = document.getElementById('entradaFamiliaValor');
+  if(valorAuto) return valorAuto.value;
+  const sel = document.getElementById('entradaFamiliaSelect');
+  if(!sel) return '';
+  if(sel.value === '__nova__') return document.getElementById('entradaFamiliaNova').value.trim();
+  return sel.value;
+}
+
+function selecionarProdutoEntrada(descricao){
+  ENTRADA_PRODUTO = descricao;
+  ENTRADA_PRODUTO_CODIGO = (PRODUTOS_CATALOGO.find(p => p.descricao === descricao) || {}).codigo || '';
+  ENTRADA_QTD = 1;
+  ENTRADA_VAGAS = [];
+  document.getElementById('entradaSelecionado').textContent = `Produto selecionado: ${descricao}`;
+  document.getElementById('entradaCampos').style.display = '';
+  document.getElementById('entradaQtdValor').textContent = '1';
+  document.getElementById('entradaVagasPreview').innerHTML = '';
+  document.getElementById('btnConfirmarEntrada').style.display = 'none';
+  document.getElementById('entradaDataHojeTexto').textContent = dataHojeBR();
+  renderFamiliaEntrada();
+}
+
+function renderVagasPreview(){
+  const el = document.getElementById('entradaVagasPreview');
+  const btnConfirmar = document.getElementById('btnConfirmarEntrada');
+  if(ENTRADA_VAGAS.length === 0){
+    el.innerHTML = `<div class="carga-vazio">Não sobrou vaga em lugar nenhum pra essa família/quantidade.</div>`;
+    btnConfirmar.style.display = 'none';
+    return;
+  }
+  const faltaram = ENTRADA_QTD - ENTRADA_VAGAS.length;
+  el.innerHTML = `
+    <div class="entrada-vagas-lista">
+      ${ENTRADA_VAGAS.map((v, i) => `<div class="entrada-vaga-row">${i + 1}. ${enderecoTexto(v.posicao, v.palete)}</div>`).join('')}
+    </div>
+    ${faltaram > 0 ? `<div class="carga-aviso" style="margin-top:10px;">⚠ Só sobrou vaga pra ${ENTRADA_VAGAS.length} de ${ENTRADA_QTD} paletes — a câmara está sem espaço pra essa família em qualquer rua.</div>` : ''}
+  `;
+  btnConfirmar.style.display = '';
+}
+
+/* Manda o lote de entradas pro Apps Script, que grava as linhas novas
+   direto na planilha (FAMÍLIA, PRODUTO, RUA, LADO, ANDAR, POSIÇÃO,
+   PALETE, DATA ENTRADA) — sem precisar digitar endereço na mão. */
+/* Códigos de rastreio já em uso — pra gerar um novo sem bater com um que
+   já existe (mesma ideia que o Code.gs fazia no servidor; agora é feita
+   aqui no navegador, checando contra o que já foi carregado + o que já
+   foi gerado nesta mesma leva). */
+function codigosJaUsados(){
+  return new Set(OCUPACAO_REGISTROS.map(r => r.codigoPalete).filter(Boolean));
+}
+function gerarCodigoUnico(usados){
+  const base = formatarDataHoraLocal();
+  let candidato = base, sufixo = 1;
+  while(usados.has(candidato)){
+    sufixo++;
+    candidato = `${base}-${sufixo}`;
+  }
+  usados.add(candidato);
+  return candidato;
+}
+
+/* Se a família ainda não tem esse produto cadastrado na tabela
+   "familias", registra — sem isso, a tabela de referência fica
+   desatualizada toda vez que um produto novo entra pela primeira vez. */
+async function registrarFamiliaSeNova(familia, produto, codigo){
+  const jaExiste = FAMILIAS_CATALOGO.some(f => f.PRODUTO === produto);
+  if(jaExiste || !produto) return;
+  const { error } = await sb.from('familias').insert([{ familia, codigo_produto: codigo || null, produto, rua: null }]);
+  if(error) console.error('Não deu pra registrar a família nova:', error);
+}
+
+async function confirmarEntrada(){
+  if(ENTRADA_VAGAS.length === 0) return;
+  const familia = familiaEntradaEscolhida();
+  if(!familia){ alert('Escolha ou digite uma família antes de confirmar.'); return; }
+  const pacotesInput = document.getElementById('entradaPacotes').value;
+  const pacotes = pacotesInput ? parseInt(pacotesInput, 10) : null;
+  if(!pacotes || pacotes <= 0){ alert('Informe quantos pacotes tem cada palete antes de confirmar.'); return; }
+  const dataProducaoIso = document.getElementById('entradaDataProducao').value; // já vem "aaaa-mm-dd"
+  if(!dataProducaoIso){ alert('Escolha a data de produção do item.'); return; }
+
+  if(!confirm(`Confirmar a entrada de ${ENTRADA_VAGAS.length} palete(s) de "${ENTRADA_PRODUTO}"?\n\nIsso vai criar ${ENTRADA_VAGAS.length} registro(s) novo(s) no banco.`)) return;
+
+  const btn = document.getElementById('btnConfirmarEntrada');
+  const textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ Registrando…';
+
+  try{
+    const usados = codigosJaUsados();
+    const agoraIso = new Date().toISOString();
+    const linhasNovas = ENTRADA_VAGAS.map(v => ({
+      codigo_rastreio: gerarCodigoUnico(usados), // cada vaga é um palete físico diferente — código próprio pra cada uma
+      familia, produto: ENTRADA_PRODUTO, pacotes,
+      posicao: v.posicao, palete: v.palete,
+      data_producao: dataProducaoIso, data_entrada: agoraIso,
+      camara: CAMARA_ATUAL,
+    }));
+
+    const { error } = await sb.from('ocupacao').insert(linhasNovas);
+    if(error){
+      alert('Não deu pra registrar: ' + error.message);
+      return;
+    }
+    await registrarFamiliaSeNova(familia, ENTRADA_PRODUTO, ENTRADA_PRODUTO_CODIGO);
+
+    alert(`✅ ${linhasNovas.length} palete(s) registrados!`);
+    ENTRADA_PRODUTO = null;
+    ENTRADA_QTD = 1;
+    ENTRADA_VAGAS = [];
+    document.getElementById('entradaPacotes').value = '';
+    document.getElementById('entradaCampos').style.display = 'none';
+    document.getElementById('entradaSelecionado').textContent = 'Escolha um produto na lista ao lado.';
+    await carregarDados(); // resincroniza o mapa com o banco já atualizado
+  } catch(err){
+    console.error('Erro ao confirmar entrada:', err);
+    alert('Erro ao falar com o banco. Confira sua conexão com a internet.\n\n' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+  }
+}
+
+function inicializarAbaEntrada(){
+  document.getElementById('btnModoSimples').addEventListener('click', () => alternarModoEntrada('simples'));
+  document.getElementById('btnModoMisto').addEventListener('click', () => alternarModoEntrada('misto'));
+
+  const buscaCodigoConsulta = document.getElementById('buscaCodigoConsulta');
+  const executarConsulta = () => {
+    if(buscaCodigoConsulta.value.trim()) executarBuscaCodigoConsulta(buscaCodigoConsulta.value);
+  };
+  document.getElementById('btnBuscarCodigoConsulta').addEventListener('click', executarConsulta);
+  buscaCodigoConsulta.addEventListener('keydown', e=>{
+    if(e.key === 'Enter') executarConsulta();
+  });
+
+  const busca = document.getElementById('buscaEntradaProduto');
+  busca.addEventListener('input', () => {
+    FILTRO_ENTRADA = busca.value.trim().toLowerCase();
+    renderListaProdutosEntrada();
+  });
+
+  document.getElementById('entradaQtdMenos').addEventListener('click', () => {
+    ENTRADA_QTD = Math.max(1, ENTRADA_QTD - 1);
+    document.getElementById('entradaQtdValor').textContent = ENTRADA_QTD;
+  });
+  document.getElementById('entradaQtdMais').addEventListener('click', () => {
+    ENTRADA_QTD = Math.min(84, ENTRADA_QTD + 1); // teto de segurança (câmara não tem mais posições que isso por andar)
+    document.getElementById('entradaQtdValor').textContent = ENTRADA_QTD;
+  });
+
+  document.getElementById('btnCalcularVagas').addEventListener('click', () => {
+    const familia = familiaEntradaEscolhida();
+    if(!familia){ alert('Escolha ou digite uma família antes de calcular as posições.'); return; }
+    ENTRADA_VAGAS = sugerirVagasParaEntrada(familia, ENTRADA_QTD);
+    renderVagasPreview();
+  });
+
+  document.getElementById('btnConfirmarEntrada').addEventListener('click', confirmarEntrada);
+
+  renderListaProdutosEntrada();
+
+  // ===== modo Palete misto =====
+  const buscaMisto = document.getElementById('buscaEntradaMistoProduto');
+  buscaMisto.addEventListener('input', () => {
+    FILTRO_ENTRADA_MISTO = buscaMisto.value.trim().toLowerCase();
+    renderListaProdutosEntradaMisto();
+  });
+
+  document.getElementById('btnCalcularVagaMisto').addEventListener('click', () => {
+    if(ITENS_PALETE_MISTO.length === 0){ alert('Adicione ao menos um produto ao palete misto antes de calcular a posição.'); return; }
+    const semFamilia = ITENS_PALETE_MISTO.find(i => !i.familia);
+    if(semFamilia){ alert(`Escolha a família de "${semFamilia.produto}" antes de calcular a posição.`); return; }
+    const familiaBase = ITENS_PALETE_MISTO[0].familia;
+    const vagas = sugerirVagasParaEntrada(familiaBase, 1);
+    VAGA_MISTO = vagas[0] || null;
+    renderVagaMistoPreview();
+  });
+
+  document.getElementById('btnConfirmarEntradaMisto').addEventListener('click', confirmarEntradaMisto);
+
+  renderListaProdutosEntradaMisto();
+  renderItensPaleteMisto();
+}
+
+function inicializarAbaCarga(){
+  const inputCaminhao = document.getElementById('inputCaminhao');
+  inputCaminhao.addEventListener('input', ()=>{
+    const cursor = inputCaminhao.selectionStart;
+    const limpo = inputCaminhao.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    if(limpo !== inputCaminhao.value){
+      inputCaminhao.value = limpo;
+      inputCaminhao.setSelectionRange(cursor, cursor);
+    } else {
+      inputCaminhao.value = limpo;
+    }
+  });
+
+  const buscaCarga = document.getElementById('buscaCarga');
+  buscaCarga.addEventListener('input', ()=>{
+    FILTRO_CARGA = buscaCarga.value.trim().toLowerCase();
+    renderListaProdutosCarga();
+  });
+
+  const buscaCodigo = document.getElementById('buscaCodigoPalete');
+  const executar = () => {
+    if(buscaCodigo.value.trim()) executarBuscaCodigoPalete(buscaCodigo.value);
+  };
+  document.getElementById('btnBuscarCodigoPalete').addEventListener('click', executar);
+  buscaCodigo.addEventListener('keydown', e=>{
+    if(e.key === 'Enter') executar();
+  });
+
+  const drop = document.getElementById('caminhaoDrop');
+  drop.addEventListener('dragover', e=>{
+    e.preventDefault();
+    drop.classList.add('drop-ativo');
+  });
+  drop.addEventListener('dragleave', ()=> drop.classList.remove('drop-ativo'));
+  drop.addEventListener('drop', e=>{
+    e.preventDefault();
+    drop.classList.remove('drop-ativo');
+    const produto = e.dataTransfer.getData('text/plain');
+    if(produto) adicionarProdutoNaCarga(produto);
+  });
+
+  document.getElementById('btnLimparCarga').addEventListener('click', limparCarga);
+  document.getElementById('btnGerarPdf').addEventListener('click', gerarPDFCarga);
+  document.getElementById('btnConfirmarCarga').addEventListener('click', confirmarCargaRetirada);
+  document.getElementById('btnReimprimirPdf').addEventListener('click', ()=>{
+    if(ULTIMA_CARGA_CONFIRMADA) renderizarPdfRomaneio(ULTIMA_CARGA_CONFIRMADA, ULTIMA_CARGA_CONFIRMADA_CAMINHAO);
+  });
+
+  renderCargaTudo();
+}
+
+function trocarView(view){
+  document.getElementById('viewMapa').style.display = view === 'mapa' ? '' : 'none';
+  document.getElementById('viewCarga').style.display = view === 'carga' ? '' : 'none';
+  document.getElementById('viewEntrada').style.display = view === 'entrada' ? '' : 'none';
+  document.getElementById('tabMapa').classList.toggle('active', view === 'mapa');
+  document.getElementById('tabCarga').classList.toggle('active', view === 'carga');
+  document.getElementById('tabEntrada').classList.toggle('active', view === 'entrada');
+  if(view === 'carga') renderCargaTudo();
+  if(view === 'entrada') renderListaProdutosEntrada();
+}
+
+function renderFloorPanel(){
+  const panel = document.getElementById('floorPanel');
+  panel.querySelectorAll('.floor-btn').forEach(b=>b.remove());
+  andaresAtuais().slice().reverse().forEach(a=>{
+    const btn = document.createElement('button');
+    btn.className = 'floor-btn' + (a === andarAtual ? ' active' : '');
+    btn.textContent = a;
+    btn.title = `Andar ${a}`;
+    btn.addEventListener('click', ()=>{
+      if(a === andarAtual) return;
+      andarAtual = a;
+      renderFloorPanel();
+      renderAll();
+    });
+    panel.appendChild(btn);
+  });
+
+  // botão extra — mostra a câmara toda (todos os andares somados),
+  // separado visualmente dos números de andar por uma linha divisória
+  const divisor = document.createElement('div');
+  divisor.className = 'floor-btn-divisor';
+  panel.appendChild(divisor);
+
+  const btnCamara = document.createElement('button');
+  btnCamara.className = 'floor-btn floor-btn-camara' + (andarAtual === null ? ' active' : '');
+  btnCamara.textContent = 'CÂMARA';
+  btnCamara.title = 'Câmara toda (todos os andares)';
+  btnCamara.addEventListener('click', ()=>{
+    if(andarAtual === null) return;
+    andarAtual = null;
+    renderFloorPanel();
+    renderAll();
+  });
+  panel.appendChild(btnCamara);
+}
+
+function renderAll(){
+  renderOcupacaoPainel();
+  renderGraficoFamilias();
+  renderGraficoAging();
+  renderGraficoHistorico();
+  renderConflitos();
+  renderLinhasIgnoradas();
+  renderPosicoes01Invalidas();
+  renderFamilyLegend();
+  renderEntradasDeHoje();
+  renderSaidasDeHoje();
+  if(andarAtual === null){
+    // "CÂMARA" selecionada: os números do topo continuam somando os 4
+    // andares, mas o mapa mostra só 1 andar por vez (com botões de
+    // navegação), em vez de empilhar os 4 — fica bem mais compacto.
+    if(!andaresAtuais().includes(andarMapaCamara)) andarMapaCamara = andaresAtuais()[andaresAtuais().length - 1];
+    const idx = andaresAtuais().indexOf(andarMapaCamara);
+    const temAnterior = idx > 0;
+    const temProximo = idx < andaresAtuais().length - 1;
+    document.getElementById('ruasWrap').innerHTML = `
+      <div class="nav-andar-mapa">
+        <button id="btnAndarMapaAnterior" class="btn-nav-andar" ${temAnterior ? '' : 'disabled'}>◀ Andar anterior</button>
+        <span class="nav-andar-atual">Mapa — Andar ${andarMapaCamara}</span>
+        <button id="btnAndarMapaProximo" class="btn-nav-andar" ${temProximo ? '' : 'disabled'}>Próximo andar ▶</button>
+      </div>
+      ${ruasExistentes().slice().reverse().map(rua => renderRua(rua, andarMapaCamara)).join('')}
+    `;
+    const btnAnterior = document.getElementById('btnAndarMapaAnterior');
+    const btnProximo = document.getElementById('btnAndarMapaProximo');
+    if(btnAnterior) btnAnterior.addEventListener('click', ()=>{
+      const i = andaresAtuais().indexOf(andarMapaCamara);
+      if(i > 0){ andarMapaCamara = andaresAtuais()[i - 1]; renderAll(); }
+    });
+    if(btnProximo) btnProximo.addEventListener('click', ()=>{
+      const i = andaresAtuais().indexOf(andarMapaCamara);
+      if(i < andaresAtuais().length - 1){ andarMapaCamara = andaresAtuais()[i + 1]; renderAll(); }
+    });
+  } else {
+    document.getElementById('ruasWrap').innerHTML = ruasExistentes().slice().reverse().map(rua => renderRua(rua, andarAtual)).join('');
+  }
+  attachTooltips();
+  renderCargaTudo(); // mantém a lista de produtos/estoque da aba Montar Carga sempre em dia
+  renderListaProdutosEntrada(); // idem pra Nova Entrada
+}
+
+/* Estado do tooltip "fixado" — em telas touch (tablet/celular na câmara fria)
+   não existe hover, então além do hover pra mouse a gente também deixa
+   TOCAR na posição pra fixar o balão de detalhe na tela, e tocar em
+   qualquer outro lugar pra fechar. */
+let tipPinned = false;
+
+function positionTip(tip, x, y){
+  // mantém o balão dentro da tela (importante em telas estreitas de celular)
+  const margin = 14;
+  const maxLeft = window.innerWidth - 260;
+  const left = Math.min(x + margin, Math.max(margin, maxLeft));
+  tip.style.left = left + 'px';
+  tip.style.top = (y + margin) + 'px';
+}
+
+function attachTooltips(){
+  const tip = document.getElementById('tip');
+  document.querySelectorAll('.rack-cell').forEach(cell=>{
+    cell.addEventListener('mousemove', (e)=>{
+      if(tipPinned) return; // não sobrescreve um balão fixado por toque
+      tip.textContent = cell.getAttribute('data-code');
+      positionTip(tip, e.clientX, e.clientY);
+      tip.style.opacity = '1';
+    });
+    cell.addEventListener('mouseleave', ()=>{
+      if(!tipPinned) tip.style.opacity = '0';
+    });
+    // toque/clique fixa o balão na posição tocada — essencial em tablet,
+    // onde não existe hover
+    cell.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      tip.textContent = cell.getAttribute('data-code');
+      positionTip(tip, e.clientX, e.clientY);
+      tip.style.opacity = '1';
+      tipPinned = true;
+    });
+  });
+}
+
+// toque/clique fora de qualquer posição fecha o balão fixado
+document.addEventListener('click', ()=>{
+  if(tipPinned){
+    tipPinned = false;
+    document.getElementById('tip').style.opacity = '0';
+  }
+});
+
+document.getElementById('btnAtualizar').addEventListener('click', ()=>{
+  const btn = document.getElementById('btnAtualizar');
+  btn.disabled = true;
+  carregarDados().finally(()=>{ btn.disabled = false; });
+});
+
+/* Troca de câmara (1/2/3) — cada uma tem seu próprio mapa físico e seus
+   próprios registros no banco (coluna "camara" na tabela ocupacao).
+   Troca o mapa/rack ativo, limpa filtros e estado específico de tela, e
+   recarrega os dados só daquela câmara. */
+document.getElementById('camaraSwitch').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.camara-switch-btn');
+  if(!btn) return;
+  const nova = Number(btn.dataset.camara);
+  if(nova === CAMARA_ATUAL) return;
+  CAMARA_ATUAL = nova;
+  document.querySelectorAll('.camara-switch-btn').forEach(b=>{
+    b.classList.toggle('active', Number(b.dataset.camara) === CAMARA_ATUAL);
+  });
+  andarAtual = andaresAtuais()[andaresAtuais().length - 1];
+  andarMapaCamara = andaresAtuais()[andaresAtuais().length - 1];
+  FILTRO_PRODUTO = '';
+  document.getElementById('buscaProduto').value = '';
+  document.getElementById('btnLimparBusca').style.display = 'none';
+  FILTRO_FAMILIA_MAPA = null;
+  renderFloorPanel();
+  carregarDados();
+});
+
+const buscaInput = document.getElementById('buscaProduto');
+const btnLimparBusca = document.getElementById('btnLimparBusca');
+buscaInput.addEventListener('input', ()=>{
+  FILTRO_PRODUTO = buscaInput.value.trim().toLowerCase();
+  btnLimparBusca.style.display = FILTRO_PRODUTO ? 'block' : 'none';
+  renderAll();
+});
+btnLimparBusca.addEventListener('click', ()=>{
+  buscaInput.value = '';
+  FILTRO_PRODUTO = '';
+  btnLimparBusca.style.display = 'none';
+  buscaInput.focus();
+  renderAll();
+});
+
+document.getElementById('tabMapa').addEventListener('click', ()=> trocarView('mapa'));
+document.getElementById('tabCarga').addEventListener('click', ()=> trocarView('carga'));
+document.getElementById('tabEntrada').addEventListener('click', ()=> trocarView('entrada'));
+inicializarAbaCarga();
+inicializarAbaEntrada();
+
+// EXP_init é chamado pelo BK360 quando o usuário abre o módulo Expedição pela primeira vez
+window.EXP_init = function(){
+  renderFloorPanel();
+  renderAll();
+  carregarDados();
+  // Atualiza automaticamente a cada 2 minutos enquanto o módulo está ativo
+  setInterval(carregarDados, 120000);
+};
+
+})(); // fim IIFE Expedição
 
 </script>
 </body>
