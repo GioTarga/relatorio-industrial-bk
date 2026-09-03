@@ -2223,6 +2223,7 @@ body{background:#fff;color:#000}
     <div class="container">
 
       <div class="kpi-grid" id="ppKpiGrid"></div>
+      <div class="kpi-grid" id="ppKpiGridRendimento" style="display:none;margin-top:10px;"></div>
 
       <!-- Bloco Tempo de Processo (etapas) — só aparece se a linha tiver esse tipo de dado -->
       <div id="ppBlocoEtapas" style="display:none;">
@@ -12238,6 +12239,8 @@ async function PP_loadData(){
     document.getElementById('ppBlocoEtapas').style.display = 'none';
     document.getElementById('ppBlocoVelocidade').style.display = 'none';
     document.getElementById('ppKpiGrid').innerHTML = '';
+    const gridRendErr = document.getElementById('ppKpiGridRendimento');
+    if(gridRendErr){ gridRendErr.innerHTML = ''; gridRendErr.style.display = 'none'; }
     const emptyEl = document.getElementById('ppEmptyState');
     emptyEl.style.display = 'block';
     emptyEl.innerHTML = `<span class="empty-icon">⚠</span>Erro ao carregar dados: ${err.message||err}`;
@@ -12249,7 +12252,11 @@ function PP_render(){
   const temVelocidade = PP_CORRIDAS.length > 0;
   // Croissant usa painel unificado próprio — os blocos padrão ficam ocultos
   const eCroissant = PP_currentLinha === 'Croissant';
-  document.getElementById('ppBlocoEtapas').style.display = temEtapas ? 'block' : 'none';
+  // Limpa grid de rendimento se não for Croissant
+  const gridRend2 = document.getElementById('ppKpiGridRendimento');
+  if(gridRend2 && !eCroissant){ gridRend2.innerHTML = ''; gridRend2.style.display = 'none'; }
+  // Croissant: etapas sempre visíveis (usa padrão quando não há dados reais no período)
+  document.getElementById('ppBlocoEtapas').style.display = (temEtapas || eCroissant) ? 'block' : 'none';
   // Croissant não exibe tabela de bateladas nem lead time — dados ficam no painel unificado
   document.getElementById('ppPanelBateladas').style.display = eCroissant ? 'none' : 'block';
   document.getElementById('ppPanelLeadTime').style.display  = eCroissant ? 'none' : 'block';
@@ -12260,7 +12267,7 @@ function PP_render(){
   emptyEl.innerHTML = `<span class="empty-icon">📊</span>Nenhum dado registrado pra essa linha${PP_selectedProduto ? ' / produto' : ''} no período selecionado.`;
 
   PP_renderKPIs();
-  if(temEtapas) PP_renderEtapas();
+  if(temEtapas || eCroissant) PP_renderEtapas();
   if(temVelocidade) PP_renderVelocidade();
 
   const painelVelSimples = document.getElementById('ppPainelVelocidadeSimples');
@@ -12784,6 +12791,27 @@ function PP_renderKPIs(){
         ${k.note ? `<div style="font-size:9.5px;margin-top:3px;color:${k.note.startsWith('✓')?'var(--good)':'var(--ink-soft)'};">${k.note}</div>` : ''}
       </div>
     `).join('');
+
+    // ── Segunda linha de cards: rendimentos por unidade ──────────────────
+    const gridRend = document.getElementById('ppKpiGridRendimento');
+    if(gridRend){
+      const fmtRend = (v, dec=1) => v != null ? v.toLocaleString('pt-BR',{maximumFractionDigits:dec}) : '—';
+      const kpisRend = [
+        { label:'Rolos / Massa',            value: CROISSANT_ROLOS_POR_MASSA,              note: 'padrão fixo' },
+        { label:'Caixas ou Telas / Rolo',   value: fmtRend(rendCaixasPorRolo),             note: rendCaixasPorRolo    ? '✓ dado real' : 'sem dado' },
+        { label:'Caixas / Carrinho',        value: fmtRend(rendCaixasPorCarrinho),         note: rendCaixasPorCarrinho    ? '✓ dado real' : 'sem dado' },
+        { label:'Unidades / Carrinho',      value: fmtRend(rendUnidadesPorCarrinho, 0),    note: rendUnidadesPorCarrinho  ? '✓ dado real' : 'sem dado' },
+      ];
+      gridRend.style.display = 'grid';
+      gridRend.style.gridTemplateColumns = `repeat(${kpisRend.length},1fr)`;
+      gridRend.innerHTML = kpisRend.map(k=>`
+        <div class="kpi-card">
+          <div class="label">${k.label}</div>
+          <div class="value">${k.value}</div>
+          ${k.note ? `<div style="font-size:9.5px;margin-top:3px;color:${k.note.startsWith('✓')?'var(--good)':k.note==='padrão fixo'?'var(--gold)':'var(--ink-soft)'};">${k.note}</div>` : ''}
+        </div>
+      `).join('');
+    }
     return;
   }
 
