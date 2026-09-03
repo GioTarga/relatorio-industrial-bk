@@ -2295,23 +2295,6 @@ body{background:#fff;color:#000}
       <!-- Painel Croissant — rendimento + registros unificados, sempre no fim -->
       <div id="ppPainelCroissant" style="display:none;">
 
-        <div class="panel">
-          <div class="panel-title">Rendimento do Período</div>
-          <div class="table-wrap">
-            <table class="detail" id="ppTableCroissantRendimento">
-              <thead>
-                <tr>
-                  <th class="center">Massas</th>
-                  <th class="center">Rolos Laminados</th>
-                  <th class="center">Caixas</th>
-                  <th class="center">Unidades</th>
-                </tr>
-              </thead>
-              <tbody id="ppTbodyCroissantRendimento"></tbody>
-            </table>
-          </div>
-          <div class="trend-foot" id="ppCroissantRendimentoFoot"></div>
-        </div>
 
         <div class="panel" id="ppCroissantObsPanel" style="display:none;">
           <div class="panel-title">📝 Observações do Período</div>
@@ -12314,44 +12297,8 @@ function PP_render(){
 
 }
 
-/* ---------- Croissant — tabelas de rendimento e registros unificados ---------- */
+/* ---------- Croissant — observações e registros unificados ---------- */
 function PP_renderCroissantTabelas(){
-  // ── Rendimento do Período ──
-  const totalMassas = PP_BATELADAS.length;
-  const totalRolos  = totalMassas * CROISSANT_ROLOS_POR_MASSA;
-
-  // Rendimentos variáveis — média dos valores reais coletados (sem fallback hardcoded)
-  function _rendMediaCR(campo){
-    const vals = PP_BATELADAS.map(b => b[campo]).filter(v => v != null && Number(v) > 0).map(Number);
-    return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
-  }
-  const mediaCaixasPorRolo   = _rendMediaCR('rend_caixas_por_rolo');
-  const mediaUnidPorCaixa    = _rendMediaCR('rend_unidades_por_caixa');
-  const totalCaixas = mediaCaixasPorRolo  != null ? totalRolos * mediaCaixasPorRolo  : null;
-  const totalUnid   = totalCaixas != null && mediaUnidPorCaixa != null ? totalCaixas * mediaUnidPorCaixa : null;
-
-  const fmt = v => v != null ? Math.round(v).toLocaleString('pt-BR') : '—';
-
-  const tbody = document.getElementById('ppTbodyCroissantRendimento');
-  const foot  = document.getElementById('ppCroissantRendimentoFoot');
-  if(tbody){
-    if(totalMassas === 0){
-      tbody.innerHTML = `<tr><td colspan="4" class="pp-empty-cell">Nenhuma batelada registrada no período.</td></tr>`;
-    } else {
-      tbody.innerHTML = `<tr>
-        <td class="center">${totalMassas}</td>
-        <td class="center">${totalRolos.toLocaleString('pt-BR')}</td>
-        <td class="center">${fmt(totalCaixas)}</td>
-        <td class="center">${fmt(totalUnid)}</td>
-      </tr>`;
-    }
-  }
-  if(foot){
-    const cxStr   = mediaCaixasPorRolo != null ? `${mediaCaixasPorRolo.toFixed(1)} cx/rolo` : '? cx/rolo (sem dado)';
-    const unidStr = mediaUnidPorCaixa  != null ? `${Math.round(mediaUnidPorCaixa)} unid/cx`  : '? unid/cx (sem dado)';
-    foot.innerHTML = `Cadeia de rendimento: 1 massa → ${CROISSANT_ROLOS_POR_MASSA} rolos → ${cxStr} → ${unidStr}`;
-  }
-
   // ── Observações do Período ──
   const obsPanel = document.getElementById('ppCroissantObsPanel');
   const obsList  = document.getElementById('ppCroissantObsList');
