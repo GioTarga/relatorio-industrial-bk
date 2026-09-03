@@ -567,6 +567,29 @@
     font-size:12px; color:#8a740b; margin-bottom:18px;
   }
 
+  /* Bloco de rendimentos do Croissant */
+  .ppl-rend-bloco{
+    margin-top:18px; padding:14px 16px;
+    background:var(--cream); border:1px solid var(--line);
+    border-radius:var(--radius-md);
+  }
+  .ppl-rend-titulo{
+    font-size:11px; font-weight:700; text-transform:uppercase;
+    letter-spacing:0.6px; color:var(--ink-soft); margin-bottom:12px;
+  }
+  .ppl-rend-row{
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:4px;
+  }
+  .ppl-rend-row input[type=number]{
+    width:90px; padding:6px 8px;
+    border:1px solid var(--line); border-radius:var(--radius-sm);
+    font-size:13px; background:var(--bg); color:var(--ink);
+  }
+  .ppl-rend-sep{ font-size:12px; color:var(--ink-soft); white-space:nowrap; }
+  .ppl-rend-preview{
+    font-size:11.5px; color:var(--gold); font-weight:600; margin-top:4px; min-height:16px;
+  }
+
   .lanc-items{ display:flex; flex-direction:column; gap:14px; }
   .lanc-item{
     border:1px solid var(--line); border-radius:var(--radius-md); padding:16px;
@@ -1369,6 +1392,7 @@ body{background:#fff;color:#000}
     --text-soft:#6b5c5c;    /* tinta suave (= --ink-soft do BK360) */
     --red:#c0392b;          /* vermelho de alerta — distinto do --brand */
     --highlight:#2f7d52;    /* verde de destaque (= --good do BK360) */
+    --wall-color:#5C5049;  /* cor da parede/porta no SVG da planta */
     --font-display:'Fraunces', Georgia, serif;   /* = fonte BK360 */
     --font-body:'Inter', 'Helvetica Neue', Arial, sans-serif;
     --font-mono:'IBM Plex Mono', monospace;
@@ -12658,6 +12682,24 @@ function PP_renderKPIs(){
   // - Tempo Médio/Massa, Massa/hora, Rolos Laminados/hora → batelada (tempo_processo)
   // - Telas/hora, Unidades/hora, Carrinhos/hora → produtividade (PP_CORRIDAS)
   if(PP_currentLinha === 'Croissant'){
+    // ── Rendimentos reais coletados — usa a média dos registros que têm o campo
+    //    preenchido; cai para a constante hardcoded quando não há dado real.
+    function _rendMedia(campo){
+      const vals = PP_BATELADAS.map(b => b[campo]).filter(v => v != null && Number(v) > 0).map(Number);
+      return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+    }
+    const rendRolosPorMassa  = _rendMedia('rend_rolos') && _rendMedia('rend_massas')
+      ? _rendMedia('rend_rolos') / _rendMedia('rend_massas')
+      : null;
+    const rendCaixasPorRolo    = _rendMedia('rend_caixas_por_rolo');
+    const rendUnidadesPorCaixa = _rendMedia('rend_unidades_por_caixa');
+    const rendCaixasPorCarrinho    = _rendMedia('rend_caixas_por_carrinho');
+    const rendUnidadesPorCarrinho  = _rendMedia('rend_unidades_por_carrinho');
+
+    // Fator efetivo — real quando disponível, constante como fallback
+    const fatorRolosMassa = rendRolosPorMassa    ?? CROISSANT_ROLOS_POR_MASSA;
+    const usandoRendReal  = rendRolosPorMassa != null;
+
     // ── Batelada: tempo de processo ──────────────────────────────────────
     const batelTimes = PP_BATELADAS.map(b => {
       if(b.duracao_total_seg != null && Number(b.duracao_total_seg) > 0) return Number(b.duracao_total_seg);
@@ -12667,7 +12709,7 @@ function PP_renderKPIs(){
 
     const tempoMedioSeg = batelTimes.length ? batelTimes.reduce((a,b)=>a+b,0)/batelTimes.length : null;
     const massasPorHora = tempoMedioSeg ? 3600 / tempoMedioSeg : null;
-    const rolosPorHora  = massasPorHora != null ? massasPorHora * CROISSANT_ROLOS_POR_MASSA : null;
+    const rolosPorHora  = massasPorHora != null ? massasPorHora * fatorRolosMassa : null;
 
     // ── Produtividade: telas/caixas e unidades ───────────────────────────
     const corridasValidas = PP_CORRIDAS.filter(c =>
@@ -12688,11 +12730,12 @@ function PP_renderKPIs(){
     const mediaUnidPorHora = unidPorHoraVals.length
       ? unidPorHoraVals.reduce((a,b)=>a+b,0) / unidPorHoraVals.length : null;
 
-    // Carrinhos/hora: 840 unid/carrinho p/ Mini Croissant, 700 p/ demais
+    // Carrinhos/hora: usa rendimento real (rend_unidades_por_carrinho) quando disponível;
+    // fallback = 840 unid/carrinho p/ Mini Croissant, 700 p/ demais
     const carrinhosPorHoraVals = corridasValidas.map(c => {
       const unidH = (3600 / Number(c.tempo_medio_seg)) * Number(c.unidades_por_recipiente);
-      const isMini = (c.produto || '').toUpperCase().includes('MINI');
-      const unidCarrinho = isMini ? 840 : 700;
+      const unidCarrinho = rendUnidadesPorCarrinho
+        ?? ((c.produto || '').toUpperCase().includes('MINI') ? 840 : 700);
       return unidH / unidCarrinho;
     });
     const mediaCarrinhosPorHora = carrinhosPorHoraVals.length
@@ -12704,14 +12747,18 @@ function PP_renderKPIs(){
     const kpis = [
       { label:'Tempo Médio/Massa',        value: tempoMedioSeg       != null ? PP_fmtDuracao(tempoMedioSeg) : '—' },
       { label:'Massa/hora',               value: fmt1(massasPorHora)  },
-      { label:'Rolos Laminados/hora',     value: fmt1(rolosPorHora)   },
+      { label:'Rolos Laminados/hora',     value: fmt1(rolosPorHora), note: usandoRendReal ? '✓ rendimento real' : 'fator padrão' },
       { label:`${unidadeRecipiente}/hora`, value: fmt1(mediaRecipientesPorHora) },
       { label:'Unidades/hora',            value: fmt0(mediaUnidPorHora)   },
-      { label:'Carrinhos/hora',           value: fmt1(mediaCarrinhosPorHora) },
+      { label:'Carrinhos/hora',           value: fmt1(mediaCarrinhosPorHora), note: rendUnidadesPorCarrinho ? '✓ rendimento real' : 'fator padrão' },
     ];
     grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
     grid.innerHTML = kpis.map(k=>`
-      <div class="kpi-card"><div class="label">${k.label}</div><div class="value">${k.value}</div></div>
+      <div class="kpi-card">
+        <div class="label">${k.label}</div>
+        <div class="value">${k.value}</div>
+        ${k.note ? `<div style="font-size:9.5px;margin-top:3px;color:${k.note.startsWith('✓')?'var(--good)':'var(--ink-soft)'};">${k.note}</div>` : ''}
+      </div>
     `).join('');
     return;
   }
@@ -13403,6 +13450,64 @@ async function PPL_renderCamposDinamicos(){
   else PPL_renderCamposVelocidade(linha);
 }
 
+// ─────────────────────────────────────────────
+// CROISSANT — BLOCO DE RENDIMENTOS
+// ─────────────────────────────────────────────
+
+/* Retorna o HTML do bloco "📊 Rendimentos" que aparece no formulário de
+   Tempo de Processo exclusivamente para a linha Croissant. Cada grupo de
+   rendimento usa dois campos numéricos lado a lado: numerador e denominador.
+   Os valores são opcionais — quem não coletou deixa em branco.            */
+function PPL_croissantRendimentosHtml(){
+  return `
+  <div class="ppl-rend-bloco">
+    <div class="ppl-rend-titulo">📊 Rendimentos da laminação (opcional — preencha o que coletou hoje)</div>
+    <div class="lanc-item-grid">
+
+      <div class="lanc-field span-2">
+        <label>Rendimento Massa → Rolo</label>
+        <div class="ppl-rend-row">
+          <input type="number" min="0" step="0.1" id="pplRendMassas" placeholder="Massas" title="Quantas massas foram laminadas">
+          <span class="ppl-rend-sep">massas →</span>
+          <input type="number" min="0" step="0.1" id="pplRendRolos" placeholder="Rolos" title="Quantos rolos saíram">
+          <span class="ppl-rend-sep">rolos</span>
+        </div>
+        <div class="ppl-rend-preview" id="pplRendPreviewRolos"></div>
+      </div>
+
+      <div class="lanc-field">
+        <label>Rendimento Rolo → Caixas / Telas</label>
+        <div class="ppl-rend-row">
+          <span class="ppl-rend-sep">1 rolo →</span>
+          <input type="number" min="0" step="0.1" id="pplRendCaixasPorRolo" placeholder="Qtd" title="Caixas ou telas por rolo">
+          <span class="ppl-rend-sep">cx/telas</span>
+        </div>
+      </div>
+
+      <div class="lanc-field">
+        <label>Rendimento Caixa / Tela → Unidades</label>
+        <div class="ppl-rend-row">
+          <span class="ppl-rend-sep">1 cx →</span>
+          <input type="number" min="0" step="1" id="pplRendUnidadesPorCaixa" placeholder="Qtd" title="Unidades por caixa ou tela">
+          <span class="ppl-rend-sep">unid</span>
+        </div>
+      </div>
+
+      <div class="lanc-field span-2">
+        <label>Rendimento Carrinho</label>
+        <div class="ppl-rend-row">
+          <span class="ppl-rend-sep">1 carrinho →</span>
+          <input type="number" min="0" step="0.1" id="pplRendCaixasPorCarrinho" placeholder="Caixas" title="Caixas por carrinho">
+          <span class="ppl-rend-sep">caixas /</span>
+          <input type="number" min="0" step="1" id="pplRendUnidadesPorCarrinho" placeholder="Unidades" title="Unidades por carrinho">
+          <span class="ppl-rend-sep">unid</span>
+        </div>
+      </div>
+
+    </div>
+  </div>`;
+}
+
 /* Campos-base de uma batelada — genéricos, valem pra qualquer linha,
    nenhum é obrigatório (nem toda linha usa masseira/retenção, por exemplo). */
 function PPL_camposBaseEtapasHtml(){
@@ -13457,7 +13562,10 @@ async function PPL_buscarEtapasReferencia(linha, produto){
 async function PPL_renderCamposEtapas(linha){
   const container = document.getElementById('pplCamposDinamicos');
   const produto = document.getElementById('pplProduto').value.trim();
-  const base = PPL_camposBaseEtapasHtml();
+  // Os campos base são sempre os mesmos (Batelada, Masseira, Retenção, Tempo Total).
+  // Para o Croissant, acrescentamos o bloco de rendimentos logo depois deles — é
+  // informação coletada na mesma visita de campo, mas independente das etapas.
+  const base = PPL_camposBaseEtapasHtml() + (linha === 'Croissant' ? PPL_croissantRendimentosHtml() : '');
 
   if(!produto){
     container.innerHTML = base + '<p style="color:var(--ink-soft);margin-top:14px;">Digite o Produto acima pra carregar (ou criar) as etapas desse processo.</p>';
@@ -13713,6 +13821,17 @@ async function PPL_handleSubmit(e){
         duracao_total_seg: duracaoTotalEl ? PPL_timeToSeconds(duracaoTotalEl.value) : null,
         observacao: obsEl && obsEl.value.trim() ? obsEl.value.trim() : null,
       };
+      // Rendimentos do Croissant — só incluídos quando o formulário os exibiu e
+      // o usuário preencheu algum valor (campos opcionais, null quando em branco).
+      if(linha === 'Croissant'){
+        const rv = id => { const el = document.getElementById(id); return el && el.value !== '' ? parseFloat(el.value) : null; };
+        bateladaPayload.rend_massas              = rv('pplRendMassas');
+        bateladaPayload.rend_rolos               = rv('pplRendRolos');
+        bateladaPayload.rend_caixas_por_rolo     = rv('pplRendCaixasPorRolo');
+        bateladaPayload.rend_unidades_por_caixa  = rv('pplRendUnidadesPorCaixa');
+        bateladaPayload.rend_caixas_por_carrinho    = rv('pplRendCaixasPorCarrinho');
+        bateladaPayload.rend_unidades_por_carrinho  = rv('pplRendUnidadesPorCarrinho');
+      }
       const { data: batInserted, error: batErr } = await client.from('tempo_processo_bateladas').insert([bateladaPayload]).select().single();
       if(batErr) throw batErr;
 
@@ -16378,7 +16497,8 @@ function doorWallHtml(portaLabel, side, rack){
       centerX = rack.totalWidth / 2; // sem segmentação (Câmara 4) — centraliza no meio da fileira
     }
   }
-  const doorW = 40, wallColor = '#5C5049', h = 66;
+  const doorW = 40, h = 66;
+  const wallColor = getComputedStyle(document.getElementById('page-expedicao')).getPropertyValue('--wall-color').trim();
   const isTop = side === 'top';
   const wallY = isTop ? h - 12 : 12;
   const leafEndY = isTop ? wallY - doorW : wallY + doorW;
