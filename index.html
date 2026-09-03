@@ -16457,7 +16457,10 @@ function renderRua(ruaNumero, andar){
    extras, e todo espaço comporta 2 paletes (sem exceção de 1 palete).
    Só existe 1 porta (entrada e saída juntas), do lado da Rua 01/Long 1. */
 function renderRuaCamara4(ruaNumero, andar){
-  const longarinas = longarinasDaRua(ruaNumero); // ['1','2'] (Rua 01) ou ['3','4'] (Rua 02)
+  // Inverte a ordem para respeitar o layout físico: topo = parede, baixo = porta
+  // Rua 01: [2,1] — Longarina 1 fica embaixo, próxima da porta de entrada
+  // Rua 02: [4,3] — Longarina 4 fica em cima, próxima da parede
+  const longarinas = longarinasDaRua(ruaNumero).reverse(); // ['2','1'] (Rua 01) ou ['4','3'] (Rua 02)
   const rackPrimeira = rackDoAndar(andar, longarinas[0]);
   const rackSegunda = rackDoAndar(andar, longarinas[1]);
   const capacidade = rackPrimeira.cells.length + rackSegunda.cells.length;
