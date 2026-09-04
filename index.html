@@ -1028,11 +1028,20 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .tgh-fab{grid-column:2/7;background:var(--gold);color:#fff;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;text-align:center;padding:4px 0;border-right:2px solid rgba(255,255,255,.3);}
 #page-pcp-estoque .tgh-loja{grid-column:7/12;background:#8B0000;color:#fff;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;text-align:center;padding:4px 0;border-right:2px solid rgba(255,255,255,.3);}
 #page-pcp-estoque .tgh-dias{background:var(--red-dark);}
-/* Linha vertical divisória Fábrica | Loja — coluna 7 (Est.Loja) */
+/* Linha vertical divisória Fábrica | Loja — pseudo-elemento contínuo */
+/* left = padding-left(10px) + colunas 1-6 (200+72+70+92+86+80=600px) = 610px */
+#page-pcp-estoque .table-header::after,
+#page-pcp-estoque .table-row::after{content:'';position:absolute;left:610px;top:0;bottom:-1px;width:2px;background:#8B0000;pointer-events:none;z-index:2;}
+/* respiro em volta da linha divisória */
+#page-pcp-estoque .table-header > div:nth-child(6),
+#page-pcp-estoque .table-row > div:nth-child(6){padding-right:8px;}
 #page-pcp-estoque .table-header > div:nth-child(7),
-#page-pcp-estoque .table-row > div:nth-child(7){border-left:2px solid #8B0000;}
+#page-pcp-estoque .table-row > div:nth-child(7){padding-left:8px;}
+/* Venda.Loja — forçar alinhamento à direita */
+#page-pcp-estoque .table-header > div:nth-child(11),
+#page-pcp-estoque .table-row > div:nth-child(11){text-align:right;}
 
-#page-pcp-estoque .table-row{display:grid;grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 56px;gap:0;min-width:1062px;padding:9px 10px;min-height:48px;border-bottom:1px solid var(--line);transition:background .1s;align-items:center}
+#page-pcp-estoque .table-row{display:grid;grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 56px;gap:0;min-width:1062px;padding:9px 10px;min-height:48px;border-bottom:1px solid var(--line);transition:background .1s;align-items:center;position:relative;}
 
 
 #page-pcp-estoque .table-row:hover{background:#fffaf0}
