@@ -1021,7 +1021,13 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 
 #page-pcp-estoque .table-wrap{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 290px);box-shadow:0 2px 10px rgba(161,1,1,.04)}
 
-#page-pcp-estoque .table-header{display:grid;grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 56px;gap:0;min-width:1062px;background:var(--red-dark);padding:7px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;color:rgba(255,255,255,.9);font-weight:700;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+#page-pcp-estoque .table-header{display:grid;grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 56px;gap:0;min-width:1062px;background:var(--red-dark);padding:7px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;color:rgba(255,255,255,.9);font-weight:700;border-bottom:1px solid var(--line);position:sticky;top:26px;z-index:5}
+/* Linha de grupo FÁBRICA / LOJA acima do cabeçalho de colunas */
+#page-pcp-estoque .table-group-header{display:grid;grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 56px;gap:0;min-width:1062px;position:sticky;top:0;z-index:6}
+#page-pcp-estoque .tgh-empty{background:var(--red-dark);}
+#page-pcp-estoque .tgh-fab{grid-column:2/7;background:var(--gold);color:#fff;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;text-align:center;padding:4px 0;border-right:2px solid rgba(255,255,255,.3);}
+#page-pcp-estoque .tgh-loja{grid-column:7/12;background:#8B0000;color:#fff;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;text-align:center;padding:4px 0;border-right:2px solid rgba(255,255,255,.3);}
+#page-pcp-estoque .tgh-dias{background:var(--red-dark);}
 
 #page-pcp-estoque .table-row{display:grid;grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 56px;gap:0;min-width:1062px;padding:9px 10px;min-height:48px;border-bottom:1px solid var(--line);transition:background .1s;align-items:center}
 
@@ -2764,6 +2770,12 @@ body{background:#fff;color:#000}
     <!-- Informativo de atualização — preenchido por renderDataInfo() -->
     <div id="importDataInfo" style="display:none;margin-bottom:8px;padding:7px 12px;background:var(--paper);border:1px solid var(--line);border-radius:8px;font-size:10.5px;color:var(--ink-soft);display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px"></div>
     <div class="table-wrap">
+      <div class="table-group-header">
+        <div class="tgh-empty"></div>
+        <div class="tgh-fab">Fábrica</div>
+        <div class="tgh-loja">Loja</div>
+        <div class="tgh-dias"></div>
+      </div>
       <div class="table-header">
         <div>Produto</div>
         <div class="cell-num th-fab">Est.Fab</div><div class="cell-num th-fab">Res.Fab</div>
@@ -2786,6 +2798,12 @@ body{background:#fff;color:#000}
       <input class="search-box" type="text" placeholder="buscar produto..." oninput="renderFab()" id="searchFab">
     </div>
     <div class="table-wrap">
+      <div class="table-group-header">
+        <div class="tgh-empty"></div>
+        <div class="tgh-fab">Fábrica</div>
+        <div class="tgh-loja">Loja</div>
+        <div class="tgh-dias"></div>
+      </div>
       <div class="table-header">
         <div>Produto</div>
         <div class="cell-num th-fab">Est.Fab</div><div class="cell-num th-fab">Res.Fab</div>
@@ -2808,6 +2826,12 @@ body{background:#fff;color:#000}
       <input class="search-box" type="text" placeholder="buscar produto..." oninput="renderLoja()" id="searchLoja">
     </div>
     <div class="table-wrap">
+      <div class="table-group-header">
+        <div class="tgh-empty"></div>
+        <div class="tgh-fab">Fábrica</div>
+        <div class="tgh-loja">Loja</div>
+        <div class="tgh-dias"></div>
+      </div>
       <div class="table-header">
         <div>Produto</div>
         <div class="cell-num th-fab">Est.Fab</div><div class="cell-num th-fab">Res.Fab</div>
