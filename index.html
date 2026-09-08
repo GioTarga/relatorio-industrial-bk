@@ -13393,6 +13393,9 @@ const PPL_VELOCIDADE_CONFIG = {
   'Giro': { campos:['inicio','fim','produtividade_paes_hora','tamanho_pao_g'] },
   'Salgado': { campos:['maquina','inicio','fim','produtividade_prensa','qtd_colaboradores','unidades_por_hora','producao_por_hora','tempo_medio_seg','unidade_medida','unidades_por_recipiente','duracao_rolo_seg'] },
 
+  // Croissant: campos idênticos ao padrão, mas com auto-fill de máquina e
+  // unidade de medida via select fixo (ver PPL_renderCamposVelocidade)
+  'Croissant': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
   'Padaria': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
   'Confeitaria': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
   'Pão de Ló e Bolos': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_batelada_massa'] },
@@ -13438,8 +13441,12 @@ async function PPL_init(){
   if(!PPL_initialized){
     document.getElementById('pplLinha').addEventListener('change', PPL_updateTipoOptions);
     document.getElementById('pplTipo').addEventListener('change', PPL_renderCamposDinamicos);
-    document.getElementById('pplProduto').addEventListener('change', ()=>{
+    document.getElementById('pplProduto').addEventListener('change', async ()=>{
       if(document.getElementById('pplTipo').value === 'etapas') PPL_renderCamposDinamicos();
+      // Croissant: busca unidades_por_recipiente do histórico do produto e preenche automaticamente
+      if(document.getElementById('pplLinha').value === 'Croissant'){
+        await PPL_autoFillCroissantUnidRecip();
+      }
     });
     document.querySelectorAll('[data-ppview]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
@@ -13455,6 +13462,25 @@ async function PPL_init(){
     document.getElementById('ppLancForm').addEventListener('submit', PPL_handleSubmit);
     PPL_initialized = true;
   }
+}
+
+// Busca o último valor de unidades_por_recipiente registrado para o produto
+// em produtividade_corridas e preenche o campo — evita redigitar a cada lançamento.
+async function PPL_autoFillCroissantUnidRecip(){
+  const produto = document.getElementById('pplProduto').value.trim();
+  const campo = document.getElementById('pplCampo_unidades_por_recipiente');
+  if(!campo || !produto) return;
+  try {
+    const { data } = await client
+      .from('produtividade_corridas')
+      .select('unidades_por_recipiente')
+      .ilike('produto', produto)
+      .not('unidades_por_recipiente', 'is', null)
+      .order('data', { ascending: false })
+      .limit(1)
+      .single();
+    if(data && data.unidades_por_recipiente != null) campo.value = data.unidades_por_recipiente;
+  } catch(e){ /* sem histórico para esse produto — deixa em branco */ }
 }
 
 function PPL_setDefaultDate(){
@@ -13745,6 +13771,21 @@ function PPL_renderCamposVelocidade(linha){
     </div>`;
   }
   container.innerHTML = html;
+
+  if(linha === 'Croissant'){
+    // Máquina: CROMASTER é a única do setor — preenche automaticamente
+    const maqEl = document.getElementById('pplCampo_maquina');
+    if(maqEl) maqEl.value = 'CROMASTER';
+    // Unidade de medida: troca input livre por select fixo (evita variações de digitação)
+    const unidInput = document.getElementById('pplCampo_unidade_medida');
+    if(unidInput){
+      const sel = document.createElement('select');
+      sel.id = 'pplCampo_unidade_medida';
+      sel.innerHTML = '<option value="Telas">Telas</option><option value="Caixas">Caixas</option><option value="Carrinhos">Carrinhos</option><option value="Kg">Kg</option>';
+      unidInput.parentNode.replaceChild(sel, unidInput);
+    }
+  }
+
   if(linha === 'Giro'){
     document.getElementById('pplAddTempoMassaBtn').addEventListener('click', PPL_addTempoMassaRow);
     PPL_addTempoMassaRow(); // já começa com 1 pronto pra preencher, já que é sempre necessário nessa linha
