@@ -3531,7 +3531,7 @@ body{background:#fff;color:#000}
                 <option value="PÃO BATATA">Pão Batata</option>
                 <option value="Confeitaria">Confeitaria</option>
                 <option value="Giro-Dia">Giro-Dia</option>
-                <option value="Giro-Noite">Giro-Noite</option>
+                <option value="PADARIA NOTURNO">Padaria Noturno</option>
                 <option value="Fritador">Fritador</option>
                 <option value="Cozinha">Cozinha</option>
                 <option value="Pão c/ Linguiça">Pão c/ Linguiça</option>
@@ -4497,7 +4497,7 @@ function normalizeSector(s){
   if(u === 'PADARIA' || u === 'PADARIA 2' || u === 'PADARIA2') return 'PADARIA';
   if(u === 'SALGADO' || u === 'SALGADOS') return 'SALGADO';
   if(u === 'GIRO MEIO' || u === 'GIRO') return 'GIRO-DIA';
-  if(u === 'GIRO NOTURNO' || u === 'GIRO NOITE') return 'GIRO - NOITE';
+  if(u === 'GIRO NOTURNO' || u === 'GIRO NOITE' || u === 'GIRO - NOITE') return 'PADARIA NOTURNO';
   if(u === 'FRITURA') return 'FRITADOR';
   if(u === 'COZINHA') return 'COZINHA';
   if(u === 'CROISSANT' || u === 'CROISSANTI') return 'CROISSANT';
@@ -14134,7 +14134,7 @@ const SUPA_KEY=SUPABASE_ANON_KEY;
 
 function normCod(c){return c?c.replace(/^0+(?=\d)/,''):'';}
 
-const SETOR_ORDER=['GIRO DIA','GIRO NOITE','SALGADO','CONFEITARIA','PADARIA','PÃO BATATA','FRITADOR','CROISSANT','PÃO C/ LINGUIÇA','REVENDA'];
+const SETOR_ORDER=['GIRO DIA','PADARIA NOTURNO','SALGADO','CONFEITARIA','PADARIA','PÃO BATATA','FRITADOR','CROISSANT','PÃO C/ LINGUIÇA','REVENDA'];
 
 // ─── PRODUTIVIDADE MAP ────────────────────────────────────────────────────────
 async function loadProdutividade(){
@@ -14283,7 +14283,7 @@ const d0=new Date(2026,7,21);
 document.getElementById('ordemDate').value=d0.toISOString().slice(0,10);
 document.getElementById('printDate').textContent=RAW.data;
 
-const SETOR_COLORS={'GIRO NOITE':{cls:'sc-gironoite',emoji:'🌙'},'PADARIA':{cls:'sc-padaria',emoji:'🍞'},'GIRO DIA':{cls:'sc-girodia',emoji:'☀️'},'SALGADO':{cls:'sc-salgado',emoji:'🥐'},'FRITADOR':{cls:'sc-fritador',emoji:'🍳'}};
+const SETOR_COLORS={'PADARIA NOTURNO':{cls:'sc-gironoite',emoji:'🌙'},'PADARIA':{cls:'sc-padaria',emoji:'🍞'},'GIRO DIA':{cls:'sc-girodia',emoji:'☀️'},'SALGADO':{cls:'sc-salgado',emoji:'🥐'},'FRITADOR':{cls:'sc-fritador',emoji:'🍳'}};
 
 let ordemState={};
 let rowCounter=0;
