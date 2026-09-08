@@ -3528,6 +3528,7 @@ body{background:#fff;color:#000}
                 <option value="Salgado">Salgado</option>
                 <option value="Croissant">Croissant</option>
                 <option value="Padaria">Padaria</option>
+                <option value="PÃO BATATA">Pão Batata</option>
                 <option value="Confeitaria">Confeitaria</option>
                 <option value="Giro-Dia">Giro-Dia</option>
                 <option value="Giro-Noite">Giro-Noite</option>
@@ -4058,7 +4059,7 @@ const FALLBACK_DATA = {
       {setor:"PADARIA", produto:"MASSA P/ PAO HOT DOG BREAD KING 80G - C/5KG", prev:null, real:5, uni:"Massa", dif:null, obs:""},
       {setor:"PADARIA", produto:"Pão Preto", prev:null, real:1, uni:"Massa", dif:null, obs:""},
       {setor:"PADARIA", produto:"PAO FRANCES PRE ASSADO ULTRACONGELADO 4X70GR - CX C/14 UNID", prev:null, real:2, uni:"Massa", dif:null, obs:""},
-      {setor:"PADARIA", produto:"Mini Pão Batata", prev:8550, real:4320, uni:"Un", dif:-49.47, obs:"Falta de Colaborador no setor"},
+      {setor:"PÃO BATATA", produto:"Mini Pão Batata", prev:8550, real:4320, uni:"Un", dif:-49.47, obs:"Falta de Colaborador no setor"},
       {setor:"PADARIA", produto:"Ciabata", prev:4, real:4, uni:"Massa", dif:0, obs:""},
       {setor:"PADARIA", produto:"Baguete Trad.", prev:2, real:2, uni:"Massa", dif:0, obs:""},
       {setor:"PADARIA", produto:"Baguete Calab.", prev:17, real:17, uni:"Blocos", dif:0, obs:""},
@@ -4098,9 +4099,9 @@ const FALLBACK_DATA = {
       {setor:"PADARIA", produto:"Massa P/ Pão Doce Cuca c/Doce Leite BK 600g", prev:3, real:2, uni:"massas", dif:-33, obs:"Capacidade de produção abaixo do pedido"},
       {setor:"PADARIA", produto:"Massa P/ Pão Doce Cuca sem Recheio BK 500g", prev:3, real:3, uni:"massas", dif:0, obs:""},
       {setor:"PADARIA", produto:"Massa P/ Pão Doce Cuca c/Chocolate BK 600g", prev:3, real:2, uni:"massas", dif:-33, obs:"Capacidade de produção abaixo do pedido"},
-      {setor:"PADARIA", produto:"Pão Batata Requeijão 160g", prev:null, real:1368, uni:"unid", dif:null, obs:"Produção trocada para Pão batata Requeijão"},
-      {setor:"PADARIA", produto:"Pão Batata Calabresa c/ Req. BK 4x150g", prev:1368, real:0, uni:"unid", dif:-100, obs:"Produção trocada para Pão batata Requeijão"},
-      {setor:"PADARIA", produto:"Mini Pão Batata Calabresa c/ Req. BK 50g", prev:5700, real:6600, uni:"unid", dif:16, obs:""},
+      {setor:"PÃO BATATA", produto:"Pão Batata Requeijão 160g", prev:null, real:1368, uni:"unid", dif:null, obs:"Produção trocada para Pão batata Requeijão"},
+      {setor:"PÃO BATATA", produto:"Pão Batata Calabresa c/ Req. BK 4x150g", prev:1368, real:0, uni:"unid", dif:-100, obs:"Produção trocada para Pão batata Requeijão"},
+      {setor:"PÃO BATATA", produto:"Mini Pão Batata Calabresa c/ Req. BK 50g", prev:5700, real:6600, uni:"unid", dif:16, obs:""},
       {setor:"PADARIA", produto:"Mini Baguete Rústica 12 Grãos BK 50g", prev:1, real:1, uni:"massa", dif:0, obs:""},
       {setor:"PADARIA", produto:"Baguete Rústica 12 Grãos BK 145gx2", prev:1, real:1, uni:"massa", dif:0, obs:""},
       {setor:"PADARIA", produto:"Mini Baguete Rústica Trad BK 50g", prev:1, real:1, uni:"massa", dif:0, obs:""},
@@ -14133,7 +14134,7 @@ const SUPA_KEY=SUPABASE_ANON_KEY;
 
 function normCod(c){return c?c.replace(/^0+(?=\d)/,''):'';}
 
-const SETOR_ORDER=['GIRO DIA','GIRO NOITE','SALGADO','CONFEITARIA','PADARIA','FRITADOR','CROISSANT','PÃO C/ LINGUIÇA','REVENDA'];
+const SETOR_ORDER=['GIRO DIA','GIRO NOITE','SALGADO','CONFEITARIA','PADARIA','PÃO BATATA','FRITADOR','CROISSANT','PÃO C/ LINGUIÇA','REVENDA'];
 
 // ─── PRODUTIVIDADE MAP ────────────────────────────────────────────────────────
 async function loadProdutividade(){
