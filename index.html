@@ -216,7 +216,7 @@
   .setor-tab-btn.active{ background:var(--paper); color:var(--red-dark); border-color:var(--line); position:relative; top:1px; }
 
   /* Segundo nível de abas (ex: escolher Pão Francês vs Pão de Queijo dentro
-     do setor Giro-Dia) — mais discreto que o nível principal de Setor. */
+     do setor Giro Dia) — mais discreto que o nível principal de Setor. */
   .setor-tabs.sub-tabs{ padding-top:10px; gap:6px; }
   .setor-tabs.sub-tabs .setor-tab-btn{
     padding:6px 14px; border-radius:var(--radius-sm); font-size:11px; border-bottom:1px solid var(--line);
@@ -3530,7 +3530,7 @@ body{background:#fff;color:#000}
                 <option value="Padaria">Padaria</option>
                 <option value="PÃO BATATA">Pão Batata</option>
                 <option value="Confeitaria">Confeitaria</option>
-                <option value="Giro-Dia">Giro-Dia</option>
+                <option value="GIRO DIA">Giro Dia</option>
                 <option value="PADARIA NOTURNO">Padaria Noturno</option>
                 <option value="Fritador">Fritador</option>
                 <option value="Cozinha">Cozinha</option>
@@ -4190,7 +4190,7 @@ const FALLBACK_DATA = {
   },
   "2026-06-25": {
     label: "25 de junho de 2026",
-    setores: "Padaria · Giro-Dia · Salgado · Fritador · Cozinha",
+    setores: "Padaria · Giro Dia · Salgado · Fritador · Cozinha",
     stopMinutes: null, // não há Início/Fim registrados nesse dia
     rows: [
       {setor:"PADARIA", produto:"Pão Ciabatta Bread King 120g - C/4 UM", prev:4, real:4, uni:"Massas", dif:0, obs:""},
@@ -4200,15 +4200,15 @@ const FALLBACK_DATA = {
       {setor:"PADARIA", produto:"Mini Pão Batata Frango c/ Req BK 50g", prev:8850, real:2700, uni:"Unid", dif:-69, obs:"Falta de colaborador"},
       {setor:"PADARIA", produto:"Mini Baguete Rústica Trad BK 50g", prev:2, real:1, uni:"Massas", dif:-50, obs:""},
       {setor:"PADARIA", produto:"Baguete Rústica Trad BK 145gx2", prev:2, real:1, uni:"Massas", dif:-50, obs:""},
-      {setor:"GIRO-DIA", produto:"PAO FRANCES PRE ASSADO ULTRACONGELADO 4X70GR - CX C/14 UNID", prev:3, real:3, uni:"Massas", dif:0, obs:""},
-      {setor:"GIRO-DIA", produto:"MASSA P/ PAO FRANCES MINI BREAD KING 40G - C/5KG", prev:4, real:4, uni:"Massas", dif:0, obs:""},
-      {setor:"GIRO-DIA", produto:"PAO MINI SOVADINHO PRE ASSADO BK 40G PCT 400G - CX C/10 UNID", prev:3, real:3, uni:"Massas", dif:0, obs:""},
-      {setor:"GIRO-DIA", produto:"PAO MINI MASSINHA DOCE PRE ASSADA BK 45G PCT 450G - CX C/10", prev:1, real:1, uni:"Massa", dif:0, obs:""},
-      {setor:"GIRO-DIA", produto:"MASSA P/ PAO DE QUEIJO TRAD BK 75G PCT 750G - C/15 PCT", prev:15, real:11, uni:"Massas", dif:-27, obs:""},
-      {setor:"GIRO-DIA", produto:"MASSA P/ CHIPA TRAD 40G BREAD KING PCT 400G - C/15 PCT", prev:6, real:3, uni:"Massas", dif:-50, obs:""},
-      {setor:"GIRO-DIA", produto:"MASSA P/ PAO DE QUEIJO TRAD BREAD KING 30G - C/5KG", prev:10, real:6, uni:"Massas", dif:-40, obs:"Mudança de Prioridade - P. Queijo 50g"},
-      {setor:"GIRO-DIA", produto:"MASSA P/ PAO DE QUEIJO MINI TRADICIONAL BREAD KING 50G - 750G", prev:5, real:10, uni:"Massas", dif:100, obs:""},
-      {setor:"GIRO-DIA", produto:"MASSA P/ PAO DE QUEIJO MINI TRADICIONAL BREAD KING 15G - 750G", prev:6, real:4, uni:"Massas", dif:-33, obs:"Mudança de Prioridade - P. Queijo 50g"},
+      {setor:"GIRO DIA", produto:"PAO FRANCES PRE ASSADO ULTRACONGELADO 4X70GR - CX C/14 UNID", prev:3, real:3, uni:"Massas", dif:0, obs:""},
+      {setor:"GIRO DIA", produto:"MASSA P/ PAO FRANCES MINI BREAD KING 40G - C/5KG", prev:4, real:4, uni:"Massas", dif:0, obs:""},
+      {setor:"GIRO DIA", produto:"PAO MINI SOVADINHO PRE ASSADO BK 40G PCT 400G - CX C/10 UNID", prev:3, real:3, uni:"Massas", dif:0, obs:""},
+      {setor:"GIRO DIA", produto:"PAO MINI MASSINHA DOCE PRE ASSADA BK 45G PCT 450G - CX C/10", prev:1, real:1, uni:"Massa", dif:0, obs:""},
+      {setor:"GIRO DIA", produto:"MASSA P/ PAO DE QUEIJO TRAD BK 75G PCT 750G - C/15 PCT", prev:15, real:11, uni:"Massas", dif:-27, obs:""},
+      {setor:"GIRO DIA", produto:"MASSA P/ CHIPA TRAD 40G BREAD KING PCT 400G - C/15 PCT", prev:6, real:3, uni:"Massas", dif:-50, obs:""},
+      {setor:"GIRO DIA", produto:"MASSA P/ PAO DE QUEIJO TRAD BREAD KING 30G - C/5KG", prev:10, real:6, uni:"Massas", dif:-40, obs:"Mudança de Prioridade - P. Queijo 50g"},
+      {setor:"GIRO DIA", produto:"MASSA P/ PAO DE QUEIJO MINI TRADICIONAL BREAD KING 50G - 750G", prev:5, real:10, uni:"Massas", dif:100, obs:""},
+      {setor:"GIRO DIA", produto:"MASSA P/ PAO DE QUEIJO MINI TRADICIONAL BREAD KING 15G - 750G", prev:6, real:4, uni:"Massas", dif:-33, obs:"Mudança de Prioridade - P. Queijo 50g"},
       {setor:"SALGADO", produto:"Hambúrgão Carne c/ Cheddar BK 170g", prev:1500, real:1820, uni:"Unid", dif:21, obs:""},
       {setor:"SALGADO", produto:"Doguinho Salsicha e Requeijão BK 4x170g", prev:2500, real:1700, uni:"Unid", dif:-32, obs:"Atraso na produção da Massa"},
       {setor:"SALGADO", produto:"Pastel p/ Fritar Frango e Req BK 130g", prev:3000, real:0, uni:"Unid", dif:-100, obs:""},
@@ -4496,7 +4496,7 @@ function normalizeSector(s){
   const u = t.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   if(u === 'PADARIA' || u === 'PADARIA 2' || u === 'PADARIA2') return 'PADARIA';
   if(u === 'SALGADO' || u === 'SALGADOS') return 'SALGADO';
-  if(u === 'GIRO MEIO' || u === 'GIRO') return 'GIRO-DIA';
+  if(u === 'GIRO MEIO' || u === 'GIRO') return 'GIRO DIA';
   if(u === 'GIRO NOTURNO' || u === 'GIRO NOITE' || u === 'GIRO - NOITE') return 'PADARIA NOTURNO';
   if(u === 'FRITURA') return 'FRITADOR';
   if(u === 'COZINHA') return 'COZINHA';
