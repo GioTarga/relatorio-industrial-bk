@@ -2326,11 +2326,8 @@ body{background:#fff;color:#000}
               <thead>
                 <tr>
                   <th>Data</th>
-                  <th class="center">Tipo</th>
                   <th>Produto</th>
-                  <th>Equipamento</th>
-                  <th class="center">Lead Time</th>
-                  <th class="center">Produtividade</th>
+                  <th class="center">Produtividade (und/hora)</th>
                 </tr>
               </thead>
               <tbody id="ppTbodyCroissantRegistros"></tbody>
@@ -12384,16 +12381,13 @@ function PP_renderCroissantTabelas(){
   const tbodyReg = document.getElementById('ppTbodyCroissantRegistros');
   if(tbodyReg){
     if(linhasUnificadas.length === 0){
-      tbodyReg.innerHTML = `<tr><td colspan="6" class="pp-empty-cell">Nenhum registro no período.</td></tr>`;
+      tbodyReg.innerHTML = `<tr><td colspan="3" class="pp-empty-cell">Nenhum registro no período.</td></tr>`;
     } else {
       tbodyReg.innerHTML = linhasUnificadas.map(l => {
         const dataFmt = l._data ? l._data.split('-').reverse().join('/') : '—';
         return `<tr>
           <td>${dataFmt}</td>
-          <td>${l.tipo}</td>
           <td>${l.produto}</td>
-          <td>${l.equip}</td>
-          <td class="num">${l.leadTime}</td>
           <td class="num">${l.produt}</td>
         </tr>`;
       }).join('');
