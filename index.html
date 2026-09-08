@@ -12552,10 +12552,20 @@ function PP_renderKPIs(){
     });
     const mediaCapacidade = capacidades.length ? capacidades.reduce((a,b)=>a+b,0)/capacidades.length : null;
 
+    // Carrinho/hora: calculado quando unidades_por_carrinho e unidades_por_recipiente estão preenchidos
+    // carrinho/hora = caixa/hora ÷ (unidades_por_carrinho ÷ unidades_por_recipiente)
+    const comCarrinho = PP_CORRIDAS.filter(c => c.producao_por_hora != null && c.unidades_por_carrinho != null && c.unidades_por_recipiente != null);
+    const carriHoraValores = comCarrinho.map(c => {
+      const cxPorCarrinho = Number(c.unidades_por_carrinho) / Number(c.unidades_por_recipiente);
+      return cxPorCarrinho > 0 ? Number(c.producao_por_hora) / cxPorCarrinho : null;
+    }).filter(v => v != null);
+    const mediaCarriHora = carriHoraValores.length ? carriHoraValores.reduce((a,b)=>a+b,0)/carriHoraValores.length : null;
+
     const unidadeSingular = unidadeRecipiente.replace(/s$/i,'');
     const kpis = [
       { label:`Produtividade (${unidadeRecipiente}/h)`, value: mediaRecipiente != null ? mediaRecipiente.toLocaleString('pt-BR',{maximumFractionDigits:1}) : '—' },
       { label:'Unidades/h', value: mediaUnidadesHora != null ? mediaUnidadesHora.toLocaleString('pt-BR',{maximumFractionDigits:0}) : '—' },
+      { label:'Carrinho/h', value: mediaCarriHora != null ? mediaCarriHora.toLocaleString('pt-BR',{maximumFractionDigits:1}) : '—' },
       { label:`Tempo Médio por ${unidadeSingular}`, value: mediaTempo != null ? PP_fmtDuracao(mediaTempo) : '—' },
       { label:'Capacidade da Máquina (Unid/h)', value: mediaCapacidade != null ? mediaCapacidade.toLocaleString('pt-BR') : 'Sem registro' },
     ];
@@ -13391,7 +13401,7 @@ const PPL_VELOCIDADE_CONFIG = {
   // Coletados", repetível igual Paradas (ver PPL_addTempoMassaRow). Peso
   // da Massa saiu — não é informação que costuma ser coletada.
   'Giro': { campos:['inicio','fim','produtividade_paes_hora','tamanho_pao_g'] },
-  'Salgado': { campos:['maquina','inicio','fim','produtividade_prensa','qtd_colaboradores','unidades_por_hora','producao_por_hora','tempo_medio_seg','unidade_medida','unidades_por_recipiente','duracao_rolo_seg'] },
+  'Salgado': { campos:['maquina','velocidade_esteira','produtividade_prensa','qtd_moldes','unidade_medida','unidades_por_recipiente','unidades_por_carrinho'] },
 
   // Croissant: campos idênticos ao padrão, mas com auto-fill de máquina e
   // unidade de medida via select fixo (ver PPL_renderCamposVelocidade)
@@ -13416,15 +13426,18 @@ const PPL_CAMPO_META = {
   // produtividade.
   produtividade_paes_hora: { label:'GA — Pães/Hora (parâmetro configurado)', type:'number', coluna:'velocidade_paes_hora' },
   tamanho_pao_g: { label:'GA — Tamanho do Pão (g, parâmetro configurado)', type:'number' },
-  produtividade_prensa: { label:'Produtividade da Prensa (unid/hora)', type:'number', coluna:'velocidade_prensa' },
+  produtividade_prensa: { label:'Parâmetro Prensa', type:'number', coluna:'velocidade_prensa' },
+  velocidade_esteira: { label:'Velocidade Esteira', type:'number' },
   peso_massa_kg: { label:'Peso da Massa (kg)', type:'number' },
   qtd_colaboradores: { label:'Qtd. Colaboradores', type:'number' },
+  qtd_moldes: { label:'Qtd. Moldes', type:'number' },
   unidades_por_hora: { label:'Unidades por Hora', type:'number' },
   producao_por_hora: { label:'Produção por Hora (caixa/telas)', type:'number' },
   tempo_medio_seg: { label:'Tempo Médio (hh:mm:ss)', type:'timesec' },
   tempo_batelada_massa: { label:'Tempo da Batelada de Massa (hh:mm:ss)', type:'timesec', coluna:'tempo_medio_seg' },
   unidade_medida: { label:'Unidade de Medida (Massa, Kg, Telas, Carrinhos, Caixas...)', type:'text_datalist' },
-  unidades_por_recipiente: { label:'Quantas unidades cabem em 1 recipiente? (só se a Unidade acima for Caixa/Carrinho/Tela)', type:'number' },
+  unidades_por_recipiente: { label:'Unidades por Caixa / Tela', type:'number' },
+  unidades_por_carrinho: { label:'Unidades por Carrinho (opcional)', type:'number' },
   duracao_rolo_seg: { label:'Duração do Rolo (hh:mm:ss)', type:'timesec' },
   quantidade: { label:'Quantidade', type:'number' },
 };
@@ -13750,6 +13763,52 @@ function PPL_renderCamposVelocidade(linha){
     return;
   }
 
+  /* ── Salgado: formulário próprio com 15 tempos por caixa/tela ── */
+  if(linha === 'Salgado'){
+    const cfgSal = PPL_VELOCIDADE_CONFIG['Salgado'];
+    let htmlSal = '<div class="lanc-item-grid">';
+    cfgSal.campos.forEach(campo=>{
+      const meta = PPL_CAMPO_META[campo];
+      if(meta.type === 'text_datalist'){
+        htmlSal += `<div class="lanc-field span-2"><label>${meta.label}</label><input type="text" list="pplUnidadeMedidaList" id="pplCampo_${campo}" placeholder="Ex: Telas, Caixas"></div>`;
+        return;
+      }
+      const inputType = meta.type === 'timesec' ? 'time' : meta.type;
+      const step = meta.type === 'timesec' ? ' step="1"' : (meta.type === 'number' ? ' step="0.01"' : '');
+      htmlSal += `<div class="lanc-field"><label>${meta.label}</label><input type="${inputType}"${step} id="pplCampo_${campo}"></div>`;
+    });
+    htmlSal += '</div>';
+
+    // 15 campos de tempo individuais (1 por caixa/tela cronometrada)
+    htmlSal += `<div style="margin-top:18px;">
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">⏱ Tempos por Caixa / Tela <span style="font-weight:400;text-transform:none;">(hh:mm:ss — preencha os que coletou)</span></label>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;">`;
+    for(let i = 1; i <= 15; i++){
+      htmlSal += `<div><label style="font-size:11px;color:var(--ink-soft);display:block;margin-bottom:3px;">Cx / Tela ${i}</label><input type="time" step="1" class="ppl-salgado-tempo" style="width:100%"></div>`;
+    }
+    htmlSal += `</div>
+      <div id="pplSalgadoMediaPreview" style="margin-top:10px;font-size:12px;color:var(--ink-soft);min-height:18px;"></div>
+    </div>`;
+
+    container.innerHTML = htmlSal;
+
+    // Preview dinâmico da média enquanto usuário preenche os tempos
+    function pplSalgadoUpdateMedia(){
+      const tempos = [];
+      document.querySelectorAll('.ppl-salgado-tempo').forEach(el=>{
+        const seg = PPL_timeToSeconds(el.value);
+        if(seg != null && seg > 0) tempos.push(seg);
+      });
+      const preview = document.getElementById('pplSalgadoMediaPreview');
+      if(!tempos.length){ preview.textContent = ''; return; }
+      const media = Math.round(tempos.reduce((a,b)=>a+b,0) / tempos.length);
+      const cxH = Math.round(3600 / media);
+      preview.textContent = `Média atual (${tempos.length} tempo${tempos.length===1?'':'s'}): ${PP_fmtDuracao(media)} → ~${cxH} cx/h`;
+    }
+    document.querySelectorAll('.ppl-salgado-tempo').forEach(el=>el.addEventListener('change', pplSalgadoUpdateMedia));
+    return;
+  }
+
   const cfg = PPL_VELOCIDADE_CONFIG[linha] || { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] };
   let html = '<div class="lanc-item-grid">';
   cfg.campos.forEach(campo=>{
@@ -14006,6 +14065,43 @@ async function PPL_handleSubmit(e){
           const { error: btErr } = await client.from('tempo_processo_bateladas').insert(bateladaPayloads);
           if(btErr) throw btErr;
         }
+      } else if(linha === 'Salgado'){
+      /* ── Salgado: coleta 15 tempos, calcula média e KPIs derivados ── */
+      const temposSalgado = [];
+      document.querySelectorAll('.ppl-salgado-tempo').forEach(el=>{
+        const seg = PPL_timeToSeconds(el.value);
+        if(seg != null && seg > 0) temposSalgado.push(seg);
+      });
+      const tempoMedioSeg = temposSalgado.length
+        ? Math.round(temposSalgado.reduce((a,b)=>a+b,0) / temposSalgado.length)
+        : null;
+      const producaoPorHora = tempoMedioSeg ? Math.round(3600 / tempoMedioSeg * 10) / 10 : null;
+      const unidRecip = parseFloat(document.getElementById('pplCampo_unidades_por_recipiente')?.value || '') || null;
+      const unidHora = (producaoPorHora && unidRecip) ? Math.round(producaoPorHora * unidRecip) : null;
+      const obsElSal = document.getElementById('pplObservacao');
+      const corridaPayloadSal = {
+        linha, data, produto: produtoFinal,
+        maquina: document.getElementById('pplCampo_maquina')?.value.trim() || null,
+        velocidade_prensa: parseFloat(document.getElementById('pplCampo_produtividade_prensa')?.value || '') || null,
+        velocidade_esteira: parseFloat(document.getElementById('pplCampo_velocidade_esteira')?.value || '') || null,
+        qtd_moldes: parseFloat(document.getElementById('pplCampo_qtd_moldes')?.value || '') || null,
+        unidade_medida: document.getElementById('pplCampo_unidade_medida')?.value.trim() || null,
+        unidades_por_recipiente: unidRecip,
+        unidades_por_carrinho: parseFloat(document.getElementById('pplCampo_unidades_por_carrinho')?.value || '') || null,
+        tempo_medio_seg: tempoMedioSeg,
+        producao_por_hora: producaoPorHora,
+        unidades_por_hora: unidHora,
+        observacao: obsElSal && obsElSal.value.trim() ? obsElSal.value.trim() : null,
+      };
+      const { data: corInsertedSal, error: corErrSal } = await client.from('produtividade_corridas').insert([corridaPayloadSal]).select().single();
+      if(corErrSal) throw corErrSal;
+      // Salva os tempos individuais em produtividade_tempos_massa para análise futura
+      if(temposSalgado.length > 0){
+        const temposPayloadSal = temposSalgado.map(t=>({ corrida_id: corInsertedSal.id, tempo_seg: t, masseira: null }));
+        const { error: tmErrSal } = await client.from('produtividade_tempos_massa').insert(temposPayloadSal);
+        if(tmErrSal) throw tmErrSal;
+      }
+
       } else {
       /* ── Demais linhas: lógica genérica ── */
       const cfg = PPL_VELOCIDADE_CONFIG[linha] || { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] };
