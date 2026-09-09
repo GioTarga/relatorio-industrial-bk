@@ -2405,6 +2405,9 @@ body{background:#fff;color:#000}
 
     <div class="container">
 
+      <!-- Cards por setor (visível quando um setor está selecionado) -->
+      <div id="rcSectorContent" style="display:none;"></div>
+
       <div class="panel">
         <div class="panel-title">Capacidade Nominal por Produto</div>
         <div class="table-wrap">
@@ -7006,6 +7009,7 @@ periodInfo.textContent = 'Carregando dados do banco…';
 
 let RC_DATA = [];
 let RC_FILTERED = [];
+let RC_CAP_DATA = []; // { setor, maquina, produto, unidade, prodH } — calculado de producao_diaria
 
 /* ---------- Correspondência aproximada de nomes de produto ----------
    Usada para cruzar o nome do produto na aba Produtividade (ex: "Hamburgão")
@@ -7086,6 +7090,110 @@ function RC_splitProdutos(str){
   return result;
 }
 
+/* Calcula a melhor prod/hora por (setor, maquina, produto) usando os
+   lançamentos reais de producao_diaria. Mantém só o record máximo de
+   produtividade por combinação — mesmo dado que serve de referência de
+   capacidade na tabela de famílias do setor Salgado. */
+async function RC_loadCapacityData(){
+  try{
+    const client = LANC_getClient();
+    const { data, error } = await client
+      .from('producao_diaria')
+      .select('setor,maquina,produto,unidade,producao_real,inicio_producao,fim_producao')
+      .not('maquina', 'is', null)
+      .not('inicio_producao', 'is', null)
+      .not('fim_producao', 'is', null);
+    if(error) throw error;
+    const best = {};
+    (data||[]).forEach(r=>{
+      if(!r.maquina || !r.produto) return;
+      const val = parseFloat((r.producao_real||'').toString().replace(',','.'));
+      if(isNaN(val) || val <= 0) return;
+      const parseT = t=>{ const p=(t||'').split(':').map(Number); return (p[0]||0)*60+(p[1]||0); };
+      const durMin = parseT(r.fim_producao) - parseT(r.inicio_producao);
+      if(durMin <= 0) return;
+      const prodH = val / (durMin / 60);
+      const key = (r.setor||'')+'||'+(r.maquina||'')+'||'+(r.produto||'');
+      if(!best[key] || prodH > best[key].prodH)
+        best[key] = { setor:r.setor, maquina:r.maquina, produto:r.produto, unidade:(r.unidade||'Unid'), prodH };
+    });
+    RC_CAP_DATA = Object.values(best);
+  }catch(err){
+    console.error('RC_loadCapacityData erro:', err);
+  }
+}
+
+/* Renderiza cards de capacidade por máquina para o setor selecionado.
+   Quando setor é vazio exibe a tabela principal; quando há setor ativo
+   mostra os cards e oculta a tabela. */
+function RC_renderSectorCards(setor){
+  const el = document.getElementById('rcSectorContent');
+  if(!el) return;
+  const tablePanel = document.getElementById('rcTbody') ? document.getElementById('rcTbody').closest('.panel') : null;
+
+  if(!setor){
+    el.innerHTML = '';
+    el.style.display = 'none';
+    if(tablePanel) tablePanel.style.display = '';
+    return;
+  }
+
+  const rows = RC_CAP_DATA.filter(r => r.setor === setor);
+
+  if(!rows.length){
+    el.style.display = '';
+    el.innerHTML = `<div style="padding:24px 0;color:var(--ink-soft);text-align:center;font-size:14px;">
+      Sem dados de capacidade registrados para <strong>${setor}</strong>.<br>
+      <small>Lançamentos de produção com início/fim/quantidade preencherão esta aba automaticamente.</small>
+    </div>`;
+    if(tablePanel) tablePanel.style.display = 'none';
+    return;
+  }
+
+  // Agrupar por máquina
+  const byMachine = {};
+  rows.forEach(r=>{
+    if(!byMachine[r.maquina]) byMachine[r.maquina] = [];
+    byMachine[r.maquina].push(r);
+  });
+  const machines = Object.keys(byMachine).sort();
+
+  el.style.display = '';
+  el.innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:16px;padding:20px 0 8px;">
+      ${machines.map(maq=>{
+        const prods = byMachine[maq].slice().sort((a,b)=>b.prodH - a.prodH);
+        return `
+          <div class="panel" style="flex:1;min-width:220px;max-width:380px;padding:16px;">
+            <div style="font-weight:700;font-size:14px;color:var(--ink-primary);margin-bottom:12px;padding-bottom:9px;border-bottom:2px solid #6B1111;">${maq}</div>
+            <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+              <thead>
+                <tr>
+                  <th style="text-align:left;color:var(--ink-soft);font-weight:600;padding-bottom:6px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;">Produto</th>
+                  <th style="text-align:right;color:var(--ink-soft);font-weight:600;padding-bottom:6px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;">Capac.</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${prods.map(p=>{
+                  const ph = Math.round(p.prodH);
+                  const un = (p.unidade||'Unid').replace('Unidade','Unid');
+                  const nome = p.produto.length > 52 ? p.produto.substring(0,50)+'…' : p.produto;
+                  return `<tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:5px 8px 5px 0;color:var(--ink-primary);line-height:1.3;vertical-align:middle;">${nome}</td>
+                    <td style="text-align:right;padding:5px 0 5px 8px;font-variant-numeric:tabular-nums;font-weight:700;color:#6B1111;white-space:nowrap;vertical-align:middle;">${ph} ${un}/h</td>
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  if(tablePanel) tablePanel.style.display = 'none';
+}
+
 /* Lê direto da tabela public.maquinas no Supabase — a mesma
    fonte editada na aba Lançamento > Máquinas. */
 async function RC_loadData(isManualRefresh){
@@ -7097,6 +7205,7 @@ async function RC_loadData(isManualRefresh){
     const { data, error } = await client.from('maquinas').select('*').order('setor').order('identificacao');
     if(error) throw error;
     RC_DATA = MQ_explodeToRcFormat(data || []);
+    await RC_loadCapacityData();
     RC_populateSetorSelect();
     RC_renderMaquinaMultiSelect();
     RC_renderProdutoMultiSelect();
@@ -7148,6 +7257,7 @@ function RC_renderSetorTabs(setores){
       RC_renderMaquinaMultiSelect();
       RC_renderProdutoMultiSelect();
       RC_refreshAll();
+      RC_renderSectorCards(key);
     });
     el.appendChild(btn);
   });
@@ -7299,6 +7409,7 @@ function RC_refreshAll(){
   RC_applyFilters();
   document.getElementById('rcPeriodInfo').textContent = RC_FILTERED.length + ' produto(s) listado(s)';
   RC_renderTable();
+  RC_renderSectorCards(rcSetorEl.value);
 }
 
 rcSetorEl.addEventListener('change', ()=>{
