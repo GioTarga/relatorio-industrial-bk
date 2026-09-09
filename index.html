@@ -2900,12 +2900,6 @@ body{background:#fff;color:#000}
       <div class="kpi-grid" id="mcKpiGrid"></div>
 
       <div class="panel">
-        <div class="panel-title">Matriz de Priorização</div>
-        <div class="trend-foot" style="margin-bottom:12px;">Posição = Esforço (Complexidade + Investimento) × Valor (Timing + Ganho Esperado). Cor do ponto = Status. Passe o mouse sobre um ponto pra ver qual iniciativa é.</div>
-        <div class="chart-wrap" id="mcMatrizWrap"></div>
-      </div>
-
-      <div class="panel">
         <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
           <span>Iniciativas</span>
           <button type="button" class="lanc-add-item-btn" id="mcNovaBtn" style="margin:0;">+ Nova Iniciativa</button>
@@ -2933,7 +2927,7 @@ body{background:#fff;color:#000}
       <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 14px;">
         Por setor, mostra quais produtos já têm coleta realizada e quais ainda estão pendentes.
         Um produto está <strong style="color:var(--good);">100% mapeado</strong> quando tem
-        Produtividade lançada, Tempo de Processo lançado <em>e</em> Referência de tempo cadastrada.
+        Produtividade lançada e Tempo de Processo lançado. Salgado exige apenas Produtividade (produção contínua, sem tempo de processo).
       </p>
       <div id="mcRadarKpis" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px;"></div>
       <div id="mcRadarGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">
@@ -11260,80 +11254,6 @@ function MC_bucket(score, max){
   return 2;
 }
 
-function MC_renderMatriz(itens){
-  const wrap = document.getElementById('mcMatrizWrap');
-  const comDados = itens.filter(it => it.complexidade && it.investimento && it.timing);
-  if(comDados.length === 0){
-    wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">🎯</span>Nenhuma iniciativa com Complexidade, Investimento e Timing preenchidos pra posicionar na matriz.</div>`;
-    return;
-  }
-
-  // Grade discreta 3×3 — com só 3 níveis por campo de entrada (Baixa/Média/
-  // Alta, Curto/Médio/Longo), um scatter contínuo dava falsa precisão e
-  // empilhava tudo quase no mesmo pixel. Uma grade fixa, com o nome de cada
-  // iniciativa dentro da célula certa, é o que realmente responde "onde
-  // isso cai" de forma legível.
-  const ROTULOS = [
-    ['🎯 Prioridade Máxima', '📈 Planejar', '🔍 Avaliar com Cautela'],
-    ['⚡ Ganho Rápido', 'Avaliar', 'Baixa Prioridade'],
-    ['Fácil, Baixo Retorno', 'Baixa Prioridade', '🗑 Descartar'],
-  ];
-  const CORES = [
-    ['#e6f4ec', '#fdf3e6', '#fbeaea'],
-    ['#eef7f1', '#fbf6ea', '#f7e9e9'],
-    ['#f2f2ea', '#f5efe9', '#f0e5e5'],
-  ];
-
-  // celulas[linhaValor][colunaEsforco] — linha 0 = Valor Alto (topo),
-  // coluna 0 = Esforço Baixo (esquerda), igual um gráfico normal.
-  const celulas = [[[],[],[]],[[],[],[]],[[],[],[]]];
-  comDados.forEach(it=>{
-    const { esforco, valor } = MC_computeScores(it);
-    const colEsforco = MC_bucket(esforco, 6);
-    const linhaValor = 2 - MC_bucket(valor, 6); // inverte: valor alto fica em cima
-    celulas[linhaValor][colEsforco].push(it);
-  });
-
-  const legenda = Object.keys(MC_STATUS_COR).map(status =>
-    `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#2a1a1a;margin-right:14px;"><span style="width:8px;height:8px;border-radius:50%;background:${MC_STATUS_COR[status]};display:inline-block;"></span>${status}</span>`
-  ).join('');
-
-  wrap.innerHTML = `
-    <div style="margin-bottom:10px;">${legenda}</div>
-    <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;align-items:stretch;">
-      <div></div>
-      <div style="text-align:center;font-size:11px;font-weight:700;color:#6b5c5c;">Esforço Baixo</div>
-      <div style="text-align:center;font-size:11px;font-weight:700;color:#6b5c5c;">Esforço Médio</div>
-      <div style="text-align:center;font-size:11px;font-weight:700;color:#6b5c5c;">Esforço Alto</div>
-
-      <div style="display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#6b5c5c;writing-mode:vertical-rl;transform:rotate(180deg);">Valor Alto</div>
-      ${[0].map(l => [0,1,2].map(c => `<div id="mcCell_${l}_${c}"></div>`).join('')).join('')}
-
-      <div style="display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#6b5c5c;writing-mode:vertical-rl;transform:rotate(180deg);">Valor Médio</div>
-      ${[1].map(l => [0,1,2].map(c => `<div id="mcCell_${l}_${c}"></div>`).join('')).join('')}
-
-      <div style="display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#6b5c5c;writing-mode:vertical-rl;transform:rotate(180deg);">Valor Baixo</div>
-      ${[2].map(l => [0,1,2].map(c => `<div id="mcCell_${l}_${c}"></div>`).join('')).join('')}
-    </div>`;
-
-  // Preenche cada célula depois (mais simples que montar o grid-template com
-  // rowspan de rótulo lateral inline no template acima).
-  for(let l=0; l<3; l++){
-    for(let c=0; c<3; c++){
-      const lista = celulas[l][c];
-      const chips = lista.map(it => {
-        const cor = MC_STATUS_COR[it.status] || '#8a8a8a';
-        const nomeCurto = it.atividade.length > 34 ? it.atividade.slice(0,32)+'…' : it.atividade;
-        return `<span style="display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:20px;padding:3px 10px 3px 6px;font-size:11px;color:#2a1a1a;margin:2px;" title="${it.atividade} (${it.status})"><span style="width:7px;height:7px;border-radius:50%;background:${cor};flex-shrink:0;"></span>${it.numero ? `#${it.numero} ` : ''}${nomeCurto}</span>`;
-      }).join('');
-      document.getElementById(`mcCell_${l}_${c}`).outerHTML = `
-        <div style="background:${CORES[l][c]};border-radius:10px;padding:10px;min-height:100px;">
-          <div style="font-size:11px;font-weight:700;color:#4a3a3a;margin-bottom:6px;">${ROTULOS[l][c]}</div>
-          <div style="display:flex;flex-wrap:wrap;">${chips || '<span style="font-size:11px;color:var(--ink-soft);">—</span>'}</div>
-        </div>`;
-    }
-  }
-}
 
 /* ============================================================================
    RADAR DE COBERTURA — Produtividade & Processos
@@ -11415,11 +11335,12 @@ function MC_renderRadar(){
   // KPIs globais
   let totalProd = 0, mapProd = 0, mapTP = 0, mapCompleto = 0;
   MC_RADAR_LINHAS.forEach(linha => {
+    const ehSalgado = linha === 'Salgado';
     Object.values(radar[linha]||{}).forEach(p => {
       totalProd++;
       if(p.corridas) mapProd++;
-      if(p.bateladas && p.referencia) mapTP++;
-      if(p.corridas && p.bateladas && p.referencia) mapCompleto++;
+      if(p.bateladas) mapTP++;
+      if(ehSalgado ? p.corridas : (p.corridas && p.bateladas)) mapCompleto++;
     });
   });
 
@@ -11452,12 +11373,13 @@ function MC_renderRadar(){
     : `<span style="background:#f3f3f3;color:#999;border:1px solid #e0e0e0;border-radius:var(--radius-pill);padding:2px 9px;font-size:10.5px;font-weight:600;white-space:nowrap;">Pendente</span>`;
 
   const cardHTMLs = MC_RADAR_LINHAS.map(linha => {
+    const ehSalgado = linha === 'Salgado';
     const produtos = Object.keys(radar[linha]||{}).sort();
     const label = MC_RADAR_LABELS[linha] || linha;
     const total = produtos.length;
     const completos = produtos.filter(p => {
       const d = radar[linha][p];
-      return d.corridas && d.bateladas && d.referencia;
+      return ehSalgado ? d.corridas : (d.corridas && d.bateladas);
     }).length;
 
     const pct = total > 0 ? Math.round(completos/total*100) : 0;
@@ -11472,15 +11394,17 @@ function MC_renderRadar(){
 
     const linhas = produtos.map(prod => {
       const d = radar[linha][prod];
-      const completo = d.corridas && d.bateladas && d.referencia;
+      const completo = ehSalgado ? d.corridas : (d.corridas && d.bateladas);
       const bgRow = completo ? 'background:#f6fff9;' : '';
+      const tdProcesso = ehSalgado ? '' : `<td style="padding:7px 8px;border-bottom:1px solid var(--line);text-align:center;">${badge(d.bateladas,'Sim')}</td>`;
       return `<tr style="${bgRow}">
         <td style="padding:7px 10px;font-size:12.5px;font-weight:${completo?'700':'400'};color:var(--ink);border-bottom:1px solid var(--line);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${prod}">${prod}</td>
         <td style="padding:7px 8px;border-bottom:1px solid var(--line);text-align:center;">${badge(d.corridas,'Sim')}</td>
-        <td style="padding:7px 8px;border-bottom:1px solid var(--line);text-align:center;">${badge(d.bateladas,'Sim')}</td>
-        <td style="padding:7px 8px;border-bottom:1px solid var(--line);text-align:center;">${badge(d.referencia,'Sim')}</td>
+        ${tdProcesso}
       </tr>`;
     }).join('');
+
+    const thProcesso = ehSalgado ? '' : `<th style="padding:6px 8px;font-size:10.5px;color:var(--ink-soft);font-weight:700;text-align:center;border-bottom:2px solid var(--line);" title="Tem lançamentos de etapas de processo">Processo (lançto)</th>`;
 
     return `<div style="border:1px solid var(--line);border-radius:var(--radius-md);padding:16px 14px;background:var(--paper);overflow:hidden;">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;">
@@ -11492,13 +11416,12 @@ function MC_renderRadar(){
         <div style="height:100%;width:${pct}%;background:${corPct};border-radius:99px;transition:width .4s;"></div>
       </div>
       <div style="overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;min-width:280px;">
+        <table style="width:100%;border-collapse:collapse;min-width:${ehSalgado?'220':'280'}px;">
           <thead>
             <tr style="background:var(--cream);">
               <th style="padding:6px 10px;font-size:10.5px;color:var(--ink-soft);font-weight:700;text-align:left;border-bottom:2px solid var(--line);">Produto</th>
               <th style="padding:6px 8px;font-size:10.5px;color:var(--ink-soft);font-weight:700;text-align:center;border-bottom:2px solid var(--line);" title="Tem registros em produtividade_corridas">Produtividade</th>
-              <th style="padding:6px 8px;font-size:10.5px;color:var(--ink-soft);font-weight:700;text-align:center;border-bottom:2px solid var(--line);" title="Tem lançamentos de etapas de processo">Processo (lançto)</th>
-              <th style="padding:6px 8px;font-size:10.5px;color:var(--ink-soft);font-weight:700;text-align:center;border-bottom:2px solid var(--line);" title="Tem tempos-meta cadastrados em pp_etapas_referencia">Referência (meta)</th>
+              ${thProcesso}
             </tr>
           </thead>
           <tbody>${linhas}</tbody>
@@ -12017,10 +11940,8 @@ function MC_render(){
   const board = document.getElementById('mcBoard');
   if(itens.length === 0){
     board.innerHTML = `<div class="empty-state"><span class="empty-icon">🔍</span>Nenhuma iniciativa encontrada.</div>`;
-    MC_renderMatriz([]);
     return;
   }
-  MC_renderMatriz(itens);
 
   const colunas = MC_STATUS_ORDEM.map(status => {
     const doStatus = itens.filter(it => it.status === status).sort((a,b)=> (a.numero||0)-(b.numero||0));
