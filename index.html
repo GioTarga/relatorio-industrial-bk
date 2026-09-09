@@ -11450,7 +11450,6 @@ function MC_renderRotina(){
     return;
   }
 
-  // Apenas Produtividade e Tempo de Processo (sem Referência por ora)
   const LABELS = {
     corridas:  { icon:'⚡', label:'Produtividade' },
     bateladas: { icon:'⏱', label:'Tempo de Processo' }
@@ -11460,12 +11459,15 @@ function MC_renderRotina(){
   const cardHTMLs = [];
 
   MC_RADAR_LINHAS.forEach(linha => {
+    const ehSalgado = linha === 'Salgado';
+    // Salgado = produção contínua, coleta apenas Produtividade
+    const camposRastreados = ehSalgado ? ['corridas'] : ['corridas','bateladas'];
     const prods = MC_RADAR[linha];
     if(!prods) return;
 
     const pendentes = [];
     Object.entries(prods).forEach(([prod, flags]) => {
-      const faltam = Object.keys(LABELS).filter(k => !flags[k]);
+      const faltam = camposRastreados.filter(k => !flags[k]);
       if(faltam.length > 0) pendentes.push({ prod, faltam });
     });
 
@@ -11547,10 +11549,12 @@ async function MC_gerarFormulario(){
   const opcoes = []; // { setor, prod, faltam }
   const jaNoRadar = new Set();
   MC_RADAR_LINHAS.forEach(linha => {
+    const ehSalgado = linha === 'Salgado';
+    const camposRastreados = ehSalgado ? ['corridas'] : ['corridas','bateladas'];
     const prods = MC_RADAR[linha];
     if(!prods) return;
     Object.entries(prods).forEach(([prod, flags]) => {
-      const faltam = ['corridas','bateladas'].filter(k => !flags[k]);
+      const faltam = camposRastreados.filter(k => !flags[k]);
       if(faltam.length > 0){
         opcoes.push({ setor: linha, prod, faltam });
         jaNoRadar.add(prod.trim().toLowerCase());
