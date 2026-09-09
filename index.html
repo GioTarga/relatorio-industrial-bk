@@ -7097,29 +7097,41 @@ function RC_splitProdutos(str){
 async function RC_loadCapacityData(){
   try{
     const client = LANC_getClient();
+    // Sem filtro NOT NULL no servidor — filtramos em JS para maior robustez
     const { data, error } = await client
       .from('producao_diaria')
-      .select('setor,maquina,produto,unidade,producao_real,inicio_producao,fim_producao')
-      .not('maquina', 'is', null)
-      .not('inicio_producao', 'is', null)
-      .not('fim_producao', 'is', null);
+      .select('setor,maquina,produto,unidade,producao_real,inicio_producao,fim_producao');
     if(error) throw error;
     const best = {};
     (data||[]).forEach(r=>{
-      if(!r.maquina || !r.produto) return;
-      const val = parseFloat((r.producao_real||'').toString().replace(',','.'));
-      if(isNaN(val) || val <= 0) return;
-      const parseT = t=>{ const p=(t||'').split(':').map(Number); return (p[0]||0)*60+(p[1]||0); };
-      const durMin = parseT(r.fim_producao) - parseT(r.inicio_producao);
-      if(durMin <= 0) return;
-      const prodH = val / (durMin / 60);
-      const key = (r.setor||'')+'||'+(r.maquina||'')+'||'+(r.produto||'');
-      if(!best[key] || prodH > best[key].prodH)
-        best[key] = { setor:r.setor, maquina:r.maquina, produto:r.produto, unidade:(r.unidade||'Unid'), prodH };
+      try{
+        if(!r.setor || !r.maquina || !r.produto) return;
+        if(!r.inicio_producao || !r.fim_producao) return;
+        // Suporta "HH:MM", "HH:MM:SS", "HH:MM:SS+00", "HH:MM:SS.000Z" etc.
+        const toMin = t => {
+          const m = String(t).match(/^(\d{1,2}):(\d{2})/);
+          if(!m) return null;
+          return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+        };
+        const ini = toMin(r.inicio_producao);
+        const fim = toMin(r.fim_producao);
+        if(ini === null || fim === null || fim <= ini) return;
+        const durMin = fim - ini;
+        const val = typeof r.producao_real === 'number'
+          ? r.producao_real
+          : parseFloat(String(r.producao_real || '').replace(/\./g,'').replace(',','.'));
+        if(!val || val <= 0 || !isFinite(val)) return;
+        const prodH = val / (durMin / 60);
+        if(!isFinite(prodH) || prodH <= 0) return;
+        const key = r.setor + '||' + r.maquina + '||' + r.produto;
+        if(!best[key] || prodH > best[key].prodH)
+          best[key] = { setor:r.setor, maquina:r.maquina, produto:r.produto, unidade:(r.unidade||'Unid'), prodH };
+      }catch(e){ /* linha com dado inválido — ignorar */ }
     });
     RC_CAP_DATA = Object.values(best);
+    console.log('[RC_CAP] Carregado:', RC_CAP_DATA.length, 'registros | Setores:', [...new Set(RC_CAP_DATA.map(r=>r.setor))].join(', '));
   }catch(err){
-    console.error('RC_loadCapacityData erro:', err);
+    console.error('[RC_CAP] Erro ao carregar capacidade:', err);
   }
 }
 
@@ -7138,12 +7150,12 @@ function RC_renderSectorCards(setor){
     return;
   }
 
-  const rows = RC_CAP_DATA.filter(r => r.setor === setor);
+  const rows = RC_CAP_DATA.filter(r => r.setor.toUpperCase() === setor.toUpperCase());
 
   if(!rows.length){
     el.style.display = '';
     el.innerHTML = `<div style="padding:24px 0;color:var(--ink-soft);text-align:center;font-size:14px;">
-      Sem dados de capacidade registrados para <strong>${setor}</strong>.<br>
+      Sem dados de capacidade registrados para <strong>${RC_capitalizeSetor(setor)}</strong>.<br>
       <small>Lançamentos de produção com início/fim/quantidade preencherão esta aba automaticamente.</small>
     </div>`;
     if(tablePanel) tablePanel.style.display = 'none';
@@ -7230,7 +7242,9 @@ let RC_selectedMaquinas = new Set(); // vazio = todas
 let RC_selectedProdutos = new Set(); // vazio = todos
 
 function RC_populateSetorSelect(){
-  const setores = [...new Set(RC_DATA.map(r=>r.setor))].sort();
+  // Abas derivadas de RC_CAP_DATA (producao_diaria) — cobre todos os setores
+  // com dado real de produção; RC_DATA (maquinas) usa case diferente e tem menos setores.
+  const setores = [...new Set(RC_CAP_DATA.map(r=>r.setor))].sort();
   const cur = rcSetorEl.value;
   rcSetorEl.innerHTML = '<option value="">Todos os setores</option>';
   setores.forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=s; rcSetorEl.appendChild(o); });
@@ -7238,13 +7252,15 @@ function RC_populateSetorSelect(){
   RC_renderSetorTabs(setores);
 }
 
-/* Abas de setor (mesmo padrão da Produtividade). Hoje só existe capacidade
-   mapeada pro Salgado, então só essa aba aparece — quando outros setores
-   forem cadastrados na planilha de capacidade, a aba deles surge sozinha. */
+/* Abas de setor — geradas a partir de RC_CAP_DATA (producao_diaria).
+   Exibe nome capitalizado mas usa o valor original como key (uppercase). */
+function RC_capitalizeSetor(s){
+  return s.toLowerCase().replace(/(?:^|\s|-)\S/g, c=>c.toUpperCase());
+}
 function RC_renderSetorTabs(setores){
   const el = document.getElementById('rcSetorTabs');
   el.innerHTML = '';
-  const opcoes = [{ key:'', label:'Todos os setores' }, ...setores.map(s=>({ key:s, label:s }))];
+  const opcoes = [{ key:'', label:'Todos os setores' }, ...setores.map(s=>({ key:s, label:RC_capitalizeSetor(s) }))];
   opcoes.forEach(({key,label})=>{
     const btn = document.createElement('button');
     btn.type = 'button';
