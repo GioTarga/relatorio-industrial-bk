@@ -1880,137 +1880,108 @@ body{background:#fff;color:#000}
     #page-expedicao .cr-remover{ width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; padding:0; }
   }
 
-</style>
-<style>
-  /* ============ CAMADA VISUAL BK360 — refinamento ============
-     Mantém a paleta e as fontes originais; concentra o acabamento em
-     hierarquia, estados de interação e leitura de dados. */
-  :root{
-    --surface-soft:#fffdf8;
-    --line-strong:#e5c99e;
-    --shadow-soft:0 5px 18px rgba(110,0,0,.07);
-    --shadow-hover:0 10px 24px rgba(110,0,0,.12);
-  }
-  html{ scroll-behavior:smooth; }
-  body{ background:linear-gradient(135deg,#fff8e7 0%,#fffdf8 48%,#fff4df 100%); line-height:1.45; }
-  button, input, select, textarea{ font-family:var(--font-body); }
-  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{
-    outline:3px solid rgba(181,100,11,.28); outline-offset:2px;
-  }
+/* ═══════════════════════════════════════════════
+   MÓDULO ORDENS DE SERVIÇO — dentro de #page-manutencao #mn-tab-os
+   ═══════════════════════════════════════════════ */
+#mn-tab-os .os-filters{
+  display:flex; gap:8px; flex-wrap:wrap;
+  padding:16px 32px; max-width:1600px; margin:0 auto; align-items:center;
+}
+#mn-tab-os .os-form-select,
+#mn-tab-os .os-form-input{
+  padding:7px 10px; border:1px solid var(--line);
+  border-radius:var(--radius-sm); background:var(--paper);
+  color:var(--ink); font-size:13px;
+}
+#mn-tab-os .os-table-wrap{
+  padding:0 32px 32px; max-width:1600px; margin:0 auto; overflow-x:auto;
+}
+#mn-tab-os .os-table{
+  width:100%; border-collapse:collapse; font-size:13px;
+}
+#mn-tab-os .os-table th{
+  background:var(--paper); color:var(--ink-soft); font-weight:600;
+  padding:8px 10px; text-align:left; border-bottom:2px solid var(--line); white-space:nowrap;
+}
+#mn-tab-os .os-table td{
+  padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:middle;
+}
+#mn-tab-os .os-table tr:hover td{ background:var(--paper); }
 
-  .sidebar{
-    width:224px;
-    background:linear-gradient(180deg,#6e0000 0%,#5d0000 100%);
-    box-shadow:8px 0 26px rgba(73,0,0,.10);
-  }
-  .sidebar-brand{ padding:21px 20px; background:rgba(0,0,0,.08); }
-  .sidebar-mark{ width:30px; height:30px; font-size:16px; box-shadow:0 3px 8px rgba(0,0,0,.15); }
-  .sidebar-brand-text{ font-size:18px; letter-spacing:.4px; }
-  .sidebar-nav{ padding:18px 12px; gap:6px; }
-  .nav-item{
-    min-height:42px; border-left:3px solid transparent; padding:10px 13px;
-    color:#ffe9cf; transition:background .18s, color .18s, border-color .18s, transform .18s;
-  }
-  .nav-item:hover{ background:rgba(255,255,255,.11); transform:translateX(2px); }
-  .nav-item.active{
-    border-left-color:var(--gold); background:linear-gradient(90deg,#fff 0%,#fff8e7 100%);
-    color:var(--red-dark); box-shadow:0 4px 12px rgba(0,0,0,.10); transform:none;
-  }
-  .nav-item svg{ width:17px; height:17px; }
-  .main-content{ background:rgba(255,253,248,.35); }
+/* Badges de status */
+#mn-tab-os .os-badge{
+  display:inline-block; padding:2px 8px; border-radius:99px;
+  font-size:11px; font-weight:600; white-space:nowrap;
+}
+#mn-tab-os .os-badge-aberta     { background:#FFF3CD; color:#856404; }
+#mn-tab-os .os-badge-em_andamento{ background:#CCE5FF; color:#004085; }
+#mn-tab-os .os-badge-concluida  { background:#D4EDDA; color:#155724; }
+#mn-tab-os .os-badge-cancelada  { background:#F8D7DA; color:#721C24; }
 
-  .topbar{
-    padding:38px 36px 31px; background:linear-gradient(135deg,#6e0000 0%,#850000 62%,#6e0000 100%);
-    box-shadow:0 3px 14px rgba(110,0,0,.10);
-  }
-  .topbar::after{ height:6px; background:linear-gradient(90deg,var(--gold),#d79639 38%,transparent 100%); }
-  .brand .eyebrow{ letter-spacing:3.4px; color:#ffdcae; }
-  .brand h1{ font-size:30px; letter-spacing:.35px; }
-  .brand .subtitle{ color:#ffe9cf; }
+/* Badges de tipo */
+#mn-tab-os .os-tipo-corretiva{
+  display:inline-block; padding:2px 7px; border-radius:99px;
+  font-size:10px; font-weight:700; background:#F8D7DA; color:#721C24;
+}
+#mn-tab-os .os-tipo-preventiva{
+  display:inline-block; padding:2px 7px; border-radius:99px;
+  font-size:10px; font-weight:700; background:#D1ECF1; color:#0C5460;
+}
 
-  .period-bar{
-    justify-content:flex-start; padding:13px 30px; gap:10px 14px;
-    background:rgba(255,255,255,.92); border-bottom-color:var(--line-strong);
-    box-shadow:0 4px 16px rgba(110,0,0,.07); backdrop-filter:blur(8px);
-  }
-  .period-bar label{ color:var(--red-dark); }
-  .period-bar input[type=date], .period-bar select{
-    background:var(--surface-soft); border-color:var(--line-strong); min-height:36px;
-  }
-  .period-bar input[type=date]:focus, .period-bar select:focus{ border-color:var(--red); box-shadow:0 0 0 3px rgba(161,1,1,.09); outline:none; }
-  .btn-refresh, .btn-download{
-    min-height:36px; border-radius:var(--radius-sm); box-shadow:0 4px 10px rgba(161,1,1,.18);
-    transition:transform .18s, box-shadow .18s, background .18s;
-  }
-  .btn-refresh:hover, .btn-download:hover{ transform:translateY(-1px); box-shadow:0 7px 15px rgba(161,1,1,.24); }
+/* Prioridade */
+#mn-tab-os .os-prio-critica{ color:#C0392B; font-weight:700; }
+#mn-tab-os .os-prio-alta   { color:#E67E22; font-weight:700; }
+#mn-tab-os .os-prio-media  { color:var(--ink-soft); }
+#mn-tab-os .os-prio-baixa  { color:var(--ink-soft); }
 
-  .container{ padding:28px 34px 58px; }
-  .panel{
-    border-color:var(--line-strong); border-radius:var(--radius-lg); padding:26px 30px;
-    box-shadow:var(--shadow-soft); transition:box-shadow .2s, border-color .2s;
-  }
-  .panel:hover{ border-color:#dfbd86; box-shadow:var(--shadow-hover); }
-  .panel-title{ color:var(--red-dark); margin-bottom:20px; letter-spacing:2.2px; }
-  .panel-title::after{ background:linear-gradient(90deg,var(--line-strong),transparent); }
+/* Semáforo de prazo */
+#mn-tab-os .os-prazo-vencida{ color:#C0392B; font-weight:700; }
+#mn-tab-os .os-prazo-hoje   { color:#E67E22; font-weight:700; }
+#mn-tab-os .os-prazo-ok     { color:#27AE60; }
+#mn-tab-os .os-prazo-sem    { color:var(--ink-soft); }
 
-  .kpi-grid{ gap:16px; margin-bottom:34px; }
-  .kpi-card{
-    position:relative; overflow:hidden; border-color:var(--line-strong); padding:20px 18px;
-    box-shadow:var(--shadow-soft); transition:transform .18s, box-shadow .18s, border-color .18s;
-  }
-  .kpi-card::before{ content:""; position:absolute; inset:0 0 auto; height:4px; background:var(--gold); }
-  .kpi-card:hover{ transform:translateY(-3px); border-color:#d8b574; box-shadow:var(--shadow-hover); }
-  .kpi-card.good::before{ background:var(--good); }
-  .kpi-card.warn::before{ background:var(--warn); }
-  .kpi-card .label{ margin-bottom:10px; letter-spacing:1.5px; }
-  .kpi-card .value{ font-size:31px; letter-spacing:-.4px; }
+/* Formulário de nova OS */
+#mn-tab-os .os-form-wrap{ padding:24px 32px; max-width:900px; margin:0 auto; }
+#mn-tab-os .os-form-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:14px;
+}
+#mn-tab-os .os-form-grid .full{ grid-column:1/-1; }
+#mn-tab-os .os-form-label{
+  display:block; font-size:12px; font-weight:600; color:var(--ink-soft);
+  margin-bottom:4px; text-transform:uppercase; letter-spacing:.04em;
+}
+#mn-tab-os .os-form-select,
+#mn-tab-os .os-form-input,
+#mn-tab-os .os-form-textarea{
+  width:100%; padding:8px 10px; border:1px solid var(--line);
+  border-radius:var(--radius-sm); background:var(--paper);
+  color:var(--ink); font-size:13px; box-sizing:border-box;
+}
+#mn-tab-os .os-form-textarea{ min-height:80px; resize:vertical; }
+#mn-tab-os .os-form-actions{ margin-top:20px; display:flex; gap:12px; align-items:center; }
+#mn-tab-os .os-btn-primary{
+  background:var(--red-dark); color:#fff; border:none;
+  padding:10px 24px; border-radius:var(--radius-sm);
+  font-size:13px; font-weight:600; cursor:pointer;
+}
+#mn-tab-os .os-btn-primary:hover{ opacity:.88; }
+#mn-tab-os .os-btn-secondary{
+  background:transparent; color:var(--ink); border:1px solid var(--line);
+  padding:6px 14px; border-radius:var(--radius-sm);
+  font-size:12px; cursor:pointer;
+}
+#mn-tab-os .os-btn-secondary:hover{ background:var(--paper); }
+#mn-tab-os .os-form-msg{ font-size:13px; font-weight:600; }
+#mn-tab-os .os-form-msg.success{ color:#27AE60; }
+#mn-tab-os .os-form-msg.error  { color:#C0392B; }
 
-  .ri-subtabs, .lanc-tabs, .setor-tabs{ border-color:var(--line-strong); }
-  .ri-subtab-btn, .lanc-tab-btn, .setor-tab-btn{ transition:color .18s, background .18s, border-color .18s; }
-  .ri-subtab-btn.active{ color:var(--red); border-bottom-color:var(--gold); }
-  .setor-tab-btn{ border-color:var(--line-strong); background:#fff2d5; }
-  .setor-tab-btn.active{ color:var(--red); border-top:2px solid var(--gold); }
+@media(max-width:680px){
+  #mn-tab-os .os-form-grid{ grid-template-columns:1fr; }
+  #mn-tab-os .os-form-grid .full{ grid-column:1; }
+  #mn-tab-os .os-filters{ padding:12px 16px; }
+  #mn-tab-os .os-table-wrap{ padding:0 16px 24px; }
+}
 
-  .table-wrap, #riProdTable-wrap{ border-color:var(--line-strong); box-shadow:inset 0 1px 0 rgba(255,255,255,.7); }
-  table.detail tbody tr:nth-child(even) td, #riProdTable-wrap tbody tr:nth-child(even) td{ background:#fffaf0; }
-  table.detail tbody tr:hover td, #riProdTable-wrap tbody tr:hover td{ background:#fff0d2; }
-  table.detail thead th{ background:linear-gradient(90deg,var(--red-dark),var(--red)); }
-  table.detail tbody td{ line-height:1.4; }
-
-  .empty-state, .loading-state, .error-state{ border-radius:var(--radius-md); border:1px dashed var(--line-strong); background:var(--surface-soft); }
-  .status, .sync-status, .period-info{ letter-spacing:.1px; }
-  .btn, .btn-primary, .btn-secondary, .btn-outline, .btn-danger, .btn-small{
-    transition:transform .18s, box-shadow .18s, background .18s, border-color .18s;
-  }
-  .btn:hover, .btn-primary:hover, .btn-secondary:hover, .btn-outline:hover, .btn-danger:hover, .btn-small:hover{ transform:translateY(-1px); }
-
-  @media (max-width:1100px){
-    .sidebar{ width:204px; }
-    .container{ padding-left:24px; padding-right:24px; }
-    .period-bar{ padding-left:22px; padding-right:22px; }
-  }
-  @media (max-width:900px){
-    .sidebar{ width:100%; box-shadow:0 5px 16px rgba(73,0,0,.14); }
-    .sidebar-nav{ padding:10px 12px; }
-    .nav-item{ border-left:0; border-bottom:3px solid transparent; }
-    .nav-item.active{ border-bottom-color:var(--gold); }
-    .topbar{ padding:28px 20px 25px; }
-    .brand h1{ font-size:25px; }
-    .period-bar{ position:relative; top:auto; justify-content:center; }
-    .container{ padding:22px 16px 44px; }
-    .panel{ padding:21px 18px; }
-    .kpi-grid{ grid-template-columns:repeat(2,1fr) !important; gap:12px; }
-  }
-  @media (max-width:520px){
-    .period-bar{ align-items:stretch; }
-    .period-bar > *{ flex:1 1 44%; }
-    .period-bar label, .period-bar .sep{ flex:0 0 auto; align-self:center; }
-    .period-bar .period-info{ flex-basis:100%; text-align:center; margin-left:0; }
-    .kpi-grid, #tpKpiGrid, #prKpiGridInsumo{ grid-template-columns:1fr !important; }
-    .kpi-card .value{ font-size:28px; }
-    .topbar .subtitle{ max-width:31ch; margin-left:auto; margin-right:auto; }
-    .panel{ border-radius:var(--radius-md); }
-  }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
@@ -2661,13 +2632,139 @@ body{background:#fff;color:#000}
 
     <!-- ── ABA: ORDEM DE SERVIÇO ── -->
     <div id="mn-tab-os" style="display:none;">
-      <div class="container" style="padding-top:32px;">
-        <div class="panel" style="text-align:center;padding:60px 32px;color:var(--ink-soft);">
-          <div style="font-size:48px;margin-bottom:16px;">🔧</div>
-          <div style="font-size:18px;font-weight:700;color:var(--ink);margin-bottom:8px;">Ordem de Serviço</div>
-          <div style="font-size:14px;">Em construção — descreva o que deve aparecer aqui.</div>
+
+      <!-- Sub-abas: Painel | Abrir OS -->
+      <div class="setor-tabs sub-tabs" style="border-bottom:2px solid var(--line);margin-bottom:0;">
+        <button type="button" class="setor-tab-btn active" data-ostab="painel">📋 Painel</button>
+        <button type="button" class="setor-tab-btn" data-ostab="nova">➕ Abrir OS</button>
+      </div>
+
+      <!-- PAINEL DE OS -->
+      <div id="os-subtab-painel">
+        <div class="os-filters" id="os-filter-bar">
+          <select id="os-fil-status" class="os-form-select" style="max-width:160px;">
+            <option value="">Todos os status</option>
+            <option value="aberta">Aberta</option>
+            <option value="em_andamento">Em andamento</option>
+            <option value="concluida">Concluída</option>
+            <option value="cancelada">Cancelada</option>
+          </select>
+          <select id="os-fil-tipo" class="os-form-select" style="max-width:180px;">
+            <option value="">Corretiva + Preventiva</option>
+            <option value="corretiva">Corretiva</option>
+            <option value="preventiva">Preventiva</option>
+          </select>
+          <select id="os-fil-setor" class="os-form-select" style="max-width:180px;">
+            <option value="">Todos os locais</option>
+          </select>
+          <input type="text" id="os-fil-busca" class="os-form-input" placeholder="Buscar descrição…" style="max-width:240px;">
+          <button type="button" class="os-btn-secondary" onclick="OS_clearFilters()">Limpar</button>
+          <span id="os-count" style="font-size:12px;color:var(--ink-soft);"></span>
+        </div>
+        <div class="os-table-wrap">
+          <div id="os-table-container"></div>
         </div>
       </div>
+
+      <!-- NOVA OS — FORMULÁRIO -->
+      <div id="os-subtab-nova" style="display:none;">
+        <div class="os-form-wrap">
+          <div class="panel" style="padding:24px 32px;">
+            <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:20px;">📝 Nova Ordem de Serviço</div>
+            <form id="os-form" onsubmit="return false;">
+              <div class="os-form-grid">
+                <div>
+                  <label class="os-form-label">Tipo *</label>
+                  <select id="os-f-tipo" class="os-form-select" required>
+                    <option value="">Selecione…</option>
+                    <option value="corretiva">Corretiva</option>
+                    <option value="preventiva">Preventiva</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="os-form-label">Prioridade</label>
+                  <select id="os-f-prioridade" class="os-form-select">
+                    <option value="baixa">Baixa</option>
+                    <option value="media" selected>Média</option>
+                    <option value="alta">Alta</option>
+                    <option value="critica">🔺 Crítica</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="os-form-label">Local / Setor</label>
+                  <select id="os-f-setor" class="os-form-select">
+                    <option value="">— nenhum —</option>
+                    <option value="SALA/MAQ">SALA/MAQ</option>
+                    <option value="CÂMARA 01">CÂMARA 01</option>
+                    <option value="CÂMARA 02">CÂMARA 02</option>
+                    <option value="MESANINO">MESANINO</option>
+                    <option value="PRODUÇÃO">PRODUÇÃO</option>
+                    <option value="EXPEDIÇÃO">EXPEDIÇÃO</option>
+                    <option value="GIROS/CÂM.">GIROS/CÂM.</option>
+                    <option value="GERAL">GERAL</option>
+                    <option value="SADEMA">SADEMA</option>
+                    <option value="Salgado">Salgado</option>
+                    <option value="Massa Salgado">Massa Salgado</option>
+                    <option value="Croissant">Croissant</option>
+                    <option value="Padaria">Padaria</option>
+                    <option value="Confeitaria">Confeitaria</option>
+                    <option value="Giro-Dia">Giro-Dia</option>
+                    <option value="Giro-Noite">Giro-Noite</option>
+                    <option value="Fritador">Fritador</option>
+                    <option value="Cozinha">Cozinha</option>
+                    <option value="Pão c/ Linguiça">Pão c/ Linguiça</option>
+                    <option value="Pão de Queijo">Pão de Queijo</option>
+                    <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
+                    <option value="Embalagem">Embalagem</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="os-form-label">Máquina / Equipamento</label>
+                  <input type="text" id="os-f-maquina" class="os-form-input" placeholder="Ex: Compressor 03">
+                </div>
+                <div class="full">
+                  <label class="os-form-label">Descrição do problema / serviço *</label>
+                  <textarea id="os-f-descricao" class="os-form-textarea" required placeholder="Descreva o que precisa ser feito…"></textarea>
+                </div>
+                <div class="full">
+                  <label class="os-form-label">Justificativa / motivo</label>
+                  <textarea id="os-f-justificativa" class="os-form-textarea" placeholder="Por que este serviço é necessário?"></textarea>
+                </div>
+                <div>
+                  <label class="os-form-label">Responsável pela execução</label>
+                  <select id="os-f-responsavel" class="os-form-select">
+                    <option value="">— não definido —</option>
+                    <option value="MECÂNICA">MECÂNICA</option>
+                    <option value="ELÉTRICA">ELÉTRICA</option>
+                    <option value="HIDRAULICA">HIDRÁULICA</option>
+                    <option value="OPERADORES">OPERADORES</option>
+                    <option value="ADM">ADM</option>
+                    <option value="TERCEIROS">TERCEIROS</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="os-form-label">Prazo planejado</label>
+                  <input type="date" id="os-f-prazo" class="os-form-input">
+                </div>
+                <div>
+                  <label class="os-form-label">Custo estimado (R$)</label>
+                  <input type="number" id="os-f-custo" class="os-form-input" placeholder="0,00" min="0" step="0.01">
+                </div>
+                <div class="full">
+                  <label class="os-form-label">Observações</label>
+                  <textarea id="os-f-obs" class="os-form-textarea" placeholder="Informações adicionais…"></textarea>
+                </div>
+              </div>
+              <div class="os-form-actions">
+                <button type="button" class="os-btn-primary" onclick="OS_submitForm()">Abrir OS</button>
+                <button type="button" class="os-btn-secondary" onclick="OS_resetForm(false)">Limpar</button>
+                <span id="os-form-msg" class="os-form-msg"></span>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
     </div><!-- /mn-tab-os -->
 
   </div> <!-- /page-manutencao -->
@@ -8114,8 +8211,251 @@ document.querySelectorAll('[data-mntab]').forEach(btn => {
     const subtitle = document.getElementById('mnSubtitle');
     if(tab === 'relatorio') subtitle.textContent = 'Chamados, intervenções, tempo de reparo e recorrência por máquina e especialidade';
     if(tab === 'os')        subtitle.textContent = 'Gestão de ordens de serviço corretivas e preventivas';
+    if(tab === 'os')        OS_init();
   });
 });
+
+// ─────────────────────────────────────────────
+// ORDENS DE SERVIÇO (OS) — módulo dentro de Manutenções
+// ─────────────────────────────────────────────
+
+let OS_ALL = [];
+let OS_loadedOnce = false;
+
+async function OS_init(){
+  if(OS_loadedOnce){ OS_renderFromCache(); return; }
+  OS_loadedOnce = true;
+  document.getElementById('os-table-container').innerHTML =
+    '<div style="padding:24px;text-align:center;color:var(--ink-soft);">Carregando ordens de serviço…</div>';
+  try {
+    const client = getSupabaseClient();
+    const { data, error } = await client
+      .from('ordens_servico')
+      .select('*')
+      .order('data_abertura', { ascending: false });
+    if(error) throw error;
+    OS_ALL = data || [];
+    OS_populateSetorFilter();
+    OS_renderFromCache();
+  } catch(e) {
+    document.getElementById('os-table-container').innerHTML =
+      `<div style="padding:24px;color:#C0392B;">Erro ao carregar OS: ${e.message}</div>`;
+    OS_loadedOnce = false;
+  }
+}
+
+function OS_populateSetorFilter(){
+  const setores = [...new Set(OS_ALL.map(r => r.setor).filter(Boolean))].sort();
+  const sel = document.getElementById('os-fil-setor');
+  sel.innerHTML = '<option value="">Todos os locais</option>' +
+    setores.map(s => `<option value="${s}">${s}</option>`).join('');
+}
+
+function OS_getFilters(){
+  return {
+    status: document.getElementById('os-fil-status').value,
+    tipo:   document.getElementById('os-fil-tipo').value,
+    setor:  document.getElementById('os-fil-setor').value,
+    busca:  (document.getElementById('os-fil-busca').value || '').toLowerCase().trim()
+  };
+}
+
+function OS_clearFilters(){
+  document.getElementById('os-fil-status').value = '';
+  document.getElementById('os-fil-tipo').value   = '';
+  document.getElementById('os-fil-setor').value  = '';
+  document.getElementById('os-fil-busca').value  = '';
+  OS_renderFromCache();
+}
+
+function OS_renderFromCache(){
+  const f = OS_getFilters();
+  const rows = OS_ALL.filter(r => {
+    if(f.status && r.status !== f.status) return false;
+    if(f.tipo   && r.tipo   !== f.tipo)   return false;
+    if(f.setor  && r.setor  !== f.setor)  return false;
+    if(f.busca  && !((r.descricao||'').toLowerCase().includes(f.busca) ||
+                     (r.maquina||'').toLowerCase().includes(f.busca)))  return false;
+    return true;
+  });
+  document.getElementById('os-count').textContent = `${rows.length} OS`;
+  document.getElementById('os-table-container').innerHTML = OS_buildTable(rows);
+}
+
+function OS_prazoClass(prazo, status){
+  if(!prazo || status === 'concluida' || status === 'cancelada') return 'os-prazo-sem';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(prazo + 'T00:00:00');
+  if(d < today) return 'os-prazo-vencida';
+  if(d.getTime() === today.getTime()) return 'os-prazo-hoje';
+  return 'os-prazo-ok';
+}
+
+function OS_prazoLabel(prazo, status){
+  if(!prazo) return '<span class="os-prazo-sem">—</span>';
+  if(status === 'concluida' || status === 'cancelada'){
+    const p = prazo.split('-');
+    return `<span class="os-prazo-sem">${p[2]}/${p[1]}/${p[0].slice(2)}</span>`;
+  }
+  const cls = OS_prazoClass(prazo, status);
+  const p = prazo.split('-');
+  const label = `${p[2]}/${p[1]}/${p[0].slice(2)}`;
+  const icon  = cls === 'os-prazo-vencida' ? '🔴 ' : cls === 'os-prazo-hoje' ? '🟡 ' : '🟢 ';
+  return `<span class="${cls}">${icon}${label}</span>`;
+}
+
+function OS_statusBadge(status){
+  const labels = { aberta:'Aberta', em_andamento:'Em andamento', concluida:'Concluída', cancelada:'Cancelada' };
+  return `<span class="os-badge os-badge-${status}">${labels[status]||status}</span>`;
+}
+
+function OS_tipoBadge(tipo){
+  return `<span class="os-tipo-${tipo}">${tipo==='corretiva'?'CORRETIVA':'PREVENTIVA'}</span>`;
+}
+
+function OS_prioLabel(prio){
+  const labels = { critica:'🔺 CRÍTICA', alta:'▲ Alta', media:'Média', baixa:'Baixa' };
+  return `<span class="os-prio-${prio||'media'}">${labels[prio||'media']||prio}</span>`;
+}
+
+function OS_buildTable(rows){
+  if(!rows.length){
+    return '<div style="padding:24px;text-align:center;color:var(--ink-soft);">Nenhuma OS encontrada com esses filtros.</div>';
+  }
+  let html = `<table class="os-table">
+    <thead><tr>
+      <th>Nº</th><th>Data</th><th>Tipo</th><th>Prioridade</th>
+      <th>Local</th><th>Equipamento</th><th>Descrição</th>
+      <th>Responsável</th><th>Prazo</th><th>Status</th><th></th>
+    </tr></thead><tbody>`;
+  rows.forEach(r => {
+    const num  = String(r.numero||'').padStart(4,'0');
+    const p    = (r.data_abertura||'').split('-');
+    const date = p.length===3 ? `${p[2]}/${p[1]}/${p[0].slice(2)}` : (r.data_abertura||'');
+    const rawDesc = r.descricao||'';
+    const desc = rawDesc.length > 70 ? rawDesc.slice(0,70)+'…' : rawDesc;
+    const descAttr = rawDesc.replace(/"/g,'&quot;');
+    html += `<tr>
+      <td style="font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink-soft);font-size:12px;">#${num}</td>
+      <td style="white-space:nowrap;font-size:12px;">${date}</td>
+      <td>${OS_tipoBadge(r.tipo)}</td>
+      <td>${OS_prioLabel(r.prioridade)}</td>
+      <td style="font-size:12px;white-space:nowrap;">${r.setor||'—'}</td>
+      <td style="font-size:12px;">${r.maquina||'—'}</td>
+      <td title="${descAttr}">${desc}</td>
+      <td style="font-size:12px;white-space:nowrap;">${r.responsavel||'—'}</td>
+      <td style="white-space:nowrap;">${OS_prazoLabel(r.prazo_planejado, r.status)}</td>
+      <td>${OS_statusBadge(r.status)}</td>
+      <td><button type="button" class="os-btn-secondary" onclick="OS_quickUpdate('${r.id}')">✏️</button></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  return html;
+}
+
+async function OS_quickUpdate(id){
+  const r = OS_ALL.find(x => x.id === id);
+  if(!r) return;
+  const num = String(r.numero||'').padStart(4,'0');
+  const opcoesStatus = { aberta:'Aberta', em_andamento:'Em andamento', concluida:'Concluída', cancelada:'Cancelada' };
+  const novoStatus = prompt(
+    `OS #${num} — Status atual: ${opcoesStatus[r.status]||r.status}\n\nNovo status:\n1 = Aberta\n2 = Em andamento\n3 = Concluída\n4 = Cancelada\n\nDigite o número:`
+  );
+  const mapa = { '1':'aberta', '2':'em_andamento', '3':'concluida', '4':'cancelada' };
+  if(!novoStatus || !mapa[novoStatus.trim()]) return;
+  const statusNovo = mapa[novoStatus.trim()];
+  if(statusNovo === r.status) return;
+
+  const update = { status: statusNovo };
+  if(statusNovo === 'concluida') update.data_conclusao = new Date().toISOString().split('T')[0];
+
+  try {
+    const client = getSupabaseClient();
+    const { error } = await client.from('ordens_servico').update(update).eq('id', id);
+    if(error) throw error;
+    // Atualiza cache local
+    const idx = OS_ALL.findIndex(x => x.id === id);
+    if(idx !== -1) Object.assign(OS_ALL[idx], update);
+    OS_renderFromCache();
+  } catch(e) {
+    alert('Erro ao atualizar OS: ' + e.message);
+  }
+}
+
+async function OS_submitForm(){
+  const tipo     = document.getElementById('os-f-tipo').value;
+  const descricao = document.getElementById('os-f-descricao').value.trim();
+  const msg      = document.getElementById('os-form-msg');
+
+  msg.textContent = '';
+  msg.className   = 'os-form-msg';
+
+  if(!tipo)    { msg.textContent = 'Selecione o tipo de OS.'; msg.classList.add('error'); return; }
+  if(!descricao){ msg.textContent = 'Descrição é obrigatória.'; msg.classList.add('error'); return; }
+
+  const payload = {
+    tipo,
+    prioridade:      document.getElementById('os-f-prioridade').value || 'media',
+    setor:           document.getElementById('os-f-setor').value       || null,
+    maquina:         document.getElementById('os-f-maquina').value.trim() || null,
+    descricao,
+    justificativa:   document.getElementById('os-f-justificativa').value.trim() || null,
+    responsavel:     document.getElementById('os-f-responsavel').value  || null,
+    prazo_planejado: document.getElementById('os-f-prazo').value        || null,
+    custo_estimado:  parseFloat(document.getElementById('os-f-custo').value) || null,
+    observacoes:     document.getElementById('os-f-obs').value.trim()   || null,
+    status:          'aberta',
+    data_abertura:   new Date().toISOString().split('T')[0]
+  };
+
+  msg.textContent = 'Salvando…';
+
+  try {
+    const client = getSupabaseClient();
+    const { data, error } = await client.from('ordens_servico').insert([payload]).select();
+    if(error) throw error;
+    OS_ALL = (data||[]).concat(OS_ALL);
+    OS_populateSetorFilter();
+    const numOS = String(data[0].numero||'').padStart(4,'0');
+    msg.textContent = `✅ OS #${numOS} aberta com sucesso!`;
+    msg.classList.add('success');
+    OS_resetForm(true);
+  } catch(e) {
+    msg.textContent = `Erro: ${e.message}`;
+    msg.classList.add('error');
+  }
+}
+
+function OS_resetForm(keepMsg){
+  document.getElementById('os-f-tipo').value       = '';
+  document.getElementById('os-f-prioridade').value = 'media';
+  document.getElementById('os-f-setor').value      = '';
+  document.getElementById('os-f-responsavel').value= '';
+  document.getElementById('os-f-prazo').value      = '';
+  document.getElementById('os-f-custo').value      = '';
+  ['os-f-maquina','os-f-descricao','os-f-justificativa','os-f-obs']
+    .forEach(id => { document.getElementById(id).value = ''; });
+  if(!keepMsg) document.getElementById('os-form-msg').textContent = '';
+}
+
+// Sub-abas internas do OS
+document.querySelectorAll('[data-ostab]').forEach(btn => {
+  btn.addEventListener('click', function(){
+    const tab = this.dataset.ostab;
+    document.querySelectorAll('[data-ostab]').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    document.getElementById('os-subtab-painel').style.display = tab === 'painel' ? '' : 'none';
+    document.getElementById('os-subtab-nova').style.display   = tab === 'nova'   ? '' : 'none';
+  });
+});
+
+// Filtros — atualizam em tempo real
+['os-fil-status','os-fil-tipo','os-fil-setor'].forEach(id => {
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('change', OS_renderFromCache);
+});
+const osBuscaEl = document.getElementById('os-fil-busca');
+if(osBuscaEl) osBuscaEl.addEventListener('input', OS_renderFromCache);
 
 /* ============================================================================
    PÁGINA LANÇAMENTO — formulário de entrada direto no Supabase
