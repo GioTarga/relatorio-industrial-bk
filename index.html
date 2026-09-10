@@ -1904,24 +1904,39 @@ body{background:#fff;color:#000}
 
 /* ── Summary strip ── */
 #mn-tab-os .os-summary-strip{
-  display:flex; gap:0; border-bottom:1px solid var(--line);
-  background:var(--paper); overflow-x:auto;
+  display:flex; gap:10px; padding:10px 16px;
+  border-bottom:1px solid var(--line);
+  background:#FAF7F2; overflow-x:auto; align-items:stretch;
 }
 #mn-tab-os .os-kpi{
-  flex:1; text-align:center; padding:8px 12px; min-width:80px;
-  border-right:1px solid var(--line); display:flex; flex-direction:column;
-  align-items:center; gap:2px;
+  flex:1; min-width:110px; max-width:200px;
+  background:#fff; border:1px solid #E4E0D8;
+  border-radius:8px; padding:10px 14px;
+  display:flex; flex-direction:column; gap:4px;
+  box-shadow:0 1px 3px rgba(0,0,0,.06);
 }
-#mn-tab-os .os-kpi:last-child{ border-right:none; }
+#mn-tab-os .os-kpi-header{
+  display:flex; align-items:center; gap:6px;
+}
+#mn-tab-os .os-kpi-dot{
+  width:8px; height:8px; border-radius:50%; flex-shrink:0;
+}
+#mn-tab-os .os-kpi-dot.red   { background:#C0392B; }
+#mn-tab-os .os-kpi-dot.orange{ background:#E67E22; }
+#mn-tab-os .os-kpi-dot.green { background:#27AE60; }
+#mn-tab-os .os-kpi-title{
+  font-size:10px; font-weight:700; color:var(--ink);
+  text-transform:uppercase; letter-spacing:.06em; white-space:nowrap;
+}
 #mn-tab-os .os-kpi-num{
-  font-size:20px; font-weight:700; color:var(--ink);
+  font-size:26px; font-weight:700; color:var(--ink);
   font-variant-numeric:tabular-nums; line-height:1.1;
 }
-#mn-tab-os .os-kpi-num.atrasadas{ color:#C0392B; }
-#mn-tab-os .os-kpi-num.alta-prio{ color:#E67E22; }
-#mn-tab-os .os-kpi-label{
-  font-size:10px; color:var(--ink-soft); text-transform:uppercase;
-  letter-spacing:.05em; font-weight:600; white-space:nowrap;
+#mn-tab-os .os-kpi-num.red   { color:#C0392B; }
+#mn-tab-os .os-kpi-num.orange{ color:#E67E22; }
+#mn-tab-os .os-kpi-num.green { color:#27AE60; }
+#mn-tab-os .os-kpi-sub{
+  font-size:11px; color:var(--ink-soft);
 }
 
 /* ── Filter bar ── */
@@ -2148,8 +2163,8 @@ body{background:#fff;color:#000}
   #mn-tab-os .os-col:last-child{ border-bottom:none; }
   #mn-tab-os .os-filter-bar{ padding:8px 12px; }
   #mn-tab-os .os-kanban-header{ padding:10px 14px; }
-  #mn-tab-os .os-summary-strip{ flex-wrap:wrap; }
-  #mn-tab-os .os-kpi{ min-width:90px; flex:1 1 90px; }
+  #mn-tab-os .os-summary-strip{ flex-wrap:wrap; gap:8px; padding:8px 12px; }
+  #mn-tab-os .os-kpi{ min-width:calc(33% - 8px); flex:1 1 calc(33% - 8px); max-width:unset; }
   #mn-tab-os .os-modal-grid{ grid-template-columns:1fr; }
   #mn-tab-os .os-modal-grid .full{ grid-column:1; }
 }
@@ -2847,12 +2862,36 @@ body{background:#fff;color:#000}
 
       <!-- Summary strip -->
       <div class="os-summary-strip" id="os-summary-strip">
-        <div class="os-kpi"><span class="os-kpi-num" id="os-kpi-total">—</span><span class="os-kpi-label">Total</span></div>
-        <div class="os-kpi"><span class="os-kpi-num" id="os-kpi-aberta">—</span><span class="os-kpi-label">Não iniciadas</span></div>
-        <div class="os-kpi"><span class="os-kpi-num" id="os-kpi-andamento">—</span><span class="os-kpi-label">Em andamento</span></div>
-        <div class="os-kpi"><span class="os-kpi-num" id="os-kpi-concluida">—</span><span class="os-kpi-label">Concluídas</span></div>
-        <div class="os-kpi"><span class="os-kpi-num atrasadas" id="os-kpi-atrasadas">—</span><span class="os-kpi-label">Atrasadas</span></div>
-        <div class="os-kpi"><span class="os-kpi-num alta-prio" id="os-kpi-altaprio">—</span><span class="os-kpi-label">Alta prioridade</span></div>
+        <div class="os-kpi">
+          <div class="os-kpi-header"><span class="os-kpi-title">Total OS</span></div>
+          <div class="os-kpi-num" id="os-kpi-total">—</div>
+          <div class="os-kpi-sub">Todas as ordens</div>
+        </div>
+        <div class="os-kpi">
+          <div class="os-kpi-header"><span class="os-kpi-title">Não iniciadas</span></div>
+          <div class="os-kpi-num" id="os-kpi-aberta">—</div>
+          <div class="os-kpi-sub">Aguardando início</div>
+        </div>
+        <div class="os-kpi">
+          <div class="os-kpi-header"><span class="os-kpi-title">Em andamento</span></div>
+          <div class="os-kpi-num" id="os-kpi-andamento">—</div>
+          <div class="os-kpi-sub">Em execução</div>
+        </div>
+        <div class="os-kpi">
+          <div class="os-kpi-header"><span class="os-kpi-dot green"></span><span class="os-kpi-title">Concluídas</span></div>
+          <div class="os-kpi-num green" id="os-kpi-concluida">—</div>
+          <div class="os-kpi-sub">Finalizadas</div>
+        </div>
+        <div class="os-kpi">
+          <div class="os-kpi-header"><span class="os-kpi-dot red"></span><span class="os-kpi-title">Atrasadas</span></div>
+          <div class="os-kpi-num red" id="os-kpi-atrasadas">—</div>
+          <div class="os-kpi-sub">Prazo vencido</div>
+        </div>
+        <div class="os-kpi">
+          <div class="os-kpi-header"><span class="os-kpi-dot orange"></span><span class="os-kpi-title">Alta prioridade</span></div>
+          <div class="os-kpi-num orange" id="os-kpi-altaprio">—</div>
+          <div class="os-kpi-sub">Urgente + Alta</div>
+        </div>
       </div>
 
       <!-- Kanban board -->
