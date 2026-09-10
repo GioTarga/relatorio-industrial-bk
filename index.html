@@ -745,6 +745,43 @@
     .legend{ font-size:11px; gap:10px; }
   }
 
+/* ── Produtividade & Processos — responsive específico ── */
+@media(max-width:900px){
+  /* Tabs de linha rolam horizontalmente, sem quebrar em várias linhas */
+  #page-produtividade-processos .setor-tabs{
+    flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    padding-bottom:6px; scrollbar-width:none;
+  }
+  #page-produtividade-processos .setor-tabs::-webkit-scrollbar{ display:none; }
+  #page-produtividade-processos .setor-tab-btn{ flex-shrink:0; }
+  /* Period bar começa a comprimir: texto dos labels some, só controles */
+  #page-produtividade-processos .period-bar label{ display:none; }
+  #page-produtividade-processos .period-bar select,
+  #page-produtividade-processos .period-bar .dr-btn{ flex:1; }
+}
+@media(max-width:640px){
+  /* Topbar menor */
+  #page-produtividade-processos .topbar{ padding:14px 16px 12px; }
+  /* Period bar empilha verticalmente */
+  #page-produtividade-processos .period-bar{
+    flex-direction:column; align-items:stretch; gap:8px;
+  }
+  #page-produtividade-processos .period-bar label{ display:block; }
+  #page-produtividade-processos .period-bar select,
+  #page-produtividade-processos .period-bar .btn-refresh,
+  #page-produtividade-processos .period-bar .dr-btn{ width:100%; }
+  /* Painéis com menos padding */
+  #page-produtividade-processos .panel{ padding:14px 14px; margin-bottom:16px; }
+  /* Container */
+  #page-produtividade-processos .container{ padding:14px 12px 40px; }
+}
+@media(max-width:480px){
+  /* KPI cards vão para 1 coluna em telas muito pequenas */
+  #page-produtividade-processos .kpi-grid{ grid-template-columns:1fr !important; gap:8px; }
+  #page-produtividade-processos #kpiGridExtra .kpi-card{ flex:0 1 100%; }
+  #page-produtividade-processos .kpi-card .value{ font-size:22px; }
+}
+
 /* ============ MÓDULO PCP & ESTOQUE — CSS ============ */
 
 
@@ -1906,10 +1943,10 @@ body{background:#fff;color:#000}
 #mn-tab-os .os-summary-strip{
   display:flex; gap:10px; padding:10px 16px;
   border-bottom:1px solid var(--line);
-  background:#FAF7F2; overflow-x:auto; align-items:stretch;
+  background:#FAF7F2; align-items:stretch;
 }
 #mn-tab-os .os-kpi{
-  flex:1; min-width:110px; max-width:200px;
+  flex:1 1 0; min-width:100px;
   background:#fff; border:1px solid #E4E0D8;
   border-radius:8px; padding:10px 14px;
   display:flex; flex-direction:column; gap:4px;
