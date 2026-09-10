@@ -1887,7 +1887,7 @@ body{background:#fff;color:#000}
 /* ── Header ── */
 #mn-tab-os .os-kanban-header{
   display:flex; align-items:center; justify-content:space-between;
-  padding:14px 24px; gap:12px; flex-wrap:wrap;
+  padding:12px 20px; gap:12px; flex-wrap:wrap;
   border-bottom:1px solid var(--line);
 }
 #mn-tab-os .os-kanban-title{
@@ -1895,82 +1895,129 @@ body{background:#fff;color:#000}
 }
 #mn-tab-os .os-new-btn{
   background:var(--red-dark); color:#fff; border:none;
-  padding:8px 18px; border-radius:var(--radius-sm);
-  font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;
+  padding:9px 20px; border-radius:var(--radius-sm);
+  font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;
+  box-shadow:0 2px 6px rgba(192,57,43,.30);
+  letter-spacing:.02em;
 }
-#mn-tab-os .os-new-btn:hover{ opacity:.88; }
+#mn-tab-os .os-new-btn:hover{ opacity:.88; box-shadow:0 3px 10px rgba(192,57,43,.40); }
+
+/* ── Summary strip ── */
+#mn-tab-os .os-summary-strip{
+  display:flex; gap:0; border-bottom:1px solid var(--line);
+  background:var(--paper); overflow-x:auto;
+}
+#mn-tab-os .os-kpi{
+  flex:1; text-align:center; padding:8px 12px; min-width:80px;
+  border-right:1px solid var(--line); display:flex; flex-direction:column;
+  align-items:center; gap:2px;
+}
+#mn-tab-os .os-kpi:last-child{ border-right:none; }
+#mn-tab-os .os-kpi-num{
+  font-size:20px; font-weight:700; color:var(--ink);
+  font-variant-numeric:tabular-nums; line-height:1.1;
+}
+#mn-tab-os .os-kpi-num.atrasadas{ color:#C0392B; }
+#mn-tab-os .os-kpi-num.alta-prio{ color:#E67E22; }
+#mn-tab-os .os-kpi-label{
+  font-size:10px; color:var(--ink-soft); text-transform:uppercase;
+  letter-spacing:.05em; font-weight:600; white-space:nowrap;
+}
 
 /* ── Filter bar ── */
 #mn-tab-os .os-filter-bar{
-  display:flex; gap:8px; flex-wrap:wrap; align-items:center;
-  padding:10px 24px; border-bottom:1px solid var(--line);
+  display:flex; gap:6px; flex-wrap:wrap; align-items:center;
+  padding:8px 20px; border-bottom:1px solid var(--line);
   background:var(--paper);
 }
-#mn-tab-os .os-filter-bar select,
-#mn-tab-os .os-filter-bar input[type="text"]{
+/* Busca em destaque */
+#mn-tab-os .os-search-wrap{
+  position:relative; flex:1; min-width:180px; max-width:280px;
+}
+#mn-tab-os .os-search-icon{
+  position:absolute; left:8px; top:50%; transform:translateY(-50%);
+  font-size:12px; color:var(--ink-soft); pointer-events:none;
+}
+#mn-tab-os .os-search-input{
+  width:100%; padding:6px 10px 6px 28px; border:1.5px solid var(--line);
+  border-radius:var(--radius-sm); background:var(--paper);
+  color:var(--ink); font-size:12px; box-sizing:border-box;
+  transition:border-color .15s;
+}
+#mn-tab-os .os-search-input:focus{ outline:none; border-color:var(--red-dark); }
+#mn-tab-os .os-filter-bar select{
   padding:6px 10px; border:1px solid var(--line);
   border-radius:var(--radius-sm); background:var(--paper);
-  color:var(--ink); font-size:12px; max-width:170px;
+  color:var(--ink); font-size:12px; max-width:160px;
 }
 #mn-tab-os .os-btn-clear{
-  background:transparent; color:var(--ink-soft); border:1px solid var(--line);
+  display:none; background:transparent; color:var(--ink-soft); border:1px solid var(--line);
   padding:5px 12px; border-radius:var(--radius-sm);
   font-size:12px; cursor:pointer; white-space:nowrap;
 }
+#mn-tab-os .os-btn-clear.visible{ display:inline-block; }
 #mn-tab-os .os-btn-clear:hover{ background:var(--line); }
 
 /* ── Kanban board ── */
 #mn-tab-os .os-kanban-board{
-  display:flex; gap:0; overflow-x:auto; min-height:520px; flex:1;
+  display:flex; gap:0; overflow-x:auto; flex:1;
+  /* altura fixa = viewport menos topbar + abas + header OS + filtros + summary strip */
+  height:calc(100vh - 268px);
 }
 #mn-tab-os .os-col{
   flex:1 1 280px; min-width:260px; display:flex; flex-direction:column;
-  border-right:1px solid var(--line);
+  border-right:1px solid var(--line); overflow:hidden;
 }
 #mn-tab-os .os-col:last-child{ border-right:none; }
 
 /* Column headers */
 #mn-tab-os .os-col-header{
   display:flex; align-items:center; gap:8px;
-  padding:12px 16px; font-size:11px; font-weight:700;
+  padding:10px 16px; font-size:11px; font-weight:700;
   text-transform:uppercase; letter-spacing:.06em;
-  border-bottom:3px solid transparent; position:sticky; top:0; z-index:2;
+  border-bottom:2px solid transparent; flex-shrink:0;
 }
 #mn-tab-os .os-col-header-aberta{
-  background:rgba(99,132,192,0.10); border-color:#6384C0; color:#3D5A99;
+  background:#F0F4FF; border-color:#6384C0; color:#3D5A99;
 }
 #mn-tab-os .os-col-header-em_andamento{
-  background:rgba(230,126,34,0.10); border-color:#E67E22; color:#A0522D;
+  background:#FFF4EC; border-color:#E67E22; color:#A0522D;
 }
 #mn-tab-os .os-col-header-concluida{
-  background:rgba(39,174,96,0.10); border-color:#27AE60; color:#1A6B3A;
+  background:#EDFAF3; border-color:#27AE60; color:#1A6B3A;
 }
 #mn-tab-os .os-col-count{
-  background:rgba(0,0,0,0.10); border-radius:99px;
-  padding:1px 7px; font-size:11px; font-weight:700; color:inherit;
+  background:rgba(0,0,0,0.12); border-radius:99px;
+  padding:1px 8px; font-size:11px; font-weight:700; color:inherit;
+  margin-left:auto;
 }
 
-/* Column body — drop target */
+/* Column body — rola internamente, header fica fixo */
 #mn-tab-os .os-col-body{
-  flex:1; padding:10px; display:flex; flex-direction:column;
-  gap:8px; min-height:200px; transition:background .15s;
+  flex:1; padding:8px; display:flex; flex-direction:column;
+  gap:6px; overflow-y:auto; transition:background .15s;
 }
 #mn-tab-os .os-col-body.drag-over{
-  background:rgba(192,57,43,0.06); border-radius:var(--radius);
+  background:rgba(192,57,43,0.06);
 }
 
 /* ── Cards ── */
 #mn-tab-os .os-card{
-  background:var(--paper); border:1px solid var(--line);
+  background:#fff; border:1px solid #E8EAED;
   border-radius:var(--radius); padding:10px 12px;
   cursor:pointer; user-select:none;
   border-left:4px solid #BDC3C7;
-  transition:box-shadow .15s, transform .1s;
+  box-shadow:0 1px 3px rgba(0,0,0,.07);
+  transition:box-shadow .15s, border-color .15s;
 }
 #mn-tab-os .os-card:hover{
-  box-shadow:0 2px 8px rgba(0,0,0,.10); transform:translateY(-1px);
+  box-shadow:0 3px 10px rgba(0,0,0,.12); border-color:#C4C8CF;
 }
-#mn-tab-os .os-card.dragging{ opacity:.45; }
+#mn-tab-os .os-card.dragging{ opacity:.40; }
+/* Card atrasada — borda vermelha adicional no topo */
+#mn-tab-os .os-card.os-card-atrasada{
+  border-top:2px solid #C0392B;
+}
 
 /* Priority border — left edge */
 #mn-tab-os .os-card-prio-critica{ border-left-color:#C0392B; }
@@ -1980,55 +2027,57 @@ body{background:#fff;color:#000}
 
 /* Card anatomy */
 #mn-tab-os .os-card-top{
-  display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-bottom:6px;
+  display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-bottom:5px;
 }
 #mn-tab-os .os-card-num{
   margin-left:auto; font-size:10px; color:var(--ink-soft);
-  font-variant-numeric:tabular-nums; white-space:nowrap;
+  font-variant-numeric:tabular-nums; white-space:nowrap; flex-shrink:0;
 }
 #mn-tab-os .os-card-desc{
-  font-size:13px; color:var(--ink); line-height:1.4;
+  font-size:13px; font-weight:500; color:var(--ink); line-height:1.4;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
   overflow:hidden; margin-bottom:6px;
 }
 #mn-tab-os .os-card-meta{
-  font-size:11px; color:var(--ink-soft); margin-bottom:5px; line-height:1.6;
+  font-size:11px; color:var(--ink-soft); margin-bottom:5px; line-height:1.55;
 }
 #mn-tab-os .os-card-footer{
   display:flex; justify-content:space-between; align-items:center;
   font-size:11px; color:var(--ink-soft);
-  border-top:1px solid var(--line); padding-top:6px; margin-top:4px;
+  border-top:1px solid #F0F0F0; padding-top:6px; margin-top:4px;
 }
 
 /* Priority tags */
 #mn-tab-os .os-prio-tag{
-  display:inline-block; padding:1px 6px; border-radius:99px;
+  display:inline-flex; align-items:center; padding:2px 7px; border-radius:99px;
   font-size:10px; font-weight:700; white-space:nowrap;
 }
-#mn-tab-os .os-prio-tag-critica{ background:#F8D7DA; color:#721C24; }
-#mn-tab-os .os-prio-tag-alta   { background:#FFE8CC; color:#7D4000; }
-#mn-tab-os .os-prio-tag-media  { background:#E9ECEF; color:#495057; }
-#mn-tab-os .os-prio-tag-baixa  { background:#F1F3F5; color:#868E96; }
+#mn-tab-os .os-prio-tag-critica{ background:#FDECEA; color:#C0392B; }
+#mn-tab-os .os-prio-tag-alta   { background:#FEF0E0; color:#D35400; }
+#mn-tab-os .os-prio-tag-media  { background:#FFF9E6; color:#9A7D0A; }
+#mn-tab-os .os-prio-tag-baixa  { background:#F2F2F2; color:#888; }
 
 /* Tipo tags */
 #mn-tab-os .os-tipo-tag{
-  display:inline-block; padding:1px 6px; border-radius:99px;
+  display:inline-flex; align-items:center; padding:2px 7px; border-radius:99px;
   font-size:10px; font-weight:700;
 }
-#mn-tab-os .os-tipo-tag-corretiva { background:#F8D7DA; color:#721C24; }
-#mn-tab-os .os-tipo-tag-preventiva{ background:#D1ECF1; color:#0C5460; }
+#mn-tab-os .os-tipo-tag-corretiva { background:#FDECEA; color:#C0392B; }
+#mn-tab-os .os-tipo-tag-preventiva{ background:#EAF4FB; color:#1A6B9A; }
 
 /* Overdue badge */
 #mn-tab-os .os-badge-atrasada{
-  display:inline-block; padding:1px 6px; border-radius:99px;
-  font-size:10px; font-weight:700; background:#C0392B; color:#fff;
+  display:inline-flex; align-items:center; gap:3px; padding:2px 7px;
+  border-radius:99px; font-size:10px; font-weight:700;
+  background:#FDECEA; color:#C0392B; white-space:nowrap;
 }
 
 /* Empty column */
 #mn-tab-os .os-col-empty{
   text-align:center; color:var(--ink-soft); font-size:12px;
-  padding:32px 12px; opacity:.6;
+  padding:40px 16px; opacity:.65; line-height:1.6;
 }
+#mn-tab-os .os-col-empty strong{ display:block; font-size:13px; margin-bottom:4px; }
 
 /* ── Modal ── */
 #os-modal-overlay{
@@ -2090,13 +2139,17 @@ body{background:#fff;color:#000}
 
 /* ── Responsive ── */
 @media(max-width:720px){
-  #mn-tab-os .os-kanban-board{ flex-direction:column; }
+  #mn-tab-os .os-kanban-board{ flex-direction:column; height:auto; overflow-x:hidden; }
   #mn-tab-os .os-col{
     min-width:unset; border-right:none; border-bottom:1px solid var(--line);
+    overflow:visible;
   }
+  #mn-tab-os .os-col-body{ overflow-y:visible; }
   #mn-tab-os .os-col:last-child{ border-bottom:none; }
   #mn-tab-os .os-filter-bar{ padding:8px 12px; }
-  #mn-tab-os .os-kanban-header{ padding:12px 16px; }
+  #mn-tab-os .os-kanban-header{ padding:10px 14px; }
+  #mn-tab-os .os-summary-strip{ flex-wrap:wrap; }
+  #mn-tab-os .os-kpi{ min-width:90px; flex:1 1 90px; }
   #mn-tab-os .os-modal-grid{ grid-template-columns:1fr; }
   #mn-tab-os .os-modal-grid .full{ grid-column:1; }
 }
@@ -2760,10 +2813,13 @@ body{background:#fff;color:#000}
 
       <!-- Filtros -->
       <div class="os-filter-bar">
+        <div class="os-search-wrap">
+          <span class="os-search-icon">🔍</span>
+          <input type="text" id="os-fil-busca" class="os-search-input" placeholder="Buscar descrição, equipamento…">
+        </div>
         <select id="os-fil-setor">
           <option value="">Todos os locais</option>
         </select>
-        <input type="text" id="os-fil-equip" placeholder="Equipamento…">
         <select id="os-fil-resp">
           <option value="">Todos responsáveis</option>
           <option value="MECÂNICA">Mecânica</option>
@@ -2785,8 +2841,18 @@ body{background:#fff;color:#000}
           <option value="corretiva">Corretiva</option>
           <option value="preventiva">Preventiva</option>
         </select>
-        <input type="text" id="os-fil-busca" placeholder="Buscar descrição…" style="max-width:200px;">
-        <button type="button" class="os-btn-clear" onclick="OS_clearFilters()">Limpar</button>
+        <input type="text" id="os-fil-equip" placeholder="Equipamento…" style="padding:6px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--paper);color:var(--ink);font-size:12px;max-width:140px;">
+        <button type="button" id="os-btn-clear" class="os-btn-clear" onclick="OS_clearFilters()">✕ Limpar</button>
+      </div>
+
+      <!-- Summary strip -->
+      <div class="os-summary-strip" id="os-summary-strip">
+        <div class="os-kpi"><span class="os-kpi-num" id="os-kpi-total">—</span><span class="os-kpi-label">Total</span></div>
+        <div class="os-kpi"><span class="os-kpi-num" id="os-kpi-aberta">—</span><span class="os-kpi-label">Não iniciadas</span></div>
+        <div class="os-kpi"><span class="os-kpi-num" id="os-kpi-andamento">—</span><span class="os-kpi-label">Em andamento</span></div>
+        <div class="os-kpi"><span class="os-kpi-num" id="os-kpi-concluida">—</span><span class="os-kpi-label">Concluídas</span></div>
+        <div class="os-kpi"><span class="os-kpi-num atrasadas" id="os-kpi-atrasadas">—</span><span class="os-kpi-label">Atrasadas</span></div>
+        <div class="os-kpi"><span class="os-kpi-num alta-prio" id="os-kpi-altaprio">—</span><span class="os-kpi-label">Alta prioridade</span></div>
       </div>
 
       <!-- Kanban board -->
@@ -2797,7 +2863,7 @@ body{background:#fff;color:#000}
              ondragleave="OS_onDragLeave(event)"
              ondrop="OS_onDrop(event,'aberta')">
           <div class="os-col-header os-col-header-aberta">
-            NÃO INICIADO <span class="os-col-count" id="os-cnt-aberta">0</span>
+            Não iniciadas <span class="os-col-count" id="os-cnt-aberta">0</span>
           </div>
           <div class="os-col-body" id="os-body-aberta"></div>
         </div>
@@ -2807,7 +2873,7 @@ body{background:#fff;color:#000}
              ondragleave="OS_onDragLeave(event)"
              ondrop="OS_onDrop(event,'em_andamento')">
           <div class="os-col-header os-col-header-em_andamento">
-            EM ANDAMENTO <span class="os-col-count" id="os-cnt-em_andamento">0</span>
+            Em andamento <span class="os-col-count" id="os-cnt-em_andamento">0</span>
           </div>
           <div class="os-col-body" id="os-body-em_andamento"></div>
         </div>
@@ -2817,7 +2883,7 @@ body{background:#fff;color:#000}
              ondragleave="OS_onDragLeave(event)"
              ondrop="OS_onDrop(event,'concluida')">
           <div class="os-col-header os-col-header-concluida">
-            CONCLUÍDA <span class="os-col-count" id="os-cnt-concluida">0</span>
+            Concluídas <span class="os-col-count" id="os-cnt-concluida">0</span>
           </div>
           <div class="os-col-body" id="os-body-concluida"></div>
         </div>
@@ -8452,6 +8518,21 @@ function OS_matchFilter(r, f){
   return true;
 }
 
+function OS_hasActiveFilter(){
+  const f = OS_getFilters();
+  return !!(f.setor || f.equip || f.resp || f.prio || f.tipo || f.busca);
+}
+
+function OS_updateClearBtn(){
+  const btn = document.getElementById('os-btn-clear');
+  if(!btn) return;
+  if(OS_hasActiveFilter()){
+    btn.classList.add('visible');
+  } else {
+    btn.classList.remove('visible');
+  }
+}
+
 function OS_clearFilters(){
   ['os-fil-setor','os-fil-resp','os-fil-prio','os-fil-tipo'].forEach(function(id){
     const el = document.getElementById(id); if(el) el.value = '';
@@ -8462,23 +8543,19 @@ function OS_clearFilters(){
   OS_renderKanban();
 }
 
-function OS_sortCards(list){
-  // Sort: date ASC first, then priority (urgente → baixa)
-  return list.slice().sort(function(a, b){
-    const da = a.data_abertura || '';
-    const db = b.data_abertura || '';
-    if(da < db) return -1;
-    if(da > db) return  1;
-    return (OS_PRIO_ORDER[a.prioridade] || 2) - (OS_PRIO_ORDER[b.prioridade] || 2);
-  });
+// Calcula quantos dias uma OS está atrasada
+function OS_diasAtraso(r){
+  if(!r.prazo_planejado) return 0;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(r.prazo_planejado + 'T00:00:00');
+  const diff = Math.floor((today - d) / 86400000);
+  return diff > 0 ? diff : 0;
 }
 
 function OS_isAtrasada(r){
   if(!r.prazo_planejado) return false;
   if(r.status === 'concluida' || r.status === 'cancelada') return false;
-  const today = new Date(); today.setHours(0,0,0,0);
-  const d = new Date(r.prazo_planejado + 'T00:00:00');
-  return d < today;
+  return OS_diasAtraso(r) > 0;
 }
 
 function OS_colStatuses(colKey){
@@ -8488,8 +8565,48 @@ function OS_colStatuses(colKey){
   return [];
 }
 
+function OS_sortCards(list){
+  // Ordem: 1º atrasadas (mais antigas primeiro), 2º data abertura ASC, 3º prioridade
+  return list.slice().sort(function(a, b){
+    const aAt = OS_isAtrasada(a) ? 1 : 0;
+    const bAt = OS_isAtrasada(b) ? 1 : 0;
+    if(aAt !== bAt) return bAt - aAt; // atrasadas primeiro
+    const da = a.data_abertura || '';
+    const db = b.data_abertura || '';
+    if(da < db) return -1;
+    if(da > db) return  1;
+    return (OS_PRIO_ORDER[a.prioridade] || 2) - (OS_PRIO_ORDER[b.prioridade] || 2);
+  });
+}
+
+function OS_updateSummary(allFiltered){
+  const total    = OS_ALL.length;
+  const abertas  = OS_ALL.filter(function(r){ return r.status === 'aberta'; }).length;
+  const andamento= OS_ALL.filter(function(r){ return r.status === 'em_andamento'; }).length;
+  const conc     = OS_ALL.filter(function(r){ return r.status === 'concluida' || r.status === 'cancelada'; }).length;
+  const atrasadas= OS_ALL.filter(function(r){ return OS_isAtrasada(r); }).length;
+  const altaPrio = OS_ALL.filter(function(r){
+    return (r.prioridade === 'alta' || r.prioridade === 'critica') &&
+           r.status !== 'concluida' && r.status !== 'cancelada';
+  }).length;
+
+  function set(id, val){ const el = document.getElementById(id); if(el) el.textContent = val; }
+  set('os-kpi-total',    total);
+  set('os-kpi-aberta',   abertas);
+  set('os-kpi-andamento',andamento);
+  set('os-kpi-concluida',conc);
+  set('os-kpi-atrasadas',atrasadas);
+  set('os-kpi-altaprio', altaPrio);
+}
+
 function OS_renderKanban(){
   const f = OS_getFilters();
+  const emptyMsgs = {
+    aberta:       '<strong>Tudo em andamento!</strong>Nenhuma OS aguardando início.',
+    em_andamento: '<strong>Sem OS em andamento.</strong>Arraste um card para cá para iniciar.',
+    concluida:    '<strong>Nenhuma OS concluída.</strong>OS finalizadas aparecerão aqui.'
+  };
+
   ['aberta', 'em_andamento', 'concluida'].forEach(function(col){
     const statuses = OS_colStatuses(col);
     const items    = OS_ALL.filter(function(r){
@@ -8501,7 +8618,7 @@ function OS_renderKanban(){
     if(cntEl) cntEl.textContent = sorted.length;
     if(!body) return;
     if(!sorted.length){
-      body.innerHTML = '<div class="os-col-empty">Nenhuma OS aqui.</div>';
+      body.innerHTML = '<div class="os-col-empty">' + (emptyMsgs[col] || 'Nenhuma OS.') + '</div>';
       return;
     }
     body.innerHTML = sorted.map(OS_buildCard).join('');
@@ -8511,6 +8628,9 @@ function OS_renderKanban(){
       card.addEventListener('click',     OS_onCardClick);
     });
   });
+
+  OS_updateSummary();
+  OS_updateClearBtn();
 }
 
 function OS_buildCard(r){
@@ -8519,21 +8639,23 @@ function OS_buildCard(r){
   const prioLabels = { critica:'URGENTE', alta:'Alta', media:'Média', baixa:'Baixa' };
   const prioLabel  = prioLabels[prio] || prio;
   const tipo       = r.tipo || 'preventiva';
-  const tipoLabel  = tipo === 'corretiva' ? 'CORRETIVA' : 'PREVENTIVA';
+  const tipoLabel  = tipo === 'corretiva' ? 'Corretiva' : 'Preventiva';
   const atrasada   = OS_isAtrasada(r);
-  const desc       = (r.descricao || '').slice(0, 120);
-  const equip      = r.maquina    ? '🔧 ' + r.maquina  : '';
-  const setor      = r.setor      ? '📍 ' + r.setor    : '';
+  const dias       = atrasada ? OS_diasAtraso(r) : 0;
+  const desc       = (r.descricao || '').slice(0, 130);
+  const equip      = r.maquina ? '🔧 ' + r.maquina : '';
+  const setor      = r.setor   ? '📍 ' + r.setor   : '';
   const resp       = r.responsavel ? '👤 ' + r.responsavel : '';
   const p          = (r.data_abertura || '').split('-');
   const dataStr    = p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0].slice(2) : '';
-  const meta       = [equip, setor].filter(Boolean).join('   ');
+  const meta       = [equip, setor].filter(Boolean).join('  ');
+  const atrasadaClass = atrasada ? ' os-card-atrasada' : '';
 
-  return '<div class="os-card os-card-prio-' + prio + '" draggable="true" data-id="' + r.id + '">' +
+  return '<div class="os-card os-card-prio-' + prio + atrasadaClass + '" draggable="true" data-id="' + r.id + '">' +
     '<div class="os-card-top">' +
       '<span class="os-prio-tag os-prio-tag-' + prio + '">' + prioLabel + '</span>' +
       '<span class="os-tipo-tag os-tipo-tag-' + tipo + '">' + tipoLabel + '</span>' +
-      (atrasada ? '<span class="os-badge-atrasada">ATRASADA</span>' : '') +
+      (atrasada ? '<span class="os-badge-atrasada">⚠ ATRASADA · ' + dias + ' d</span>' : '') +
       '<span class="os-card-num">' + num + '</span>' +
     '</div>' +
     '<div class="os-card-desc">' + desc + '</div>' +
@@ -8575,14 +8697,22 @@ function OS_onDrop(e, col){
   if(body) body.classList.remove('drag-over');
   if(!OS_draggingId) return;
 
-  const record   = OS_ALL.find(function(r){ return r.id === OS_draggingId; });
+  const record    = OS_ALL.find(function(r){ return r.id === OS_draggingId; });
   const draggedId = OS_draggingId;
-  OS_draggingId  = null;
+  OS_draggingId   = null;
   if(!record) return;
 
   const statusMap = { aberta:'aberta', em_andamento:'em_andamento', concluida:'concluida' };
   const newStatus = statusMap[col];
   if(!newStatus || record.status === newStatus) return;
+
+  // Confirmação antes de marcar como concluída
+  if(newStatus === 'concluida'){
+    const num = '#' + String(record.numero || '').padStart(4, '0');
+    if(!confirm('Marcar OS ' + num + ' como Concluída?\n\nEsta ação registra a data de conclusão e move o card para a coluna Concluídas.')){
+      return;
+    }
+  }
 
   OS_updateStatus(draggedId, newStatus);
 }
@@ -8755,6 +8885,19 @@ document.addEventListener('keydown', function OS_escHandler(e){
   const el = document.getElementById(id);
   if(el) el.addEventListener('input', OS_renderKanban);
 });
+// Responsive: mobile — kanban sem altura fixa e sem overflow hidden
+(function OS_responsiveHeight(){
+  function OS_applyHeight(){
+    const board = document.querySelector('#mn-tab-os .os-kanban-board');
+    if(!board) return;
+    if(window.innerWidth <= 720){
+      board.style.height = 'auto';
+    } else {
+      board.style.height = '';
+    }
+  }
+  window.addEventListener('resize', OS_applyHeight);
+})();
 
 /* ============================================================================
    PÁGINA LANÇAMENTO — formulário de entrada direto no Supabase
