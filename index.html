@@ -1881,6 +1881,137 @@ body{background:#fff;color:#000}
   }
 
 </style>
+<style>
+  /* ============ CAMADA VISUAL BK360 — refinamento ============
+     Mantém a paleta e as fontes originais; concentra o acabamento em
+     hierarquia, estados de interação e leitura de dados. */
+  :root{
+    --surface-soft:#fffdf8;
+    --line-strong:#e5c99e;
+    --shadow-soft:0 5px 18px rgba(110,0,0,.07);
+    --shadow-hover:0 10px 24px rgba(110,0,0,.12);
+  }
+  html{ scroll-behavior:smooth; }
+  body{ background:linear-gradient(135deg,#fff8e7 0%,#fffdf8 48%,#fff4df 100%); line-height:1.45; }
+  button, input, select, textarea{ font-family:var(--font-body); }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{
+    outline:3px solid rgba(181,100,11,.28); outline-offset:2px;
+  }
+
+  .sidebar{
+    width:224px;
+    background:linear-gradient(180deg,#6e0000 0%,#5d0000 100%);
+    box-shadow:8px 0 26px rgba(73,0,0,.10);
+  }
+  .sidebar-brand{ padding:21px 20px; background:rgba(0,0,0,.08); }
+  .sidebar-mark{ width:30px; height:30px; font-size:16px; box-shadow:0 3px 8px rgba(0,0,0,.15); }
+  .sidebar-brand-text{ font-size:18px; letter-spacing:.4px; }
+  .sidebar-nav{ padding:18px 12px; gap:6px; }
+  .nav-item{
+    min-height:42px; border-left:3px solid transparent; padding:10px 13px;
+    color:#ffe9cf; transition:background .18s, color .18s, border-color .18s, transform .18s;
+  }
+  .nav-item:hover{ background:rgba(255,255,255,.11); transform:translateX(2px); }
+  .nav-item.active{
+    border-left-color:var(--gold); background:linear-gradient(90deg,#fff 0%,#fff8e7 100%);
+    color:var(--red-dark); box-shadow:0 4px 12px rgba(0,0,0,.10); transform:none;
+  }
+  .nav-item svg{ width:17px; height:17px; }
+  .main-content{ background:rgba(255,253,248,.35); }
+
+  .topbar{
+    padding:38px 36px 31px; background:linear-gradient(135deg,#6e0000 0%,#850000 62%,#6e0000 100%);
+    box-shadow:0 3px 14px rgba(110,0,0,.10);
+  }
+  .topbar::after{ height:6px; background:linear-gradient(90deg,var(--gold),#d79639 38%,transparent 100%); }
+  .brand .eyebrow{ letter-spacing:3.4px; color:#ffdcae; }
+  .brand h1{ font-size:30px; letter-spacing:.35px; }
+  .brand .subtitle{ color:#ffe9cf; }
+
+  .period-bar{
+    justify-content:flex-start; padding:13px 30px; gap:10px 14px;
+    background:rgba(255,255,255,.92); border-bottom-color:var(--line-strong);
+    box-shadow:0 4px 16px rgba(110,0,0,.07); backdrop-filter:blur(8px);
+  }
+  .period-bar label{ color:var(--red-dark); }
+  .period-bar input[type=date], .period-bar select{
+    background:var(--surface-soft); border-color:var(--line-strong); min-height:36px;
+  }
+  .period-bar input[type=date]:focus, .period-bar select:focus{ border-color:var(--red); box-shadow:0 0 0 3px rgba(161,1,1,.09); outline:none; }
+  .btn-refresh, .btn-download{
+    min-height:36px; border-radius:var(--radius-sm); box-shadow:0 4px 10px rgba(161,1,1,.18);
+    transition:transform .18s, box-shadow .18s, background .18s;
+  }
+  .btn-refresh:hover, .btn-download:hover{ transform:translateY(-1px); box-shadow:0 7px 15px rgba(161,1,1,.24); }
+
+  .container{ padding:28px 34px 58px; }
+  .panel{
+    border-color:var(--line-strong); border-radius:var(--radius-lg); padding:26px 30px;
+    box-shadow:var(--shadow-soft); transition:box-shadow .2s, border-color .2s;
+  }
+  .panel:hover{ border-color:#dfbd86; box-shadow:var(--shadow-hover); }
+  .panel-title{ color:var(--red-dark); margin-bottom:20px; letter-spacing:2.2px; }
+  .panel-title::after{ background:linear-gradient(90deg,var(--line-strong),transparent); }
+
+  .kpi-grid{ gap:16px; margin-bottom:34px; }
+  .kpi-card{
+    position:relative; overflow:hidden; border-color:var(--line-strong); padding:20px 18px;
+    box-shadow:var(--shadow-soft); transition:transform .18s, box-shadow .18s, border-color .18s;
+  }
+  .kpi-card::before{ content:""; position:absolute; inset:0 0 auto; height:4px; background:var(--gold); }
+  .kpi-card:hover{ transform:translateY(-3px); border-color:#d8b574; box-shadow:var(--shadow-hover); }
+  .kpi-card.good::before{ background:var(--good); }
+  .kpi-card.warn::before{ background:var(--warn); }
+  .kpi-card .label{ margin-bottom:10px; letter-spacing:1.5px; }
+  .kpi-card .value{ font-size:31px; letter-spacing:-.4px; }
+
+  .ri-subtabs, .lanc-tabs, .setor-tabs{ border-color:var(--line-strong); }
+  .ri-subtab-btn, .lanc-tab-btn, .setor-tab-btn{ transition:color .18s, background .18s, border-color .18s; }
+  .ri-subtab-btn.active{ color:var(--red); border-bottom-color:var(--gold); }
+  .setor-tab-btn{ border-color:var(--line-strong); background:#fff2d5; }
+  .setor-tab-btn.active{ color:var(--red); border-top:2px solid var(--gold); }
+
+  .table-wrap, #riProdTable-wrap{ border-color:var(--line-strong); box-shadow:inset 0 1px 0 rgba(255,255,255,.7); }
+  table.detail tbody tr:nth-child(even) td, #riProdTable-wrap tbody tr:nth-child(even) td{ background:#fffaf0; }
+  table.detail tbody tr:hover td, #riProdTable-wrap tbody tr:hover td{ background:#fff0d2; }
+  table.detail thead th{ background:linear-gradient(90deg,var(--red-dark),var(--red)); }
+  table.detail tbody td{ line-height:1.4; }
+
+  .empty-state, .loading-state, .error-state{ border-radius:var(--radius-md); border:1px dashed var(--line-strong); background:var(--surface-soft); }
+  .status, .sync-status, .period-info{ letter-spacing:.1px; }
+  .btn, .btn-primary, .btn-secondary, .btn-outline, .btn-danger, .btn-small{
+    transition:transform .18s, box-shadow .18s, background .18s, border-color .18s;
+  }
+  .btn:hover, .btn-primary:hover, .btn-secondary:hover, .btn-outline:hover, .btn-danger:hover, .btn-small:hover{ transform:translateY(-1px); }
+
+  @media (max-width:1100px){
+    .sidebar{ width:204px; }
+    .container{ padding-left:24px; padding-right:24px; }
+    .period-bar{ padding-left:22px; padding-right:22px; }
+  }
+  @media (max-width:900px){
+    .sidebar{ width:100%; box-shadow:0 5px 16px rgba(73,0,0,.14); }
+    .sidebar-nav{ padding:10px 12px; }
+    .nav-item{ border-left:0; border-bottom:3px solid transparent; }
+    .nav-item.active{ border-bottom-color:var(--gold); }
+    .topbar{ padding:28px 20px 25px; }
+    .brand h1{ font-size:25px; }
+    .period-bar{ position:relative; top:auto; justify-content:center; }
+    .container{ padding:22px 16px 44px; }
+    .panel{ padding:21px 18px; }
+    .kpi-grid{ grid-template-columns:repeat(2,1fr) !important; gap:12px; }
+  }
+  @media (max-width:520px){
+    .period-bar{ align-items:stretch; }
+    .period-bar > *{ flex:1 1 44%; }
+    .period-bar label, .period-bar .sep{ flex:0 0 auto; align-self:center; }
+    .period-bar .period-info{ flex-basis:100%; text-align:center; margin-left:0; }
+    .kpi-grid, #tpKpiGrid, #prKpiGridInsumo{ grid-template-columns:1fr !important; }
+    .kpi-card .value{ font-size:28px; }
+    .topbar .subtitle{ max-width:31ch; margin-left:auto; margin-right:auto; }
+    .panel{ border-radius:var(--radius-md); }
+  }
+</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
@@ -2439,11 +2570,20 @@ body{background:#fff;color:#000}
       <div class="brand">
         <div class="text-block">
           <div class="eyebrow">Bread King · Manutenções</div>
-          <h1>Relatório de Manutenções</h1>
-          <div class="subtitle">Chamados, intervenções, tempo de reparo e recorrência por máquina e especialidade</div>
+          <h1>Manutenções</h1>
+          <div class="subtitle" id="mnSubtitle">Chamados, intervenções, tempo de reparo e recorrência por máquina e especialidade</div>
         </div>
       </div>
     </div>
+
+    <!-- Abas do módulo -->
+    <div class="setor-tabs" style="border-bottom:2px solid var(--line);margin-bottom:0;">
+      <button type="button" class="setor-tab-btn active" data-mntab="relatorio">Relatório</button>
+      <button type="button" class="setor-tab-btn" data-mntab="os">Ordem de Serviço</button>
+    </div>
+
+    <!-- ── ABA: RELATÓRIO ── -->
+    <div id="mn-tab-relatorio">
 
     <div class="period-bar">
       <label>Período</label>
@@ -2517,6 +2657,19 @@ body{background:#fff;color:#000}
       </div>
 
     </div>
+    </div><!-- /mn-tab-relatorio -->
+
+    <!-- ── ABA: ORDEM DE SERVIÇO ── -->
+    <div id="mn-tab-os" style="display:none;">
+      <div class="container" style="padding-top:32px;">
+        <div class="panel" style="text-align:center;padding:60px 32px;color:var(--ink-soft);">
+          <div style="font-size:48px;margin-bottom:16px;">🔧</div>
+          <div style="font-size:18px;font-weight:700;color:var(--ink);margin-bottom:8px;">Ordem de Serviço</div>
+          <div style="font-size:14px;">Em construção — descreva o que deve aparecer aqui.</div>
+        </div>
+      </div>
+    </div><!-- /mn-tab-os -->
+
   </div> <!-- /page-manutencao -->
 
   <!-- ============================================================ PÁGINA ESTOQUE ============================================================ -->
@@ -7949,6 +8102,20 @@ mnSetorEl.addEventListener('change', MN_refreshAll);
 mnMaquinaEl.addEventListener('change', MN_refreshAll);
 mnEspecialidadeEl.addEventListener('change', MN_refreshAll);
 document.getElementById('mnBtnRefresh').addEventListener('click', ()=> MN_loadData(true));
+
+// ── Abas do módulo Manutenções ──────────────────────────────────────────────
+document.querySelectorAll('[data-mntab]').forEach(btn => {
+  btn.addEventListener('click', function(){
+    const tab = this.dataset.mntab;
+    document.querySelectorAll('[data-mntab]').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    document.getElementById('mn-tab-relatorio').style.display = tab === 'relatorio' ? '' : 'none';
+    document.getElementById('mn-tab-os').style.display       = tab === 'os'        ? '' : 'none';
+    const subtitle = document.getElementById('mnSubtitle');
+    if(tab === 'relatorio') subtitle.textContent = 'Chamados, intervenções, tempo de reparo e recorrência por máquina e especialidade';
+    if(tab === 'os')        subtitle.textContent = 'Gestão de ordens de serviço corretivas e preventivas';
+  });
+});
 
 /* ============================================================================
    PÁGINA LANÇAMENTO — formulário de entrada direto no Supabase
