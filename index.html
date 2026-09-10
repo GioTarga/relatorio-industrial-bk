@@ -1881,105 +1881,224 @@ body{background:#fff;color:#000}
   }
 
 /* ═══════════════════════════════════════════════
-   MÓDULO ORDENS DE SERVIÇO — dentro de #page-manutencao #mn-tab-os
+   MÓDULO ORDENS DE SERVIÇO — Kanban — #page-manutencao #mn-tab-os
    ═══════════════════════════════════════════════ */
-#mn-tab-os .os-filters{
-  display:flex; gap:8px; flex-wrap:wrap;
-  padding:16px 32px; max-width:1600px; margin:0 auto; align-items:center;
+
+/* ── Header ── */
+#mn-tab-os .os-kanban-header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 24px; gap:12px; flex-wrap:wrap;
+  border-bottom:1px solid var(--line);
 }
-#mn-tab-os .os-form-select,
-#mn-tab-os .os-form-input{
-  padding:7px 10px; border:1px solid var(--line);
+#mn-tab-os .os-kanban-title{
+  font-size:15px; font-weight:700; color:var(--ink); letter-spacing:.01em;
+}
+#mn-tab-os .os-new-btn{
+  background:var(--red-dark); color:#fff; border:none;
+  padding:8px 18px; border-radius:var(--radius-sm);
+  font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;
+}
+#mn-tab-os .os-new-btn:hover{ opacity:.88; }
+
+/* ── Filter bar ── */
+#mn-tab-os .os-filter-bar{
+  display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+  padding:10px 24px; border-bottom:1px solid var(--line);
+  background:var(--paper);
+}
+#mn-tab-os .os-filter-bar select,
+#mn-tab-os .os-filter-bar input[type="text"]{
+  padding:6px 10px; border:1px solid var(--line);
   border-radius:var(--radius-sm); background:var(--paper);
-  color:var(--ink); font-size:13px;
+  color:var(--ink); font-size:12px; max-width:170px;
 }
-#mn-tab-os .os-table-wrap{
-  padding:0 32px 32px; max-width:1600px; margin:0 auto; overflow-x:auto;
+#mn-tab-os .os-btn-clear{
+  background:transparent; color:var(--ink-soft); border:1px solid var(--line);
+  padding:5px 12px; border-radius:var(--radius-sm);
+  font-size:12px; cursor:pointer; white-space:nowrap;
 }
-#mn-tab-os .os-table{
-  width:100%; border-collapse:collapse; font-size:13px;
-}
-#mn-tab-os .os-table th{
-  background:var(--paper); color:var(--ink-soft); font-weight:600;
-  padding:8px 10px; text-align:left; border-bottom:2px solid var(--line); white-space:nowrap;
-}
-#mn-tab-os .os-table td{
-  padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:middle;
-}
-#mn-tab-os .os-table tr:hover td{ background:var(--paper); }
+#mn-tab-os .os-btn-clear:hover{ background:var(--line); }
 
-/* Badges de status */
-#mn-tab-os .os-badge{
-  display:inline-block; padding:2px 8px; border-radius:99px;
-  font-size:11px; font-weight:600; white-space:nowrap;
+/* ── Kanban board ── */
+#mn-tab-os .os-kanban-board{
+  display:flex; gap:0; overflow-x:auto; min-height:520px; flex:1;
 }
-#mn-tab-os .os-badge-aberta     { background:#FFF3CD; color:#856404; }
-#mn-tab-os .os-badge-em_andamento{ background:#CCE5FF; color:#004085; }
-#mn-tab-os .os-badge-concluida  { background:#D4EDDA; color:#155724; }
-#mn-tab-os .os-badge-cancelada  { background:#F8D7DA; color:#721C24; }
-
-/* Badges de tipo */
-#mn-tab-os .os-tipo-corretiva{
-  display:inline-block; padding:2px 7px; border-radius:99px;
-  font-size:10px; font-weight:700; background:#F8D7DA; color:#721C24;
+#mn-tab-os .os-col{
+  flex:1 1 280px; min-width:260px; display:flex; flex-direction:column;
+  border-right:1px solid var(--line);
 }
-#mn-tab-os .os-tipo-preventiva{
-  display:inline-block; padding:2px 7px; border-radius:99px;
-  font-size:10px; font-weight:700; background:#D1ECF1; color:#0C5460;
+#mn-tab-os .os-col:last-child{ border-right:none; }
+
+/* Column headers */
+#mn-tab-os .os-col-header{
+  display:flex; align-items:center; gap:8px;
+  padding:12px 16px; font-size:11px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.06em;
+  border-bottom:3px solid transparent; position:sticky; top:0; z-index:2;
+}
+#mn-tab-os .os-col-header-aberta{
+  background:rgba(99,132,192,0.10); border-color:#6384C0; color:#3D5A99;
+}
+#mn-tab-os .os-col-header-em_andamento{
+  background:rgba(230,126,34,0.10); border-color:#E67E22; color:#A0522D;
+}
+#mn-tab-os .os-col-header-concluida{
+  background:rgba(39,174,96,0.10); border-color:#27AE60; color:#1A6B3A;
+}
+#mn-tab-os .os-col-count{
+  background:rgba(0,0,0,0.10); border-radius:99px;
+  padding:1px 7px; font-size:11px; font-weight:700; color:inherit;
 }
 
-/* Prioridade */
-#mn-tab-os .os-prio-critica{ color:#C0392B; font-weight:700; }
-#mn-tab-os .os-prio-alta   { color:#E67E22; font-weight:700; }
-#mn-tab-os .os-prio-media  { color:var(--ink-soft); }
-#mn-tab-os .os-prio-baixa  { color:var(--ink-soft); }
+/* Column body — drop target */
+#mn-tab-os .os-col-body{
+  flex:1; padding:10px; display:flex; flex-direction:column;
+  gap:8px; min-height:200px; transition:background .15s;
+}
+#mn-tab-os .os-col-body.drag-over{
+  background:rgba(192,57,43,0.06); border-radius:var(--radius);
+}
 
-/* Semáforo de prazo */
-#mn-tab-os .os-prazo-vencida{ color:#C0392B; font-weight:700; }
-#mn-tab-os .os-prazo-hoje   { color:#E67E22; font-weight:700; }
-#mn-tab-os .os-prazo-ok     { color:#27AE60; }
-#mn-tab-os .os-prazo-sem    { color:var(--ink-soft); }
+/* ── Cards ── */
+#mn-tab-os .os-card{
+  background:var(--paper); border:1px solid var(--line);
+  border-radius:var(--radius); padding:10px 12px;
+  cursor:pointer; user-select:none;
+  border-left:4px solid #BDC3C7;
+  transition:box-shadow .15s, transform .1s;
+}
+#mn-tab-os .os-card:hover{
+  box-shadow:0 2px 8px rgba(0,0,0,.10); transform:translateY(-1px);
+}
+#mn-tab-os .os-card.dragging{ opacity:.45; }
 
-/* Formulário de nova OS */
-#mn-tab-os .os-form-wrap{ padding:24px 32px; max-width:900px; margin:0 auto; }
-#mn-tab-os .os-form-grid{
+/* Priority border — left edge */
+#mn-tab-os .os-card-prio-critica{ border-left-color:#C0392B; }
+#mn-tab-os .os-card-prio-alta   { border-left-color:#E67E22; }
+#mn-tab-os .os-card-prio-media  { border-left-color:#95A5A6; }
+#mn-tab-os .os-card-prio-baixa  { border-left-color:#D5D8DC; }
+
+/* Card anatomy */
+#mn-tab-os .os-card-top{
+  display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-bottom:6px;
+}
+#mn-tab-os .os-card-num{
+  margin-left:auto; font-size:10px; color:var(--ink-soft);
+  font-variant-numeric:tabular-nums; white-space:nowrap;
+}
+#mn-tab-os .os-card-desc{
+  font-size:13px; color:var(--ink); line-height:1.4;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+  overflow:hidden; margin-bottom:6px;
+}
+#mn-tab-os .os-card-meta{
+  font-size:11px; color:var(--ink-soft); margin-bottom:5px; line-height:1.6;
+}
+#mn-tab-os .os-card-footer{
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:11px; color:var(--ink-soft);
+  border-top:1px solid var(--line); padding-top:6px; margin-top:4px;
+}
+
+/* Priority tags */
+#mn-tab-os .os-prio-tag{
+  display:inline-block; padding:1px 6px; border-radius:99px;
+  font-size:10px; font-weight:700; white-space:nowrap;
+}
+#mn-tab-os .os-prio-tag-critica{ background:#F8D7DA; color:#721C24; }
+#mn-tab-os .os-prio-tag-alta   { background:#FFE8CC; color:#7D4000; }
+#mn-tab-os .os-prio-tag-media  { background:#E9ECEF; color:#495057; }
+#mn-tab-os .os-prio-tag-baixa  { background:#F1F3F5; color:#868E96; }
+
+/* Tipo tags */
+#mn-tab-os .os-tipo-tag{
+  display:inline-block; padding:1px 6px; border-radius:99px;
+  font-size:10px; font-weight:700;
+}
+#mn-tab-os .os-tipo-tag-corretiva { background:#F8D7DA; color:#721C24; }
+#mn-tab-os .os-tipo-tag-preventiva{ background:#D1ECF1; color:#0C5460; }
+
+/* Overdue badge */
+#mn-tab-os .os-badge-atrasada{
+  display:inline-block; padding:1px 6px; border-radius:99px;
+  font-size:10px; font-weight:700; background:#C0392B; color:#fff;
+}
+
+/* Empty column */
+#mn-tab-os .os-col-empty{
+  text-align:center; color:var(--ink-soft); font-size:12px;
+  padding:32px 12px; opacity:.6;
+}
+
+/* ── Modal ── */
+#os-modal-overlay{
+  display:none; position:fixed; inset:0; z-index:9000;
+  background:rgba(0,0,0,.45); align-items:center; justify-content:center;
+}
+#os-modal-overlay.open{ display:flex; }
+#os-modal{
+  background:var(--paper); border-radius:var(--radius);
+  width:min(720px,96vw); max-height:90vh; overflow-y:auto;
+  box-shadow:0 8px 32px rgba(0,0,0,.22);
+}
+#mn-tab-os .os-modal-header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 20px; border-bottom:1px solid var(--line);
+  position:sticky; top:0; background:var(--paper); z-index:1;
+}
+#mn-tab-os .os-modal-title{ font-size:15px; font-weight:700; color:var(--ink); }
+#mn-tab-os .os-modal-close{
+  background:transparent; border:none; font-size:18px; cursor:pointer;
+  color:var(--ink-soft); line-height:1; padding:2px 6px;
+}
+#mn-tab-os .os-modal-body{ padding:20px; }
+#mn-tab-os .os-modal-grid{
   display:grid; grid-template-columns:1fr 1fr; gap:14px;
 }
-#mn-tab-os .os-form-grid .full{ grid-column:1/-1; }
-#mn-tab-os .os-form-label{
-  display:block; font-size:12px; font-weight:600; color:var(--ink-soft);
+#mn-tab-os .os-modal-grid .full{ grid-column:1/-1; }
+#mn-tab-os .os-modal-label{
+  display:block; font-size:11px; font-weight:600; color:var(--ink-soft);
   margin-bottom:4px; text-transform:uppercase; letter-spacing:.04em;
 }
-#mn-tab-os .os-form-select,
-#mn-tab-os .os-form-input,
-#mn-tab-os .os-form-textarea{
+#mn-tab-os .os-modal-input,
+#mn-tab-os .os-modal-select,
+#mn-tab-os .os-modal-textarea{
   width:100%; padding:8px 10px; border:1px solid var(--line);
   border-radius:var(--radius-sm); background:var(--paper);
   color:var(--ink); font-size:13px; box-sizing:border-box;
 }
-#mn-tab-os .os-form-textarea{ min-height:80px; resize:vertical; }
-#mn-tab-os .os-form-actions{ margin-top:20px; display:flex; gap:12px; align-items:center; }
-#mn-tab-os .os-btn-primary{
+#mn-tab-os .os-modal-textarea{ min-height:72px; resize:vertical; }
+#mn-tab-os .os-modal-actions{
+  display:flex; gap:10px; align-items:center;
+  padding:14px 20px; border-top:1px solid var(--line);
+  position:sticky; bottom:0; background:var(--paper);
+}
+#mn-tab-os .os-modal-save{
   background:var(--red-dark); color:#fff; border:none;
-  padding:10px 24px; border-radius:var(--radius-sm);
+  padding:9px 22px; border-radius:var(--radius-sm);
   font-size:13px; font-weight:600; cursor:pointer;
 }
-#mn-tab-os .os-btn-primary:hover{ opacity:.88; }
-#mn-tab-os .os-btn-secondary{
+#mn-tab-os .os-modal-save:hover{ opacity:.88; }
+#mn-tab-os .os-modal-cancel{
   background:transparent; color:var(--ink); border:1px solid var(--line);
-  padding:6px 14px; border-radius:var(--radius-sm);
-  font-size:12px; cursor:pointer;
+  padding:7px 16px; border-radius:var(--radius-sm); font-size:13px; cursor:pointer;
 }
-#mn-tab-os .os-btn-secondary:hover{ background:var(--paper); }
-#mn-tab-os .os-form-msg{ font-size:13px; font-weight:600; }
-#mn-tab-os .os-form-msg.success{ color:#27AE60; }
-#mn-tab-os .os-form-msg.error  { color:#C0392B; }
+#mn-tab-os .os-modal-cancel:hover{ background:var(--line); }
+#mn-tab-os .os-modal-msg{ font-size:12px; font-weight:600; }
+#mn-tab-os .os-modal-msg.success{ color:#27AE60; }
+#mn-tab-os .os-modal-msg.error  { color:#C0392B; }
 
-@media(max-width:680px){
-  #mn-tab-os .os-form-grid{ grid-template-columns:1fr; }
-  #mn-tab-os .os-form-grid .full{ grid-column:1; }
-  #mn-tab-os .os-filters{ padding:12px 16px; }
-  #mn-tab-os .os-table-wrap{ padding:0 16px 24px; }
+/* ── Responsive ── */
+@media(max-width:720px){
+  #mn-tab-os .os-kanban-board{ flex-direction:column; }
+  #mn-tab-os .os-col{
+    min-width:unset; border-right:none; border-bottom:1px solid var(--line);
+  }
+  #mn-tab-os .os-col:last-child{ border-bottom:none; }
+  #mn-tab-os .os-filter-bar{ padding:8px 12px; }
+  #mn-tab-os .os-kanban-header{ padding:12px 16px; }
+  #mn-tab-os .os-modal-grid{ grid-template-columns:1fr; }
+  #mn-tab-os .os-modal-grid .full{ grid-column:1; }
 }
 
 </style>
@@ -2633,134 +2752,183 @@ body{background:#fff;color:#000}
     <!-- ── ABA: ORDEM DE SERVIÇO ── -->
     <div id="mn-tab-os" style="display:none;">
 
-      <!-- Sub-abas: Painel | Abrir OS -->
-      <div class="setor-tabs sub-tabs" style="border-bottom:2px solid var(--line);margin-bottom:0;">
-        <button type="button" class="setor-tab-btn active" data-ostab="painel">📋 Painel</button>
-        <button type="button" class="setor-tab-btn" data-ostab="nova">➕ Abrir OS</button>
+      <!-- Header -->
+      <div class="os-kanban-header">
+        <span class="os-kanban-title">Ordens de Serviço</span>
+        <button type="button" class="os-new-btn" onclick="OS_openModal(null)">＋ ABRIR NOVA OS</button>
       </div>
 
-      <!-- PAINEL DE OS -->
-      <div id="os-subtab-painel">
-        <div class="os-filters" id="os-filter-bar">
-          <select id="os-fil-status" class="os-form-select" style="max-width:160px;">
-            <option value="">Todos os status</option>
-            <option value="aberta">Aberta</option>
-            <option value="em_andamento">Em andamento</option>
-            <option value="concluida">Concluída</option>
-            <option value="cancelada">Cancelada</option>
-          </select>
-          <select id="os-fil-tipo" class="os-form-select" style="max-width:180px;">
-            <option value="">Corretiva + Preventiva</option>
-            <option value="corretiva">Corretiva</option>
-            <option value="preventiva">Preventiva</option>
-          </select>
-          <select id="os-fil-setor" class="os-form-select" style="max-width:180px;">
-            <option value="">Todos os locais</option>
-          </select>
-          <input type="text" id="os-fil-busca" class="os-form-input" placeholder="Buscar descrição…" style="max-width:240px;">
-          <button type="button" class="os-btn-secondary" onclick="OS_clearFilters()">Limpar</button>
-          <span id="os-count" style="font-size:12px;color:var(--ink-soft);"></span>
-        </div>
-        <div class="os-table-wrap">
-          <div id="os-table-container"></div>
-        </div>
+      <!-- Filtros -->
+      <div class="os-filter-bar">
+        <select id="os-fil-setor">
+          <option value="">Todos os locais</option>
+        </select>
+        <input type="text" id="os-fil-equip" placeholder="Equipamento…">
+        <select id="os-fil-resp">
+          <option value="">Todos responsáveis</option>
+          <option value="MECÂNICA">Mecânica</option>
+          <option value="ELÉTRICA">Elétrica</option>
+          <option value="HIDRAULICA">Hidráulica</option>
+          <option value="OPERADORES">Operadores</option>
+          <option value="ADM">ADM</option>
+          <option value="TERCEIROS">Terceiros</option>
+        </select>
+        <select id="os-fil-prio">
+          <option value="">Todas prioridades</option>
+          <option value="critica">Urgente / Crítica</option>
+          <option value="alta">Alta</option>
+          <option value="media">Média</option>
+          <option value="baixa">Baixa</option>
+        </select>
+        <select id="os-fil-tipo">
+          <option value="">Corretiva + Preventiva</option>
+          <option value="corretiva">Corretiva</option>
+          <option value="preventiva">Preventiva</option>
+        </select>
+        <input type="text" id="os-fil-busca" placeholder="Buscar descrição…" style="max-width:200px;">
+        <button type="button" class="os-btn-clear" onclick="OS_clearFilters()">Limpar</button>
       </div>
 
-      <!-- NOVA OS — FORMULÁRIO -->
-      <div id="os-subtab-nova" style="display:none;">
-        <div class="os-form-wrap">
-          <div class="panel" style="padding:24px 32px;">
-            <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:20px;">📝 Nova Ordem de Serviço</div>
-            <form id="os-form" onsubmit="return false;">
-              <div class="os-form-grid">
-                <div>
-                  <label class="os-form-label">Tipo *</label>
-                  <select id="os-f-tipo" class="os-form-select" required>
-                    <option value="">Selecione…</option>
-                    <option value="corretiva">Corretiva</option>
-                    <option value="preventiva">Preventiva</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="os-form-label">Prioridade</label>
-                  <select id="os-f-prioridade" class="os-form-select">
-                    <option value="baixa">Baixa</option>
-                    <option value="media" selected>Média</option>
-                    <option value="alta">Alta</option>
-                    <option value="critica">🔺 Crítica</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="os-form-label">Local / Setor</label>
-                  <select id="os-f-setor" class="os-form-select">
-                    <option value="">— nenhum —</option>
-                    <option value="SALA/MAQ">SALA/MAQ</option>
-                    <option value="CÂMARA 01">CÂMARA 01</option>
-                    <option value="CÂMARA 02">CÂMARA 02</option>
-                    <option value="MESANINO">MESANINO</option>
-                    <option value="PRODUÇÃO">PRODUÇÃO</option>
-                    <option value="EXPEDIÇÃO">EXPEDIÇÃO</option>
-                    <option value="GIROS/CÂM.">GIROS/CÂM.</option>
-                    <option value="GERAL">GERAL</option>
-                    <option value="SADEMA">SADEMA</option>
-                    <option value="Salgado">Salgado</option>
-                    <option value="Massa Salgado">Massa Salgado</option>
-                    <option value="Croissant">Croissant</option>
-                    <option value="Padaria">Padaria</option>
-                    <option value="Confeitaria">Confeitaria</option>
-                    <option value="Giro-Dia">Giro-Dia</option>
-                    <option value="Giro-Noite">Giro-Noite</option>
-                    <option value="Fritador">Fritador</option>
-                    <option value="Cozinha">Cozinha</option>
-                    <option value="Pão c/ Linguiça">Pão c/ Linguiça</option>
-                    <option value="Pão de Queijo">Pão de Queijo</option>
-                    <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
-                    <option value="Embalagem">Embalagem</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="os-form-label">Máquina / Equipamento</label>
-                  <input type="text" id="os-f-maquina" class="os-form-input" placeholder="Ex: Compressor 03">
-                </div>
-                <div class="full">
-                  <label class="os-form-label">Descrição do problema / serviço *</label>
-                  <textarea id="os-f-descricao" class="os-form-textarea" required placeholder="Descreva o que precisa ser feito…"></textarea>
-                </div>
-                <div class="full">
-                  <label class="os-form-label">Justificativa / motivo</label>
-                  <textarea id="os-f-justificativa" class="os-form-textarea" placeholder="Por que este serviço é necessário?"></textarea>
-                </div>
-                <div>
-                  <label class="os-form-label">Responsável pela execução</label>
-                  <select id="os-f-responsavel" class="os-form-select">
-                    <option value="">— não definido —</option>
-                    <option value="MECÂNICA">MECÂNICA</option>
-                    <option value="ELÉTRICA">ELÉTRICA</option>
-                    <option value="HIDRAULICA">HIDRÁULICA</option>
-                    <option value="OPERADORES">OPERADORES</option>
-                    <option value="ADM">ADM</option>
-                    <option value="TERCEIROS">TERCEIROS</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="os-form-label">Prazo planejado</label>
-                  <input type="date" id="os-f-prazo" class="os-form-input">
-                </div>
-                <div>
-                  <label class="os-form-label">Custo estimado (R$)</label>
-                  <input type="number" id="os-f-custo" class="os-form-input" placeholder="0,00" min="0" step="0.01">
-                </div>
-                <div class="full">
-                  <label class="os-form-label">Observações</label>
-                  <textarea id="os-f-obs" class="os-form-textarea" placeholder="Informações adicionais…"></textarea>
-                </div>
+      <!-- Kanban board -->
+      <div class="os-kanban-board">
+
+        <div class="os-col"
+             ondragover="OS_onDragOver(event,'aberta')"
+             ondragleave="OS_onDragLeave(event)"
+             ondrop="OS_onDrop(event,'aberta')">
+          <div class="os-col-header os-col-header-aberta">
+            NÃO INICIADO <span class="os-col-count" id="os-cnt-aberta">0</span>
+          </div>
+          <div class="os-col-body" id="os-body-aberta"></div>
+        </div>
+
+        <div class="os-col"
+             ondragover="OS_onDragOver(event,'em_andamento')"
+             ondragleave="OS_onDragLeave(event)"
+             ondrop="OS_onDrop(event,'em_andamento')">
+          <div class="os-col-header os-col-header-em_andamento">
+            EM ANDAMENTO <span class="os-col-count" id="os-cnt-em_andamento">0</span>
+          </div>
+          <div class="os-col-body" id="os-body-em_andamento"></div>
+        </div>
+
+        <div class="os-col"
+             ondragover="OS_onDragOver(event,'concluida')"
+             ondragleave="OS_onDragLeave(event)"
+             ondrop="OS_onDrop(event,'concluida')">
+          <div class="os-col-header os-col-header-concluida">
+            CONCLUÍDA <span class="os-col-count" id="os-cnt-concluida">0</span>
+          </div>
+          <div class="os-col-body" id="os-body-concluida"></div>
+        </div>
+
+      </div>
+
+      <!-- Modal nova / edição -->
+      <div id="os-modal-overlay" onclick="OS_overlayClick(event)">
+        <div id="os-modal">
+          <div class="os-modal-header">
+            <span class="os-modal-title" id="os-modal-title">Nova Ordem de Serviço</span>
+            <button type="button" class="os-modal-close" onclick="OS_closeModal()">✕</button>
+          </div>
+          <div class="os-modal-body">
+            <div class="os-modal-grid">
+              <div>
+                <label class="os-modal-label">Tipo *</label>
+                <select id="osm-tipo" class="os-modal-select">
+                  <option value="">Selecione…</option>
+                  <option value="corretiva">Corretiva</option>
+                  <option value="preventiva">Preventiva</option>
+                </select>
               </div>
-              <div class="os-form-actions">
-                <button type="button" class="os-btn-primary" onclick="OS_submitForm()">Abrir OS</button>
-                <button type="button" class="os-btn-secondary" onclick="OS_resetForm(false)">Limpar</button>
-                <span id="os-form-msg" class="os-form-msg"></span>
+              <div>
+                <label class="os-modal-label">Prioridade</label>
+                <select id="osm-prio" class="os-modal-select">
+                  <option value="baixa">Baixa</option>
+                  <option value="media" selected>Média</option>
+                  <option value="alta">Alta</option>
+                  <option value="critica">🔺 Urgente / Crítica</option>
+                </select>
               </div>
-            </form>
+              <div>
+                <label class="os-modal-label">Local / Setor</label>
+                <select id="osm-setor" class="os-modal-select">
+                  <option value="">— nenhum —</option>
+                  <option value="SALA/MAQ">SALA/MAQ</option>
+                  <option value="CÂMARA 01">CÂMARA 01</option>
+                  <option value="CÂMARA 02">CÂMARA 02</option>
+                  <option value="MESANINO">MESANINO</option>
+                  <option value="PRODUÇÃO">PRODUÇÃO</option>
+                  <option value="EXPEDIÇÃO">EXPEDIÇÃO</option>
+                  <option value="GIROS/CÂM.">GIROS/CÂM.</option>
+                  <option value="GERAL">GERAL</option>
+                  <option value="SADEMA">SADEMA</option>
+                  <option value="Salgado">Salgado</option>
+                  <option value="Massa Salgado">Massa Salgado</option>
+                  <option value="Croissant">Croissant</option>
+                  <option value="Padaria">Padaria</option>
+                  <option value="Confeitaria">Confeitaria</option>
+                  <option value="Giro-Dia">Giro-Dia</option>
+                  <option value="Giro-Noite">Giro-Noite</option>
+                  <option value="Fritador">Fritador</option>
+                  <option value="Cozinha">Cozinha</option>
+                  <option value="Pão c/ Linguiça">Pão c/ Linguiça</option>
+                  <option value="Pão de Queijo">Pão de Queijo</option>
+                  <option value="Pão de Ló e Bolos">Pão de Ló e Bolos</option>
+                  <option value="Embalagem">Embalagem</option>
+                </select>
+              </div>
+              <div>
+                <label class="os-modal-label">Máquina / Equipamento</label>
+                <input type="text" id="osm-maquina" class="os-modal-input" placeholder="Ex: Compressor 03">
+              </div>
+              <div class="full">
+                <label class="os-modal-label">Descrição do problema / serviço *</label>
+                <textarea id="osm-descricao" class="os-modal-textarea" placeholder="Descreva o que precisa ser feito…"></textarea>
+              </div>
+              <div class="full">
+                <label class="os-modal-label">Justificativa / motivo</label>
+                <textarea id="osm-justificativa" class="os-modal-textarea" placeholder="Por que este serviço é necessário?"></textarea>
+              </div>
+              <div>
+                <label class="os-modal-label">Responsável pela execução</label>
+                <select id="osm-resp" class="os-modal-select">
+                  <option value="">— não definido —</option>
+                  <option value="MECÂNICA">MECÂNICA</option>
+                  <option value="ELÉTRICA">ELÉTRICA</option>
+                  <option value="HIDRAULICA">HIDRÁULICA</option>
+                  <option value="OPERADORES">OPERADORES</option>
+                  <option value="ADM">ADM</option>
+                  <option value="TERCEIROS">TERCEIROS</option>
+                </select>
+              </div>
+              <div>
+                <label class="os-modal-label">Prazo planejado</label>
+                <input type="date" id="osm-prazo" class="os-modal-input">
+              </div>
+              <div>
+                <label class="os-modal-label">Status</label>
+                <select id="osm-status" class="os-modal-select">
+                  <option value="aberta">Não iniciado</option>
+                  <option value="em_andamento">Em andamento</option>
+                  <option value="concluida">Concluída</option>
+                  <option value="cancelada">Cancelada</option>
+                </select>
+              </div>
+              <div>
+                <label class="os-modal-label">Custo estimado (R$)</label>
+                <input type="number" id="osm-custo" class="os-modal-input" placeholder="0,00" min="0" step="0.01">
+              </div>
+              <div class="full">
+                <label class="os-modal-label">Observações</label>
+                <textarea id="osm-obs" class="os-modal-textarea" placeholder="Informações adicionais…"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="os-modal-actions">
+            <button type="button" class="os-modal-save" onclick="OS_saveModal()">Salvar</button>
+            <button type="button" class="os-modal-cancel" onclick="OS_closeModal()">Cancelar</button>
+            <span class="os-modal-msg" id="osm-msg"></span>
           </div>
         </div>
       </div>
@@ -8216,246 +8384,377 @@ document.querySelectorAll('[data-mntab]').forEach(btn => {
 });
 
 // ─────────────────────────────────────────────
-// ORDENS DE SERVIÇO (OS) — módulo dentro de Manutenções
+// ORDENS DE SERVIÇO (OS) — Kanban dentro de Manutenções
 // ─────────────────────────────────────────────
 
-let OS_ALL = [];
-let OS_loadedOnce = false;
+let OS_ALL         = [];
+let OS_loadedOnce  = false;
+let OS_draggingId  = null;
+let OS_didDrag     = false;
+let OS_modalMode   = 'new'; // 'new' | 'edit'
+let OS_editId      = null;
+
+const OS_PRIO_ORDER = { critica:0, alta:1, media:2, baixa:3 };
 
 async function OS_init(){
-  if(OS_loadedOnce){ OS_renderFromCache(); return; }
+  if(OS_loadedOnce){ OS_renderKanban(); return; }
   OS_loadedOnce = true;
-  document.getElementById('os-table-container').innerHTML =
-    '<div style="padding:24px;text-align:center;color:var(--ink-soft);">Carregando ordens de serviço…</div>';
+  ['aberta','em_andamento','concluida'].forEach(function(col){
+    const el = document.getElementById('os-body-' + col);
+    if(el) el.innerHTML = '<div class="os-col-empty">Carregando…</div>';
+  });
   try {
     const client = getSupabaseClient();
     const { data, error } = await client
       .from('ordens_servico')
       .select('*')
-      .order('data_abertura', { ascending: false });
+      .order('data_abertura', { ascending: true });
     if(error) throw error;
     OS_ALL = data || [];
     OS_populateSetorFilter();
-    OS_renderFromCache();
+    OS_renderKanban();
   } catch(e) {
-    document.getElementById('os-table-container').innerHTML =
-      `<div style="padding:24px;color:#C0392B;">Erro ao carregar OS: ${e.message}</div>`;
+    ['aberta','em_andamento','concluida'].forEach(function(col){
+      const el = document.getElementById('os-body-' + col);
+      if(el) el.innerHTML = '<div class="os-col-empty" style="color:#C0392B;">Erro ao carregar.</div>';
+    });
     OS_loadedOnce = false;
   }
 }
 
 function OS_populateSetorFilter(){
-  const setores = [...new Set(OS_ALL.map(r => r.setor).filter(Boolean))].sort();
+  const setores = [...new Set(OS_ALL.map(function(r){ return r.setor; }).filter(Boolean))].sort();
   const sel = document.getElementById('os-fil-setor');
+  if(!sel) return;
   sel.innerHTML = '<option value="">Todos os locais</option>' +
-    setores.map(s => `<option value="${s}">${s}</option>`).join('');
+    setores.map(function(s){ return '<option value="' + s + '">' + s + '</option>'; }).join('');
 }
 
 function OS_getFilters(){
   return {
-    status: document.getElementById('os-fil-status').value,
-    tipo:   document.getElementById('os-fil-tipo').value,
-    setor:  document.getElementById('os-fil-setor').value,
-    busca:  (document.getElementById('os-fil-busca').value || '').toLowerCase().trim()
+    setor: document.getElementById('os-fil-setor')  ? document.getElementById('os-fil-setor').value  : '',
+    equip: document.getElementById('os-fil-equip')  ? (document.getElementById('os-fil-equip').value  || '').toLowerCase().trim() : '',
+    resp:  document.getElementById('os-fil-resp')   ? document.getElementById('os-fil-resp').value   : '',
+    prio:  document.getElementById('os-fil-prio')   ? document.getElementById('os-fil-prio').value   : '',
+    tipo:  document.getElementById('os-fil-tipo')   ? document.getElementById('os-fil-tipo').value   : '',
+    busca: document.getElementById('os-fil-busca')  ? (document.getElementById('os-fil-busca').value  || '').toLowerCase().trim() : ''
   };
 }
 
+function OS_matchFilter(r, f){
+  if(f.setor && r.setor        !== f.setor) return false;
+  if(f.resp  && r.responsavel  !== f.resp)  return false;
+  if(f.prio  && r.prioridade   !== f.prio)  return false;
+  if(f.tipo  && r.tipo         !== f.tipo)  return false;
+  if(f.equip && !(r.maquina||'').toLowerCase().includes(f.equip)) return false;
+  if(f.busca && !((r.descricao||'').toLowerCase().includes(f.busca) ||
+                  (r.maquina  ||'').toLowerCase().includes(f.busca))) return false;
+  return true;
+}
+
 function OS_clearFilters(){
-  document.getElementById('os-fil-status').value = '';
-  document.getElementById('os-fil-tipo').value   = '';
-  document.getElementById('os-fil-setor').value  = '';
-  document.getElementById('os-fil-busca').value  = '';
-  OS_renderFromCache();
-}
-
-function OS_renderFromCache(){
-  const f = OS_getFilters();
-  const rows = OS_ALL.filter(r => {
-    if(f.status && r.status !== f.status) return false;
-    if(f.tipo   && r.tipo   !== f.tipo)   return false;
-    if(f.setor  && r.setor  !== f.setor)  return false;
-    if(f.busca  && !((r.descricao||'').toLowerCase().includes(f.busca) ||
-                     (r.maquina||'').toLowerCase().includes(f.busca)))  return false;
-    return true;
+  ['os-fil-setor','os-fil-resp','os-fil-prio','os-fil-tipo'].forEach(function(id){
+    const el = document.getElementById(id); if(el) el.value = '';
   });
-  document.getElementById('os-count').textContent = `${rows.length} OS`;
-  document.getElementById('os-table-container').innerHTML = OS_buildTable(rows);
+  ['os-fil-equip','os-fil-busca'].forEach(function(id){
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  OS_renderKanban();
 }
 
-function OS_prazoClass(prazo, status){
-  if(!prazo || status === 'concluida' || status === 'cancelada') return 'os-prazo-sem';
+function OS_sortCards(list){
+  // Sort: date ASC first, then priority (urgente → baixa)
+  return list.slice().sort(function(a, b){
+    const da = a.data_abertura || '';
+    const db = b.data_abertura || '';
+    if(da < db) return -1;
+    if(da > db) return  1;
+    return (OS_PRIO_ORDER[a.prioridade] || 2) - (OS_PRIO_ORDER[b.prioridade] || 2);
+  });
+}
+
+function OS_isAtrasada(r){
+  if(!r.prazo_planejado) return false;
+  if(r.status === 'concluida' || r.status === 'cancelada') return false;
   const today = new Date(); today.setHours(0,0,0,0);
-  const d = new Date(prazo + 'T00:00:00');
-  if(d < today) return 'os-prazo-vencida';
-  if(d.getTime() === today.getTime()) return 'os-prazo-hoje';
-  return 'os-prazo-ok';
+  const d = new Date(r.prazo_planejado + 'T00:00:00');
+  return d < today;
 }
 
-function OS_prazoLabel(prazo, status){
-  if(!prazo) return '<span class="os-prazo-sem">—</span>';
-  if(status === 'concluida' || status === 'cancelada'){
-    const p = prazo.split('-');
-    return `<span class="os-prazo-sem">${p[2]}/${p[1]}/${p[0].slice(2)}</span>`;
-  }
-  const cls = OS_prazoClass(prazo, status);
-  const p = prazo.split('-');
-  const label = `${p[2]}/${p[1]}/${p[0].slice(2)}`;
-  const icon  = cls === 'os-prazo-vencida' ? '🔴 ' : cls === 'os-prazo-hoje' ? '🟡 ' : '🟢 ';
-  return `<span class="${cls}">${icon}${label}</span>`;
+function OS_colStatuses(colKey){
+  if(colKey === 'aberta')       return ['aberta'];
+  if(colKey === 'em_andamento') return ['em_andamento'];
+  if(colKey === 'concluida')    return ['concluida', 'cancelada'];
+  return [];
 }
 
-function OS_statusBadge(status){
-  const labels = { aberta:'Aberta', em_andamento:'Em andamento', concluida:'Concluída', cancelada:'Cancelada' };
-  return `<span class="os-badge os-badge-${status}">${labels[status]||status}</span>`;
-}
-
-function OS_tipoBadge(tipo){
-  return `<span class="os-tipo-${tipo}">${tipo==='corretiva'?'CORRETIVA':'PREVENTIVA'}</span>`;
-}
-
-function OS_prioLabel(prio){
-  const labels = { critica:'🔺 CRÍTICA', alta:'▲ Alta', media:'Média', baixa:'Baixa' };
-  return `<span class="os-prio-${prio||'media'}">${labels[prio||'media']||prio}</span>`;
-}
-
-function OS_buildTable(rows){
-  if(!rows.length){
-    return '<div style="padding:24px;text-align:center;color:var(--ink-soft);">Nenhuma OS encontrada com esses filtros.</div>';
-  }
-  let html = `<table class="os-table">
-    <thead><tr>
-      <th>Nº</th><th>Data</th><th>Tipo</th><th>Prioridade</th>
-      <th>Local</th><th>Equipamento</th><th>Descrição</th>
-      <th>Responsável</th><th>Prazo</th><th>Status</th><th></th>
-    </tr></thead><tbody>`;
-  rows.forEach(r => {
-    const num  = String(r.numero||'').padStart(4,'0');
-    const p    = (r.data_abertura||'').split('-');
-    const date = p.length===3 ? `${p[2]}/${p[1]}/${p[0].slice(2)}` : (r.data_abertura||'');
-    const rawDesc = r.descricao||'';
-    const desc = rawDesc.length > 70 ? rawDesc.slice(0,70)+'…' : rawDesc;
-    const descAttr = rawDesc.replace(/"/g,'&quot;');
-    html += `<tr>
-      <td style="font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink-soft);font-size:12px;">#${num}</td>
-      <td style="white-space:nowrap;font-size:12px;">${date}</td>
-      <td>${OS_tipoBadge(r.tipo)}</td>
-      <td>${OS_prioLabel(r.prioridade)}</td>
-      <td style="font-size:12px;white-space:nowrap;">${r.setor||'—'}</td>
-      <td style="font-size:12px;">${r.maquina||'—'}</td>
-      <td title="${descAttr}">${desc}</td>
-      <td style="font-size:12px;white-space:nowrap;">${r.responsavel||'—'}</td>
-      <td style="white-space:nowrap;">${OS_prazoLabel(r.prazo_planejado, r.status)}</td>
-      <td>${OS_statusBadge(r.status)}</td>
-      <td><button type="button" class="os-btn-secondary" onclick="OS_quickUpdate('${r.id}')">✏️</button></td>
-    </tr>`;
+function OS_renderKanban(){
+  const f = OS_getFilters();
+  ['aberta', 'em_andamento', 'concluida'].forEach(function(col){
+    const statuses = OS_colStatuses(col);
+    const items    = OS_ALL.filter(function(r){
+      return statuses.includes(r.status) && OS_matchFilter(r, f);
+    });
+    const sorted = OS_sortCards(items);
+    const cntEl  = document.getElementById('os-cnt-' + col);
+    const body   = document.getElementById('os-body-' + col);
+    if(cntEl) cntEl.textContent = sorted.length;
+    if(!body) return;
+    if(!sorted.length){
+      body.innerHTML = '<div class="os-col-empty">Nenhuma OS aqui.</div>';
+      return;
+    }
+    body.innerHTML = sorted.map(OS_buildCard).join('');
+    body.querySelectorAll('.os-card').forEach(function(card){
+      card.addEventListener('dragstart', OS_onDragStart);
+      card.addEventListener('dragend',   OS_onDragEnd);
+      card.addEventListener('click',     OS_onCardClick);
+    });
   });
-  html += '</tbody></table>';
-  return html;
 }
 
-async function OS_quickUpdate(id){
-  const r = OS_ALL.find(x => x.id === id);
-  if(!r) return;
-  const num = String(r.numero||'').padStart(4,'0');
-  const opcoesStatus = { aberta:'Aberta', em_andamento:'Em andamento', concluida:'Concluída', cancelada:'Cancelada' };
-  const novoStatus = prompt(
-    `OS #${num} — Status atual: ${opcoesStatus[r.status]||r.status}\n\nNovo status:\n1 = Aberta\n2 = Em andamento\n3 = Concluída\n4 = Cancelada\n\nDigite o número:`
-  );
-  const mapa = { '1':'aberta', '2':'em_andamento', '3':'concluida', '4':'cancelada' };
-  if(!novoStatus || !mapa[novoStatus.trim()]) return;
-  const statusNovo = mapa[novoStatus.trim()];
-  if(statusNovo === r.status) return;
+function OS_buildCard(r){
+  const num        = '#' + String(r.numero || '').padStart(4, '0');
+  const prio       = r.prioridade || 'media';
+  const prioLabels = { critica:'URGENTE', alta:'Alta', media:'Média', baixa:'Baixa' };
+  const prioLabel  = prioLabels[prio] || prio;
+  const tipo       = r.tipo || 'preventiva';
+  const tipoLabel  = tipo === 'corretiva' ? 'CORRETIVA' : 'PREVENTIVA';
+  const atrasada   = OS_isAtrasada(r);
+  const desc       = (r.descricao || '').slice(0, 120);
+  const equip      = r.maquina    ? '🔧 ' + r.maquina  : '';
+  const setor      = r.setor      ? '📍 ' + r.setor    : '';
+  const resp       = r.responsavel ? '👤 ' + r.responsavel : '';
+  const p          = (r.data_abertura || '').split('-');
+  const dataStr    = p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0].slice(2) : '';
+  const meta       = [equip, setor].filter(Boolean).join('   ');
 
-  const update = { status: statusNovo };
-  if(statusNovo === 'concluida') update.data_conclusao = new Date().toISOString().split('T')[0];
+  return '<div class="os-card os-card-prio-' + prio + '" draggable="true" data-id="' + r.id + '">' +
+    '<div class="os-card-top">' +
+      '<span class="os-prio-tag os-prio-tag-' + prio + '">' + prioLabel + '</span>' +
+      '<span class="os-tipo-tag os-tipo-tag-' + tipo + '">' + tipoLabel + '</span>' +
+      (atrasada ? '<span class="os-badge-atrasada">ATRASADA</span>' : '') +
+      '<span class="os-card-num">' + num + '</span>' +
+    '</div>' +
+    '<div class="os-card-desc">' + desc + '</div>' +
+    (meta ? '<div class="os-card-meta">' + meta + '</div>' : '') +
+    '<div class="os-card-footer">' +
+      '<span>' + dataStr + '</span>' +
+      '<span>' + resp + '</span>' +
+    '</div>' +
+  '</div>';
+}
 
+function OS_onDragStart(e){
+  OS_didDrag    = true;
+  OS_draggingId = e.currentTarget.dataset.id;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function OS_onDragEnd(e){
+  e.currentTarget.classList.remove('dragging');
+  setTimeout(function(){ OS_didDrag = false; }, 0);
+}
+
+function OS_onDragOver(e, col){
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const body = document.getElementById('os-body-' + col);
+  if(body) body.classList.add('drag-over');
+}
+
+function OS_onDragLeave(e){
+  const body = e.currentTarget.querySelector('.os-col-body');
+  if(body) body.classList.remove('drag-over');
+}
+
+function OS_onDrop(e, col){
+  e.preventDefault();
+  const body = document.getElementById('os-body-' + col);
+  if(body) body.classList.remove('drag-over');
+  if(!OS_draggingId) return;
+
+  const record   = OS_ALL.find(function(r){ return r.id === OS_draggingId; });
+  const draggedId = OS_draggingId;
+  OS_draggingId  = null;
+  if(!record) return;
+
+  const statusMap = { aberta:'aberta', em_andamento:'em_andamento', concluida:'concluida' };
+  const newStatus = statusMap[col];
+  if(!newStatus || record.status === newStatus) return;
+
+  OS_updateStatus(draggedId, newStatus);
+}
+
+async function OS_updateStatus(id, newStatus){
+  const update = { status: newStatus };
+  if(newStatus === 'concluida'){
+    update.data_conclusao = new Date().toISOString().split('T')[0];
+  }
   try {
     const client = getSupabaseClient();
     const { error } = await client.from('ordens_servico').update(update).eq('id', id);
     if(error) throw error;
-    // Atualiza cache local
-    const idx = OS_ALL.findIndex(x => x.id === id);
+    const idx = OS_ALL.findIndex(function(r){ return r.id === id; });
     if(idx !== -1) Object.assign(OS_ALL[idx], update);
-    OS_renderFromCache();
+    OS_renderKanban();
   } catch(e) {
-    alert('Erro ao atualizar OS: ' + e.message);
+    alert('Erro ao mover OS: ' + e.message);
   }
 }
 
-async function OS_submitForm(){
-  const tipo     = document.getElementById('os-f-tipo').value;
-  const descricao = document.getElementById('os-f-descricao').value.trim();
-  const msg      = document.getElementById('os-form-msg');
+function OS_onCardClick(e){
+  if(OS_didDrag) return;
+  const id = e.currentTarget.dataset.id;
+  OS_openModal(id);
+}
 
-  msg.textContent = '';
-  msg.className   = 'os-form-msg';
+function OS_openModal(id){
+  OS_resetModalForm();
+  const overlay = document.getElementById('os-modal-overlay');
+  const titleEl = document.getElementById('os-modal-title');
+  const msgEl   = document.getElementById('osm-msg');
+  if(!overlay || !titleEl || !msgEl) return;
+  msgEl.textContent = '';
+  msgEl.className   = 'os-modal-msg';
 
-  if(!tipo)    { msg.textContent = 'Selecione o tipo de OS.'; msg.classList.add('error'); return; }
-  if(!descricao){ msg.textContent = 'Descrição é obrigatória.'; msg.classList.add('error'); return; }
+  if(id){
+    const r = OS_ALL.find(function(x){ return x.id === id; });
+    if(!r) return;
+    OS_modalMode = 'edit';
+    OS_editId    = id;
+    titleEl.textContent = 'OS #' + String(r.numero || '').padStart(4, '0');
+    document.getElementById('osm-tipo').value          = r.tipo          || '';
+    document.getElementById('osm-prio').value          = r.prioridade    || 'media';
+    document.getElementById('osm-setor').value         = r.setor         || '';
+    document.getElementById('osm-maquina').value       = r.maquina       || '';
+    document.getElementById('osm-descricao').value     = r.descricao     || '';
+    document.getElementById('osm-justificativa').value = r.justificativa || '';
+    document.getElementById('osm-resp').value          = r.responsavel   || '';
+    document.getElementById('osm-prazo').value         = r.prazo_planejado || '';
+    document.getElementById('osm-status').value        = r.status        || 'aberta';
+    document.getElementById('osm-custo').value         = r.custo_estimado != null ? r.custo_estimado : '';
+    document.getElementById('osm-obs').value           = r.observacoes   || '';
+  } else {
+    OS_modalMode = 'new';
+    OS_editId    = null;
+    titleEl.textContent = 'Nova Ordem de Serviço';
+  }
+  overlay.classList.add('open');
+}
 
+function OS_closeModal(){
+  const overlay = document.getElementById('os-modal-overlay');
+  if(overlay) overlay.classList.remove('open');
+  OS_editId    = null;
+  OS_modalMode = 'new';
+}
+
+function OS_overlayClick(e){
+  if(e.target === document.getElementById('os-modal-overlay')) OS_closeModal();
+}
+
+function OS_resetModalForm(){
+  ['osm-tipo','osm-setor','osm-maquina','osm-descricao','osm-justificativa',
+   'osm-resp','osm-prazo','osm-custo','osm-obs'].forEach(function(id){
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  const prio   = document.getElementById('osm-prio');   if(prio)   prio.value   = 'media';
+  const status = document.getElementById('osm-status'); if(status) status.value = 'aberta';
+}
+
+async function OS_saveModal(){
+  const tipo      = document.getElementById('osm-tipo').value;
+  const descricao = document.getElementById('osm-descricao').value.trim();
+  const msgEl     = document.getElementById('osm-msg');
+  msgEl.textContent = '';
+  msgEl.className   = 'os-modal-msg';
+
+  if(!tipo){
+    msgEl.textContent = 'Selecione o tipo de OS.';
+    msgEl.classList.add('error');
+    return;
+  }
+  if(!descricao){
+    msgEl.textContent = 'Descrição é obrigatória.';
+    msgEl.classList.add('error');
+    return;
+  }
+
+  const newStatus = document.getElementById('osm-status').value || 'aberta';
   const payload = {
     tipo,
-    prioridade:      document.getElementById('os-f-prioridade').value || 'media',
-    setor:           document.getElementById('os-f-setor').value       || null,
-    maquina:         document.getElementById('os-f-maquina').value.trim() || null,
+    prioridade:      document.getElementById('osm-prio').value          || 'media',
+    setor:           document.getElementById('osm-setor').value          || null,
+    maquina:         document.getElementById('osm-maquina').value.trim() || null,
     descricao,
-    justificativa:   document.getElementById('os-f-justificativa').value.trim() || null,
-    responsavel:     document.getElementById('os-f-responsavel').value  || null,
-    prazo_planejado: document.getElementById('os-f-prazo').value        || null,
-    custo_estimado:  parseFloat(document.getElementById('os-f-custo').value) || null,
-    observacoes:     document.getElementById('os-f-obs').value.trim()   || null,
-    status:          'aberta',
-    data_abertura:   new Date().toISOString().split('T')[0]
+    justificativa:   document.getElementById('osm-justificativa').value.trim() || null,
+    responsavel:     document.getElementById('osm-resp').value            || null,
+    prazo_planejado: document.getElementById('osm-prazo').value            || null,
+    status:          newStatus,
+    custo_estimado:  parseFloat(document.getElementById('osm-custo').value) || null,
+    observacoes:     document.getElementById('osm-obs').value.trim()       || null
   };
 
-  msg.textContent = 'Salvando…';
+  // Auto-set data_conclusao when marking concluida on edit
+  if(newStatus === 'concluida' && OS_modalMode === 'edit'){
+    const orig = OS_ALL.find(function(r){ return r.id === OS_editId; });
+    if(orig && orig.status !== 'concluida'){
+      payload.data_conclusao = new Date().toISOString().split('T')[0];
+    }
+  }
+
+  msgEl.textContent = 'Salvando…';
 
   try {
     const client = getSupabaseClient();
-    const { data, error } = await client.from('ordens_servico').insert([payload]).select();
-    if(error) throw error;
-    OS_ALL = (data||[]).concat(OS_ALL);
-    OS_populateSetorFilter();
-    const numOS = String(data[0].numero||'').padStart(4,'0');
-    msg.textContent = `✅ OS #${numOS} aberta com sucesso!`;
-    msg.classList.add('success');
-    OS_resetForm(true);
+
+    if(OS_modalMode === 'edit'){
+      const { error } = await client.from('ordens_servico').update(payload).eq('id', OS_editId);
+      if(error) throw error;
+      const idx = OS_ALL.findIndex(function(r){ return r.id === OS_editId; });
+      if(idx !== -1) Object.assign(OS_ALL[idx], payload);
+      msgEl.textContent = 'Salvo!';
+      msgEl.classList.add('success');
+      OS_renderKanban();
+      setTimeout(OS_closeModal, 900);
+    } else {
+      payload.data_abertura = new Date().toISOString().split('T')[0];
+      const { data, error } = await client.from('ordens_servico').insert([payload]).select();
+      if(error) throw error;
+      OS_ALL = (data || []).concat(OS_ALL);
+      OS_populateSetorFilter();
+      const numOS = String(data[0].numero || '').padStart(4, '0');
+      msgEl.textContent = '✅ OS #' + numOS + ' aberta!';
+      msgEl.classList.add('success');
+      OS_renderKanban();
+      setTimeout(OS_closeModal, 1000);
+    }
   } catch(e) {
-    msg.textContent = `Erro: ${e.message}`;
-    msg.classList.add('error');
+    msgEl.textContent = 'Erro: ' + e.message;
+    msgEl.classList.add('error');
   }
 }
 
-function OS_resetForm(keepMsg){
-  document.getElementById('os-f-tipo').value       = '';
-  document.getElementById('os-f-prioridade').value = 'media';
-  document.getElementById('os-f-setor').value      = '';
-  document.getElementById('os-f-responsavel').value= '';
-  document.getElementById('os-f-prazo').value      = '';
-  document.getElementById('os-f-custo').value      = '';
-  ['os-f-maquina','os-f-descricao','os-f-justificativa','os-f-obs']
-    .forEach(id => { document.getElementById(id).value = ''; });
-  if(!keepMsg) document.getElementById('os-form-msg').textContent = '';
-}
-
-// Sub-abas internas do OS
-document.querySelectorAll('[data-ostab]').forEach(btn => {
-  btn.addEventListener('click', function(){
-    const tab = this.dataset.ostab;
-    document.querySelectorAll('[data-ostab]').forEach(b => b.classList.remove('active'));
-    this.classList.add('active');
-    document.getElementById('os-subtab-painel').style.display = tab === 'painel' ? '' : 'none';
-    document.getElementById('os-subtab-nova').style.display   = tab === 'nova'   ? '' : 'none';
-  });
+// Escape fecha modal
+document.addEventListener('keydown', function OS_escHandler(e){
+  if(e.key === 'Escape'){
+    const ov = document.getElementById('os-modal-overlay');
+    if(ov && ov.classList.contains('open')) OS_closeModal();
+  }
 });
 
 // Filtros — atualizam em tempo real
-['os-fil-status','os-fil-tipo','os-fil-setor'].forEach(id => {
+['os-fil-setor','os-fil-resp','os-fil-prio','os-fil-tipo'].forEach(function(id){
   const el = document.getElementById(id);
-  if(el) el.addEventListener('change', OS_renderFromCache);
+  if(el) el.addEventListener('change', OS_renderKanban);
 });
-const osBuscaEl = document.getElementById('os-fil-busca');
-if(osBuscaEl) osBuscaEl.addEventListener('input', OS_renderFromCache);
+['os-fil-equip','os-fil-busca'].forEach(function(id){
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('input', OS_renderKanban);
+});
 
 /* ============================================================================
    PÁGINA LANÇAMENTO — formulário de entrada direto no Supabase
