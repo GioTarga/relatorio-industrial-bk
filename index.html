@@ -21247,7 +21247,7 @@ async function RAST_buscarCarrinhos(term) {
   data.forEach(d=>{ RAST_embResultados[d.id]=d; });
   const unLbl = d => d.unidade==='caixas' ? 'cx.' : 'un.';
   r.innerHTML = data.map(d=>
-    '<div class="rast-result-item" onclick="RAST_selecionarEmb(''+d.id+'')">'+
+    '<div class="rast-result-item" onclick="RAST_selecionarEmb(\''+d.id+'\')">'+
       '<div class="rast-ri-top">'+
         '<span class="rast-ri-produto">'+RAST_esc(d.produto)+'</span>'+
         '<span class="rast-badge rast-b-aguard">Aguardando</span>'+
