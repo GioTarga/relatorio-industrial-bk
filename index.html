@@ -2206,6 +2206,539 @@ body{background:#fff;color:#000}
   #mn-tab-os .os-modal-grid .full{ grid-column:1; }
 }
 
+
+<style>
+/* ═══════════════════════════════════════════════════════════
+   MÓDULO RASTREAMENTO — BK360
+   Todas as classes escopadas em #page-rastreamento para
+   não conflitar com os demais módulos.
+   ═══════════════════════════════════════════════════════════ */
+
+/* Variáveis extras não definidas no root do BK360 */
+#page-rastreamento {
+  --red-light:  #fbe2dc;
+  --gold-light: #fff1de;
+  --ink-muted:  #9e8e8e;
+  --line-2:     #e5cfa0;
+}
+
+#page-rastreamento .rast-topbar {
+  background: var(--red-dark);
+  color: #fff;
+  padding: 22px 36px 18px;
+  position: relative;
+}
+#page-rastreamento .rast-topbar::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+}
+#page-rastreamento .rast-topbar-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#page-rastreamento .rast-topbar h1 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+#page-rastreamento .rast-topbar-sub {
+  font-size: 11px;
+  opacity: 0.65;
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+#page-rastreamento .rast-topbar-date {
+  font-size: 12px;
+  opacity: 0.5;
+  text-align: right;
+}
+
+/* Filtro de período */
+#page-rastreamento .rast-period-bar {
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  padding: 12px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 2px 10px rgba(161,1,1,0.07);
+}
+#page-rastreamento .rast-period-label {
+  font-size: 11px;
+  color: var(--ink-soft);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+#page-rastreamento .rast-period-btn {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+#page-rastreamento .rast-period-btn:hover { border-color: var(--line-2); color: var(--ink); }
+#page-rastreamento .rast-period-btn.active {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(161,1,1,0.22);
+}
+#page-rastreamento .rast-period-sep { width: 1px; height: 16px; background: var(--line); }
+#page-rastreamento .rast-custom { display: none; align-items: center; gap: 6px; }
+#page-rastreamento .rast-custom.visible { display: flex; }
+#page-rastreamento .rast-custom span { font-size: 11px; color: var(--ink-muted); }
+#page-rastreamento .rast-custom input[type="date"] {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-size: 12px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  background: var(--cream);
+}
+#page-rastreamento .rast-custom input[type="date"]:focus { outline: none; border-color: var(--red); }
+#page-rastreamento .rast-btn-refresh {
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(161,1,1,0.22);
+  transition: background .15s;
+}
+#page-rastreamento .rast-btn-refresh:hover { background: var(--red-dark); }
+
+/* Layout */
+#page-rastreamento .rast-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 28px;
+}
+
+/* KPI cards */
+#page-rastreamento .rast-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+}
+#page-rastreamento .rast-kpi-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 18px 16px;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(161,1,1,0.05);
+}
+#page-rastreamento .rast-kpi-card .rast-label {
+  font-size: 10.5px;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+#page-rastreamento .rast-kpi-card .rast-value {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.5px;
+}
+#page-rastreamento .rast-kpi-card.c-prod  .rast-value { color: var(--ink); }
+#page-rastreamento .rast-kpi-card.c-aguard .rast-value { color: var(--warn); }
+#page-rastreamento .rast-kpi-card.c-embal  .rast-value { color: var(--good); }
+#page-rastreamento .rast-kpi-card.c-diverg .rast-value { color: var(--red); }
+
+/* Tabs */
+#page-rastreamento .rast-tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 20px;
+  gap: 2px;
+}
+#page-rastreamento .rast-tab-btn {
+  padding: 9px 20px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  border: 1px solid var(--line);
+  border-bottom: none;
+  background: #fbeed0;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  position: relative;
+  top: 1px;
+}
+#page-rastreamento .rast-tab-btn.active {
+  background: var(--paper);
+  color: var(--red-dark);
+  border-color: var(--line);
+}
+#page-rastreamento .rast-tab-btn:hover:not(.active) { background: #f5e4ba; color: var(--ink); }
+#page-rastreamento .rast-tab-pane { display: none; }
+#page-rastreamento .rast-tab-pane.active { display: block; }
+
+/* Card */
+#page-rastreamento .rast-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 20px 22px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 8px rgba(161,1,1,0.04);
+}
+#page-rastreamento .rast-card:last-child { margin-bottom: 0; }
+#page-rastreamento .rast-card-title {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--ink-soft);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* Controles */
+#page-rastreamento input[type="text"],
+#page-rastreamento input[type="number"],
+#page-rastreamento input[type="date"],
+#page-rastreamento select {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-family: var(--font-body);
+  transition: border-color .15s;
+  width: 100%;
+}
+#page-rastreamento input:focus,
+#page-rastreamento select:focus { outline: none; border-color: var(--red); }
+#page-rastreamento input[readonly] { color: var(--ink-muted); cursor: default; }
+#page-rastreamento input::placeholder { color: var(--ink-muted); }
+
+/* Form rows */
+#page-rastreamento .rast-form-row {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 14px;
+  align-items: flex-start;
+}
+#page-rastreamento .rast-form-row:last-child { margin-bottom: 0; }
+#page-rastreamento .rast-form-group { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+#page-rastreamento .rast-form-group label {
+  font-size: 11px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+#page-rastreamento .rast-help-error { font-size: 11px; color: var(--red); display: none; margin-top: 3px; }
+
+/* Autocomplete */
+#page-rastreamento .rast-ac-wrap { position: relative; }
+#page-rastreamento .rast-ac-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0; right: 0;
+  z-index: 200;
+  background: var(--paper);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  max-height: 220px;
+  overflow-y: auto;
+  display: none;
+  box-shadow: 0 4px 16px rgba(42,26,26,.12);
+}
+#page-rastreamento .rast-ac-item {
+  padding: 9px 14px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+}
+#page-rastreamento .rast-ac-item:last-child { border-bottom: none; }
+#page-rastreamento .rast-ac-item:hover { background: var(--gold-light); }
+#page-rastreamento .rast-ac-name { font-size: 13px; color: var(--ink); }
+#page-rastreamento .rast-ac-code { font-size: 11px; color: var(--ink-muted); font-family: monospace; white-space: nowrap; }
+
+/* Seletor de unidade */
+#page-rastreamento .rast-unit-toggle {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+#page-rastreamento .rast-unit-btn {
+  background: var(--cream);
+  border: none;
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 18px;
+  cursor: pointer;
+  transition: all .15s;
+}
+#page-rastreamento .rast-unit-btn + .rast-unit-btn { border-left: 1px solid var(--line); }
+#page-rastreamento .rast-unit-btn.active { background: var(--red); color: #fff; }
+
+/* Total box */
+#page-rastreamento .rast-total-box {
+  background: var(--gold-light);
+  border: 1px solid #e5cfa0;
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  text-align: center;
+}
+#page-rastreamento .rast-total-box small {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--ink-muted);
+  margin-bottom: 4px;
+}
+#page-rastreamento .rast-total-box .rast-tv {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--red-dark);
+}
+
+/* Summary */
+#page-rastreamento .rast-summary {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+}
+#page-rastreamento .rast-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+#page-rastreamento .rast-summary-row:last-child { border-bottom: none; }
+#page-rastreamento .rast-s-key { font-size: 12px; color: var(--ink-soft); }
+#page-rastreamento .rast-s-val { font-size: 13px; font-weight: 600; color: var(--ink); }
+#page-rastreamento .rast-s-val.highlight { color: var(--red-dark); font-size: 16px; font-weight: 800; }
+
+/* Botões */
+#page-rastreamento .rast-btn {
+  padding: 9px 20px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: background .15s, opacity .15s;
+  letter-spacing: 0.2px;
+}
+#page-rastreamento .rast-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+#page-rastreamento .rast-btn-primary {
+  background: var(--red);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(161,1,1,0.22);
+}
+#page-rastreamento .rast-btn-primary:hover:not(:disabled) { background: var(--red-dark); }
+#page-rastreamento .rast-btn-confirm {
+  background: var(--good);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(47,125,82,0.2);
+}
+#page-rastreamento .rast-btn-confirm:hover:not(:disabled) { opacity: .88; }
+#page-rastreamento .rast-btn-ghost {
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+}
+#page-rastreamento .rast-btn-ghost:hover { border-color: var(--line-2); color: var(--ink); }
+#page-rastreamento .rast-row-end { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+
+/* Badges */
+#page-rastreamento .rast-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+#page-rastreamento .rast-b-aguard { background: var(--warn-bg); color: var(--warn); border: 1px solid #e5c080; }
+#page-rastreamento .rast-b-embal  { background: var(--good-bg); color: var(--good); border: 1px solid #a8d9bc; }
+#page-rastreamento .rast-b-diverg { background: var(--red-light); color: var(--red); border: 1px solid #f5bdb5; }
+
+/* Chip código */
+#page-rastreamento .rast-chip {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--ink-soft);
+}
+
+/* Resultados busca embalagem */
+#page-rastreamento .rast-result-item {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: border-color .15s, background .15s;
+}
+#page-rastreamento .rast-result-item:hover { border-color: var(--red); background: var(--gold-light); }
+#page-rastreamento .rast-result-item:last-child { margin-bottom: 0; }
+#page-rastreamento .rast-ri-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+#page-rastreamento .rast-ri-produto { font-weight: 700; font-size: 13.5px; color: var(--ink); }
+#page-rastreamento .rast-ri-meta { font-size: 12px; color: var(--ink-soft); line-height: 1.7; }
+
+/* Divergência */
+#page-rastreamento .rast-diverg-box {
+  background: var(--red-light);
+  border: 1px solid #f5bdb5;
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-top: 14px;
+}
+#page-rastreamento .rast-diverg-title {
+  font-weight: 800;
+  color: var(--red);
+  margin-bottom: 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+#page-rastreamento .rast-diverg-row { display: flex; justify-content: space-between; font-size: 12.5px; padding: 3px 0; color: var(--ink-soft); }
+#page-rastreamento .rast-diverg-total { font-weight: 800; color: var(--red); border-top: 1px solid #f5bdb5; margin-top: 6px; padding-top: 8px; }
+
+/* Table */
+#page-rastreamento .rast-tbl-wrap { overflow-x: auto; }
+#page-rastreamento table { width: 100%; border-collapse: collapse; font-size: 12px; }
+#page-rastreamento thead th {
+  background: var(--red);
+  color: #fff;
+  padding: 9px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+#page-rastreamento tbody tr:nth-child(even) { background: #fffaf0; }
+#page-rastreamento tbody tr:hover { background: var(--gold-light); }
+#page-rastreamento tbody td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+#page-rastreamento tbody tr:last-child td { border-bottom: none; }
+#page-rastreamento .rast-td-dim   { color: var(--ink-muted); font-size: 11px; }
+#page-rastreamento .rast-td-mono  { font-family: 'Courier New', monospace; font-size: 11px; }
+#page-rastreamento .rast-td-num   { text-align: right; }
+#page-rastreamento .rast-td-ctr   { text-align: center; }
+#page-rastreamento .rast-empty    { text-align: center; padding: 48px; color: var(--ink-muted); font-size: 13px; }
+
+/* Toast (local ao módulo) */
+#rast-toasts {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+#rast-toasts .rast-toast {
+  padding: 11px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 240px;
+  max-width: 340px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  animation: rast-tin .18s ease;
+  box-shadow: 0 4px 14px rgba(0,0,0,.15);
+  pointer-events: auto;
+}
+#rast-toasts .rast-toast.s { background: var(--good-bg); border: 1px solid #a8d9bc; color: #1a5c36; }
+#rast-toasts .rast-toast.e { background: var(--red-light); border: 1px solid #f5bdb5; color: var(--red-dark); }
+#rast-toasts .rast-toast.i { background: #e8f0fc; border: 1px solid #b3c8f0; color: #1a3a6e; }
+@keyframes rast-tin {
+  from { transform: translateX(10px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* Modal (local ao módulo) */
+#rast-modal {
+  position: fixed; inset: 0;
+  background: rgba(42,26,26,.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+}
+#rast-modal.hidden { display: none; }
+#rast-modal .rast-modal-inner {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  max-width: 440px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(42,26,26,.18);
+}
+#rast-modal h3 { font-family: var(--font-display); font-size: 17px; font-weight: 600; margin-bottom: 12px; color: var(--red-dark); }
+#rast-modal p  { color: var(--ink-soft); font-size: 13.5px; line-height: 1.7; margin-bottom: 22px; }
+#rast-modal .rast-modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+/* Responsive */
+@media (max-width: 720px) {
+  #page-rastreamento .rast-kpi-grid  { grid-template-columns: repeat(2, 1fr); }
+  #page-rastreamento .rast-form-row  { flex-direction: column; }
+  #page-rastreamento .rast-container { padding: 16px 16px; }
+  #page-rastreamento .rast-period-bar { padding: 10px 16px; }
+}
+</style>
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
@@ -2257,6 +2790,10 @@ body{background:#fff;color:#000}
       <button class="nav-item" data-page="expedicao">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="17"/><line x1="9.5" y1="14.5" x2="14.5" y2="14.5"/></svg>
         Expedição
+      </button>
+      <button class="nav-item" data-page="rastreamento">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Rastreamento
       </button>
     </nav>
   </aside>
@@ -4490,6 +5027,241 @@ body{background:#fff;color:#000}
   </div> <!-- /page-expedicao -->
 
 
+
+  <div id="page-rastreamento" class="report-page" style="display:none;">
+
+  <!-- Topbar -->
+  <div class="rast-topbar">
+    <div class="rast-topbar-inner">
+      <div>
+        <h1>BK360 · Rastreamento</h1>
+        <div class="rast-topbar-sub">Controle de Produção e Embalagem por Carrinho</div>
+      </div>
+      <div class="rast-topbar-date" id="rast-hdr-date"></div>
+    </div>
+  </div>
+
+  <!-- Filtro de período -->
+  <div class="rast-period-bar">
+    <span class="rast-period-label">Período</span>
+    <button class="rast-period-btn active" data-p="today"     onclick="RAST_setPeriod(this)">Hoje</button>
+    <button class="rast-period-btn"        data-p="yesterday" onclick="RAST_setPeriod(this)">Ontem</button>
+    <button class="rast-period-btn"        data-p="7d"        onclick="RAST_setPeriod(this)">7 dias</button>
+    <button class="rast-period-btn"        data-p="30d"       onclick="RAST_setPeriod(this)">30 dias</button>
+    <button class="rast-period-btn"        data-p="month"     onclick="RAST_setPeriod(this)">Este mês</button>
+    <div class="rast-period-sep"></div>
+    <button class="rast-period-btn"        data-p="custom"    onclick="RAST_setPeriod(this)">Personalizado</button>
+    <div class="rast-custom" id="rast-custom-range">
+      <input type="date" id="rast-dt-from" onchange="RAST_loadAll()">
+      <span>até</span>
+      <input type="date" id="rast-dt-to"   onchange="RAST_loadAll()">
+    </div>
+    <button class="rast-btn-refresh" onclick="RAST_loadAll()">↻ Atualizar</button>
+  </div>
+
+  <div class="rast-container">
+
+    <!-- KPIs -->
+    <div class="rast-kpi-grid">
+      <div class="rast-kpi-card c-prod">
+        <div class="rast-label">Carrinhos Produzidos</div>
+        <div class="rast-value" id="rast-k-total">—</div>
+      </div>
+      <div class="rast-kpi-card c-aguard">
+        <div class="rast-label">Aguardando Embalagem</div>
+        <div class="rast-value" id="rast-k-aguard">—</div>
+      </div>
+      <div class="rast-kpi-card c-embal">
+        <div class="rast-label">Embalados</div>
+        <div class="rast-value" id="rast-k-embal">—</div>
+      </div>
+      <div class="rast-kpi-card c-diverg">
+        <div class="rast-label">Divergências</div>
+        <div class="rast-value" id="rast-k-diverg">—</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="rast-tab-bar">
+      <button class="rast-tab-btn active" data-tab="producao"  onclick="RAST_switchTab(this)">Registrar Produção</button>
+      <button class="rast-tab-btn"        data-tab="embalagem" onclick="RAST_switchTab(this)">Registrar Embalagem</button>
+      <button class="rast-tab-btn"        data-tab="historico" onclick="RAST_switchTab(this)">Histórico</button>
+    </div>
+
+    <!-- ═══ TAB: PRODUÇÃO ═══ -->
+    <div class="rast-tab-pane active" id="rast-tab-producao">
+
+      <div class="rast-card">
+        <div class="rast-card-title">1 — Produto</div>
+        <div class="rast-form-row">
+          <div class="rast-form-group" style="flex:2;">
+            <label>Nome ou código do produto</label>
+            <div class="rast-ac-wrap">
+              <input type="text" id="rast-p-busca" placeholder="Ex: Grostoly ou 1010"
+                     autocomplete="off" oninput="RAST_onAC(this.value)">
+              <div class="rast-ac-list" id="rast-ac-list"></div>
+            </div>
+          </div>
+          <div class="rast-form-group" style="max-width:140px;">
+            <label>Código</label>
+            <input type="text" id="rast-p-codigo" readonly placeholder="—">
+          </div>
+        </div>
+      </div>
+
+      <div class="rast-card">
+        <div class="rast-card-title">2 — Carrinho / Armário</div>
+        <div class="rast-form-row">
+          <div class="rast-form-group" style="max-width:200px;">
+            <label>Número sequencial</label>
+            <input type="number" id="rast-p-carrinho" placeholder="Ex: 3" min="1"
+                   oninput="RAST_onCarrinhoChange()">
+            <span class="rast-help-error" id="rast-carrinho-err">⚠ Lançamento aberto para este carrinho hoje.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="rast-card">
+        <div class="rast-card-title">3 — Quantidade</div>
+        <div style="margin-bottom:16px;">
+          <label style="font-size:11px;color:var(--ink-soft);font-weight:600;display:block;margin-bottom:7px;">Unidade de contagem</label>
+          <div class="rast-unit-toggle">
+            <button class="rast-unit-btn active" id="rast-unit-telas"  onclick="RAST_setUnidade('telas')">Telas</button>
+            <button class="rast-unit-btn"        id="rast-unit-caixas" onclick="RAST_setUnidade('caixas')">Caixas</button>
+          </div>
+        </div>
+        <div class="rast-form-row">
+          <div class="rast-form-group">
+            <label id="rast-lbl-qtd-grupo">Quantidade de telas</label>
+            <input type="number" id="rast-p-telas" placeholder="Ex: 19" min="1" oninput="RAST_calcTotal()">
+          </div>
+          <div class="rast-form-group">
+            <label id="rast-lbl-qtd-unid">Produtos por tela</label>
+            <input type="number" id="rast-p-por-tela" placeholder="Ex: 16" min="1" oninput="RAST_calcTotal()">
+          </div>
+          <div class="rast-form-group" style="flex:0.9;">
+            <label>&nbsp;</label>
+            <div class="rast-total-box">
+              <small>Total calculado</small>
+              <div class="rast-tv" id="rast-total-v">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rast-card">
+        <div class="rast-card-title">4 — Responsável</div>
+        <div class="rast-form-row">
+          <div class="rast-form-group">
+            <label>Nome do responsável pelo lançamento</label>
+            <input type="text" id="rast-p-resp" placeholder="Nome completo">
+          </div>
+        </div>
+      </div>
+
+      <div class="rast-card" id="rast-p-preview" style="display:none;">
+        <div class="rast-card-title">5 — Confirmação</div>
+        <div class="rast-summary" id="rast-p-summary-content"></div>
+        <div class="rast-row-end">
+          <button class="rast-btn rast-btn-ghost"   onclick="RAST_resetProd()">Cancelar</button>
+          <button class="rast-btn rast-btn-primary" id="rast-btn-conf-prod" onclick="RAST_salvarProducao()">✓ Confirmar e Salvar</button>
+        </div>
+      </div>
+
+      <div class="rast-row-end" id="rast-p-btn-row">
+        <button class="rast-btn rast-btn-primary" onclick="RAST_showPreview()">Revisar →</button>
+      </div>
+
+    </div><!-- /rast-tab-producao -->
+
+    <!-- ═══ TAB: EMBALAGEM ═══ -->
+    <div class="rast-tab-pane" id="rast-tab-embalagem">
+
+      <div class="rast-card">
+        <div class="rast-card-title">Buscar Carrinho</div>
+        <div class="rast-form-row">
+          <div class="rast-form-group">
+            <label>Número do carrinho, produto ou código de produção</label>
+            <input type="text" id="rast-e-busca"
+                   placeholder="Ex: 3 · Grostoly · 13092026-0938"
+                   oninput="RAST_onEmbBusca(this.value)">
+          </div>
+        </div>
+        <div id="rast-e-results" style="margin-top:12px;"></div>
+      </div>
+
+      <div id="rast-e-panel" style="display:none;">
+        <div class="rast-card">
+          <div class="rast-card-title">Dados da Produção</div>
+          <div class="rast-summary" id="rast-e-prod-info"></div>
+        </div>
+        <div class="rast-card">
+          <div class="rast-card-title">Registrar Embalagem</div>
+          <div class="rast-form-row">
+            <div class="rast-form-group">
+              <label id="rast-lbl-emb-qtd">Quantidade efetivamente embalada</label>
+              <input type="number" id="rast-e-qtd" min="1" oninput="RAST_checkDiv()">
+            </div>
+            <div class="rast-form-group">
+              <label>Responsável pela embalagem</label>
+              <input type="text" id="rast-e-resp" placeholder="Nome completo">
+            </div>
+          </div>
+          <div id="rast-e-div-box"></div>
+          <div class="rast-row-end">
+            <button class="rast-btn rast-btn-ghost"    onclick="RAST_resetEmb()">Cancelar</button>
+            <button class="rast-btn rast-btn-confirm"  onclick="RAST_confirmarEmbalagem()">✓ Confirmar Embalagem</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /rast-tab-embalagem -->
+
+    <!-- ═══ TAB: HISTÓRICO ═══ -->
+    <div class="rast-tab-pane" id="rast-tab-historico">
+      <div class="rast-card" style="padding:0; overflow:hidden;">
+        <div class="rast-tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Produto</th>
+                <th class="rast-td-ctr">Carrinho</th>
+                <th class="rast-td-ctr">Unid.</th>
+                <th class="rast-td-num">Qtd Prod.</th>
+                <th>Código Produção</th>
+                <th>Produzido em</th>
+                <th>Resp. Produção</th>
+                <th>Status</th>
+                <th class="rast-td-num">Qtd Emb.</th>
+                <th>Código Embalagem</th>
+                <th>Embalado em</th>
+                <th>Resp. Embalagem</th>
+              </tr>
+            </thead>
+            <tbody id="rast-hist-body">
+              <tr><td colspan="12" class="rast-empty">Selecione o módulo para carregar…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- /rast-tab-historico -->
+
+  </div><!-- /rast-container -->
+
+  <!-- Modal do módulo -->
+  <div class="hidden" id="rast-modal">
+    <div class="rast-modal-inner">
+      <h3 id="rast-m-title"></h3>
+      <p  id="rast-m-body"></p>
+      <div class="rast-modal-actions">
+        <button class="rast-btn rast-btn-ghost"   onclick="RAST_closeModal()">Cancelar</button>
+        <button class="rast-btn rast-btn-primary" id="rast-m-ok">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /page-rastreamento -->
+
   </div> <!-- /main-content -->
 </div> <!-- /app-shell -->
 
@@ -4552,6 +5324,7 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     document.getElementById('page-melhoria').style.display = target === 'melhoria' ? 'block' : 'none';
     document.getElementById('page-lancamento').style.display = target === 'lancamento' ? 'block' : 'none';
     document.getElementById('page-expedicao').style.display = target === 'expedicao' ? 'block' : 'none';
+    document.getElementById('page-rastreamento').style.display = target === 'rastreamento' ? 'block' : 'none';
     if(target === 'lancamento' && typeof LANC_populateDropdowns === 'function'){
       LANC_populateDropdowns();
     }
@@ -4581,6 +5354,10 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     if(target === 'expedicao' && !EXP_loadedOnce){
       EXP_loadedOnce = true;
       EXP_init();
+    }
+    if(target === 'rastreamento' && !RAST_loadedOnce){
+      RAST_loadedOnce = true;
+      RAST_init();
     }
   });
 });
@@ -7501,7 +8278,8 @@ async function buildDocHtml(dayKey){
       </thead>
       <tbody>${rowsHtml}</tbody>
     </table>
-  </body>
+  <div id="rast-toasts"></div>
+</body>
   </html>`;
 }
 
@@ -20205,6 +20983,446 @@ window.EXP_init = function(){
 };
 
 })(); // fim IIFE Expedição
+
+
+/* ════════════════════════════════════════════════════════════
+   MÓDULO RASTREAMENTO — BK360
+   Prefixo RAST_ em todas as funções e variáveis globais para
+   não conflitar com os demais módulos.
+   ════════════════════════════════════════════════════════════ */
+let RAST_loadedOnce = false;
+
+// Estado
+let RAST_catalogo        = [];
+let RAST_prodSelecionado = null;
+let RAST_unidadeAtual    = 'telas';
+let RAST_embRegistro     = null;
+let RAST_embResultados   = {};
+let RAST_modalOk         = null;
+let RAST_periodoAtivo    = 'today';
+let RAST_carrinhoTimer   = null;
+let RAST_embTimer        = null;
+
+async function RAST_init() {
+  document.getElementById('rast-hdr-date').textContent =
+    new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+  // Fix: estilo do modal — precisa de display:flex quando não hidden
+  const modal = document.getElementById('rast-modal');
+  modal.style.display = 'none';
+  modal.classList.remove('hidden');
+  modal.style.display = '';
+  modal.classList.add('hidden');
+
+  await RAST_carregarCatalogo();
+  await RAST_loadAll();
+}
+
+// ─── Período ───
+function RAST_setPeriod(btn) {
+  document.querySelectorAll('#page-rastreamento .rast-period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  RAST_periodoAtivo = btn.dataset.p;
+  document.getElementById('rast-custom-range').classList.toggle('visible', RAST_periodoAtivo === 'custom');
+  if (RAST_periodoAtivo !== 'custom') RAST_loadAll();
+}
+
+function RAST_getPeriod() {
+  const now  = new Date();
+  const iso  = d => d.toISOString().slice(0,10);
+  const dias = n => { const d = new Date(now); d.setDate(d.getDate()+n); return iso(d); };
+  if (RAST_periodoAtivo === 'today')     return { from: iso(now), to: iso(now) };
+  if (RAST_periodoAtivo === 'yesterday') return { from: dias(-1), to: dias(-1) };
+  if (RAST_periodoAtivo === '7d')        return { from: dias(-6), to: iso(now) };
+  if (RAST_periodoAtivo === '30d')       return { from: dias(-29), to: iso(now) };
+  if (RAST_periodoAtivo === 'month')     return { from: iso(new Date(now.getFullYear(), now.getMonth(), 1)), to: iso(now) };
+  return {
+    from: document.getElementById('rast-dt-from').value || iso(now),
+    to:   document.getElementById('rast-dt-to').value   || iso(now),
+  };
+}
+
+async function RAST_loadAll() { await Promise.all([RAST_loadKPIs(), RAST_loadHistorico()]); }
+
+// ─── KPIs ───
+async function RAST_loadKPIs() {
+  const { from, to } = RAST_getPeriod();
+  const sb = getSupabaseClient();
+  const { data, error } = await sb
+    .from('rastreamento_carrinhos').select('status')
+    .gte('produzido_em', from+'T00:00:00').lte('produzido_em', to+'T23:59:59');
+  if (error) { RAST_toast('Erro ao carregar indicadores','e'); return; }
+  document.getElementById('rast-k-total').textContent  = data.length;
+  document.getElementById('rast-k-aguard').textContent = data.filter(r=>r.status==='Aguardando Embalagem').length;
+  document.getElementById('rast-k-embal').textContent  = data.filter(r=>r.status==='Embalado').length;
+  document.getElementById('rast-k-diverg').textContent = data.filter(r=>r.status==='Divergência de Quantidade').length;
+}
+
+// ─── Catálogo ───
+async function RAST_carregarCatalogo() {
+  const sb = getSupabaseClient();
+  const { data } = await sb.from('produtos_producao').select('codigo, descricao').order('descricao');
+  RAST_catalogo = data || [];
+}
+
+// ─── Autocomplete ───
+function RAST_onAC(val) {
+  const list = document.getElementById('rast-ac-list');
+  if (val.length < 2) { list.style.display='none'; return; }
+  const term = val.toLowerCase();
+  const hits = RAST_catalogo.filter(p=>
+    p.descricao.toLowerCase().includes(term) || p.codigo.toLowerCase().includes(term)
+  ).slice(0,12);
+  if (!hits.length) { list.style.display='none'; return; }
+  list.innerHTML = hits.map(p=>
+    `<div class="rast-ac-item" data-codigo="${p.codigo}" data-desc="${RAST_esc(p.descricao)}" onclick="RAST_selecionarProduto(this)">
+       <span class="rast-ac-name">${RAST_esc(p.descricao)}</span>
+       <span class="rast-ac-code">${p.codigo}</span>
+     </div>`
+  ).join('');
+  list.style.display = 'block';
+}
+
+function RAST_selecionarProduto(el) {
+  RAST_prodSelecionado = { codigo: el.dataset.codigo, descricao: el.dataset.desc };
+  document.getElementById('rast-p-busca').value  = el.dataset.desc;
+  document.getElementById('rast-p-codigo').value = el.dataset.codigo;
+  document.getElementById('rast-ac-list').style.display = 'none';
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.rast-ac-wrap'))
+    document.getElementById('rast-ac-list') && (document.getElementById('rast-ac-list').style.display = 'none');
+});
+
+// ─── Unidade ───
+function RAST_setUnidade(u) {
+  RAST_unidadeAtual = u;
+  document.getElementById('rast-unit-telas').classList.toggle('active',  u==='telas');
+  document.getElementById('rast-unit-caixas').classList.toggle('active', u==='caixas');
+  const isTelas = u === 'telas';
+  document.getElementById('rast-lbl-qtd-grupo').textContent = isTelas ? 'Quantidade de telas'  : 'Quantidade de caixas';
+  document.getElementById('rast-lbl-qtd-unid').textContent  = isTelas ? 'Produtos por tela'    : 'Produtos por caixa';
+  document.getElementById('rast-p-telas').placeholder       = isTelas ? 'Ex: 19' : 'Ex: 10';
+  document.getElementById('rast-p-por-tela').placeholder    = isTelas ? 'Ex: 16' : 'Ex: 20';
+  RAST_calcTotal();
+}
+
+// ─── Total ───
+function RAST_calcTotal() {
+  const t = parseInt(document.getElementById('rast-p-telas').value)    || 0;
+  const p = parseInt(document.getElementById('rast-p-por-tela').value) || 0;
+  document.getElementById('rast-total-v').textContent =
+    (t && p) ? (t*p).toLocaleString('pt-BR')+' un.' : '—';
+}
+
+// ─── Tabs ───
+function RAST_switchTab(btn) {
+  document.querySelectorAll('#page-rastreamento .rast-tab-btn').forEach(b  => b.classList.remove('active'));
+  document.querySelectorAll('#page-rastreamento .rast-tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('rast-tab-'+btn.dataset.tab).classList.add('active');
+  if (btn.dataset.tab === 'historico') RAST_loadHistorico();
+}
+
+// ─── Produção ───
+function RAST_onCarrinhoChange() {
+  document.getElementById('rast-carrinho-err').style.display = 'none';
+  clearTimeout(RAST_carrinhoTimer);
+  const v = parseInt(document.getElementById('rast-p-carrinho').value);
+  if (!v || v<1) return;
+  RAST_carrinhoTimer = setTimeout(() => RAST_verificarCarrinhoDuplicado(v), 500);
+}
+
+async function RAST_verificarCarrinhoDuplicado(num) {
+  const today = new Date().toISOString().slice(0,10);
+  const sb = getSupabaseClient();
+  const { data } = await sb.from('rastreamento_carrinhos').select('id')
+    .eq('numero_carrinho', num).eq('status','Aguardando Embalagem')
+    .gte('produzido_em', today+'T00:00:00').lte('produzido_em', today+'T23:59:59');
+  document.getElementById('rast-carrinho-err').style.display = (data&&data.length>0) ? 'block' : 'none';
+}
+
+async function RAST_showPreview() {
+  if (!RAST_prodSelecionado) return RAST_toast('Selecione um produto','e');
+  const carrinho = parseInt(document.getElementById('rast-p-carrinho').value);
+  const telas    = parseInt(document.getElementById('rast-p-telas').value);
+  const porTela  = parseInt(document.getElementById('rast-p-por-tela').value);
+  const resp     = document.getElementById('rast-p-resp').value.trim();
+  if (!carrinho||carrinho<1) return RAST_toast('Informe o número do carrinho','e');
+  if (!telas||telas<1)       return RAST_toast('Informe a quantidade de '+RAST_unidadeAtual,'e');
+  if (!porTela||porTela<1)   return RAST_toast('Informe os produtos por '+(RAST_unidadeAtual==='telas'?'tela':'caixa'),'e');
+  if (!resp)                 return RAST_toast('Informe o responsável','e');
+
+  const today = new Date().toISOString().slice(0,10);
+  const sb = getSupabaseClient();
+  const { data: dup } = await sb.from('rastreamento_carrinhos').select('id')
+    .eq('numero_carrinho', carrinho).eq('status','Aguardando Embalagem')
+    .gte('produzido_em', today+'T00:00:00').lte('produzido_em', today+'T23:59:59');
+  if (dup&&dup.length>0) {
+    document.getElementById('rast-carrinho-err').style.display = 'block';
+    return RAST_toast('Carrinho '+carrinho+' já tem lançamento aberto hoje','e');
+  }
+
+  const total  = telas * porTela;
+  const unLbl  = RAST_unidadeAtual==='telas' ? 'telas' : 'caixas';
+  const unLbl1 = RAST_unidadeAtual==='telas' ? 'tela'  : 'caixa';
+
+  document.getElementById('rast-p-summary-content').innerHTML =
+    '<div class="rast-summary-row"><span class="rast-s-key">Produto</span><span class="rast-s-val">'+RAST_esc(RAST_prodSelecionado.descricao)+'</span></div>'+
+    '<div class="rast-summary-row"><span class="rast-s-key">Código</span><span class="rast-s-val"><span class="rast-chip">'+RAST_esc(RAST_prodSelecionado.codigo)+'</span></span></div>'+
+    '<div class="rast-summary-row"><span class="rast-s-key">Carrinho</span><span class="rast-s-val">'+carrinho+'</span></div>'+
+    '<div class="rast-summary-row"><span class="rast-s-key">'+RAST_ucFirst(unLbl)+' × por '+unLbl1+'</span><span class="rast-s-val">'+telas+' × '+porTela+'</span></div>'+
+    '<div class="rast-summary-row"><span class="rast-s-key">Unidade</span><span class="rast-s-val">'+RAST_ucFirst(unLbl)+'</span></div>'+
+    '<div class="rast-summary-row"><span class="rast-s-key">Total</span><span class="rast-s-val highlight">'+total.toLocaleString('pt-BR')+' unidades</span></div>'+
+    '<div class="rast-summary-row"><span class="rast-s-key">Responsável</span><span class="rast-s-val">'+RAST_esc(resp)+'</span></div>';
+  document.getElementById('rast-p-preview').style.display = 'block';
+  document.getElementById('rast-p-btn-row').style.display  = 'none';
+  document.getElementById('rast-p-preview').scrollIntoView({ behavior:'smooth' });
+}
+
+async function RAST_salvarProducao() {
+  const btn = document.getElementById('rast-btn-conf-prod');
+  btn.disabled = true; btn.textContent = 'Salvando…';
+  const carrinho = parseInt(document.getElementById('rast-p-carrinho').value);
+  const telas    = parseInt(document.getElementById('rast-p-telas').value);
+  const porTela  = parseInt(document.getElementById('rast-p-por-tela').value);
+  const resp     = document.getElementById('rast-p-resp').value.trim();
+  const agora    = new Date();
+  const codigo   = RAST_gerarCodigo(agora);
+  const sb = getSupabaseClient();
+
+  const { error } = await sb.from('rastreamento_carrinhos').insert({
+    produto: RAST_prodSelecionado.descricao, codigo_produto: RAST_prodSelecionado.codigo,
+    numero_carrinho: carrinho, qtd_telas: telas, qtd_por_tela: porTela,
+    qtd_produzida: telas*porTela, responsavel_producao: resp,
+    produzido_em: agora.toISOString(), codigo_producao: codigo,
+    unidade: RAST_unidadeAtual, status: 'Aguardando Embalagem',
+  });
+
+  if (error) {
+    RAST_toast('Erro ao salvar: '+(error.message||'tente novamente'),'e');
+    btn.disabled=false; btn.textContent='✓ Confirmar e Salvar'; return;
+  }
+  RAST_toast('Carrinho '+carrinho+' registrado! Código: '+codigo,'s');
+  RAST_resetProd(); await RAST_loadAll();
+}
+
+function RAST_resetProd() {
+  RAST_prodSelecionado = null;
+  ['rast-p-busca','rast-p-codigo','rast-p-carrinho','rast-p-telas','rast-p-por-tela','rast-p-resp'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('rast-total-v').textContent = '—';
+  document.getElementById('rast-p-preview').style.display='none';
+  document.getElementById('rast-p-btn-row').style.display='flex';
+  document.getElementById('rast-carrinho-err').style.display='none';
+  const btn=document.getElementById('rast-btn-conf-prod');
+  if(btn){ btn.disabled=false; btn.textContent='✓ Confirmar e Salvar'; }
+}
+
+// ─── Embalagem ───
+function RAST_onEmbBusca(val) {
+  clearTimeout(RAST_embTimer);
+  const r = document.getElementById('rast-e-results');
+  if (!val.trim()) { r.innerHTML=''; return; }
+  RAST_embTimer = setTimeout(() => RAST_buscarCarrinhos(val.trim()), 350);
+}
+
+async function RAST_buscarCarrinhos(term) {
+  const r = document.getElementById('rast-e-results');
+  r.innerHTML='<div style="color:var(--ink-muted);padding:8px 0;font-size:13px;">Buscando…</div>';
+  RAST_embResultados = {};
+  const num = parseInt(term);
+  const sb = getSupabaseClient();
+  let q = sb.from('rastreamento_carrinhos').select('*')
+    .eq('status','Aguardando Embalagem')
+    .order('produzido_em',{ascending:false}).limit(8);
+  if (!isNaN(num)&&String(num)===term.trim()) q=q.eq('numero_carrinho',num);
+  else if (/^\d{8}-\d{4}$/.test(term)) q=q.eq('codigo_producao',term);
+  else q=q.ilike('produto','%'+term+'%');
+  const { data, error } = await q;
+  if (error||!data||!data.length) {
+    r.innerHTML='<div style="color:var(--ink-muted);padding:8px 0;font-size:13px;">Nenhum carrinho aguardando embalagem.</div>'; return;
+  }
+  data.forEach(d=>{ RAST_embResultados[d.id]=d; });
+  const unLbl = d => d.unidade==='caixas' ? 'cx.' : 'un.';
+  r.innerHTML = data.map(d=>
+    '<div class="rast-result-item" onclick="RAST_selecionarEmb(''+d.id+'')">'+
+      '<div class="rast-ri-top">'+
+        '<span class="rast-ri-produto">'+RAST_esc(d.produto)+'</span>'+
+        '<span class="rast-badge rast-b-aguard">Aguardando</span>'+
+      '</div>'+
+      '<div class="rast-ri-meta">'+
+        'Carrinho <strong>'+d.numero_carrinho+'</strong> · '+
+        d.qtd_produzida.toLocaleString('pt-BR')+' '+unLbl(d)+' · '+
+        RAST_fmtDt(d.produzido_em)+' · '+
+        '<span class="rast-chip">'+d.codigo_producao+'</span>'+
+      '</div>'+
+    '</div>'
+  ).join('');
+}
+
+function RAST_selecionarEmb(id) {
+  const r = RAST_embResultados[id];
+  if (!r) { RAST_toast('Registro não encontrado','e'); return; }
+  RAST_embRegistro = r;
+  const unLabel = r.unidade==='caixas' ? 'caixas' : 'unidades';
+  document.getElementById('rast-lbl-emb-qtd').textContent = 'Quantidade efetivamente embalada ('+unLabel+')';
+  document.getElementById('rast-e-prod-info').innerHTML =
+    '<div class="rast-summary-row"><span class="rast-s-key">Produto</span><span class="rast-s-val">'+RAST_esc(r.produto)+'</span></div>'+
+    '<div class="rast-summary-row"><span class="rast-s-key">Código</span><span class="rast-s-val"><span class="rast-chip">'+RAST_esc(r.codigo_produto)+'</span></span></div>'+
+    '<div class="rast-summary-row"><span class="rast-s-key">Carrinho</span><span class="rast-s-val">'+r.numero_carrinho+'</span></div>'+
+    '<div class="rast-summary-row"><span class="rast-s-key">Unidade</span><span class="rast-s-val">'+RAST_ucFirst(r.unidade||'telas')+'</span></div>'+
+    '<div class="rast-summary-row"><span class="rast-s-key">Qtd produzida</span><span class="rast-s-val highlight">'+r.qtd_produzida.toLocaleString('pt-BR')+' un.</span></div>'+
+    '<div class="rast-summary-row"><span class="rast-s-key">Código produção</span><span class="rast-s-val"><span class="rast-chip">'+r.codigo_producao+'</span></span></div>'+
+    '<div class="rast-summary-row"><span class="rast-s-key">Produzido em</span><span class="rast-s-val">'+RAST_fmtDt(r.produzido_em)+'</span></div>'+
+    '<div class="rast-summary-row"><span class="rast-s-key">Resp. produção</span><span class="rast-s-val">'+RAST_esc(r.responsavel_producao)+'</span></div>';
+  document.getElementById('rast-e-qtd').value  = r.qtd_produzida;
+  document.getElementById('rast-e-resp').value = '';
+  document.getElementById('rast-e-div-box').innerHTML = '';
+  document.getElementById('rast-e-panel').style.display = 'block';
+  document.getElementById('rast-e-panel').scrollIntoView({ behavior:'smooth' });
+}
+
+function RAST_checkDiv() {
+  if (!RAST_embRegistro) return;
+  const emb  = parseInt(document.getElementById('rast-e-qtd').value)||0;
+  const prod = RAST_embRegistro.qtd_produzida;
+  const diff = emb - prod;
+  const box  = document.getElementById('rast-e-div-box');
+  if (emb>0 && diff!==0) {
+    box.innerHTML =
+      '<div class="rast-diverg-box">'+
+        '<div class="rast-diverg-title">⚠ Divergência de Quantidade</div>'+
+        '<div class="rast-diverg-row"><span>Quantidade produzida</span><span>'+prod.toLocaleString('pt-BR')+' un.</span></div>'+
+        '<div class="rast-diverg-row"><span>Quantidade embalada</span><span>'+emb.toLocaleString('pt-BR')+' un.</span></div>'+
+        '<div class="rast-diverg-row rast-diverg-total"><span>Diferença</span><span>'+(diff>0?'+':'')+diff.toLocaleString('pt-BR')+' unidades</span></div>'+
+      '</div>';
+  } else { box.innerHTML=''; }
+}
+
+function RAST_confirmarEmbalagem() {
+  if (!RAST_embRegistro) return;
+  const emb  = parseInt(document.getElementById('rast-e-qtd').value);
+  const resp = document.getElementById('rast-e-resp').value.trim();
+  if (!emb||emb<1) return RAST_toast('Informe a quantidade embalada','e');
+  if (!resp)       return RAST_toast('Informe o responsável pela embalagem','e');
+  const prod=RAST_embRegistro.qtd_produzida, diff=emb-prod;
+  const status = diff===0 ? 'Embalado' : 'Divergência de Quantidade';
+  RAST_openModal('Confirmar Embalagem',
+    '<strong>'+RAST_esc(RAST_embRegistro.produto)+'</strong> — Carrinho '+RAST_embRegistro.numero_carrinho+'<br><br>'+
+    'Qtd embalada: <strong>'+emb.toLocaleString('pt-BR')+'</strong><br>'+
+    (diff!==0?'⚠ Divergência: <strong style="color:var(--red)">'+(diff>0?'+':'')+diff.toLocaleString('pt-BR')+' un.</strong><br>':'')+
+    'Status: <strong>'+status+'</strong>',
+    async () => {
+      const agora = new Date();
+      const sb = getSupabaseClient();
+      const { error } = await sb.from('rastreamento_carrinhos').update({
+        qtd_embalada: emb, responsavel_embalagem: resp,
+        embalado_em: agora.toISOString(), codigo_embalagem: RAST_gerarCodigo(agora),
+        diferenca: diff, status,
+      }).eq('id', RAST_embRegistro.id);
+      if (error) { RAST_toast('Erro ao salvar: '+error.message,'e'); return; }
+      RAST_toast('Embalagem do carrinho '+RAST_embRegistro.numero_carrinho+' registrada!','s');
+      RAST_resetEmb(); await RAST_loadAll();
+    }
+  );
+}
+
+function RAST_resetEmb() {
+  RAST_embRegistro=null; RAST_embResultados={};
+  ['rast-e-busca','rast-e-qtd','rast-e-resp'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('rast-e-results').innerHTML='';
+  document.getElementById('rast-e-panel').style.display='none';
+  document.getElementById('rast-e-div-box').innerHTML='';
+}
+
+// ─── Histórico ───
+async function RAST_loadHistorico() {
+  const { from, to } = RAST_getPeriod();
+  const tbody = document.getElementById('rast-hist-body');
+  tbody.innerHTML = '<tr><td colspan="12" class="rast-empty">Carregando…</td></tr>';
+  const sb = getSupabaseClient();
+  const { data, error } = await sb.from('rastreamento_carrinhos').select('*')
+    .gte('produzido_em', from+'T00:00:00').lte('produzido_em', to+'T23:59:59')
+    .order('produzido_em',{ascending:false});
+  if (error||!data||!data.length) {
+    tbody.innerHTML='<tr><td colspan="12" class="rast-empty">Nenhum registro no período.</td></tr>'; return;
+  }
+  const badge = s =>
+    s==='Embalado'                  ? '<span class="rast-badge rast-b-embal">Embalado</span>'     :
+    s==='Divergência de Quantidade' ? '<span class="rast-badge rast-b-diverg">Divergência</span>' :
+                                      '<span class="rast-badge rast-b-aguard">Aguardando</span>';
+  tbody.innerHTML = data.map(r=>
+    '<tr>'+
+      '<td>'+RAST_esc(r.produto)+'<br><span class="rast-td-dim">'+RAST_esc(r.codigo_produto)+'</span></td>'+
+      '<td class="rast-td-ctr" style="font-weight:800;font-size:16px;">'+r.numero_carrinho+'</td>'+
+      '<td class="rast-td-ctr rast-td-dim">'+RAST_ucFirst(r.unidade||'telas')+'</td>'+
+      '<td class="rast-td-num">'+r.qtd_produzida.toLocaleString('pt-BR')+'</td>'+
+      '<td class="rast-td-mono">'+r.codigo_producao+'</td>'+
+      '<td class="rast-td-dim">'+RAST_fmtDt(r.produzido_em)+'</td>'+
+      '<td>'+RAST_esc(r.responsavel_producao)+'</td>'+
+      '<td>'+badge(r.status)+'</td>'+
+      '<td class="rast-td-num">'+(r.qtd_embalada!=null?r.qtd_embalada.toLocaleString('pt-BR'):'<span class="rast-td-dim">—</span>')+'</td>'+
+      '<td class="rast-td-mono">'+(r.codigo_embalagem||'<span class="rast-td-dim">Aguardando</span>')+'</td>'+
+      '<td class="rast-td-dim">'+(r.embalado_em?RAST_fmtDt(r.embalado_em):'—')+'</td>'+
+      '<td>'+(r.responsavel_embalagem?RAST_esc(r.responsavel_embalagem):'<span class="rast-td-dim">—</span>')+'</td>'+
+    '</tr>'
+  ).join('');
+}
+
+// ─── Utilitários ───
+function RAST_gerarCodigo(d=new Date()) {
+  const z=n=>String(n).padStart(2,'0');
+  return z(d.getDate())+z(d.getMonth()+1)+d.getFullYear()+'-'+z(d.getHours())+z(d.getMinutes());
+}
+function RAST_fmtDt(iso) {
+  if (!iso) return '—';
+  const d=new Date(iso);
+  return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+function RAST_esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function RAST_ucFirst(s) { return s?s.charAt(0).toUpperCase()+s.slice(1):''; }
+
+// ─── Toast ───
+function RAST_toast(msg, type='i') {
+  let tc = document.getElementById('rast-toasts');
+  if (!tc) {
+    tc = document.createElement('div'); tc.id='rast-toasts';
+    document.body.appendChild(tc);
+  }
+  const el=document.createElement('div');
+  el.className='rast-toast '+type;
+  const icon=type==='s'?'✓':type==='e'?'✕':'ℹ';
+  el.innerHTML='<span>'+icon+'</span><span>'+RAST_esc(msg)+'</span>';
+  tc.appendChild(el);
+  setTimeout(()=>el.remove(),4200);
+}
+
+// ─── Modal ───
+function RAST_openModal(title, body, onOk) {
+  const modal = document.getElementById('rast-modal');
+  document.getElementById('rast-m-title').textContent=title;
+  document.getElementById('rast-m-body').innerHTML=body;
+  modal.style.display='flex';
+  modal.style.position='fixed';
+  RAST_modalOk=onOk;
+}
+document.addEventListener('DOMContentLoaded', ()=>{
+  const mok = document.getElementById('rast-m-ok');
+  if (mok) mok.addEventListener('click', async()=>{ RAST_closeModal(); if(RAST_modalOk) await RAST_modalOk(); });
+  const modal = document.getElementById('rast-modal');
+  if (modal) modal.addEventListener('click', e=>{ if(e.target===modal) RAST_closeModal(); });
+});
+function RAST_closeModal() {
+  const modal = document.getElementById('rast-modal');
+  modal.style.display='none';
+}
+
+/* ══ FIM MÓDULO RASTREAMENTO ══ */
 
 </script>
 </body>
