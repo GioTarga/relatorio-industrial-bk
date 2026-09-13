@@ -21220,49 +21220,74 @@ function RAST_resetProd() {
   if(btn){ btn.disabled=false; btn.textContent='✓ Confirmar e Salvar'; }
 }
 
-// ─── Embalagem ───
-function RAST_onEmbBusca(val) {
-  clearTimeout(RAST_embTimer);
-  const r = document.getElementById('rast-e-results');
-  if (!val.trim()) { r.innerHTML=''; return; }
-  RAST_embTimer = setTimeout(() => RAST_buscarCarrinhos(val.trim()), 350);
-}
-
-async function RAST_buscarCarrinhos(term) {
-  const r = document.getElementById('rast-e-results');
-  r.innerHTML='<div style="color:var(--ink-muted);padding:8px 0;font-size:13px;">Buscando…</div>';
-  RAST_embResultados = {};
-  const num = parseInt(term);
+// ─── Embalagem — Kanban ───
+async function RAST_loadKanban() {
   const sb = getSupabaseClient();
-  let q = sb.from('rastreamento_carrinhos').select('*')
-    .eq('status','Aguardando Embalagem')
-    .order('produzido_em',{ascending:false}).limit(8);
-  if (!isNaN(num)&&String(num)===term.trim()) q=q.eq('numero_carrinho',num);
-  else if (/^\d{8}-\d{4}$/.test(term)) q=q.eq('codigo_producao',term);
-  else q=q.ilike('produto','%'+term+'%');
-  const { data, error } = await q;
-  if (error||!data||!data.length) {
-    r.innerHTML='<div style="color:var(--ink-muted);padding:8px 0;font-size:13px;">Nenhum carrinho aguardando embalagem.</div>'; return;
-  }
-  data.forEach(d=>{ RAST_embResultados[d.id]=d; });
-  const unLbl = d => d.unidade==='caixas' ? 'cx.' : 'un.';
-  r.innerHTML = data.map(d=>
-    '<div class="rast-result-item" onclick="RAST_selecionarEmb(\''+d.id+'\')">'+
-      '<div class="rast-ri-top">'+
-        '<span class="rast-ri-produto">'+RAST_esc(d.produto)+'</span>'+
-        '<span class="rast-badge rast-b-aguard">Aguardando</span>'+
+  const { from, to } = RAST_getPeriod();
+  const filaBody  = document.getElementById('rast-fila-body');
+  const embalBody = document.getElementById('rast-embal-body');
+  if (!filaBody || !embalBody) return;
+  filaBody.innerHTML  = '<div style="color:var(--ink-muted);font-size:13px;padding:12px 0;">Carregando…</div>';
+  embalBody.innerHTML = '<div style="color:var(--ink-muted);font-size:13px;padding:12px 0;">Carregando…</div>';
+
+  const [{ data: fila }, { data: embal }] = await Promise.all([
+    sb.from('rastreamento_carrinhos').select('*')
+      .eq('status','Aguardando Embalagem')
+      .order('produzido_em', { ascending: true }),
+    sb.from('rastreamento_carrinhos').select('*')
+      .eq('status','Embalado')
+      .gte('embalado_em', from+'T00:00:00')
+      .lte('embalado_em', to+'T23:59:59')
+      .order('embalado_em', { ascending: false })
+  ]);
+
+  RAST_embResultados = {};
+  const filaData  = fila  || [];
+  const embalData = embal || [];
+  filaData.forEach(d => { RAST_embResultados[d.id] = d; });
+
+  const unLbl = d => d.unidade === 'caixas' ? 'cx.' : 'un.';
+
+  const filaCount  = document.getElementById('rast-fila-count');
+  const embalCount = document.getElementById('rast-embal-count');
+  if (filaCount)  filaCount.textContent  = filaData.length;
+  if (embalCount) embalCount.textContent = embalData.length;
+
+  filaBody.innerHTML = filaData.length ? filaData.map(d =>
+    '<div class="rast-kcard">'+
+      '<div class="rast-kcard-top">'+
+        '<span class="rast-kcard-produto">'+RAST_esc(d.produto)+'</span>'+
+        '<span class="rast-kcard-num">Carrinho '+d.numero_carrinho+'</span>'+
       '</div>'+
-      '<div class="rast-ri-meta">'+
-        'Carrinho <strong>'+d.numero_carrinho+'</strong> · '+
-        d.qtd_produzida.toLocaleString('pt-BR')+' '+unLbl(d)+' · '+
-        RAST_fmtDt(d.produzido_em)+' · '+
-        '<span class="rast-chip">'+d.codigo_producao+'</span>'+
+      '<div class="rast-kcard-meta">'+
+        d.qtd_produzida.toLocaleString('pt-BR')+' '+unLbl(d)+
+        ' · '+RAST_fmtDt(d.produzido_em)+
       '</div>'+
+      '<div class="rast-kcard-meta" style="margin-top:2px;font-size:11px;opacity:.7;">'+RAST_esc(d.responsavel_producao)+'</div>'+
+      '<button class="rast-kcard-btn" onclick="RAST_abrirEmbCard(\''+d.id+'\')">Embalar</button>'+
     '</div>'
-  ).join('');
+  ).join('') : '<div style="color:var(--ink-muted);font-size:13px;padding:12px 0;text-align:center;">Nenhum carrinho na fila 🎉</div>';
+
+  embalBody.innerHTML = embalData.length ? embalData.map(d => {
+    const diff = d.diferenca;
+    const confHtml = (diff == null || diff === 0)
+      ? '<span class="rast-conf-ok">Conforme</span>'
+      : '<span class="rast-conf-div">Divergente '+(diff>0?'+':'')+Number(diff).toLocaleString('pt-BR')+' un.</span>';
+    return '<div class="rast-kcard rast-kcard-done">'+
+      '<div class="rast-kcard-top">'+
+        '<span class="rast-kcard-produto">'+RAST_esc(d.produto)+'</span>'+
+        '<span class="rast-kcard-num">Carrinho '+d.numero_carrinho+'</span>'+
+      '</div>'+
+      '<div class="rast-kcard-meta">'+
+        (d.qtd_embalada||0).toLocaleString('pt-BR')+' '+unLbl(d)+
+        ' · '+RAST_fmtDt(d.embalado_em)+
+      '</div>'+
+      '<div style="margin-top:6px;">'+confHtml+'</div>'+
+    '</div>';
+  }).join('') : '<div style="color:var(--ink-muted);font-size:13px;padding:12px 0;text-align:center;">Nenhum embalado no período.</div>';
 }
 
-function RAST_selecionarEmb(id) {
+function RAST_abrirEmbCard(id) {
   const r = RAST_embResultados[id];
   if (!r) { RAST_toast('Registro não encontrado','e'); return; }
   RAST_embRegistro = r;
@@ -21308,7 +21333,7 @@ function RAST_confirmarEmbalagem() {
   if (!emb||emb<1) return RAST_toast('Informe a quantidade embalada','e');
   if (!resp)       return RAST_toast('Informe o responsável pela embalagem','e');
   const prod=RAST_embRegistro.qtd_produzida, diff=emb-prod;
-  const status = diff===0 ? 'Embalado' : 'Divergência de Quantidade';
+  const status = 'Embalado'; // divergência registrada em diferenca, não no status
   RAST_openModal('Confirmar Embalagem',
     '<strong>'+RAST_esc(RAST_embRegistro.produto)+'</strong> — Carrinho '+RAST_embRegistro.numero_carrinho+'<br><br>'+
     'Qtd embalada: <strong>'+emb.toLocaleString('pt-BR')+'</strong><br>'+
@@ -21331,28 +21356,36 @@ function RAST_confirmarEmbalagem() {
 
 function RAST_resetEmb() {
   RAST_embRegistro=null; RAST_embResultados={};
-  ['rast-e-busca','rast-e-qtd','rast-e-resp'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  document.getElementById('rast-e-results').innerHTML='';
-  document.getElementById('rast-e-panel').style.display='none';
-  document.getElementById('rast-e-div-box').innerHTML='';
+  ['rast-e-qtd','rast-e-resp'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  const panel = document.getElementById('rast-e-panel');
+  if (panel) panel.style.display='none';
+  const divBox = document.getElementById('rast-e-div-box');
+  if (divBox) divBox.innerHTML='';
+  RAST_loadKanban();
 }
 
 // ─── Histórico ───
 async function RAST_loadHistorico() {
   const { from, to } = RAST_getPeriod();
   const tbody = document.getElementById('rast-hist-body');
-  tbody.innerHTML = '<tr><td colspan="12" class="rast-empty">Carregando…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="13" class="rast-empty">Carregando…</td></tr>';
   const sb = getSupabaseClient();
   const { data, error } = await sb.from('rastreamento_carrinhos').select('*')
     .gte('produzido_em', from+'T00:00:00').lte('produzido_em', to+'T23:59:59')
     .order('produzido_em',{ascending:false});
   if (error||!data||!data.length) {
-    tbody.innerHTML='<tr><td colspan="12" class="rast-empty">Nenhum registro no período.</td></tr>'; return;
+    tbody.innerHTML='<tr><td colspan="13" class="rast-empty">Nenhum registro no período.</td></tr>'; return;
   }
   const badge = s =>
-    s==='Embalado'                  ? '<span class="rast-badge rast-b-embal">Embalado</span>'     :
-    s==='Divergência de Quantidade' ? '<span class="rast-badge rast-b-diverg">Divergência</span>' :
-                                      '<span class="rast-badge rast-b-aguard">Aguardando</span>';
+    s==='Embalado' ? '<span class="rast-badge rast-b-embal">Embalado</span>'
+                   : '<span class="rast-badge rast-b-aguard">Aguardando</span>';
+  const conformidade = r => {
+    if (r.status !== 'Embalado') return '<span class="rast-td-dim">—</span>';
+    const d = r.diferenca;
+    if (d == null || d === 0) return '<span class="rast-badge-conf conf">Conforme</span>';
+    const sinal = d > 0 ? '+' : '';
+    return '<span class="rast-badge-conf diverg">Divergente '+sinal+Number(d).toLocaleString('pt-BR')+' un.</span>';
+  };
   tbody.innerHTML = data.map(r=>
     '<tr>'+
       '<td>'+RAST_esc(r.produto)+'<br><span class="rast-td-dim">'+RAST_esc(r.codigo_produto)+'</span></td>'+
@@ -21363,6 +21396,7 @@ async function RAST_loadHistorico() {
       '<td class="rast-td-dim">'+RAST_fmtDt(r.produzido_em)+'</td>'+
       '<td>'+RAST_esc(r.responsavel_producao)+'</td>'+
       '<td>'+badge(r.status)+'</td>'+
+      '<td>'+conformidade(r)+'</td>'+
       '<td class="rast-td-num">'+(r.qtd_embalada!=null?r.qtd_embalada.toLocaleString('pt-BR'):'<span class="rast-td-dim">—</span>')+'</td>'+
       '<td class="rast-td-mono">'+(r.codigo_embalagem||'<span class="rast-td-dim">Aguardando</span>')+'</td>'+
       '<td class="rast-td-dim">'+(r.embalado_em?RAST_fmtDt(r.embalado_em):'—')+'</td>'+
