@@ -5177,20 +5177,30 @@ body{background:#fff;color:#000}
     <!-- ═══ TAB: EMBALAGEM ═══ -->
     <div class="rast-tab-pane" id="rast-tab-embalagem">
 
-      <div class="rast-card">
-        <div class="rast-card-title">Buscar Carrinho</div>
-        <div class="rast-form-row">
-          <div class="rast-form-group">
-            <label>Número do carrinho, produto ou código de produção</label>
-            <input type="text" id="rast-e-busca"
-                   placeholder="Ex: 3 · Grostoly · 13092026-0938"
-                   oninput="RAST_onEmbBusca(this.value)">
+      <!-- Kanban -->
+      <div class="rast-kanban">
+        <div class="rast-kanban-col">
+          <div class="rast-kanban-header rast-kh-fila">
+            <span>Fila de Embalagem</span>
+            <span class="rast-kanban-count" id="rast-fila-count">0</span>
+          </div>
+          <div class="rast-kanban-body" id="rast-fila-body">
+            <div style="color:var(--ink-muted);font-size:13px;padding:12px 0;text-align:center;">Carregando…</div>
           </div>
         </div>
-        <div id="rast-e-results" style="margin-top:12px;"></div>
+        <div class="rast-kanban-col">
+          <div class="rast-kanban-header rast-kh-embal">
+            <span>Embalados no período</span>
+            <span class="rast-kanban-count" id="rast-embal-count">0</span>
+          </div>
+          <div class="rast-kanban-body" id="rast-embal-body">
+            <div style="color:var(--ink-muted);font-size:13px;padding:12px 0;text-align:center;">Carregando…</div>
+          </div>
+        </div>
       </div>
 
-      <div id="rast-e-panel" style="display:none;">
+      <!-- Painel de registro (abre ao clicar em Embalar) -->
+      <div id="rast-e-panel" style="display:none; margin-top:16px;">
         <div class="rast-card">
           <div class="rast-card-title">Dados da Produção</div>
           <div class="rast-summary" id="rast-e-prod-info"></div>
@@ -5209,8 +5219,8 @@ body{background:#fff;color:#000}
           </div>
           <div id="rast-e-div-box"></div>
           <div class="rast-row-end">
-            <button class="rast-btn rast-btn-ghost"    onclick="RAST_resetEmb()">Cancelar</button>
-            <button class="rast-btn rast-btn-confirm"  onclick="RAST_confirmarEmbalagem()">✓ Confirmar Embalagem</button>
+            <button class="rast-btn rast-btn-ghost"   onclick="RAST_resetEmb()">Cancelar</button>
+            <button class="rast-btn rast-btn-confirm" onclick="RAST_confirmarEmbalagem()">✓ Confirmar Embalagem</button>
           </div>
         </div>
       </div>
@@ -21122,6 +21132,7 @@ function RAST_switchTab(btn) {
   btn.classList.add('active');
   document.getElementById('rast-tab-'+btn.dataset.tab).classList.add('active');
   if (btn.dataset.tab === 'historico') RAST_loadHistorico();
+  if (btn.dataset.tab === 'embalagem') RAST_loadKanban();
 }
 
 // ─── Produção ───
