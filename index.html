@@ -4189,15 +4189,35 @@ body{background:#fff;color:#000}
     <div class="panel" id="mcRotinaPanel" style="margin-top:0;">
       <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
         <span>📋 Rotina de Coleta</span>
-        <button type="button" class="btn-primary" id="mcGerarFormBtn"
-          style="padding:7px 18px;font-size:12.5px;display:flex;align-items:center;gap:6px;">
-          🖨 Gerar Formulário
-        </button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="file" id="mcOrdemFile" accept=".xlsx,.xls" style="display:none"
+            onchange="MC_uploadOrdem(this)">
+          <button type="button" onclick="document.getElementById('mcOrdemFile').click()"
+            style="padding:7px 14px;font-size:12.5px;display:flex;align-items:center;gap:6px;
+            background:var(--surface-alt,#f5f4f2);border:1px solid var(--line);border-radius:7px;
+            color:var(--ink);cursor:pointer;white-space:nowrap;">
+            📂 Ordem do Dia
+          </button>
+          <button type="button" class="btn-primary" id="mcGerarFormBtn"
+            style="padding:7px 18px;font-size:12.5px;display:flex;align-items:center;gap:6px;">
+            🖨 Gerar Formulário
+          </button>
+        </div>
+      </div>
+      <!-- Badge filtro ordem ativa -->
+      <div id="mcOrdemBadge" style="display:none;margin-bottom:10px;">
+        <span id="mcOrdemBadgeText"
+          style="display:inline-flex;align-items:center;gap:6px;background:#e8f4fd;
+          border:1px solid #aad4f0;border-radius:20px;padding:3px 12px;font-size:12px;color:#1a5276;">
+          📋 <span id="mcOrdemBadgeLabel"></span>
+          <button type="button" onclick="MC_limparOrdem()"
+            style="background:none;border:none;cursor:pointer;font-size:13px;
+            color:#1a5276;padding:0;line-height:1;margin-left:2px;">✕</button>
+        </span>
       </div>
       <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 14px;">
-        Produtos com coleta pendente, agrupados por setor. Clique em
-        <strong>🖨 Gerar Formulário</strong> para baixar a folha de campo
-        pronta para impressão.
+        Carregue a ordem do dia para filtrar apenas os produtos da produção com coleta pendente.
+        Sem ordem carregada, exibe todos os produtos do radar com coleta faltando.
       </p>
       <div id="mcRotinaGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;">
         <div class="empty-state" style="grid-column:1/-1;">
@@ -13277,6 +13297,93 @@ let MC_RADAR = null; // cache do último carregamento
 
 /* Sectores rastreados pelo radar — mesmo conjunto do módulo PP */
 const MC_RADAR_LINHAS = ['Giro','Salgado','Confeitaria','Padaria','Pão de Ló e Bolos','Croissant'];
+
+// ── Ordem do Dia — filtro da Rotina de Coleta ────────────────────────────
+// null quando nenhuma ordem carregada; { setores: Map<string, string[]>, data: string } quando ativa
+let MC_ORDEM_DIA = null;
+
+// Normaliza setor do XLSX → nome interno do radar
+function MC_normalizarSetor(raw){
+  const s = (raw || '').trim().toUpperCase();
+  if(s === 'GIRO' || s === 'PADARIA NOTURNO') return 'Giro';
+  if(s === 'PADARIA')      return 'Padaria';
+  if(s === 'SALGADO')      return 'Salgado';
+  if(s === 'CROISSANT')    return 'Croissant';
+  if(s === 'CONFEITARIA')  return 'Confeitaria';
+  if(s.startsWith('PÃO DE LÓ') || s.startsWith('PAO DE LO')) return 'Pão de Ló e Bolos';
+  if(s === 'FRITADOR')     return 'Fritador';
+  if(s === 'COZINHA')      return 'Cozinha';
+  return raw.trim();
+}
+
+// Lê o XLSX da ordem do dia e popula MC_ORDEM_DIA
+function MC_uploadOrdem(input){
+  const file = input.files[0];
+  if(!file) return;
+  if(typeof XLSX === 'undefined'){ alert('Biblioteca XLSX não carregada.'); return; }
+
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const wb   = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null });
+
+      // Extrai data do cabeçalho (linha com 'DATA' na col 0)
+      let dataStr = '';
+      rows.forEach(r => {
+        if(r[0] && String(r[0]).trim() === 'DATA' && r[2]){
+          const d = r[2] instanceof Date ? r[2] : new Date(r[2]);
+          if(!isNaN(d)) dataStr = d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' });
+        }
+      });
+
+      // Extrai produtos: col[0]=código numérico, col[1]=setor, col[2]=descrição
+      const setores = new Map(); // setor → string[]
+      rows.forEach(r => {
+        const cod  = r[0] != null ? String(r[0]).trim() : '';
+        const setor = r[1] != null ? String(r[1]).trim() : '';
+        const desc  = r[2] != null ? String(r[2]).trim() : '';
+        if(!cod || !setor || !desc) return;
+        if(!/^\d/.test(cod)) return; // pula cabeçalhos
+        const setorNorm = MC_normalizarSetor(setor);
+        if(!setores.has(setorNorm)) setores.set(setorNorm, []);
+        if(!setores.get(setorNorm).includes(desc)) setores.get(setorNorm).push(desc);
+      });
+
+      if(setores.size === 0){ alert('Nenhum produto encontrado no arquivo. Verifique o formato.'); return; }
+
+      MC_ORDEM_DIA = { setores, data: dataStr || file.name.slice(0,5) };
+
+      // Atualiza badge
+      const badge = document.getElementById('mcOrdemBadge');
+      const label = document.getElementById('mcOrdemBadgeLabel');
+      if(badge && label){
+        const total = [...setores.values()].reduce((s,a) => s+a.length, 0);
+        label.textContent = `Ordem ${MC_ORDEM_DIA.data} · ${total} produto${total>1?'s':''}`;
+        badge.style.display = 'block';
+      }
+
+      // Limpa input para permitir recarregar o mesmo arquivo
+      input.value = '';
+
+      MC_renderRotina();
+    } catch(err){
+      console.error('MC_uploadOrdem:', err);
+      alert('Erro ao ler o arquivo: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// Remove o filtro de ordem e volta ao comportamento padrão
+function MC_limparOrdem(){
+  MC_ORDEM_DIA = null;
+  const badge = document.getElementById('mcOrdemBadge');
+  if(badge) badge.style.display = 'none';
+  MC_renderRotina();
+}
+// ── /Ordem do Dia ────────────────────────────────────────────────────────
 const MC_RADAR_LABELS = { 'Giro': 'Giro Dia' };
 
 async function MC_loadRadar(){
@@ -13454,7 +13561,7 @@ function MC_renderRotina(){
   const grid = document.getElementById('mcRotinaGrid');
   if(!grid) return;
 
-  if(!MC_RADAR){
+  if(!MC_RADAR && !MC_ORDEM_DIA){
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
       Atualize o Radar de Cobertura para visualizar a rotina.
     </div>`;
@@ -13466,24 +13573,38 @@ function MC_renderRotina(){
     bateladas: { icon:'⏱', label:'Tempo de Processo' }
   };
 
-  let totalPendentes = 0;
-  const cardHTMLs = [];
+  // Setores fora do radar que aparecem quando há ordem carregada
+  const SETORES_FORA_RADAR = ['Fritador','Cozinha'];
 
+  const cardHTMLs = [];
+  let totalPendentes = 0;
+
+  // ── Setores do radar ──────────────────────────────────────────────────
   MC_RADAR_LINHAS.forEach(linha => {
     const ehSalgado = linha === 'Salgado';
-    // Salgado = produção contínua, coleta apenas Produtividade
     const camposRastreados = ehSalgado ? ['corridas'] : ['corridas','bateladas'];
-    const prods = MC_RADAR[linha];
-    if(!prods) return;
+    const prods = MC_RADAR ? MC_RADAR[linha] : {};
+    if(!prods && !MC_ORDEM_DIA) return;
 
-    const pendentes = [];
-    Object.entries(prods).forEach(([prod, flags]) => {
-      const faltam = camposRastreados.filter(k => !flags[k]);
-      if(faltam.length > 0) pendentes.push({ prod, faltam });
-    });
+    let pendentes = [];
 
-    if(pendentes.length === 0) return; // setor 100% coberto
+    if(MC_ORDEM_DIA){
+      // Modo filtrado: só mostra produtos da ordem que ainda faltam
+      const prodsOrdem = MC_ORDEM_DIA.setores.get(linha) || [];
+      prodsOrdem.forEach(prod => {
+        const flags = prods ? (prods[prod] || {}) : {};
+        const faltam = camposRastreados.filter(k => !flags[k]);
+        if(faltam.length > 0) pendentes.push({ prod, faltam });
+      });
+    } else {
+      // Modo padrão: todos os produtos do radar com coleta pendente
+      Object.entries(prods).forEach(([prod, flags]) => {
+        const faltam = camposRastreados.filter(k => !flags[k]);
+        if(faltam.length > 0) pendentes.push({ prod, faltam });
+      });
+    }
 
+    if(pendentes.length === 0) return;
     totalPendentes += pendentes.length;
 
     const linhas = pendentes.map(({ prod, faltam }) => {
@@ -13495,9 +13616,7 @@ function MC_renderRotina(){
         </span>`
       ).join(' ');
       return `<tr>
-        <td style="padding:5px 8px;font-size:12px;border-bottom:1px solid var(--line);">
-          ${prod}
-        </td>
+        <td style="padding:5px 8px;font-size:12px;border-bottom:1px solid var(--line);">${prod}</td>
         <td style="padding:5px 8px;border-bottom:1px solid var(--line);">
           <div style="display:flex;flex-wrap:wrap;gap:4px;">${badges}</div>
         </td>
@@ -13505,8 +13624,7 @@ function MC_renderRotina(){
     }).join('');
 
     cardHTMLs.push(`
-      <div style="background:var(--surface);border:1px solid var(--line);
-        border-radius:10px;overflow:hidden;">
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;">
         <div style="background:var(--surface-alt,#f5f4f2);padding:8px 12px;
           font-weight:700;font-size:12.5px;display:flex;justify-content:space-between;
           align-items:center;border-bottom:1px solid var(--line);">
@@ -13526,11 +13644,56 @@ function MC_renderRotina(){
       </div>`);
   });
 
+  // ── Setores fora do radar (Fritador, Cozinha) — só quando há ordem ────
+  if(MC_ORDEM_DIA){
+    SETORES_FORA_RADAR.forEach(setor => {
+      const prodsOrdem = MC_ORDEM_DIA.setores.get(setor) || [];
+      if(prodsOrdem.length === 0) return;
+      totalPendentes += prodsOrdem.length;
+
+      const linhas = prodsOrdem.map(prod =>
+        `<tr>
+          <td style="padding:5px 8px;font-size:12px;border-bottom:1px solid var(--line);">${prod}</td>
+          <td style="padding:5px 8px;border-bottom:1px solid var(--line);">
+            <div style="display:flex;flex-wrap:wrap;gap:4px;">
+              <span style="background:var(--warn-bg,#fff3cd);color:var(--warn,#856404);
+                border:1px solid var(--warn,#ffc107);border-radius:4px;
+                padding:2px 7px;font-size:10.5px;white-space:nowrap;">⚡ Produtividade</span>
+              <span style="background:var(--warn-bg,#fff3cd);color:var(--warn,#856404);
+                border:1px solid var(--warn,#ffc107);border-radius:4px;
+                padding:2px 7px;font-size:10.5px;white-space:nowrap;">⏱ Tempo de Processo</span>
+            </div>
+          </td>
+        </tr>`
+      ).join('');
+
+      cardHTMLs.push(`
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;">
+          <div style="background:var(--surface-alt,#f5f4f2);padding:8px 12px;
+            font-weight:700;font-size:12.5px;display:flex;justify-content:space-between;
+            align-items:center;border-bottom:1px solid var(--line);">
+            <span>${setor}</span>
+            <span style="background:var(--red);color:#fff;border-radius:20px;
+              padding:2px 9px;font-size:11px;">${prodsOrdem.length} pendente${prodsOrdem.length>1?'s':''}</span>
+          </div>
+          <table style="width:100%;border-collapse:collapse;">
+            <thead><tr>
+              <th style="padding:5px 8px;font-size:10.5px;color:var(--ink-soft);
+                font-weight:700;text-align:left;border-bottom:2px solid var(--line);">Produto</th>
+              <th style="padding:5px 8px;font-size:10.5px;color:var(--ink-soft);
+                font-weight:700;text-align:left;border-bottom:2px solid var(--line);">O que coletar</th>
+            </tr></thead>
+            <tbody>${linhas}</tbody>
+          </table>
+        </div>`);
+    });
+  }
+
   if(cardHTMLs.length === 0){
-    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
-      <span style="font-size:28px;">✅</span><br>
-      Todos os produtos estão 100% mapeados. Nenhuma coleta pendente!
-    </div>`;
+    const msg = MC_ORDEM_DIA
+      ? `<span style="font-size:28px;">✅</span><br>Todos os produtos da ordem já estão coletados!`
+      : `<span style="font-size:28px;">✅</span><br>Todos os produtos estão 100% mapeados. Nenhuma coleta pendente!`;
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">${msg}</div>`;
     return;
   }
 
