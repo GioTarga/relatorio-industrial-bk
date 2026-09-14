@@ -21451,6 +21451,7 @@ async function RAST_loadKanbanProd() {
   if (!prodBody) return;
   prodBody.innerHTML = '<div style="color:var(--ink-muted);font-size:13px;padding:12px 0;text-align:center;">Carregando…</div>';
   let q = sb.from('rastreamento_carrinhos').select('*')
+    .eq('status', 'Aguardando Embalagem')
     .gte('produzido_em', from+'T00:00:00')
     .lte('produzido_em', to+'T23:59:59')
     .order('produzido_em', { ascending: false });
