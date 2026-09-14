@@ -2782,6 +2782,51 @@ body{background:#fff;color:#000}
 @media (max-width: 640px) {
   #page-rastreamento .rast-kanban { grid-template-columns: 1fr; }
 }
+/* Filtro por produto */
+#page-rastreamento .rast-filter-bar {
+  padding: 12px 20px 0;
+  display: flex;
+  align-items: center;
+}
+#page-rastreamento .rast-filter-group {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0 10px;
+  gap: 8px;
+  max-width: 340px;
+  width: 100%;
+}
+#page-rastreamento .rast-filter-label {
+  color: var(--ink-muted);
+  font-size: 14px;
+}
+#page-rastreamento .rast-filter-group input {
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: var(--ink);
+  font-family: inherit;
+  outline: none;
+  flex: 1;
+  padding: 8px 0;
+}
+#page-rastreamento .rast-filter-clear {
+  background: none;
+  border: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+#page-rastreamento .rast-filter-clear:hover { color: var(--red); }
+/* Kanban Produção — cabeçalhos */
+#page-rastreamento .rast-kh-form { background: #e8f4f8; color: #1a5276; }
+#page-rastreamento .rast-kh-prod { background: #f0e6ff; color: #6c3483; }
 
 /* Toast (local ao módulo) */
 #rast-toasts {
@@ -5150,18 +5195,25 @@ body{background:#fff;color:#000}
   <!-- Filtro de período -->
   <div class="rast-period-bar">
     <span class="rast-period-label">Período</span>
-    <button class="rast-period-btn active" data-p="today"     onclick="RAST_setPeriod(this)">Hoje</button>
-    <button class="rast-period-btn"        data-p="yesterday" onclick="RAST_setPeriod(this)">Ontem</button>
-    <button class="rast-period-btn"        data-p="7d"        onclick="RAST_setPeriod(this)">7 dias</button>
-    <button class="rast-period-btn"        data-p="30d"       onclick="RAST_setPeriod(this)">30 dias</button>
-    <button class="rast-period-btn"        data-p="month"     onclick="RAST_setPeriod(this)">Este mês</button>
-    <div class="rast-period-sep"></div>
-    <button class="rast-period-btn"        data-p="custom"    onclick="RAST_setPeriod(this)">Personalizado</button>
-    <div class="rast-custom" id="rast-custom-range">
-      <input type="date" id="rast-dt-from" onchange="RAST_loadAll()">
-      <span>até</span>
-      <input type="date" id="rast-dt-to"   onchange="RAST_loadAll()">
+    <div class="dr-wrap" id="drWrap_rast">
+      <button type="button" class="dr-btn" id="drBtn_rast"></button>
+      <div class="dr-panel" id="drPanel_rast">
+        <div class="dr-header">
+          <button type="button" class="dr-nav" id="drPrev_rast">‹</button>
+          <div class="dr-month-label" id="drLabel_rast"></div>
+          <button type="button" class="dr-nav" id="drNext_rast">›</button>
+        </div>
+        <div class="dr-weekdays"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+        <div class="dr-grid" id="drGrid_rast"></div>
+        <div class="dr-hint" id="drHint_rast">Clique numa data para começar, e em outra pra fechar o intervalo</div>
+        <div class="dr-footer">
+          <button type="button" id="drClear_rast">Limpar</button>
+          <button type="button" id="drToday_rast">Hoje</button>
+        </div>
+      </div>
     </div>
+    <input type="date" id="rast-dr-start" style="display:none;">
+    <input type="date" id="rast-dr-end"   style="display:none;">
     <button class="rast-btn-refresh" onclick="RAST_loadAll()">↻ Atualizar</button>
   </div>
 
@@ -5187,6 +5239,17 @@ body{background:#fff;color:#000}
       </div>
     </div>
 
+    <!-- Filtro por produto -->
+    <div class="rast-filter-bar">
+      <div class="rast-filter-group">
+        <span class="rast-filter-label">🔍</span>
+        <input type="text" id="rast-filtro-produto" placeholder="Filtrar por produto…"
+               oninput="RAST_onFiltroProduto(this.value)" autocomplete="off">
+        <button class="rast-filter-clear" id="rast-filtro-clear" style="display:none;"
+                onclick="RAST_limparFiltro()">✕</button>
+      </div>
+    </div>
+
     <!-- Tabs -->
     <div class="rast-tab-bar">
       <button class="rast-tab-btn active" data-tab="producao"  onclick="RAST_switchTab(this)">Registrar Produção</button>
@@ -5197,86 +5260,113 @@ body{background:#fff;color:#000}
     <!-- ═══ TAB: PRODUÇÃO ═══ -->
     <div class="rast-tab-pane active" id="rast-tab-producao">
 
-      <div class="rast-card">
-        <div class="rast-card-title">1 — Produto</div>
-        <div class="rast-form-row">
-          <div class="rast-form-group" style="flex:2;">
-            <label>Nome ou código do produto</label>
-            <div class="rast-ac-wrap">
-              <input type="text" id="rast-p-busca" placeholder="Ex: Grostoly ou 1010"
-                     autocomplete="off" oninput="RAST_onAC(this.value)">
-              <div class="rast-ac-list" id="rast-ac-list"></div>
+      <!-- Kanban produção -->
+      <div class="rast-kanban">
+        <div class="rast-kanban-col">
+          <div class="rast-kanban-header rast-kh-form">
+            <span>Registrar Produção</span>
+          </div>
+          <div class="rast-kanban-body" id="rast-prod-form-col">
+            <button class="rast-kcard-btn" style="margin:0;" onclick="RAST_abrirFormProd()">＋ Novo Lançamento</button>
+          </div>
+        </div>
+        <div class="rast-kanban-col">
+          <div class="rast-kanban-header rast-kh-prod">
+            <span>Produzidos no período</span>
+            <span class="rast-kanban-count" id="rast-prod-count">0</span>
+          </div>
+          <div class="rast-kanban-body" id="rast-prod-body">
+            <div style="color:var(--ink-muted);font-size:13px;padding:12px 0;text-align:center;">Carregando…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulário colapsível -->
+      <div id="rast-prod-panel" style="display:none; margin-top:16px;">
+
+        <div class="rast-card">
+          <div class="rast-card-title">1 — Produto</div>
+          <div class="rast-form-row">
+            <div class="rast-form-group" style="flex:2;">
+              <label>Nome ou código do produto</label>
+              <div class="rast-ac-wrap">
+                <input type="text" id="rast-p-busca" placeholder="Ex: Grostoly ou 1010"
+                       autocomplete="off" oninput="RAST_onAC(this.value)">
+                <div class="rast-ac-list" id="rast-ac-list"></div>
+              </div>
             </div>
-          </div>
-          <div class="rast-form-group" style="max-width:140px;">
-            <label>Código</label>
-            <input type="text" id="rast-p-codigo" readonly placeholder="—">
-          </div>
-        </div>
-      </div>
-
-      <div class="rast-card">
-        <div class="rast-card-title">2 — Carrinho / Armário</div>
-        <div class="rast-form-row">
-          <div class="rast-form-group" style="max-width:200px;">
-            <label>Número sequencial</label>
-            <input type="number" id="rast-p-carrinho" placeholder="Ex: 3" min="1"
-                   oninput="RAST_onCarrinhoChange()">
-            <span class="rast-help-error" id="rast-carrinho-err">⚠ Lançamento aberto para este carrinho hoje.</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="rast-card">
-        <div class="rast-card-title">3 — Quantidade</div>
-        <div style="margin-bottom:16px;">
-          <label style="font-size:11px;color:var(--ink-soft);font-weight:600;display:block;margin-bottom:7px;">Unidade de contagem</label>
-          <div class="rast-unit-toggle">
-            <button class="rast-unit-btn active" id="rast-unit-telas"  onclick="RAST_setUnidade('telas')">Telas</button>
-            <button class="rast-unit-btn"        id="rast-unit-caixas" onclick="RAST_setUnidade('caixas')">Caixas</button>
-          </div>
-        </div>
-        <div class="rast-form-row">
-          <div class="rast-form-group">
-            <label id="rast-lbl-qtd-grupo">Quantidade de telas</label>
-            <input type="number" id="rast-p-telas" placeholder="Ex: 19" min="1" oninput="RAST_calcTotal()">
-          </div>
-          <div class="rast-form-group">
-            <label id="rast-lbl-qtd-unid">Produtos por tela</label>
-            <input type="number" id="rast-p-por-tela" placeholder="Ex: 16" min="1" oninput="RAST_calcTotal()">
-          </div>
-          <div class="rast-form-group" style="flex:0.9;">
-            <label>&nbsp;</label>
-            <div class="rast-total-box">
-              <small>Total calculado</small>
-              <div class="rast-tv" id="rast-total-v">—</div>
+            <div class="rast-form-group" style="max-width:140px;">
+              <label>Código</label>
+              <input type="text" id="rast-p-codigo" readonly placeholder="—">
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="rast-card">
-        <div class="rast-card-title">4 — Responsável</div>
-        <div class="rast-form-row">
-          <div class="rast-form-group">
-            <label>Nome do responsável pelo lançamento</label>
-            <input type="text" id="rast-p-resp" placeholder="Nome completo">
+        <div class="rast-card">
+          <div class="rast-card-title">2 — Carrinho / Armário</div>
+          <div class="rast-form-row">
+            <div class="rast-form-group" style="max-width:200px;">
+              <label>Número sequencial</label>
+              <input type="number" id="rast-p-carrinho" placeholder="Ex: 3" min="1"
+                     oninput="RAST_onCarrinhoChange()">
+              <span class="rast-help-error" id="rast-carrinho-err">⚠ Lançamento aberto para este carrinho hoje.</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="rast-card" id="rast-p-preview" style="display:none;">
-        <div class="rast-card-title">5 — Confirmação</div>
-        <div class="rast-summary" id="rast-p-summary-content"></div>
-        <div class="rast-row-end">
-          <button class="rast-btn rast-btn-ghost"   onclick="RAST_resetProd()">Cancelar</button>
-          <button class="rast-btn rast-btn-primary" id="rast-btn-conf-prod" onclick="RAST_salvarProducao()">✓ Confirmar e Salvar</button>
+        <div class="rast-card">
+          <div class="rast-card-title">3 — Quantidade</div>
+          <div style="margin-bottom:16px;">
+            <label style="font-size:11px;color:var(--ink-soft);font-weight:600;display:block;margin-bottom:7px;">Unidade de contagem</label>
+            <div class="rast-unit-toggle">
+              <button class="rast-unit-btn active" id="rast-unit-telas"  onclick="RAST_setUnidade('telas')">Telas</button>
+              <button class="rast-unit-btn"        id="rast-unit-caixas" onclick="RAST_setUnidade('caixas')">Caixas</button>
+            </div>
+          </div>
+          <div class="rast-form-row">
+            <div class="rast-form-group">
+              <label id="rast-lbl-qtd-grupo">Quantidade de telas</label>
+              <input type="number" id="rast-p-telas" placeholder="Ex: 19" min="1" oninput="RAST_calcTotal()">
+            </div>
+            <div class="rast-form-group">
+              <label id="rast-lbl-qtd-unid">Produtos por tela</label>
+              <input type="number" id="rast-p-por-tela" placeholder="Ex: 16" min="1" oninput="RAST_calcTotal()">
+            </div>
+            <div class="rast-form-group" style="flex:0.9;">
+              <label>&nbsp;</label>
+              <div class="rast-total-box">
+                <small>Total calculado</small>
+                <div class="rast-tv" id="rast-total-v">—</div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div class="rast-row-end" id="rast-p-btn-row">
-        <button class="rast-btn rast-btn-primary" onclick="RAST_showPreview()">Revisar →</button>
-      </div>
+        <div class="rast-card">
+          <div class="rast-card-title">4 — Responsável</div>
+          <div class="rast-form-row">
+            <div class="rast-form-group">
+              <label>Nome do responsável pelo lançamento</label>
+              <input type="text" id="rast-p-resp" placeholder="Nome completo">
+            </div>
+          </div>
+        </div>
+
+        <div class="rast-card" id="rast-p-preview" style="display:none;">
+          <div class="rast-card-title">5 — Confirmação</div>
+          <div class="rast-summary" id="rast-p-summary-content"></div>
+          <div class="rast-row-end">
+            <button class="rast-btn rast-btn-ghost"   onclick="RAST_cancelarFormProd()">Cancelar</button>
+            <button class="rast-btn rast-btn-primary" id="rast-btn-conf-prod" onclick="RAST_salvarProducao()">✓ Confirmar e Salvar</button>
+          </div>
+        </div>
+
+        <div class="rast-row-end" id="rast-p-btn-row">
+          <button class="rast-btn rast-btn-ghost"   onclick="RAST_cancelarFormProd()">Cancelar</button>
+          <button class="rast-btn rast-btn-primary" onclick="RAST_showPreview()">Revisar →</button>
+        </div>
+
+      </div><!-- /rast-prod-panel -->
 
     </div><!-- /rast-tab-producao -->
 
@@ -21115,7 +21205,8 @@ let RAST_unidadeAtual    = 'telas';
 let RAST_embRegistro     = null;
 let RAST_embResultados   = {};
 let RAST_modalOk         = null;
-let RAST_periodoAtivo    = 'today';
+let RAST_filtroProduto   = '';
+let RAST_filtroTimer     = null;
 let RAST_carrinhoTimer   = null;
 let RAST_embTimer        = null;
 
@@ -21130,34 +21221,33 @@ async function RAST_init() {
   modal.classList.add('hidden');
 
   await RAST_carregarCatalogo();
+  const today = new Date().toISOString().slice(0,10);
+  const rastStart = document.getElementById('rast-dr-start');
+  const rastEnd   = document.getElementById('rast-dr-end');
+  rastStart.value = today;
+  rastEnd.value   = today;
+  initDateRangePicker('rast', rastStart, rastEnd, RAST_loadAll);
   await RAST_loadAll();
 }
 
 // ─── Período ───
-function RAST_setPeriod(btn) {
-  document.querySelectorAll('#page-rastreamento .rast-period-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  RAST_periodoAtivo = btn.dataset.p;
-  document.getElementById('rast-custom-range').classList.toggle('visible', RAST_periodoAtivo === 'custom');
-  if (RAST_periodoAtivo !== 'custom') RAST_loadAll();
-}
-
 function RAST_getPeriod() {
-  const now  = new Date();
-  const iso  = d => d.toISOString().slice(0,10);
-  const dias = n => { const d = new Date(now); d.setDate(d.getDate()+n); return iso(d); };
-  if (RAST_periodoAtivo === 'today')     return { from: iso(now), to: iso(now) };
-  if (RAST_periodoAtivo === 'yesterday') return { from: dias(-1), to: dias(-1) };
-  if (RAST_periodoAtivo === '7d')        return { from: dias(-6), to: iso(now) };
-  if (RAST_periodoAtivo === '30d')       return { from: dias(-29), to: iso(now) };
-  if (RAST_periodoAtivo === 'month')     return { from: iso(new Date(now.getFullYear(), now.getMonth(), 1)), to: iso(now) };
+  const today = new Date().toISOString().slice(0,10);
   return {
-    from: document.getElementById('rast-dt-from').value || iso(now),
-    to:   document.getElementById('rast-dt-to').value   || iso(now),
+    from: document.getElementById('rast-dr-start').value || today,
+    to:   document.getElementById('rast-dr-end').value   || today,
   };
 }
 
-async function RAST_loadAll() { await Promise.all([RAST_loadKPIs(), RAST_loadHistorico()]); }
+async function RAST_loadAll() {
+  await Promise.all([RAST_loadKPIs(), RAST_loadHistorico()]);
+  const activeBtn = document.querySelector('#page-rastreamento .rast-tab-btn.active');
+  if (activeBtn) {
+    const tab = activeBtn.dataset.tab;
+    if (tab === 'embalagem') RAST_loadKanban();
+    if (tab === 'producao')  RAST_loadKanbanProd();
+  }
+}
 
 // ─── KPIs ───
 async function RAST_loadKPIs() {
@@ -21239,6 +21329,7 @@ function RAST_switchTab(btn) {
   document.getElementById('rast-tab-'+btn.dataset.tab).classList.add('active');
   if (btn.dataset.tab === 'historico') RAST_loadHistorico();
   if (btn.dataset.tab === 'embalagem') RAST_loadKanban();
+  if (btn.dataset.tab === 'producao')  RAST_loadKanbanProd();
 }
 
 // ─── Produção ───
@@ -21335,6 +21426,47 @@ function RAST_resetProd() {
   document.getElementById('rast-carrinho-err').style.display='none';
   const btn=document.getElementById('rast-btn-conf-prod');
   if(btn){ btn.disabled=false; btn.textContent='✓ Confirmar e Salvar'; }
+  const panel = document.getElementById('rast-prod-panel');
+  if (panel) panel.style.display = 'none';
+}
+
+// ─── Kanban Produção ───
+function RAST_abrirFormProd() {
+  const panel = document.getElementById('rast-prod-panel');
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth' });
+}
+function RAST_cancelarFormProd() { RAST_resetProd(); }
+async function RAST_loadKanbanProd() {
+  const sb = getSupabaseClient();
+  const { from, to } = RAST_getPeriod();
+  const prodBody = document.getElementById('rast-prod-body');
+  if (!prodBody) return;
+  prodBody.innerHTML = '<div style="color:var(--ink-muted);font-size:13px;padding:12px 0;text-align:center;">Carregando…</div>';
+  let q = sb.from('rastreamento_carrinhos').select('*')
+    .gte('produzido_em', from+'T00:00:00')
+    .lte('produzido_em', to+'T23:59:59')
+    .order('produzido_em', { ascending: false });
+  if (RAST_filtroProduto) q = q.ilike('produto', '%'+RAST_filtroProduto+'%');
+  const { data } = await q;
+  const items = data || [];
+  const countEl = document.getElementById('rast-prod-count');
+  if (countEl) countEl.textContent = items.length;
+  const unLbl = d => d.unidade === 'caixas' ? 'cx.' : 'un.';
+  prodBody.innerHTML = items.length ? items.map(d => {
+    const statusHtml = d.status === 'Embalado'
+      ? '<span class="rast-badge rast-b-embal">Embalado</span>'
+      : '<span class="rast-badge rast-b-aguard">Aguardando</span>';
+    return '<div class="rast-kcard rast-kcard-done">'+
+      '<div class="rast-kcard-top">'+
+        '<span class="rast-kcard-produto">'+RAST_esc(d.produto)+'</span>'+
+        '<span class="rast-kcard-num">Carrinho '+d.numero_carrinho+'</span>'+
+      '</div>'+
+      '<div class="rast-kcard-meta">'+d.qtd_produzida.toLocaleString('pt-BR')+' '+unLbl(d)+' · '+RAST_fmtDt(d.produzido_em)+'</div>'+
+      '<div class="rast-kcard-meta" style="margin-top:2px;font-size:11px;opacity:.7;">'+RAST_esc(d.responsavel_producao)+'</div>'+
+      '<div style="margin-top:6px;">'+statusHtml+'</div>'+
+    '</div>';
+  }).join('') : '<div style="color:var(--ink-muted);font-size:13px;padding:12px 0;text-align:center;">Nenhuma produção no período.</div>';
 }
 
 // ─── Embalagem — Kanban ───
@@ -21347,16 +21479,19 @@ async function RAST_loadKanban() {
   filaBody.innerHTML  = '<div style="color:var(--ink-muted);font-size:13px;padding:12px 0;">Carregando…</div>';
   embalBody.innerHTML = '<div style="color:var(--ink-muted);font-size:13px;padding:12px 0;">Carregando…</div>';
 
-  const [{ data: fila }, { data: embal }] = await Promise.all([
-    sb.from('rastreamento_carrinhos').select('*')
-      .eq('status','Aguardando Embalagem')
-      .order('produzido_em', { ascending: true }),
-    sb.from('rastreamento_carrinhos').select('*')
-      .eq('status','Embalado')
-      .gte('embalado_em', from+'T00:00:00')
-      .lte('embalado_em', to+'T23:59:59')
-      .order('embalado_em', { ascending: false })
-  ]);
+  let qFila = sb.from('rastreamento_carrinhos').select('*')
+    .eq('status','Aguardando Embalagem')
+    .order('produzido_em', { ascending: true });
+  let qEmbal = sb.from('rastreamento_carrinhos').select('*')
+    .eq('status','Embalado')
+    .gte('embalado_em', from+'T00:00:00')
+    .lte('embalado_em', to+'T23:59:59')
+    .order('embalado_em', { ascending: false });
+  if (RAST_filtroProduto) {
+    qFila  = qFila.ilike('produto', '%'+RAST_filtroProduto+'%');
+    qEmbal = qEmbal.ilike('produto', '%'+RAST_filtroProduto+'%');
+  }
+  const [{ data: fila }, { data: embal }] = await Promise.all([qFila, qEmbal]);
 
   RAST_embResultados = {};
   const filaData  = fila  || [];
@@ -21471,6 +21606,26 @@ function RAST_confirmarEmbalagem() {
   );
 }
 
+// ─── Filtro por produto ───
+function RAST_onFiltroProduto(val) {
+  RAST_filtroProduto = val.trim();
+  document.getElementById('rast-filtro-clear').style.display = val ? 'flex' : 'none';
+  clearTimeout(RAST_filtroTimer);
+  RAST_filtroTimer = setTimeout(() => {
+    RAST_loadHistorico();
+    RAST_loadKanban();
+    RAST_loadKanbanProd();
+  }, 350);
+}
+function RAST_limparFiltro() {
+  RAST_filtroProduto = '';
+  document.getElementById('rast-filtro-produto').value = '';
+  document.getElementById('rast-filtro-clear').style.display = 'none';
+  RAST_loadHistorico();
+  RAST_loadKanban();
+  RAST_loadKanbanProd();
+}
+
 function RAST_resetEmb() {
   RAST_embRegistro=null; RAST_embResultados={};
   ['rast-e-qtd','rast-e-resp'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
@@ -21487,9 +21642,11 @@ async function RAST_loadHistorico() {
   const tbody = document.getElementById('rast-hist-body');
   tbody.innerHTML = '<tr><td colspan="13" class="rast-empty">Carregando…</td></tr>';
   const sb = getSupabaseClient();
-  const { data, error } = await sb.from('rastreamento_carrinhos').select('*')
+  let qHist = sb.from('rastreamento_carrinhos').select('*')
     .gte('produzido_em', from+'T00:00:00').lte('produzido_em', to+'T23:59:59')
     .order('produzido_em',{ascending:false});
+  if (RAST_filtroProduto) qHist = qHist.ilike('produto', '%'+RAST_filtroProduto+'%');
+  const { data, error } = await qHist;
   if (error||!data||!data.length) {
     tbody.innerHTML='<tr><td colspan="13" class="rast-empty">Nenhum registro no período.</td></tr>'; return;
   }
