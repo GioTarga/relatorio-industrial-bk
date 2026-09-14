@@ -14930,15 +14930,28 @@ function PP_renderKPIs(){
   // Padaria: card de quantas bateladas dá pra fazer por
   // hora (1h ÷ lead time médio das Etapas) e o próprio lead time médio.
   if(PP_currentLinha === 'Padaria'){
-    const leadTimes = PP_BATELADAS
-      .map(b => (b.tempo_processo_etapas||[]).reduce((s,e)=> s + (Number(e.duracao_seg)||0), 0))
+    // Massa/Hora: média dos tempos coletados (cronômetro por ciclo)
+    const temposValoresPad = PP_CORRIDAS
+      .flatMap(c => c.produtividade_tempos_massa || [])
+      .map(t => Number(t.tempo_seg))
       .filter(v => v > 0);
-    const leadMedio = leadTimes.length ? leadTimes.reduce((a,b)=>a+b,0)/leadTimes.length : null;
-    const bateladasPorHora = (leadMedio != null && leadMedio > 0) ? 3600/leadMedio : null;
+    const tempoMedioPad = temposValoresPad.length ? temposValoresPad.reduce((a,b)=>a+b,0)/temposValoresPad.length : null;
+    const massaPorHoraPad = (tempoMedioPad != null && tempoMedioPad > 0) ? 3600/tempoMedioPad : null;
+
+    // Unidades/Hora: Massa/Hora × média de unidades_por_recipiente das corridas
+    const unidRecipVals = PP_CORRIDAS.map(c => Number(c.unidades_por_recipiente)).filter(v => v > 0);
+    const mediaUnidRecip = unidRecipVals.length ? unidRecipVals.reduce((a,b)=>a+b,0)/unidRecipVals.length : null;
+    const unidadesPorHoraPad = (massaPorHoraPad != null && mediaUnidRecip != null) ? massaPorHoraPad * mediaUnidRecip : null;
+
+    // Carrinho/Hora: Unidades/Hora ÷ média de unidades_por_carrinho das corridas
+    const unidCarrVals = PP_CORRIDAS.map(c => Number(c.unidades_por_carrinho)).filter(v => v > 0);
+    const mediaUnidCarr = unidCarrVals.length ? unidCarrVals.reduce((a,b)=>a+b,0)/unidCarrVals.length : null;
+    const carrinhoPorHoraPad = (unidadesPorHoraPad != null && mediaUnidCarr != null) ? unidadesPorHoraPad/mediaUnidCarr : null;
 
     const kpis = [
-      { label:'Batelada/hora', value: bateladasPorHora != null ? bateladasPorHora.toLocaleString('pt-BR',{maximumFractionDigits:2}) : '—' },
-      { label:'Tempo Médio por Batelada', value: leadMedio != null ? PP_fmtDuracao(leadMedio) : '—' },
+      { label:'Massa/Hora',    value: massaPorHoraPad    != null ? massaPorHoraPad.toLocaleString('pt-BR',{maximumFractionDigits:2})    : '—' },
+      { label:'Unidades/Hora', value: unidadesPorHoraPad != null ? Math.round(unidadesPorHoraPad).toLocaleString('pt-BR')               : '—' },
+      { label:'Carrinho/Hora', value: carrinhoPorHoraPad != null ? carrinhoPorHoraPad.toLocaleString('pt-BR',{maximumFractionDigits:2}) : '—' },
     ];
     grid.style.gridTemplateColumns = `repeat(${kpis.length},1fr)`;
     grid.innerHTML = kpis.map(k=>`
@@ -15757,7 +15770,7 @@ const PPL_VELOCIDADE_CONFIG = {
   // Croissant: campos idênticos ao padrão, mas com auto-fill de máquina e
   // unidade de medida via select fixo (ver PPL_renderCamposVelocidade)
   'Croissant': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
-  'Padaria': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
+  'Padaria': { campos:['inicio','fim','unidades_por_recipiente','unidades_por_carrinho'] },
   'Confeitaria': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_medio_seg'] },
   'Pão de Ló e Bolos': { campos:['maquina','inicio','fim','quantidade','unidade_medida','unidades_por_recipiente','tempo_batelada_massa'] },
 };
@@ -16157,6 +16170,25 @@ function PPL_renderCamposVelocidade(linha){
       preview.textContent = `Média atual (${tempos.length} tempo${tempos.length===1?'':'s'}): ${PP_fmtDuracao(media)} → ~${cxH} cx/h`;
     }
     document.querySelectorAll('.ppl-salgado-tempo').forEach(el=>el.addEventListener('change', pplSalgadoUpdateMedia));
+    return;
+  }
+
+  /* ── Padaria: igual ao Giro — Início/Fim + unidades + tempos cronômetro ── */
+  if(linha === 'Padaria'){
+    container.innerHTML = `
+      <div class="lanc-item-grid">
+        <div class="lanc-field"><label>Início</label><input type="time" id="pplCampo_inicio"></div>
+        <div class="lanc-field"><label>Fim</label><input type="time" id="pplCampo_fim"></div>
+        <div class="lanc-field"><label>Unidades por Caixa</label><input type="number" step="1" id="pplCampo_unidades_por_recipiente"></div>
+        <div class="lanc-field"><label>Unidades por Carrinho</label><input type="number" step="1" id="pplCampo_unidades_por_carrinho"></div>
+      </div>
+      <div style="margin-top:16px;">
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">Tempos Coletados (cronômetro — um por ciclo)</label>
+        <div id="pplTemposMassaContainer" class="lanc-items"></div>
+        <button type="button" class="lanc-add-item-btn" id="pplAddTempoMassaBtn">+ Adicionar tempo</button>
+      </div>`;
+    document.getElementById('pplAddTempoMassaBtn').addEventListener('click', PPL_addTempoMassaRow);
+    PPL_addTempoMassaRow();
     return;
   }
 
