@@ -13301,6 +13301,9 @@ const MC_RADAR_LINHAS = ['Giro','Salgado','Confeitaria','Padaria','Pão de Ló e
 // ── Ordem do Dia — filtro da Rotina de Coleta ────────────────────────────
 // null quando nenhuma ordem carregada; { setores: Map<string, string[]>, data: string } quando ativa
 let MC_ORDEM_DIA = null;
+// coletas do dia atual — null enquanto carregando, Map quando pronto
+// { corridas: {[linha]: Set<nomeProdutoNorm>}, bateladas: {[linha]: Set<nomeProdutoNorm>} }
+let MC_COLETAS_HOJE = null;
 
 // Normaliza setor do XLSX → nome interno do radar
 function MC_normalizarSetor(raw){
@@ -13367,7 +13370,9 @@ function MC_uploadOrdem(input){
       // Limpa input para permitir recarregar o mesmo arquivo
       input.value = '';
 
-      MC_renderRotina();
+      // Carrega coletas de hoje do banco (async) → renderiza ao concluir
+      MC_COLETAS_HOJE = null;
+      MC_carregarColetasHoje();
     } catch(err){
       console.error('MC_uploadOrdem:', err);
       alert('Erro ao ler o arquivo: ' + err.message);
@@ -13379,10 +13384,90 @@ function MC_uploadOrdem(input){
 // Remove o filtro de ordem e volta ao comportamento padrão
 function MC_limparOrdem(){
   MC_ORDEM_DIA = null;
+  MC_COLETAS_HOJE = null;
   const badge = document.getElementById('mcOrdemBadge');
   if(badge) badge.style.display = 'none';
   MC_renderRotina();
 }
+
+// ── Coletas de hoje — comparação com dados reais do dia ──────────────────
+
+// Normaliza nome de produto para comparação fuzzy
+// Remove acentos, pontuação especial e converte para minúsculas
+function MC_normalizarNome(str){
+  return (str || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Verifica se um produto da ordem já tem coleta hoje
+// Tenta match exato primeiro, depois parcial (um nome contém o outro)
+function MC_temColetaHoje(linha, prodOrdem, campo){
+  if(!MC_COLETAS_HOJE) return false;
+  const set = MC_COLETAS_HOJE[campo] && MC_COLETAS_HOJE[campo][linha];
+  if(!set || set.size === 0) return false;
+  const needle = MC_normalizarNome(prodOrdem);
+  if(!needle) return false;
+  if(set.has(needle)) return true;
+  // Partial: nome do sistema contém nome da ordem ou vice-versa
+  for(const item of set){
+    if(item.includes(needle) || needle.includes(item)) return true;
+  }
+  return false;
+}
+
+// Carrega as coletas do dia de hoje do Supabase
+// Chamado ao subir um arquivo de ordem; chama MC_renderRotina() ao concluir
+async function MC_carregarColetasHoje(){
+  const grid = document.getElementById('mcRotinaGrid');
+  if(grid){
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
+      <span style="font-size:20px;">🔄</span><br>Verificando coletas de hoje...
+    </div>`;
+  }
+
+  try{
+    const client = LANC_getClient();
+    // Data de hoje em formato ISO (YYYY-MM-DD) — mesmo formato do campo `data` no banco
+    const hoje = new Date().toISOString().split('T')[0];
+
+    const [corridasRes, bateladasRes] = await Promise.all([
+      client.from('produtividade_corridas').select('linha,produto').eq('data', hoje),
+      client.from('tempo_processo_bateladas').select('linha,produto,id').eq('data', hoje),
+    ]);
+
+    // Para bateladas: só conta se tem ao menos 1 etapa lançada
+    const etapasRes = await client.from('tempo_processo_etapas').select('batelada_id');
+    const bateladasComEtapas = new Set((etapasRes.data || []).map(e => e.batelada_id));
+
+    const corridas  = {};
+    const bateladas = {};
+
+    (corridasRes.data || []).forEach(r => {
+      if(!r.linha || !r.produto) return;
+      if(!corridas[r.linha]) corridas[r.linha] = new Set();
+      corridas[r.linha].add(MC_normalizarNome(r.produto));
+    });
+
+    (bateladasRes.data || []).forEach(r => {
+      if(!bateladasComEtapas.has(r.id)) return;
+      if(!r.linha || !r.produto) return;
+      if(!bateladas[r.linha]) bateladas[r.linha] = new Set();
+      bateladas[r.linha].add(MC_normalizarNome(r.produto));
+    });
+
+    MC_COLETAS_HOJE = { corridas, bateladas };
+  } catch(err){
+    console.error('MC_carregarColetasHoje:', err);
+    MC_COLETAS_HOJE = { corridas: {}, bateladas: {} }; // fallback vazio
+  }
+
+  MC_renderRotina();
+}
+// ── /Coletas de hoje ──────────────────────────────────────────────────────
 // ── /Ordem do Dia ────────────────────────────────────────────────────────
 const MC_RADAR_LABELS = { 'Giro': 'Giro Dia' };
 
@@ -13568,6 +13653,14 @@ function MC_renderRotina(){
     return;
   }
 
+  // Se a ordem está ativa mas as coletas de hoje ainda estão sendo carregadas, aguarda
+  if(MC_ORDEM_DIA && MC_COLETAS_HOJE === null){
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
+      <span style="font-size:20px;">🔄</span><br>Verificando coletas de hoje...
+    </div>`;
+    return;
+  }
+
   const LABELS = {
     corridas:  { icon:'⚡', label:'Produtividade' },
     bateladas: { icon:'⏱', label:'Tempo de Processo' }
@@ -13589,11 +13682,11 @@ function MC_renderRotina(){
     let pendentes = [];
 
     if(MC_ORDEM_DIA){
-      // Modo filtrado: só mostra produtos da ordem que ainda faltam
+      // Modo filtrado: produtos da ordem que ainda NÃO foram coletados HOJE
+      // Usa dados reais do banco (MC_COLETAS_HOJE) com fuzzy match por nome
       const prodsOrdem = MC_ORDEM_DIA.setores.get(linha) || [];
       prodsOrdem.forEach(prod => {
-        const flags = prods ? (prods[prod] || {}) : {};
-        const faltam = camposRastreados.filter(k => !flags[k]);
+        const faltam = camposRastreados.filter(k => !MC_temColetaHoje(linha, prod, k));
         if(faltam.length > 0) pendentes.push({ prod, faltam });
       });
     } else {
@@ -13649,23 +13742,30 @@ function MC_renderRotina(){
     SETORES_FORA_RADAR.forEach(setor => {
       const prodsOrdem = MC_ORDEM_DIA.setores.get(setor) || [];
       if(prodsOrdem.length === 0) return;
-      totalPendentes += prodsOrdem.length;
 
-      const linhas = prodsOrdem.map(prod =>
-        `<tr>
+      // Filtra apenas os que ainda não foram coletados hoje
+      const pendentesSetor = prodsOrdem.filter(prod =>
+        !MC_temColetaHoje(setor, prod, 'corridas') || !MC_temColetaHoje(setor, prod, 'bateladas')
+      );
+      if(pendentesSetor.length === 0) return;
+      totalPendentes += pendentesSetor.length;
+
+      const linhas = pendentesSetor.map(prod => {
+        const faltam = [];
+        if(!MC_temColetaHoje(setor, prod, 'corridas'))  faltam.push('⚡ Produtividade');
+        if(!MC_temColetaHoje(setor, prod, 'bateladas')) faltam.push('⏱ Tempo de Processo');
+        const badges = faltam.map(f =>
+          `<span style="background:var(--warn-bg,#fff3cd);color:var(--warn,#856404);
+            border:1px solid var(--warn,#ffc107);border-radius:4px;
+            padding:2px 7px;font-size:10.5px;white-space:nowrap;">${f}</span>`
+        ).join(' ');
+        return `<tr>
           <td style="padding:5px 8px;font-size:12px;border-bottom:1px solid var(--line);">${prod}</td>
           <td style="padding:5px 8px;border-bottom:1px solid var(--line);">
-            <div style="display:flex;flex-wrap:wrap;gap:4px;">
-              <span style="background:var(--warn-bg,#fff3cd);color:var(--warn,#856404);
-                border:1px solid var(--warn,#ffc107);border-radius:4px;
-                padding:2px 7px;font-size:10.5px;white-space:nowrap;">⚡ Produtividade</span>
-              <span style="background:var(--warn-bg,#fff3cd);color:var(--warn,#856404);
-                border:1px solid var(--warn,#ffc107);border-radius:4px;
-                padding:2px 7px;font-size:10.5px;white-space:nowrap;">⏱ Tempo de Processo</span>
-            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;">${badges}</div>
           </td>
-        </tr>`
-      ).join('');
+        </tr>`;
+      }).join('');
 
       cardHTMLs.push(`
         <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;">
@@ -13674,7 +13774,7 @@ function MC_renderRotina(){
             align-items:center;border-bottom:1px solid var(--line);">
             <span>${setor}</span>
             <span style="background:var(--red);color:#fff;border-radius:20px;
-              padding:2px 9px;font-size:11px;">${prodsOrdem.length} pendente${prodsOrdem.length>1?'s':''}</span>
+              padding:2px 9px;font-size:11px;">${pendentesSetor.length} pendente${pendentesSetor.length>1?'s':''}</span>
           </div>
           <table style="width:100%;border-collapse:collapse;">
             <thead><tr>
