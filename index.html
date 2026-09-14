@@ -21344,10 +21344,13 @@ function RAST_onCarrinhoChange() {
 }
 
 async function RAST_verificarCarrinhoDuplicado(num) {
+  if (!RAST_prodSelecionado) return; // só valida quando produto já foi selecionado
   const today = new Date().toISOString().slice(0,10);
   const sb = getSupabaseClient();
   const { data } = await sb.from('rastreamento_carrinhos').select('id')
-    .eq('numero_carrinho', num).eq('status','Aguardando Embalagem')
+    .eq('numero_carrinho', num)
+    .eq('produto', RAST_prodSelecionado.descricao)
+    .eq('status','Aguardando Embalagem')
     .gte('produzido_em', today+'T00:00:00').lte('produzido_em', today+'T23:59:59');
   document.getElementById('rast-carrinho-err').style.display = (data&&data.length>0) ? 'block' : 'none';
 }
@@ -21366,11 +21369,13 @@ async function RAST_showPreview() {
   const today = new Date().toISOString().slice(0,10);
   const sb = getSupabaseClient();
   const { data: dup } = await sb.from('rastreamento_carrinhos').select('id')
-    .eq('numero_carrinho', carrinho).eq('status','Aguardando Embalagem')
+    .eq('numero_carrinho', carrinho)
+    .eq('produto', RAST_prodSelecionado.descricao)
+    .eq('status','Aguardando Embalagem')
     .gte('produzido_em', today+'T00:00:00').lte('produzido_em', today+'T23:59:59');
   if (dup&&dup.length>0) {
     document.getElementById('rast-carrinho-err').style.display = 'block';
-    return RAST_toast('Carrinho '+carrinho+' já tem lançamento aberto hoje','e');
+    return RAST_toast('Carrinho '+carrinho+' já tem lançamento aberto para este produto hoje','e');
   }
 
   const total  = telas * porTela;
