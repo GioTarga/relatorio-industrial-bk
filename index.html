@@ -13351,7 +13351,11 @@ function MC_uploadOrdem(input){
               d = new Date(str);
             }
           }
-          if(d && !isNaN(d)) dataStr = d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' });
+          if(d && !isNaN(d)){
+            const day = String(d.getUTCDate()).padStart(2,'0');
+            const mon = String(d.getUTCMonth()+1).padStart(2,'0');
+            dataStr = day+'/'+mon;
+          }
         }
       });
 
@@ -13423,6 +13427,13 @@ function MC_encontrarNoRadar(prods, prodOrdem){
   for(const [key, flags] of Object.entries(prods)){
     const hay = MC_normalizarNome(key);
     if(hay.includes(needle) || needle.includes(hay)) return flags;
+  }
+  // fallback: primeira palavra significativa (≥4 letras)
+  const primeiraHay = needle.split(' ')[0];
+  if(primeiraHay.length >= 4){
+    for(const [key, flags] of Object.entries(prods)){
+      if(MC_normalizarNome(key).split(' ')[0] === primeiraHay) return flags;
+    }
   }
   return {};
 }
