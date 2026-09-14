@@ -13336,8 +13336,25 @@ function MC_uploadOrdem(input){
       let dataStr = '';
       rows.forEach(r => {
         if(r[0] && String(r[0]).trim() === 'DATA' && r[2]){
-          const d = r[2] instanceof Date ? r[2] : new Date(r[2]);
-          if(!isNaN(d)) dataStr = d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' });
+          let d;
+          if(r[2] instanceof Date){
+            d = r[2];
+          } else if(typeof r[2] === 'number'){
+            // Excel armazena datas como serial (dias desde 01/01/1900)
+            // 25569 = serial do epoch JS (01/01/1970); converter para ms
+            d = new Date(Math.round((r[2] - 25569) * 86400000));
+          } else {
+            // Tenta string em formato DD/MM/YYYY ou YYYY-MM-DD
+            const str = String(r[2]).trim();
+            const partes = str.split(/[\/\-\.]/);
+            if(partes.length === 3 && partes[0].length <= 2){
+              // DD/MM/YYYY
+              d = new Date(Number(partes[2]), Number(partes[1]) - 1, Number(partes[0]));
+            } else {
+              d = new Date(str);
+            }
+          }
+          if(d && !isNaN(d)) dataStr = d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' });
         }
       });
 
