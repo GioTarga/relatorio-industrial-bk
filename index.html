@@ -14927,21 +14927,20 @@ function PP_renderKPIs(){
     return;
   }
 
-  // Padaria: card de quantas bateladas dá pra fazer por
-  // hora (1h ÷ lead time médio das Etapas) e o próprio lead time médio.
+  // Padaria: Massa/Hora (sem dados ainda), Unidades/Hora e Carrinho/Hora derivados de Caixa/Hora
   if(PP_currentLinha === 'Padaria'){
-    // Massa/Hora: média dos tempos coletados (cronômetro por ciclo)
+    // Caixa/Hora (interno): cada tempo coletado = formação de 1 caixa de produto
     const temposValoresPad = PP_CORRIDAS
       .flatMap(c => c.produtividade_tempos_massa || [])
       .map(t => Number(t.tempo_seg))
       .filter(v => v > 0);
     const tempoMedioPad = temposValoresPad.length ? temposValoresPad.reduce((a,b)=>a+b,0)/temposValoresPad.length : null;
-    const massaPorHoraPad = (tempoMedioPad != null && tempoMedioPad > 0) ? 3600/tempoMedioPad : null;
+    const caixaPorHoraPad = (tempoMedioPad != null && tempoMedioPad > 0) ? 3600/tempoMedioPad : null;
 
-    // Unidades/Hora: Massa/Hora × média de unidades_por_recipiente das corridas
+    // Unidades/Hora: Caixa/Hora × média de unidades_por_recipiente das corridas
     const unidRecipVals = PP_CORRIDAS.map(c => Number(c.unidades_por_recipiente)).filter(v => v > 0);
     const mediaUnidRecip = unidRecipVals.length ? unidRecipVals.reduce((a,b)=>a+b,0)/unidRecipVals.length : null;
-    const unidadesPorHoraPad = (massaPorHoraPad != null && mediaUnidRecip != null) ? massaPorHoraPad * mediaUnidRecip : null;
+    const unidadesPorHoraPad = (caixaPorHoraPad != null && mediaUnidRecip != null) ? caixaPorHoraPad * mediaUnidRecip : null;
 
     // Carrinho/Hora: Unidades/Hora ÷ média de unidades_por_carrinho das corridas
     const unidCarrVals = PP_CORRIDAS.map(c => Number(c.unidades_por_carrinho)).filter(v => v > 0);
@@ -14949,7 +14948,7 @@ function PP_renderKPIs(){
     const carrinhoPorHoraPad = (unidadesPorHoraPad != null && mediaUnidCarr != null) ? unidadesPorHoraPad/mediaUnidCarr : null;
 
     const kpis = [
-      { label:'Massa/Hora',    value: massaPorHoraPad    != null ? massaPorHoraPad.toLocaleString('pt-BR',{maximumFractionDigits:2})    : '—' },
+      { label:'Massa/Hora',    value: '—' }, // coleta de tempo de massa ainda não realizada
       { label:'Unidades/Hora', value: unidadesPorHoraPad != null ? Math.round(unidadesPorHoraPad).toLocaleString('pt-BR')               : '—' },
       { label:'Carrinho/Hora', value: carrinhoPorHoraPad != null ? carrinhoPorHoraPad.toLocaleString('pt-BR',{maximumFractionDigits:2}) : '—' },
     ];
