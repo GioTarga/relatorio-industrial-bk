@@ -8791,6 +8791,26 @@ function RC_renderSectorCards(setor){
             .filter(([fam]) => familiasConfiguradas.size === 0 || familiasConfiguradas.has(fam))
             .map(([fam,d])=>({ label:fam, unidade:d.unidade, prodH:Math.max(...d.prodHs) }))
             .sort((a,b)=>b.prodH - a.prodH);
+          // Fallback: famílias configuradas sem histórico próprio → usa capacidade de
+          // outra máquina do mesmo setor (ex: Panitec 5 usa os dados da Panitec 3).
+          if(familiasConfiguradas.size > 0){
+            const famComHistorico = new Set(itens.map(it => it.label));
+            configRows.forEach(cr => {
+              const fam = RC_getFamilia(cr.produto) || cr.produto;
+              if(!fam || fam === '—' || famComHistorico.has(fam)) return;
+              const refs = RC_CAP_DATA.filter(d =>
+                d.setor && d.setor.toUpperCase() === 'SALGADO' &&
+                (RC_getFamilia(d.produto) || d.produto) === fam
+              );
+              if(refs.length > 0){
+                const prodH = Math.max(...refs.map(d => d.prodH));
+                const unidade = refs[0].unidade;
+                itens.push({ label: fam, unidade, prodH });
+                famComHistorico.add(fam);
+              }
+            });
+            itens.sort((a,b) => b.prodH - a.prodH);
+          }
         } else {
           itens = byMachine[maq]
             .slice().sort((a,b)=>b.prodH - a.prodH)
