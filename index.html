@@ -21524,27 +21524,41 @@ function RAST_getPeriod() {
 }
 
 async function RAST_loadAll() {
-  await Promise.all([RAST_loadKPIs(), RAST_loadHistorico()]);
-  const activeBtn = document.querySelector('#page-rastreamento .rast-tab-btn.active');
-  if (activeBtn) {
-    const tab = activeBtn.dataset.tab;
-    if (tab === 'embalagem') RAST_loadKanban();
-    if (tab === 'producao')  RAST_loadKanbanProd();
-  }
+  // Recarrega KPIs, histórico e ambos os kanbans sempre — evita estado
+  // desatualizado quando o usuário muda de aba ou confirma embalagem.
+  await Promise.all([
+    RAST_loadKPIs(),
+    RAST_loadHistorico(),
+    RAST_loadKanban(),
+    RAST_loadKanbanProd(),
+  ]);
 }
 
 // ─── KPIs ───
 async function RAST_loadKPIs() {
   const { from, to } = RAST_getPeriod();
   const sb = getSupabaseClient();
-  const { data, error } = await sb
-    .from('rastreamento_carrinhos').select('status')
-    .gte('produzido_em', from+'T00:00:00').lte('produzido_em', to+'T23:59:59');
-  if (error) { RAST_toast('Erro ao carregar indicadores','e'); return; }
-  document.getElementById('rast-k-total').textContent  = data.length;
-  document.getElementById('rast-k-aguard').textContent = data.filter(r=>r.status==='Aguardando Embalagem').length;
-  document.getElementById('rast-k-embal').textContent  = data.filter(r=>r.status==='Embalado').length;
-  document.getElementById('rast-k-diverg').textContent = data.filter(r=>r.status==='Divergência de Quantidade').length;
+  const fromTs = from+'T00:00:00+00:00';
+  const toTs   = to+'T23:59:59+00:00';
+  // Dois contadores independentes para evitar dupla contagem:
+  // 1) Produzidos no período (para PRODUZIDOS e AGUARDANDO)
+  // 2) Embalados no período (para EMBALADOS e DIVERGÊNCIAS) — pode incluir carrinhos de dias anteriores
+  const [{ data: prodData, error: e1 }, { data: embalData, error: e2 }] = await Promise.all([
+    sb.from('rastreamento_carrinhos').select('status')
+      .gte('produzido_em', fromTs).lte('produzido_em', toTs),
+    sb.from('rastreamento_carrinhos').select('diferenca')
+      .eq('status', 'Embalado')
+      .gte('embalado_em', fromTs).lte('embalado_em', toTs),
+  ]);
+  if (e1 || e2) { RAST_toast('Erro ao carregar indicadores','e'); return; }
+  const aguard  = (prodData||[]).filter(r => r.status === 'Aguardando Embalagem').length;
+  const embal   = (embalData||[]).length;
+  // Divergência: status sempre 'Embalado', divergência registrada no campo `diferenca`
+  const diverg  = (embalData||[]).filter(r => r.diferenca != null && r.diferenca !== 0).length;
+  document.getElementById('rast-k-total').textContent  = (prodData||[]).length;
+  document.getElementById('rast-k-aguard').textContent = aguard;
+  document.getElementById('rast-k-embal').textContent  = embal;
+  document.getElementById('rast-k-diverg').textContent = diverg;
 }
 
 // ─── Catálogo ───
@@ -21633,7 +21647,7 @@ async function RAST_verificarCarrinhoDuplicado(num) {
     .eq('numero_carrinho', num)
     .eq('produto', RAST_prodSelecionado.descricao)
     .eq('status','Aguardando Embalagem')
-    .gte('produzido_em', today+'T00:00:00').lte('produzido_em', today+'T23:59:59');
+    .gte('produzido_em', today+'T00:00:00+00:00').lte('produzido_em', today+'T23:59:59+00:00');
   document.getElementById('rast-carrinho-err').style.display = (data&&data.length>0) ? 'block' : 'none';
 }
 
@@ -21654,7 +21668,7 @@ async function RAST_showPreview() {
     .eq('numero_carrinho', carrinho)
     .eq('produto', RAST_prodSelecionado.descricao)
     .eq('status','Aguardando Embalagem')
-    .gte('produzido_em', today+'T00:00:00').lte('produzido_em', today+'T23:59:59');
+    .gte('produzido_em', today+'T00:00:00+00:00').lte('produzido_em', today+'T23:59:59+00:00');
   if (dup&&dup.length>0) {
     document.getElementById('rast-carrinho-err').style.display = 'block';
     return RAST_toast('Carrinho '+carrinho+' já tem lançamento aberto para este produto hoje','e');
@@ -21732,10 +21746,12 @@ async function RAST_loadKanbanProd() {
   const prodBody = document.getElementById('rast-prod-body');
   if (!prodBody) return;
   prodBody.innerHTML = '<div style="color:var(--ink-muted);font-size:13px;padding:12px 0;text-align:center;">Carregando…</div>';
+  const fromTs = from+'T00:00:00+00:00';
+  const toTs   = to+'T23:59:59+00:00';
   let q = sb.from('rastreamento_carrinhos').select('*')
     .eq('status', 'Aguardando Embalagem')
-    .gte('produzido_em', from+'T00:00:00')
-    .lte('produzido_em', to+'T23:59:59')
+    .gte('produzido_em', fromTs)
+    .lte('produzido_em', toTs)
     .order('produzido_em', { ascending: false });
   if (RAST_filtroProduto) q = q.ilike('produto', '%'+RAST_filtroProduto+'%');
   const { data } = await q;
@@ -21768,14 +21784,16 @@ async function RAST_loadKanban() {
   if (!filaBody || !embalBody) return;
   filaBody.innerHTML  = '<div style="color:var(--ink-muted);font-size:13px;padding:12px 0;">Carregando…</div>';
   embalBody.innerHTML = '<div style="color:var(--ink-muted);font-size:13px;padding:12px 0;">Carregando…</div>';
+  const fromTs = from+'T00:00:00+00:00';
+  const toTs   = to+'T23:59:59+00:00';
 
   let qFila = sb.from('rastreamento_carrinhos').select('*')
     .eq('status','Aguardando Embalagem')
     .order('produzido_em', { ascending: true });
   let qEmbal = sb.from('rastreamento_carrinhos').select('*')
     .eq('status','Embalado')
-    .gte('embalado_em', from+'T00:00:00')
-    .lte('embalado_em', to+'T23:59:59')
+    .gte('embalado_em', fromTs)
+    .lte('embalado_em', toTs)
     .order('embalado_em', { ascending: false });
   if (RAST_filtroProduto) {
     qFila  = qFila.ilike('produto', '%'+RAST_filtroProduto+'%');
@@ -21932,8 +21950,12 @@ async function RAST_loadHistorico() {
   const tbody = document.getElementById('rast-hist-body');
   tbody.innerHTML = '<tr><td colspan="13" class="rast-empty">Carregando…</td></tr>';
   const sb = getSupabaseClient();
+  const fromTs = from+'T00:00:00+00:00';
+  const toTs   = to+'T23:59:59+00:00';
+  // OR: exibe carrinhos produzidos OU embalados no período — assim carrinhos de dias
+  // anteriores que foram embalados hoje aparecem no histórico do dia correto.
   let qHist = sb.from('rastreamento_carrinhos').select('*')
-    .gte('produzido_em', from+'T00:00:00').lte('produzido_em', to+'T23:59:59')
+    .or(`and(produzido_em.gte.${fromTs},produzido_em.lte.${toTs}),and(embalado_em.gte.${fromTs},embalado_em.lte.${toTs})`)
     .order('produzido_em',{ascending:false});
   if (RAST_filtroProduto) qHist = qHist.ilike('produto', '%'+RAST_filtroProduto+'%');
   const { data, error } = await qHist;
