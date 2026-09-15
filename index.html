@@ -11398,7 +11398,7 @@ function LP_mapSetorExcel(raw){
 function LP_parseExcelRow(produtoRaw, qtdC, qtdD, setorExcel){
   const parsed = LP_parseQuantidadeExcel(qtdC) || LP_parseQuantidadeExcel(qtdD);
   const produtoLimpo = LP_limparNomeProdutoExcel(produtoRaw);
-  // Setor: prioriza o que veio direto do Excel (col A) — só cai no histórico se não houver
+  // Setor: prioriza o que veio direto do Excel (col B) — só cai no histórico se não houver
   const setorDoExcel = LP_mapSetorExcel(setorExcel);
   const match = setorDoExcel ? null : LP_matchProdutoHistorico(produtoLimpo);
   // O nome do produto só é aceito automaticamente se bater exatamente (ou
@@ -11463,9 +11463,11 @@ async function LP_handleExcelImport(ev){
     const itens = [];
     for(let i=headerIdx+2; i<rows.length; i++){
       const r = rows[i] || [];
-      const produtoRaw = r[1];
+      const produtoRaw = r[2]; // col C = DESCRIÇÃO PRODUTO
       if(!produtoRaw || !String(produtoRaw).trim()) continue; // linha em branco no meio da lista — pula, não interrompe a leitura
-      itens.push(LP_parseExcelRow(String(produtoRaw).trim(), r[2], r[3], r[0])); // r[0] = SETOR (col A do Excel)
+      // Combina quantidade (col D, numérico) + unidade (col E, texto) num único string para o parser
+      const qtdCombinada = (typeof r[3] === 'number' && r[4]) ? `${r[3]} ${String(r[4]).trim()}` : (r[3] || r[4]);
+      itens.push(LP_parseExcelRow(String(produtoRaw).trim(), qtdCombinada, null, r[1])); // r[1] = SETOR (col B do Excel)
     }
 
     if(itens.length === 0) throw new Error('Não encontrei nenhum produto na lista desse arquivo.');
