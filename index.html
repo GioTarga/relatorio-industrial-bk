@@ -8782,7 +8782,13 @@ function RC_renderSectorCards(setor){
             if(!byFam[fam]) byFam[fam] = { prodHs:[], unidade: r.unidade };
             byFam[fam].prodHs.push(r.prodH);
           });
+          // Filtrar pelas famílias configuradas em maquinas.produtos —
+          // evita que apontamentos históricos errados apareçam no card.
+          // Se a máquina não tem produtos configurados, exibe tudo (fallback).
+          const configRows = RC_DATA.filter(r => r.setor && r.setor.toUpperCase() === 'SALGADO' && r.identificacao === maq && r.produto && r.produto !== '—');
+          const familiasConfiguradas = new Set(configRows.map(r => RC_getFamilia(r.produto) || r.produto));
           itens = Object.entries(byFam)
+            .filter(([fam]) => familiasConfiguradas.size === 0 || familiasConfiguradas.has(fam))
             .map(([fam,d])=>({ label:fam, unidade:d.unidade, prodH:Math.max(...d.prodHs) }))
             .sort((a,b)=>b.prodH - a.prodH);
         } else {
