@@ -15996,6 +15996,52 @@ function PPL_camposBaseEtapasHtml(linha){
 }
 /* PPL_paradaUnicaHtml removida — paradas são registradas na Produção Diária */
 
+/* Adiciona uma linha de ciclo da Confeitaria (intervalo + qtd por ciclo) */
+function PPL_addConfeitariaCicloRow(){
+  const container = document.getElementById('pplConfCiclosContainer');
+  const idx = container.children.length + 1;
+  const row = document.createElement('div');
+  row.className = 'lanc-item';
+  row.innerHTML = `
+    <div class="lanc-item-header">
+      <span class="lanc-item-title">Ciclo ${idx}</span>
+      <button type="button" class="lanc-item-remove" data-remove>Remover</button>
+    </div>
+    <div class="lanc-item-grid">
+      <div class="lanc-field"><label>Intervalo (hh:mm:ss)</label><input type="time" step="1" class="ppl-conf-ciclo-tempo" title="Tempo entre um produto pronto e o próximo"></div>
+      <div class="lanc-field"><label>Qtd por ciclo</label><input type="number" step="1" min="1" class="ppl-conf-ciclo-qtd" placeholder="Ex: 2"></div>
+    </div>`;
+  row.querySelector('[data-remove]').addEventListener('click', ()=>{ row.remove(); PPL_updateConfeitariaResumo(); });
+  row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', PPL_updateConfeitariaResumo));
+  container.appendChild(row);
+}
+
+/* Recalcula e exibe o resumo da Confeitaria em tempo real */
+function PPL_updateConfeitariaResumo(){
+  const rows = document.querySelectorAll('#pplConfCiclosContainer .lanc-item');
+  let totalSeg = 0, countTempos = 0, totalUnid = 0, countQtd = 0;
+  rows.forEach(row => {
+    const tempo = PPL_timeToSeconds(row.querySelector('.ppl-conf-ciclo-tempo')?.value);
+    const qtd = parseFloat(row.querySelector('.ppl-conf-ciclo-qtd')?.value);
+    if(tempo !== null && tempo > 0){ totalSeg += tempo; countTempos++; }
+    if(!isNaN(qtd) && qtd > 0){ totalUnid += qtd; countQtd++; }
+  });
+  const resumo = document.getElementById('pplConfResumo');
+  if(!resumo) return;
+  if(countTempos === 0){ resumo.style.display = 'none'; return; }
+  resumo.style.display = 'flex';
+  const mediaSeg = Math.round(totalSeg / countTempos);
+  const h = Math.floor(mediaSeg / 3600);
+  const m = Math.floor((mediaSeg % 3600) / 60);
+  const s = mediaSeg % 60;
+  const mediaStr = [h,m,s].map(v=>String(v).padStart(2,'0')).join(':');
+  const qtdMediaCiclo = countQtd > 0 ? totalUnid / countQtd : 0;
+  const prodHora = mediaSeg > 0 && qtdMediaCiclo > 0 ? Math.round((3600 / mediaSeg) * qtdMediaCiclo) : 0;
+  document.getElementById('pplConfTempoMedio').textContent = mediaStr;
+  document.getElementById('pplConfTotalUnid').textContent = totalUnid;
+  document.getElementById('pplConfProdHora').textContent = prodHora > 0 ? prodHora + ' un/hora' : '—';
+}
+
 /* Busca a batelada mais recente desse produto (na mesma linha) e devolve
    os nomes de etapa já usados, na ordem certa — assim quem já mapeou um
    processo antes não precisa digitar tudo de novo toda vez. */
@@ -16216,6 +16262,29 @@ function PPL_renderCamposVelocidade(linha){
       </div>`;
     document.getElementById('pplAddTempoMassaBtn').addEventListener('click', PPL_addTempoMassaRow);
     PPL_addTempoMassaRow();
+    return;
+  }
+
+  /* ── Confeitaria: coleta por ciclos (intervalo + qtd por ciclo) ── */
+  if(linha === 'Confeitaria'){
+    container.innerHTML = `
+      <div class="lanc-item-grid">
+        <div class="lanc-field"><label>Máquina</label><input type="text" id="pplCampo_maquina"></div>
+        <div class="lanc-field"><label>Unidade de Medida</label><input type="text" list="pplUnidadeMedidaList" id="pplCampo_unidade_medida" placeholder="Ex: Unidades, Caixas"></div>
+        <div class="lanc-field"><label>Unidades por Caixa / Tela</label><input type="number" step="1" id="pplCampo_unidades_por_recipiente"></div>
+      </div>
+      <div style="margin-top:16px;">
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">Ciclos Coletados (intervalo entre produtos prontos)</label>
+        <div id="pplConfCiclosContainer" class="lanc-items"></div>
+        <button type="button" class="lanc-add-item-btn" id="pplAddConfCicloBtn">+ Adicionar Ciclo</button>
+      </div>
+      <div id="pplConfResumo" style="display:none;margin-top:14px;background:var(--surface-2,#f5f0e8);border-radius:8px;padding:12px 16px;font-size:13px;gap:24px;flex-wrap:wrap;">
+        <span>⏱ Tempo médio: <strong id="pplConfTempoMedio">—</strong></span>
+        <span>📦 Total unidades: <strong id="pplConfTotalUnid">—</strong></span>
+        <span>🚀 Produção/hora: <strong id="pplConfProdHora">—</strong></span>
+      </div>`;
+    document.getElementById('pplAddConfCicloBtn').addEventListener('click', ()=>{ PPL_addConfeitariaCicloRow(); PPL_updateConfeitariaResumo(); });
+    PPL_addConfeitariaCicloRow();
     return;
   }
 
@@ -16511,6 +16580,43 @@ async function PPL_handleSubmit(e){
         const { error: tmErrSal } = await client.from('produtividade_tempos_massa').insert(temposPayloadSal);
         if(tmErrSal) throw tmErrSal;
       }
+
+      } else if(linha === 'Confeitaria'){
+      /* ── Confeitaria: coleta por ciclos (intervalo + qtd por ciclo) ── */
+      const ciclos = [];
+      document.querySelectorAll('#pplConfCiclosContainer .lanc-item').forEach(row => {
+        const tempo = PPL_timeToSeconds(row.querySelector('.ppl-conf-ciclo-tempo')?.value);
+        const qtd = parseFloat(row.querySelector('.ppl-conf-ciclo-qtd')?.value) || null;
+        if(tempo !== null && tempo > 0) ciclos.push({ tempo_seg: tempo, qtd });
+      });
+      if(ciclos.length === 0){
+        feedback.textContent = '⚠ Adicione ao menos um ciclo com intervalo preenchido.';
+        feedback.className = 'lanc-feedback err';
+        btn.disabled = false;
+        return;
+      }
+      const mediaSeg = Math.round(ciclos.reduce((a,c)=>a+c.tempo_seg,0) / ciclos.length);
+      const totalUnid = ciclos.reduce((a,c)=>a+(c.qtd||0),0);
+      const ciclosComQtd = ciclos.filter(c=>c.qtd!=null && c.qtd>0);
+      const qtdMediaCiclo = ciclosComQtd.length > 0 ? totalUnid / ciclosComQtd.length : 0;
+      const prodHora = mediaSeg > 0 && qtdMediaCiclo > 0 ? Math.round((3600 / mediaSeg) * qtdMediaCiclo) : null;
+      const obsElConf = document.getElementById('pplObservacao');
+      const corridaPayloadConf = {
+        linha, data, produto: produtoFinal,
+        maquina: document.getElementById('pplCampo_maquina')?.value.trim() || null,
+        unidade_medida: document.getElementById('pplCampo_unidade_medida')?.value.trim() || null,
+        unidades_por_recipiente: parseFloat(document.getElementById('pplCampo_unidades_por_recipiente')?.value || '') || null,
+        tempo_medio_seg: mediaSeg,
+        quantidade: totalUnid || null,
+        producao_por_hora: prodHora,
+        observacao: obsElConf && obsElConf.value.trim() ? obsElConf.value.trim() : null,
+      };
+      const { data: corInsertedConf, error: corErrConf } = await client.from('produtividade_corridas').insert([corridaPayloadConf]).select().single();
+      if(corErrConf) throw corErrConf;
+      // Salva ciclos individuais em produtividade_tempos_massa (masseira = qtd do ciclo)
+      const ciclosPayload = ciclos.map(c=>({ corrida_id: corInsertedConf.id, tempo_seg: c.tempo_seg, masseira: c.qtd != null ? String(c.qtd) : null }));
+      const { error: cicErr } = await client.from('produtividade_tempos_massa').insert(ciclosPayload);
+      if(cicErr) throw cicErr;
 
       } else {
       /* ── Demais linhas: lógica genérica ── */
