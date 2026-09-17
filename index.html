@@ -2770,6 +2770,8 @@ body{background:#fff;color:#000}
   transition: background .15s;
 }
 #page-rastreamento .rast-kcard-btn:hover { background: var(--red-dark); }
+#page-rastreamento .rast-kcard-clickable { cursor: pointer; transition: box-shadow .15s, transform .1s; }
+#page-rastreamento .rast-kcard-clickable:hover { box-shadow: 0 4px 18px rgba(0,0,0,.13); transform: translateY(-1px); }
 #page-rastreamento .rast-conf-ok  { font-size: 11.5px; font-weight: 700; color: #0a5435; }
 #page-rastreamento .rast-conf-div { font-size: 11.5px; font-weight: 700; color: var(--red); }
 #page-rastreamento .rast-badge-conf {
@@ -5333,6 +5335,10 @@ body{background:#fff;color:#000}
                      oninput="RAST_onCarrinhoChange()">
               <span class="rast-help-error" id="rast-carrinho-err">⚠ Lançamento aberto para este carrinho hoje.</span>
             </div>
+            <div class="rast-form-group" style="max-width:200px;">
+              <label>Nº da massa <span style="font-weight:400;color:var(--ink-soft);font-size:11px;">(opcional)</span></label>
+              <input type="text" id="rast-p-massa" placeholder="Ex: M-04">
+            </div>
           </div>
         </div>
 
@@ -5464,10 +5470,11 @@ body{background:#fff;color:#000}
                 <th>Código Embalagem</th>
                 <th>Embalado em</th>
                 <th>Resp. Embalagem</th>
+                <th></th>
               </tr>
             </thead>
             <tbody id="rast-hist-body">
-              <tr><td colspan="12" class="rast-empty">Selecione o módulo para carregar…</td></tr>
+              <tr><td colspan="14" class="rast-empty">Selecione o módulo para carregar…</td></tr>
             </tbody>
           </table>
         </div>
@@ -5477,6 +5484,17 @@ body{background:#fff;color:#000}
   </div><!-- /rast-container -->
 
   <!-- Modal do módulo -->
+  <!-- Modal detalhe do card -->
+  <div id="rast-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1100;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--surface-1,#fff);border-radius:14px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.22);">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 12px;border-bottom:1px solid var(--border,#e8e0d4);">
+        <h3 id="rast-det-title" style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--red-dark,#6B1111);margin:0;">Detalhe do Lançamento</h3>
+        <button onclick="RAST_closeDetail()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--ink-soft);line-height:1;padding:0 4px;">×</button>
+      </div>
+      <div id="rast-det-body" style="padding:18px 20px 20px;"></div>
+    </div>
+  </div>
+
   <div class="hidden" id="rast-modal">
     <div class="rast-modal-inner">
       <h3 id="rast-m-title"></h3>
@@ -21594,6 +21612,7 @@ let RAST_prodSelecionado = null;
 let RAST_unidadeAtual    = 'telas';
 let RAST_embRegistro     = null;
 let RAST_embResultados   = {};
+let RAST_prodKanbanData  = {};
 let RAST_modalOk         = null;
 let RAST_filtroProduto   = '';
 let RAST_filtroTimer     = null;
@@ -21784,10 +21803,12 @@ async function RAST_showPreview() {
   const unLbl  = RAST_unidadeAtual==='telas' ? 'telas' : 'caixas';
   const unLbl1 = RAST_unidadeAtual==='telas' ? 'tela'  : 'caixa';
 
+  const massaVal = (document.getElementById('rast-p-massa')?.value||'').trim();
   document.getElementById('rast-p-summary-content').innerHTML =
     '<div class="rast-summary-row"><span class="rast-s-key">Produto</span><span class="rast-s-val">'+RAST_esc(RAST_prodSelecionado.descricao)+'</span></div>'+
     '<div class="rast-summary-row"><span class="rast-s-key">Código</span><span class="rast-s-val"><span class="rast-chip">'+RAST_esc(RAST_prodSelecionado.codigo)+'</span></span></div>'+
     '<div class="rast-summary-row"><span class="rast-s-key">Carrinho</span><span class="rast-s-val">'+carrinho+'</span></div>'+
+    (massaVal ? '<div class="rast-summary-row"><span class="rast-s-key">Nº da Massa</span><span class="rast-s-val"><span class="rast-chip">'+RAST_esc(massaVal)+'</span></span></div>' : '')+
     '<div class="rast-summary-row"><span class="rast-s-key">'+RAST_ucFirst(unLbl)+' × por '+unLbl1+'</span><span class="rast-s-val">'+telas+' × '+porTela+'</span></div>'+
     '<div class="rast-summary-row"><span class="rast-s-key">Unidade</span><span class="rast-s-val">'+RAST_ucFirst(unLbl)+'</span></div>'+
     '<div class="rast-summary-row"><span class="rast-s-key">Total</span><span class="rast-s-val highlight">'+total.toLocaleString('pt-BR')+' unidades</span></div>'+
@@ -21808,12 +21829,14 @@ async function RAST_salvarProducao() {
   const codigo   = RAST_gerarCodigo(agora);
   const sb = getSupabaseClient();
 
+  const massaSave = (document.getElementById('rast-p-massa')?.value||'').trim() || null;
   const { error } = await sb.from('rastreamento_carrinhos').insert({
     produto: RAST_prodSelecionado.descricao, codigo_produto: RAST_prodSelecionado.codigo,
     numero_carrinho: carrinho, qtd_telas: telas, qtd_por_tela: porTela,
     qtd_produzida: telas*porTela, responsavel_producao: resp,
     produzido_em: agora.toISOString(), codigo_producao: codigo,
     unidade: RAST_unidadeAtual, status: 'Aguardando Embalagem',
+    numero_massa: massaSave,
   });
 
   if (error) {
@@ -21826,7 +21849,7 @@ async function RAST_salvarProducao() {
 
 function RAST_resetProd() {
   RAST_prodSelecionado = null;
-  ['rast-p-busca','rast-p-codigo','rast-p-carrinho','rast-p-telas','rast-p-por-tela','rast-p-resp'].forEach(id=>{
+  ['rast-p-busca','rast-p-codigo','rast-p-carrinho','rast-p-massa','rast-p-telas','rast-p-por-tela','rast-p-resp'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   document.getElementById('rast-total-v').textContent = '—';
@@ -21862,6 +21885,8 @@ async function RAST_loadKanbanProd() {
   if (RAST_filtroProduto) q = q.ilike('produto', '%'+RAST_filtroProduto+'%');
   const { data } = await q;
   const items = data || [];
+  RAST_prodKanbanData = {};
+  items.forEach(d => { RAST_prodKanbanData[d.id] = d; });
   const countEl = document.getElementById('rast-prod-count');
   if (countEl) countEl.textContent = items.length;
   const unLbl = d => d.unidade === 'caixas' ? 'cx.' : 'un.';
@@ -21869,7 +21894,7 @@ async function RAST_loadKanbanProd() {
     const statusHtml = d.status === 'Embalado'
       ? '<span class="rast-badge rast-b-embal">Embalado</span>'
       : '<span class="rast-badge rast-b-aguard">Aguardando</span>';
-    return '<div class="rast-kcard rast-kcard-done">'+
+    return '<div class="rast-kcard rast-kcard-done rast-kcard-clickable" onclick="RAST_abrirDetalhe(\''+d.id+'\',\'prod\')">'+
       '<div class="rast-kcard-top">'+
         '<span class="rast-kcard-produto">'+RAST_esc(d.produto)+'</span>'+
         '<span class="rast-kcard-num">Carrinho '+d.numero_carrinho+'</span>'+
@@ -21939,7 +21964,7 @@ async function RAST_loadKanban() {
     const confHtml = (diff == null || diff === 0)
       ? '<span class="rast-conf-ok">Conforme</span>'
       : '<span class="rast-conf-div">Divergente '+(diff>0?'+':'')+Number(diff).toLocaleString('pt-BR')+' un.</span>';
-    return '<div class="rast-kcard rast-kcard-done">'+
+    return '<div class="rast-kcard rast-kcard-done rast-kcard-clickable" onclick="RAST_abrirDetalhe(\''+d.id+'\',\'embal\')">'+
       '<div class="rast-kcard-top">'+
         '<span class="rast-kcard-produto">'+RAST_esc(d.produto)+'</span>'+
         '<span class="rast-kcard-num">Carrinho '+d.numero_carrinho+'</span>'+
@@ -22054,7 +22079,7 @@ function RAST_resetEmb() {
 async function RAST_loadHistorico() {
   const { from, to } = RAST_getPeriod();
   const tbody = document.getElementById('rast-hist-body');
-  tbody.innerHTML = '<tr><td colspan="13" class="rast-empty">Carregando…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="14" class="rast-empty">Carregando…</td></tr>';
   const sb = getSupabaseClient();
   const fromTs = from+'T00:00:00+00:00';
   const toTs   = to+'T23:59:59+00:00';
@@ -22066,7 +22091,7 @@ async function RAST_loadHistorico() {
   if (RAST_filtroProduto) qHist = qHist.ilike('produto', '%'+RAST_filtroProduto+'%');
   const { data, error } = await qHist;
   if (error||!data||!data.length) {
-    tbody.innerHTML='<tr><td colspan="13" class="rast-empty">Nenhum registro no período.</td></tr>'; return;
+    tbody.innerHTML='<tr><td colspan="14" class="rast-empty">Nenhum registro no período.</td></tr>'; return;
   }
   const badge = s =>
     s==='Embalado' ? '<span class="rast-badge rast-b-embal">Embalado</span>'
@@ -22093,6 +22118,7 @@ async function RAST_loadHistorico() {
       '<td class="rast-td-mono">'+(r.codigo_embalagem||'<span class="rast-td-dim">Aguardando</span>')+'</td>'+
       '<td class="rast-td-dim">'+(r.embalado_em?RAST_fmtDt(r.embalado_em):'—')+'</td>'+
       '<td>'+(r.responsavel_embalagem?RAST_esc(r.responsavel_embalagem):'<span class="rast-td-dim">—</span>')+'</td>'+
+      '<td class="rast-td-ctr"><button onclick="RAST_excluirLancamento(\''+r.id+'\',\''+RAST_esc(r.produto)+'\','+r.numero_carrinho+')" title="Excluir lançamento" style="background:none;border:1px solid var(--border,#ddd);border-radius:6px;cursor:pointer;padding:4px 8px;font-size:13px;color:var(--ink-soft);transition:all .15s;" onmouseover="this.style.background=\'#fee\';this.style.color=\'var(--red-dark)\';this.style.borderColor=\'var(--red-dark)\'" onmouseout="this.style.background=\'none\';this.style.color=\'var(--ink-soft)\';this.style.borderColor=\'var(--border,#ddd)\'">🗑</button></td>'+
     '</tr>'
   ).join('');
 }
@@ -22147,6 +22173,76 @@ function RAST_closeModal() {
   const modal = document.getElementById('rast-modal');
   modal.style.display='none';
 }
+
+// ─── Excluir lançamento do histórico ───
+function RAST_excluirLancamento(id, produto, carrinho) {
+  RAST_openModal(
+    'Excluir Lançamento',
+    '⚠ Tem certeza que deseja excluir o lançamento de <strong>'+RAST_esc(produto)+'</strong> — Carrinho '+carrinho+'?<br><br>Esta ação não pode ser desfeita.',
+    async () => {
+      const sb = getSupabaseClient();
+      const { error } = await sb.from('rastreamento_carrinhos').delete().eq('id', id);
+      if (error) { RAST_toast('Erro ao excluir: '+error.message,'e'); return; }
+      RAST_toast('Lançamento excluído.','s');
+      RAST_loadHistorico();
+      RAST_loadKanban();
+      RAST_loadKanbanProd();
+    }
+  );
+}
+
+// ─── Popup detalhe de card ───
+function RAST_abrirDetalhe(id, origem) {
+  let r = null;
+  if (origem === 'prod') r = RAST_prodKanbanData[id];
+  else if (origem === 'embal') r = RAST_embResultados[id];
+  if (!r) { RAST_toast('Registro não encontrado','e'); return; }
+
+  const unLbl  = r.unidade === 'caixas' ? 'cx.' : 'un.';
+  const statusHtml = r.status === 'Embalado'
+    ? '<span class="rast-badge rast-b-embal">Embalado</span>'
+    : '<span class="rast-badge rast-b-aguard">Aguardando</span>';
+  const confHtml = r.status !== 'Embalado' ? '<span class="rast-td-dim">—</span>'
+    : (r.diferenca == null || r.diferenca === 0)
+      ? '<span class="rast-badge-conf conf">Conforme</span>'
+      : '<span class="rast-badge-conf diverg">Divergente '+(r.diferenca>0?'+':'')+Number(r.diferenca).toLocaleString('pt-BR')+' un.</span>';
+
+  const row = (key, val) =>
+    '<div class="rast-summary-row"><span class="rast-s-key">'+key+'</span><span class="rast-s-val">'+val+'</span></div>';
+
+  document.getElementById('rast-det-body').innerHTML =
+    row('Produto', RAST_esc(r.produto)) +
+    row('Carrinho', '<strong style="font-size:18px;">'+r.numero_carrinho+'</strong>') +
+    row('Unidade', RAST_ucFirst(r.unidade||'telas')) +
+    (r.numero_massa ? row('Nº da Massa', '<span class="rast-chip">'+RAST_esc(r.numero_massa)+'</span>') : '') +
+    row('Qtd Produzida', '<span class="rast-s-val highlight">'+r.qtd_produzida.toLocaleString('pt-BR')+' '+unLbl+'</span>') +
+    row('Código Produção', '<span class="rast-chip">'+RAST_esc(r.codigo_producao)+'</span>') +
+    row('Produzido em', RAST_fmtDt(r.produzido_em)) +
+    row('Resp. Produção', RAST_esc(r.responsavel_producao)) +
+    '<div style="margin:12px 0 8px;border-top:1px solid var(--border,#e8e0d4);"></div>'+
+    row('Status', statusHtml) +
+    row('Qtd Embalada', r.qtd_embalada != null ? r.qtd_embalada.toLocaleString('pt-BR')+' '+unLbl : '<span class="rast-td-dim">—</span>') +
+    row('Código Embalagem', r.codigo_embalagem ? '<span class="rast-chip">'+RAST_esc(r.codigo_embalagem)+'</span>' : '<span class="rast-td-dim">Aguardando</span>') +
+    row('Embalado em', r.embalado_em ? RAST_fmtDt(r.embalado_em) : '<span class="rast-td-dim">—</span>') +
+    row('Resp. Embalagem', r.responsavel_embalagem ? RAST_esc(r.responsavel_embalagem) : '<span class="rast-td-dim">—</span>') +
+    row('Conformidade', confHtml) +
+    '<div style="display:flex;justify-content:flex-end;margin-top:18px;">'+
+      '<button class="rast-btn rast-btn-ghost" onclick="RAST_closeDetail()">Fechar</button>'+
+    '</div>';
+
+  const modal = document.getElementById('rast-detail-modal');
+  modal.style.display = 'flex';
+}
+
+function RAST_closeDetail() {
+  const modal = document.getElementById('rast-detail-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const dm = document.getElementById('rast-detail-modal');
+  if (dm) dm.addEventListener('click', e => { if (e.target === dm) RAST_closeDetail(); });
+});
 
 /* ══ FIM MÓDULO RASTREAMENTO ══ */
 
