@@ -5465,6 +5465,7 @@ body{background:#fff;color:#000}
                 <th>Código Produção</th>
                 <th>Produzido em</th>
                 <th>Resp. Produção</th>
+                <th>Massa</th>
                 <th>Status</th>
                 <th class="rast-td-num">Qtd Emb.</th>
                 <th>Código Embalagem</th>
@@ -5474,7 +5475,7 @@ body{background:#fff;color:#000}
               </tr>
             </thead>
             <tbody id="rast-hist-body">
-              <tr><td colspan="14" class="rast-empty">Selecione o módulo para carregar…</td></tr>
+              <tr><td colspan="15" class="rast-empty">Selecione o módulo para carregar…</td></tr>
             </tbody>
           </table>
         </div>
@@ -22082,7 +22083,7 @@ function RAST_resetEmb() {
 async function RAST_loadHistorico() {
   const { from, to } = RAST_getPeriod();
   const tbody = document.getElementById('rast-hist-body');
-  tbody.innerHTML = '<tr><td colspan="14" class="rast-empty">Carregando…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="15" class="rast-empty">Carregando…</td></tr>';
   const sb = getSupabaseClient();
   const fromTs = from+'T00:00:00+00:00';
   const toTs   = to+'T23:59:59+00:00';
@@ -22094,7 +22095,7 @@ async function RAST_loadHistorico() {
   if (RAST_filtroProduto) qHist = qHist.ilike('produto', '%'+RAST_filtroProduto+'%');
   const { data, error } = await qHist;
   if (error||!data||!data.length) {
-    tbody.innerHTML='<tr><td colspan="14" class="rast-empty">Nenhum registro no período.</td></tr>'; return;
+    tbody.innerHTML='<tr><td colspan="15" class="rast-empty">Nenhum registro no período.</td></tr>'; return;
   }
   const badge = s =>
     s==='Embalado' ? '<span class="rast-badge rast-b-embal">Embalado</span>'
@@ -22115,6 +22116,7 @@ async function RAST_loadHistorico() {
       '<td class="rast-td-mono">'+r.codigo_producao+'</td>'+
       '<td class="rast-td-dim">'+RAST_fmtDt(r.produzido_em)+'</td>'+
       '<td>'+RAST_esc(r.responsavel_producao)+'</td>'+
+      '<td class="rast-td-dim">'+(r.numero_massa?RAST_esc(r.numero_massa):'<span class="rast-td-dim">—</span>')+'</td>'+
       '<td>'+badge(r.status)+'</td>'+
       '<td>'+conformidade(r)+'</td>'+
       '<td class="rast-td-num">'+(r.qtd_embalada!=null?r.qtd_embalada.toLocaleString('pt-BR'):'<span class="rast-td-dim">—</span>')+'</td>'+
@@ -22217,11 +22219,11 @@ function RAST_abrirDetalhe(id, origem) {
     row('Produto', RAST_esc(r.produto)) +
     row('Carrinho', '<strong style="font-size:18px;">'+r.numero_carrinho+'</strong>') +
     row('Unidade', RAST_ucFirst(r.unidade||'telas')) +
-    (r.numero_massa ? row('Nº da Massa', '<span class="rast-chip">'+RAST_esc(r.numero_massa)+'</span>') : '') +
     row('Qtd Produzida', '<span class="rast-s-val highlight">'+r.qtd_produzida.toLocaleString('pt-BR')+' '+unLbl+'</span>') +
     row('Código Produção', '<span class="rast-chip">'+RAST_esc(r.codigo_producao)+'</span>') +
     row('Produzido em', RAST_fmtDt(r.produzido_em)) +
     row('Resp. Produção', RAST_esc(r.responsavel_producao)) +
+    (r.numero_massa ? row('Nº da Massa', '<span class="rast-chip">'+RAST_esc(r.numero_massa)+'</span>') : '') +
     '<div style="margin:12px 0 8px;border-top:1px solid var(--border,#e8e0d4);"></div>'+
     row('Status', statusHtml) +
     row('Qtd Embalada', r.qtd_embalada != null ? r.qtd_embalada.toLocaleString('pt-BR')+' '+unLbl : '<span class="rast-td-dim">—</span>') +
