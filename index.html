@@ -21612,6 +21612,7 @@ let RAST_prodSelecionado = null;
 let RAST_unidadeAtual    = 'telas';
 let RAST_embRegistro     = null;
 let RAST_embResultados   = {};
+let RAST_embalProdData   = {};
 let RAST_prodKanbanData  = {};
 let RAST_modalOk         = null;
 let RAST_filtroProduto   = '';
@@ -21933,9 +21934,11 @@ async function RAST_loadKanban() {
   const [{ data: fila }, { data: embal }] = await Promise.all([qFila, qEmbal]);
 
   RAST_embResultados = {};
+  RAST_embalProdData = {};
   const filaData  = fila  || [];
   const embalData = embal || [];
   filaData.forEach(d => { RAST_embResultados[d.id] = d; });
+  embalData.forEach(d => { RAST_embalProdData[d.id] = d; });
 
   const unLbl = d => d.unidade === 'caixas' ? 'cx.' : 'un.';
 
@@ -22195,7 +22198,7 @@ function RAST_excluirLancamento(id, produto, carrinho) {
 function RAST_abrirDetalhe(id, origem) {
   let r = null;
   if (origem === 'prod') r = RAST_prodKanbanData[id];
-  else if (origem === 'embal') r = RAST_embResultados[id];
+  else if (origem === 'embal') r = RAST_embalProdData[id] || RAST_embResultados[id];
   if (!r) { RAST_toast('Registro não encontrado','e'); return; }
 
   const unLbl  = r.unidade === 'caixas' ? 'cx.' : 'un.';
