@@ -3217,43 +3217,13 @@ body{background:#fff;color:#000}
   <!-- ═══════════════════════════════════════════════════════ -->
   <div id="riTortasContent" style="display:none;">
 
-    <!-- Filtros -->
+    <!-- Filtros locais (produto e tamanho apenas — datas vêm do filtro global) -->
     <div class="panel" style="margin-bottom:16px;">
       <div class="panel-title" style="color:#b7791f;">Filtros — Produção Tortas</div>
       <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
         <div style="display:flex;flex-direction:column;gap:4px;">
-          <label style="font-size:11px;color:var(--ink-soft);font-weight:600;">PERÍODO</label>
-          <select id="pt-periodo" class="filter-select">
-            <option value="mes">Mês atual</option>
-            <option value="semana">Semana atual</option>
-            <option value="7">Últimos 7 dias</option>
-            <option value="30">Últimos 30 dias</option>
-            <option value="custom">Personalizado</option>
-          </select>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px;" id="pt-mes-wrap">
-          <label style="font-size:11px;color:var(--ink-soft);font-weight:600;">MÊS</label>
-          <select id="pt-mes" class="filter-select">
-            <option value="">Todos</option>
-            <option value="2026-07">Jul/2026</option>
-            <option value="2026-08">Ago/2026</option>
-            <option value="2026-09">Set/2026</option>
-            <option value="2026-10">Out/2026</option>
-            <option value="2026-11">Nov/2026</option>
-            <option value="2026-12">Dez/2026</option>
-          </select>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px;" id="pt-custom-wrap" style="display:none!important;">
-          <label style="font-size:11px;color:var(--ink-soft);font-weight:600;">DATA INÍCIO</label>
-          <input type="date" id="pt-data-ini" class="filter-select">
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px;" id="pt-custom-wrap2" style="display:none!important;">
-          <label style="font-size:11px;color:var(--ink-soft);font-weight:600;">DATA FIM</label>
-          <input type="date" id="pt-data-fim" class="filter-select">
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px;">
           <label style="font-size:11px;color:var(--ink-soft);font-weight:600;">PRODUTO</label>
-          <select id="pt-produto" class="filter-select">
+          <select id="pt-produto" class="filter-select" style="min-width:260px;">
             <option value="">Todos</option>
           </select>
         </div>
@@ -3265,7 +3235,9 @@ body{background:#fff;color:#000}
             <option value="800G">800g</option>
           </select>
         </div>
-        <button type="button" id="pt-filtrar-btn" class="btn-primary" style="height:34px;padding:0 16px;align-self:flex-end;">Filtrar</button>
+        <div style="align-self:flex-end;font-size:11px;color:var(--ink-soft);padding-bottom:6px;">
+          📅 Período: filtro global do topo da página
+        </div>
       </div>
     </div>
 
@@ -3297,26 +3269,21 @@ body{background:#fff;color:#000}
           <span id="pt-count" style="font-size:12px;color:var(--ink-soft);"></span>
         </div>
       </div>
-      <div style="overflow-x:auto;">
+      <!-- Tabela com cabeçalho sticky e scroll vertical -->
+      <div style="overflow-x:auto;max-height:480px;overflow-y:auto;">
         <table id="pt-tabela" style="width:100%;border-collapse:collapse;font-size:13px;">
           <thead>
             <tr style="border-bottom:2px solid var(--line);">
-              <th class="pt-th" data-col="data" style="text-align:left;padding:8px 10px;cursor:pointer;white-space:nowrap;">Data ↕</th>
-              <th class="pt-th" data-col="produto" style="text-align:left;padding:8px 10px;cursor:pointer;">Produto ↕</th>
-              <th class="pt-th" data-col="planejado" style="text-align:right;padding:8px 10px;cursor:pointer;white-space:nowrap;">Qtd Planejada ↕</th>
-              <th class="pt-th" data-col="real" style="text-align:right;padding:8px 10px;cursor:pointer;white-space:nowrap;">Qtd Real ↕</th>
-              <th class="pt-th" data-col="dif" style="text-align:right;padding:8px 10px;cursor:pointer;white-space:nowrap;">Dif% ↕</th>
-              <th style="text-align:left;padding:8px 10px;">Observação</th>
+              <th class="pt-th" data-col="data" style="text-align:left;padding:8px 10px;cursor:pointer;white-space:nowrap;background:var(--paper);position:sticky;top:0;z-index:1;">Data ↕</th>
+              <th class="pt-th" data-col="produto" style="text-align:left;padding:8px 10px;cursor:pointer;background:var(--paper);position:sticky;top:0;z-index:1;">Produto ↕</th>
+              <th class="pt-th" data-col="planejado" style="text-align:right;padding:8px 10px;cursor:pointer;white-space:nowrap;background:var(--paper);position:sticky;top:0;z-index:1;">Qtd Planejada ↕</th>
+              <th class="pt-th" data-col="real" style="text-align:right;padding:8px 10px;cursor:pointer;white-space:nowrap;background:var(--paper);position:sticky;top:0;z-index:1;">Qtd Real ↕</th>
+              <th class="pt-th" data-col="dif" style="text-align:right;padding:8px 10px;cursor:pointer;white-space:nowrap;background:var(--paper);position:sticky;top:0;z-index:1;">Dif% ↕</th>
+              <th style="text-align:left;padding:8px 10px;background:var(--paper);position:sticky;top:0;z-index:1;">Observação</th>
             </tr>
           </thead>
           <tbody id="pt-tbody"></tbody>
         </table>
-      </div>
-      <!-- Paginação -->
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
-        <button type="button" id="pt-prev" class="btn-secondary" style="padding:4px 12px;font-size:12px;">← Anterior</button>
-        <span id="pt-pagina" style="font-size:12px;color:var(--ink-soft);"></span>
-        <button type="button" id="pt-next" class="btn-secondary" style="padding:4px 12px;font-size:12px;">Próxima →</button>
       </div>
     </div>
 
@@ -22391,52 +22358,24 @@ document.addEventListener('DOMContentLoaded', () => {
   let PT_chartBarras = null;
   let PT_chartLinha  = null;
   let PT_inicializado = false;
+  let PT_periodoAtual = { ini: '', fim: '' }; // rastreia período carregado
 
   // ── Utilitários de data ──
   function ptHoje(){ return new Date().toISOString().slice(0,10); }
 
   function ptInicioSemana(){
     const d = new Date();
-    const dia = d.getDay(); // 0=dom
+    const dia = d.getDay();
     const diff = dia === 0 ? -6 : 1 - dia;
     d.setDate(d.getDate() + diff);
     return d.toISOString().slice(0,10);
   }
 
+  // Usa o filtro global (dateStartInput / dateEndInput)
   function ptRangePeriodo(){
-    const periodo = document.getElementById('pt-periodo').value;
-    const hoje    = ptHoje();
-    if(periodo === 'semana'){
-      return { ini: ptInicioSemana(), fim: hoje };
-    }
-    if(periodo === 'mes'){
-      const mesSel = document.getElementById('pt-mes').value;
-      if(mesSel){
-        const [y, m] = mesSel.split('-').map(Number);
-        const ultimo = new Date(y, m, 0).getDate();
-        return { ini: `${mesSel}-01`, fim: `${mesSel}-${String(ultimo).padStart(2,'0')}` };
-      }
-      const agora = new Date();
-      const y = agora.getFullYear();
-      const m = String(agora.getMonth()+1).padStart(2,'0');
-      const ultimo = new Date(y, agora.getMonth()+1, 0).getDate();
-      return { ini: `${y}-${m}-01`, fim: `${y}-${m}-${String(ultimo).padStart(2,'0')}` };
-    }
-    if(periodo === '7'){
-      const d = new Date(); d.setDate(d.getDate()-6);
-      return { ini: d.toISOString().slice(0,10), fim: hoje };
-    }
-    if(periodo === '30'){
-      const d = new Date(); d.setDate(d.getDate()-29);
-      return { ini: d.toISOString().slice(0,10), fim: hoje };
-    }
-    if(periodo === 'custom'){
-      return {
-        ini: document.getElementById('pt-data-ini').value || '2026-01-01',
-        fim: document.getElementById('pt-data-fim').value || hoje
-      };
-    }
-    return { ini: '2026-01-01', fim: hoje };
+    const ini = dateStartInput.value || '2026-01-01';
+    const fim = dateEndInput.value   || ptHoje();
+    return { ini, fim };
   }
 
   function ptFmtData(iso){
@@ -22782,18 +22721,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function PT_renderTabela(){
     const tbody = document.getElementById('pt-tbody');
     const total = PT_filtrados.length;
-    const totalPags = Math.max(1, Math.ceil(total / PT_POR_PAGINA));
-    if(PT_paginaAtual > totalPags) PT_paginaAtual = totalPags;
 
-    document.getElementById('pt-count').textContent  = `${total} registros`;
-    document.getElementById('pt-pagina').textContent = `Pág. ${PT_paginaAtual} de ${totalPags}`;
-    document.getElementById('pt-prev').disabled = PT_paginaAtual <= 1;
-    document.getElementById('pt-next').disabled = PT_paginaAtual >= totalPags;
+    document.getElementById('pt-count').textContent = `${total} registros`;
 
-    const inicio = (PT_paginaAtual - 1) * PT_POR_PAGINA;
-    const slice  = PT_filtrados.slice(inicio, inicio + PT_POR_PAGINA);
-
-    tbody.innerHTML = slice.map(r => {
+    tbody.innerHTML = PT_filtrados.map(r => {
       const plan = ptParseVal(r.producao_planejada);
       const real = ptParseVal(r.producao_real);
       let difPct  = null;
@@ -22837,75 +22768,75 @@ document.addEventListener('DOMContentLoaded', () => {
     PT_renderTabela();
   }
 
-  // ── Init: busca dados e configura eventos ──
-  window.PT_init = async function(){
-    if(PT_inicializado){
-      PT_render();
-      return;
-    }
-    PT_inicializado = true;
-
-    // Spinner
+  // ── Carrega dados frescos do Supabase para o período global ──
+  async function PT_carregarDados(){
     const grid = document.getElementById('pt-kpi-grid');
-    grid.innerHTML = '<div style="color:var(--ink-soft);padding:12px;">Carregando dados…</div>';
+    if(grid) grid.innerHTML = '<div style="color:var(--ink-soft);padding:12px;">Carregando dados…</div>';
+    const { ini, fim } = ptRangePeriodo();
+    PT_periodoAtual = { ini, fim };
+    PT_dados = await PT_fetchDados(ini, fim);
+    PT_popularProdutos();
+    PT_render();
+  }
 
-    try {
-      const { ini, fim } = ptRangePeriodo();
-      PT_dados = await PT_fetchDados(ini, fim);
-      PT_popularProdutos();
-      PT_render();
-    } catch(e){
-      grid.innerHTML = `<div style="color:var(--red);padding:12px;">Erro ao carregar: ${e.message}</div>`;
-    }
-
-    // ── Eventos dos filtros ──
-    document.getElementById('pt-periodo').addEventListener('change', function(){
-      const v = this.value;
-      document.getElementById('pt-mes-wrap').style.display = v === 'mes' ? '' : 'none';
-      const cw1 = document.getElementById('pt-custom-wrap');
-      const cw2 = document.getElementById('pt-custom-wrap2');
-      if(cw1) cw1.style.display = v === 'custom' ? '' : 'none';
-      if(cw2) cw2.style.display = v === 'custom' ? '' : 'none';
-    });
-
-    document.getElementById('pt-filtrar-btn').addEventListener('click', async () => {
-      const grid2 = document.getElementById('pt-kpi-grid');
-      grid2.innerHTML = '<div style="color:var(--ink-soft);padding:12px;">Atualizando…</div>';
+  // ── Init: primeira carga + eventos (roda apenas uma vez) ──
+  window.PT_init = async function(){
+    const { ini, fim } = ptRangePeriodo();
+    // Re-busca se período global mudou ou se é a primeira vez
+    if(!PT_inicializado || ini !== PT_periodoAtual.ini || fim !== PT_periodoAtual.fim){
+      PT_inicializado = true;
       try {
-        const { ini, fim } = ptRangePeriodo();
-        PT_dados = await PT_fetchDados(ini, fim);
-        PT_popularProdutos();
-        PT_paginaAtual = 1;
-        PT_render();
+        await PT_carregarDados();
       } catch(e){
-        grid2.innerHTML = `<div style="color:var(--red);padding:12px;">Erro: ${e.message}</div>`;
+        const grid = document.getElementById('pt-kpi-grid');
+        if(grid) grid.innerHTML = `<div style="color:var(--red);padding:12px;">Erro ao carregar: ${e.message}</div>`;
       }
-    });
 
-    document.getElementById('pt-produto').addEventListener('change', () => { PT_paginaAtual = 1; PT_render(); });
-    document.getElementById('pt-tamanho').addEventListener('change', () => { PT_paginaAtual = 1; PT_render(); });
+      // Eventos dos filtros locais (produto/tamanho/busca/paginação) — registra só uma vez
+      document.getElementById('pt-produto').addEventListener('change', () => { PT_render(); });
+      document.getElementById('pt-tamanho').addEventListener('change', () => { PT_render(); });
+      document.getElementById('pt-busca').addEventListener('input',  () => { PT_render(); });
 
-    document.getElementById('pt-busca').addEventListener('input', () => { PT_paginaAtual = 1; PT_render(); });
-
-    document.getElementById('pt-prev').addEventListener('click', () => {
-      if(PT_paginaAtual > 1){ PT_paginaAtual--; PT_renderTabela(); }
-    });
-    document.getElementById('pt-next').addEventListener('click', () => {
-      const totalPags = Math.max(1, Math.ceil(PT_filtrados.length / PT_POR_PAGINA));
-      if(PT_paginaAtual < totalPags){ PT_paginaAtual++; PT_renderTabela(); }
-    });
-
-    // Ordenação por coluna
-    document.querySelectorAll('.pt-th').forEach(th => {
-      th.addEventListener('click', () => {
-        const col = th.dataset.col;
-        if(PT_sortCol === col){ PT_sortAsc = !PT_sortAsc; }
-        else { PT_sortCol = col; PT_sortAsc = col !== 'data'; }
-        PT_sortDados();
-        PT_renderTabela();
+      document.querySelectorAll('.pt-th').forEach(th => {
+        th.addEventListener('click', () => {
+          const col = th.dataset.col;
+          if(PT_sortCol === col){ PT_sortAsc = !PT_sortAsc; }
+          else { PT_sortCol = col; PT_sortAsc = col !== 'data'; }
+          PT_sortDados();
+          PT_renderTabela();
+        });
       });
-    });
+    } else {
+      // Período não mudou — só re-renderiza com filtros atuais
+      PT_render();
+    }
   };
+
+  // ── Sincroniza com mudanças no filtro global (dateStart/dateEnd) ──
+  // Registra após o DOM estar pronto para garantir que dateStartInput existe
+  document.addEventListener('DOMContentLoaded', () => {
+    // Quando o período global muda e a aba Tortas está visível, recarrega
+    function ptOnPeriodChange(){
+      if(document.getElementById('riTortasContent').style.display !== 'none'){
+        PT_carregarDados().catch(() => {});
+      } else {
+        // Período mudou mas aba está oculta: força re-fetch na próxima abertura
+        PT_periodoAtual = { ini: '', fim: '' };
+      }
+    }
+    dateStartInput.addEventListener('change', ptOnPeriodChange);
+    dateEndInput.addEventListener('change',   ptOnPeriodChange);
+    // Botão Atualizar global
+    const btnRef = document.getElementById('btnRefreshData');
+    if(btnRef){
+      btnRef.addEventListener('click', () => {
+        PT_periodoAtual = { ini: '', fim: '' }; // força re-fetch
+        if(document.getElementById('riTortasContent').style.display !== 'none'){
+          PT_carregarDados().catch(() => {});
+        }
+      });
+    }
+  });
 
 })();
 
