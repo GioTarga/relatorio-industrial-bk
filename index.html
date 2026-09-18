@@ -22549,11 +22549,12 @@ document.addEventListener('DOMContentLoaded', () => {
       return 'sem-bad';
     }
 
-    function difBadge(dif){
-      if(dif == null || isNaN(dif)) return '';
-      const sinal = dif >= 0 ? '+' : '';
-      const cor = dif >= 0 ? 'var(--good)' : 'var(--red)';
-      return `<span style="font-size:13px;font-weight:700;color:${cor};margin-left:6px;">${sinal}${ptFmtNum(dif)}</span>`;
+    function difPctBadge(real, meta){
+      if(!meta || meta <= 0) return '';
+      const pct = (real - meta) / meta * 100;
+      const sinal = pct >= 0 ? '+' : '';
+      const cor = pct >= 0 ? 'var(--good)' : 'var(--red)';
+      return `<span style="font-size:13px;font-weight:700;color:${cor};">${sinal}${pct.toFixed(1).replace('.',',')}%</span>`;
     }
 
     const grid = document.getElementById('pt-kpi-grid');
@@ -22561,25 +22562,31 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="kpi-card ${semClass(pctDia)}">
         <div class="label">DIA — ${ptFmtData(dataRef)}</div>
         <div class="value" style="font-size:2.4rem;font-weight:800;letter-spacing:-1px;line-height:1.1;">${ptFmtNum(totalDia)}</div>
-        <div style="margin-top:6px;font-size:13px;color:var(--ink-soft);">Meta <strong style="color:var(--ink);">${ptFmtNum(PT_META_DIARIA)}</strong>${difBadge(difDia)}</div>
-        <div style="margin-top:2px;font-size:15px;font-weight:700;color:${pctDia>=90?'var(--good)':pctDia>=70?'#d97706':'var(--red)'};">${ptFmtPct(pctDia)}</div>
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--ink-soft);">
+          <span>Meta <strong style="color:var(--ink);font-size:13px;">${ptFmtNum(PT_META_DIARIA)}</strong></span>
+          <span>Dif ${difPctBadge(totalDia, PT_META_DIARIA)}</span>
+        </div>
       </div>
       <div class="kpi-card ${semClass(pctSem)}">
         <div class="label">PERÍODO — ${diasSem} dia${diasSem!==1?'s':''} útil${diasSem!==1?'eis':''}</div>
         <div class="value" style="font-size:2.4rem;font-weight:800;letter-spacing:-1px;line-height:1.1;">${ptFmtNum(totalSem)}</div>
-        <div style="margin-top:6px;font-size:13px;color:var(--ink-soft);">Meta <strong style="color:var(--ink);">${ptFmtNum(metaSem)}</strong>${difBadge(difSem)}</div>
-        <div style="margin-top:2px;font-size:15px;font-weight:700;color:${pctSem>=90?'var(--good)':pctSem>=70?'#d97706':'var(--red)'};">${pctSem != null ? ptFmtPct(pctSem) : '—'}</div>
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--ink-soft);">
+          <span>Meta <strong style="color:var(--ink);font-size:13px;">${ptFmtNum(metaSem)}</strong></span>
+          <span>Dif ${difPctBadge(totalSem, metaSem)}</span>
+        </div>
       </div>
       <div class="kpi-card ${semClass(pctMes)}">
         <div class="label">MÊS — ${mesRef.replace('-','/')}</div>
         <div class="value" style="font-size:2.4rem;font-weight:800;letter-spacing:-1px;line-height:1.1;">${ptFmtNum(totalMes)}</div>
-        <div style="margin-top:6px;font-size:13px;color:var(--ink-soft);">Meta <strong style="color:var(--ink);">${metaMes != null ? ptFmtNum(metaMes) : '—'}</strong>${metaMes ? difBadge(difMes) : ''}</div>
-        <div style="margin-top:2px;font-size:15px;font-weight:700;color:${pctMes>=90?'var(--good)':pctMes>=70?'#d97706':'var(--red)'};">${pctMes != null ? ptFmtPct(pctMes) : '—'}</div>
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--ink-soft);">
+          <span>Meta <strong style="color:var(--ink);font-size:13px;">${metaMes != null ? ptFmtNum(metaMes) : '—'}</strong></span>
+          <span>Dif ${metaMes ? difPctBadge(totalMes, metaMes) : '—'}</span>
+        </div>
       </div>
       <div class="kpi-card ${semClass(acuracia)}">
         <div class="label">ACURÁCIA</div>
         <div class="value" style="font-size:2.6rem;font-weight:800;letter-spacing:-1px;line-height:1.1;">${acuracia != null ? ptFmtPct(acuracia) : '—'}</div>
-        <div style="margin-top:6px;font-size:12px;color:var(--ink-soft);">${comMeta.length} registros com meta</div>
+        <div style="margin-top:8px;font-size:12px;color:var(--ink-soft);">${comMeta.length} registros com meta</div>
       </div>
     `;
   }
@@ -22609,6 +22616,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(PT_chartBarras) PT_chartBarras.destroy();
     PT_chartBarras = new Chart(ctx, {
       type: 'bar',
+      plugins: window.ChartDataLabels ? [window.ChartDataLabels] : [],
       data: {
         labels,
         datasets: [
@@ -22678,6 +22686,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(PT_chartLinha) PT_chartLinha.destroy();
     PT_chartLinha = new Chart(ctx, {
       type: 'line',
+      plugins: window.ChartDataLabels ? [window.ChartDataLabels] : [],
       data: {
         labels,
         datasets: [
