@@ -3223,9 +3223,8 @@ body{background:#fff;color:#000}
       <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
         <div style="display:flex;flex-direction:column;gap:4px;">
           <label style="font-size:11px;color:var(--ink-soft);font-weight:600;">PRODUTO</label>
-          <select id="pt-produto" class="filter-select" style="min-width:260px;">
-            <option value="">Todos</option>
-          </select>
+          <input type="text" id="pt-produto" list="pt-produto-datalist" class="filter-select" style="min-width:260px;" placeholder="Digite para filtrar…" autocomplete="off">
+          <datalist id="pt-produto-datalist"></datalist>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;">
           <label style="font-size:11px;color:var(--ink-soft);font-weight:600;">TAMANHO</label>
@@ -22483,33 +22482,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── KPI Cards ──
   function PT_renderKPIs(){
-    const hoje = ptHoje();
-    // Dia: soma de producao_real onde data === hoje
-    const regHoje = PT_dados.filter(r => r.data === hoje);
-    const totalHoje = regHoje.reduce((s,r) => s + (ptParseVal(r.producao_real)||0), 0);
-    const pctDia = totalHoje / PT_META_DIARIA * 100;
+    const { ini, fim } = ptRangePeriodo();
 
-    // Semana
-    const iniSem = ptInicioSemana();
-    const regSem = PT_dados.filter(r => r.data >= iniSem && r.data <= hoje);
-    const totalSem = regSem.reduce((s,r) => s + (ptParseVal(r.producao_real)||0), 0);
-    // dias úteis na semana até hoje
+    // DIA — usa o último dia do período selecionado (fim)
+    const dataRef = fim;
+    const regDia = PT_dados.filter(r => r.data === dataRef);
+    const totalDia = regDia.reduce((s,r) => s + (ptParseVal(r.producao_real)||0), 0);
+    const planDia  = regDia.reduce((s,r) => s + (ptParseVal(r.producao_planejada)||0), 0);
+    const pctDia = totalDia / PT_META_DIARIA * 100;
+    const difDia = totalDia - PT_META_DIARIA;
+
+    // SEMANA — soma todo o período selecionado (ini→fim)
+    const totalSem = PT_dados.reduce((s,r) => s + (ptParseVal(r.producao_real)||0), 0);
+    // Dias úteis no intervalo selecionado
     let diasSem = 0;
-    const d0 = new Date(iniSem + 'T00:00:00');
-    const d1 = new Date(hoje   + 'T00:00:00');
-    for(let dd = new Date(d0); dd <= d1; dd.setDate(dd.getDate()+1)){
+    const dSemIni = new Date(ini + 'T00:00:00');
+    const dSemFim = new Date(fim + 'T00:00:00');
+    for(let dd = new Date(dSemIni); dd <= dSemFim; dd.setDate(dd.getDate()+1)){
       const dw = dd.getDay();
       if(dw !== 0 && dw !== 6) diasSem++;
     }
     const metaSem = diasSem * PT_META_DIARIA;
     const pctSem = metaSem > 0 ? totalSem / metaSem * 100 : null;
+    const difSem = totalSem - metaSem;
 
-    // Mês
-    const mesAtual = hoje.slice(0,7);
-    let metaMes = PT_META_MENSAL[mesAtual] || null;
-    // Se não há meta definida, calcula: dias úteis do mês × meta diária
+    // MÊS — usa o mês do fim do período
+    const mesRef = fim.slice(0,7);
+    let metaMes = PT_META_MENSAL[mesRef] || null;
     if(!metaMes){
-      const [my, mm] = mesAtual.split('-').map(Number);
+      const [my, mm] = mesRef.split('-').map(Number);
       const ultimoDia = new Date(my, mm, 0).getDate();
       let diasUteis = 0;
       for(let d = 1; d <= ultimoDia; d++){
@@ -22518,9 +22519,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       metaMes = diasUteis * PT_META_DIARIA;
     }
-    const regMes   = PT_dados.filter(r => r.data && r.data.startsWith(mesAtual));
+    // Busca todos os dados do mês de referência (PT_dados já foi carregado com o período selecionado;
+    // para o MÊS buscamos qualquer registro do mês dentro de PT_dados)
+    const regMes   = PT_dados.filter(r => r.data && r.data.startsWith(mesRef));
     const totalMes = regMes.reduce((s,r) => s + (ptParseVal(r.producao_real)||0), 0);
     const pctMes   = metaMes ? totalMes / metaMes * 100 : null;
+    const difMes   = totalMes - (metaMes || 0);
 
     // Acurácia (nos filtrados): 100 - |real - plan| / plan * 100, clamp 0-100
     const comMeta = PT_filtrados.filter(r => {
@@ -22545,27 +22549,37 @@ document.addEventListener('DOMContentLoaded', () => {
       return 'sem-bad';
     }
 
+    function difBadge(dif){
+      if(dif == null || isNaN(dif)) return '';
+      const sinal = dif >= 0 ? '+' : '';
+      const cor = dif >= 0 ? 'var(--good)' : 'var(--red)';
+      return `<span style="font-size:13px;font-weight:700;color:${cor};margin-left:6px;">${sinal}${ptFmtNum(dif)}</span>`;
+    }
+
     const grid = document.getElementById('pt-kpi-grid');
     grid.innerHTML = `
       <div class="kpi-card ${semClass(pctDia)}">
-        <div class="label">DIA — ${ptFmtData(hoje)}</div>
-        <div class="value">${ptFmtNum(totalHoje)}</div>
-        <div class="sub">Meta: ${ptFmtNum(PT_META_DIARIA)} · ${pctDia >= 0 ? ptFmtPct(pctDia) : '—'}</div>
+        <div class="label">DIA — ${ptFmtData(dataRef)}</div>
+        <div class="value" style="font-size:2.4rem;font-weight:800;letter-spacing:-1px;line-height:1.1;">${ptFmtNum(totalDia)}</div>
+        <div style="margin-top:6px;font-size:13px;color:var(--ink-soft);">Meta <strong style="color:var(--ink);">${ptFmtNum(PT_META_DIARIA)}</strong>${difBadge(difDia)}</div>
+        <div style="margin-top:2px;font-size:15px;font-weight:700;color:${pctDia>=90?'var(--good)':pctDia>=70?'#d97706':'var(--red)'};">${ptFmtPct(pctDia)}</div>
       </div>
       <div class="kpi-card ${semClass(pctSem)}">
-        <div class="label">SEMANA (${diasSem} dias úteis)</div>
-        <div class="value">${ptFmtNum(totalSem)}</div>
-        <div class="sub">Meta: ${ptFmtNum(metaSem)} · ${pctSem != null ? ptFmtPct(pctSem) : '—'}</div>
+        <div class="label">PERÍODO — ${diasSem} dia${diasSem!==1?'s':''} útil${diasSem!==1?'eis':''}</div>
+        <div class="value" style="font-size:2.4rem;font-weight:800;letter-spacing:-1px;line-height:1.1;">${ptFmtNum(totalSem)}</div>
+        <div style="margin-top:6px;font-size:13px;color:var(--ink-soft);">Meta <strong style="color:var(--ink);">${ptFmtNum(metaSem)}</strong>${difBadge(difSem)}</div>
+        <div style="margin-top:2px;font-size:15px;font-weight:700;color:${pctSem>=90?'var(--good)':pctSem>=70?'#d97706':'var(--red)'};">${pctSem != null ? ptFmtPct(pctSem) : '—'}</div>
       </div>
       <div class="kpi-card ${semClass(pctMes)}">
-        <div class="label">MÊS — ${mesAtual.replace('-','/')}</div>
-        <div class="value">${ptFmtNum(totalMes)}</div>
-        <div class="sub">Meta: ${metaMes != null ? ptFmtNum(metaMes) : 'Não definida'} · ${pctMes != null ? ptFmtPct(pctMes) : '—'}</div>
+        <div class="label">MÊS — ${mesRef.replace('-','/')}</div>
+        <div class="value" style="font-size:2.4rem;font-weight:800;letter-spacing:-1px;line-height:1.1;">${ptFmtNum(totalMes)}</div>
+        <div style="margin-top:6px;font-size:13px;color:var(--ink-soft);">Meta <strong style="color:var(--ink);">${metaMes != null ? ptFmtNum(metaMes) : '—'}</strong>${metaMes ? difBadge(difMes) : ''}</div>
+        <div style="margin-top:2px;font-size:15px;font-weight:700;color:${pctMes>=90?'var(--good)':pctMes>=70?'#d97706':'var(--red)'};">${pctMes != null ? ptFmtPct(pctMes) : '—'}</div>
       </div>
       <div class="kpi-card ${semClass(acuracia)}">
-        <div class="label">ACURÁCIA (período filtrado)</div>
-        <div class="value">${acuracia != null ? ptFmtPct(acuracia) : '—'}</div>
-        <div class="sub">${comMeta.length} registros com meta · fórmula: 100 − |Real−Plan|/Plan</div>
+        <div class="label">ACURÁCIA</div>
+        <div class="value" style="font-size:2.6rem;font-weight:800;letter-spacing:-1px;line-height:1.1;">${acuracia != null ? ptFmtPct(acuracia) : '—'}</div>
+        <div style="margin-top:6px;font-size:12px;color:var(--ink-soft);">${comMeta.length} registros com meta</div>
       </div>
     `;
   }
@@ -22621,7 +22635,14 @@ document.addEventListener('DOMContentLoaded', () => {
         maintainAspectRatio: false,
         plugins: {
           legend: { position: 'top' },
-          datalabels: { display: false }
+          datalabels: {
+            display: true,
+            anchor: 'end',
+            align: 'top',
+            font: { size: 10, weight: '700' },
+            color: ctx => ctx.datasetIndex === 0 ? '#b7791f' : 'rgba(183,121,31,0.85)',
+            formatter: v => v > 0 ? v.toLocaleString('pt-BR') : ''
+          }
         },
         scales: {
           x: { ticks: { font: { size: 11 } } },
@@ -22687,7 +22708,15 @@ document.addEventListener('DOMContentLoaded', () => {
         maintainAspectRatio: false,
         plugins: {
           legend: { position: 'top' },
-          datalabels: { display: false },
+          datalabels: {
+            display: ctx => ctx.datasetIndex === 0,
+            anchor: 'top',
+            align: 'top',
+            offset: 4,
+            font: { size: 10, weight: '700' },
+            color: '#b7791f',
+            formatter: v => v > 0 ? v.toLocaleString('pt-BR') : ''
+          },
           tooltip: {
             callbacks: {
               label(ctx){
@@ -22750,13 +22779,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('');
   }
 
-  // ── Popular dropdown de produtos ──
+  // ── Popular datalist de produtos (autocomplete) ──
   function PT_popularProdutos(){
-    const sel = document.getElementById('pt-produto');
+    const dl = document.getElementById('pt-produto-datalist');
+    if(!dl) return;
     const prods = [...new Set(PT_dados.map(r => r.produto).filter(Boolean))].sort();
-    const atual = sel.value;
-    sel.innerHTML = '<option value="">Todos</option>' +
-      prods.map(p => `<option value="${p}"${p === atual ? ' selected' : ''}>${p}</option>`).join('');
+    dl.innerHTML = prods.map(p => `<option value="${p}">`).join('');
   }
 
   // ── Renderização completa ──
@@ -22793,7 +22821,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Eventos dos filtros locais (produto/tamanho/busca/paginação) — registra só uma vez
-      document.getElementById('pt-produto').addEventListener('change', () => { PT_render(); });
+      document.getElementById('pt-produto').addEventListener('input', () => { PT_render(); });
       document.getElementById('pt-tamanho').addEventListener('change', () => { PT_render(); });
       document.getElementById('pt-busca').addEventListener('input',  () => { PT_render(); });
 
