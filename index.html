@@ -22375,6 +22375,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Constantes de meta ──
   const PT_META_DIARIA = 1000;
   const PT_META_MENSAL = {
+    '2026-09': 21000,
     '2026-10': 15000,
     '2026-11': 14000,
     '2026-12': 28500
@@ -22456,6 +22457,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Buscar dados do Supabase ──
   async function PT_fetchDados(ini, fim){
+    // Nota: o .or() do supabase-js quebra quando o valor contém vírgula ("1,2KG").
+    // Solução: buscar toda a CONFEITARIA e filtrar por produto no cliente.
     const sb = getSupabaseClient();
     let all = [];
     let from = 0;
@@ -22465,7 +22468,6 @@ document.addEventListener('DOMContentLoaded', () => {
         .from('producao_diaria')
         .select('data,produto,producao_planejada,producao_real,paradas_desvios,apontamento_completo')
         .ilike('setor','confeitaria')
-        .or('produto.ilike.%1,2KG%,produto.ilike.%800G%')
         .gte('data', ini)
         .lte('data', fim)
         .order('data', { ascending: false })
@@ -22476,7 +22478,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if(data.length < PAGE) break;
       from += PAGE;
     }
-    return all;
+    // Filtra apenas tortas de 1,2kg e 800g no cliente
+    return all.filter(r => {
+      const p = (r.produto || '').toUpperCase();
+      return p.includes('1,2KG') || p.includes('800G');
+    });
   }
 
   // ── Parsear valor numérico de producao_planejada / producao_real ──
@@ -22561,7 +22567,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Mês
     const mesAtual = hoje.slice(0,7);
-    const metaMes  = PT_META_MENSAL[mesAtual] || null;
+    let metaMes = PT_META_MENSAL[mesAtual] || null;
+    // Se não há meta definida, calcula: dias úteis do mês × meta diária
+    if(!metaMes){
+      const [my, mm] = mesAtual.split('-').map(Number);
+      const ultimoDia = new Date(my, mm, 0).getDate();
+      let diasUteis = 0;
+      for(let d = 1; d <= ultimoDia; d++){
+        const dw = new Date(my, mm-1, d).getDay();
+        if(dw !== 0 && dw !== 6) diasUteis++;
+      }
+      metaMes = diasUteis * PT_META_DIARIA;
+    }
     const regMes   = PT_dados.filter(r => r.data && r.data.startsWith(mesAtual));
     const totalMes = regMes.reduce((s,r) => s + (ptParseVal(r.producao_real)||0), 0);
     const pctMes   = metaMes ? totalMes / metaMes * 100 : null;
