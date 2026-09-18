@@ -3011,6 +3011,7 @@ body{background:#fff;color:#000}
   <div class="ri-subtabs">
     <button type="button" class="ri-subtab-btn active" data-ritab="geral">Geral</button>
     <button type="button" class="ri-subtab-btn" data-ritab="producao">Produção</button>
+    <button type="button" class="ri-subtab-btn" data-ritab="tortas">Produção Tortas</button>
   </div>
 
   <!-- Conteúdo: Geral -->
@@ -3210,6 +3211,116 @@ body{background:#fff;color:#000}
       <div class="trend-foot" style="margin-top:10px;">Soma de Produção Real por produto no período selecionado. Δ% normalizado por dia de produção — elimina distorções quando os períodos têm número diferente de dias.</div>
     </div>
   </div><!-- /riProdContent -->
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- ABA: PRODUÇÃO TORTAS                                    -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div id="riTortasContent" style="display:none;">
+
+    <!-- Filtros -->
+    <div class="panel" style="margin-bottom:16px;">
+      <div class="panel-title" style="color:#b7791f;">Filtros — Produção Tortas</div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <label style="font-size:11px;color:var(--ink-soft);font-weight:600;">PERÍODO</label>
+          <select id="pt-periodo" class="filter-select">
+            <option value="mes">Mês atual</option>
+            <option value="semana">Semana atual</option>
+            <option value="7">Últimos 7 dias</option>
+            <option value="30">Últimos 30 dias</option>
+            <option value="custom">Personalizado</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;" id="pt-mes-wrap">
+          <label style="font-size:11px;color:var(--ink-soft);font-weight:600;">MÊS</label>
+          <select id="pt-mes" class="filter-select">
+            <option value="">Todos</option>
+            <option value="2026-07">Jul/2026</option>
+            <option value="2026-08">Ago/2026</option>
+            <option value="2026-09">Set/2026</option>
+            <option value="2026-10">Out/2026</option>
+            <option value="2026-11">Nov/2026</option>
+            <option value="2026-12">Dez/2026</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;" id="pt-custom-wrap" style="display:none!important;">
+          <label style="font-size:11px;color:var(--ink-soft);font-weight:600;">DATA INÍCIO</label>
+          <input type="date" id="pt-data-ini" class="filter-select">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;" id="pt-custom-wrap2" style="display:none!important;">
+          <label style="font-size:11px;color:var(--ink-soft);font-weight:600;">DATA FIM</label>
+          <input type="date" id="pt-data-fim" class="filter-select">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <label style="font-size:11px;color:var(--ink-soft);font-weight:600;">PRODUTO</label>
+          <select id="pt-produto" class="filter-select">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <label style="font-size:11px;color:var(--ink-soft);font-weight:600;">TAMANHO</label>
+          <select id="pt-tamanho" class="filter-select">
+            <option value="">Todos</option>
+            <option value="1,2KG">1,2 kg</option>
+            <option value="800G">800g</option>
+          </select>
+        </div>
+        <button type="button" id="pt-filtrar-btn" class="btn-primary" style="height:34px;padding:0 16px;align-self:flex-end;">Filtrar</button>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid" id="pt-kpi-grid" style="margin-bottom:20px;"></div>
+
+    <!-- Charts Row -->
+    <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:20px;">
+      <div class="panel" style="flex:1 1 340px;min-width:0;">
+        <div class="panel-title" style="color:#b7791f;">Previsto × Real por Produto</div>
+        <div style="position:relative;height:280px;">
+          <canvas id="pt-chart-barras"></canvas>
+        </div>
+      </div>
+      <div class="panel" style="flex:1 1 340px;min-width:0;">
+        <div class="panel-title" style="color:#b7791f;">Histórico Diário</div>
+        <div style="position:relative;height:280px;">
+          <canvas id="pt-chart-linha"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div class="panel-title" style="color:#b7791f;margin-bottom:0;">Registros de Produção</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" id="pt-busca" placeholder="Buscar produto…" class="filter-select" style="width:180px;">
+          <span id="pt-count" style="font-size:12px;color:var(--ink-soft);"></span>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table id="pt-tabela" style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="border-bottom:2px solid var(--line);">
+              <th class="pt-th" data-col="data" style="text-align:left;padding:8px 10px;cursor:pointer;white-space:nowrap;">Data ↕</th>
+              <th class="pt-th" data-col="produto" style="text-align:left;padding:8px 10px;cursor:pointer;">Produto ↕</th>
+              <th class="pt-th" data-col="planejado" style="text-align:right;padding:8px 10px;cursor:pointer;white-space:nowrap;">Qtd Planejada ↕</th>
+              <th class="pt-th" data-col="real" style="text-align:right;padding:8px 10px;cursor:pointer;white-space:nowrap;">Qtd Real ↕</th>
+              <th class="pt-th" data-col="dif" style="text-align:right;padding:8px 10px;cursor:pointer;white-space:nowrap;">Dif% ↕</th>
+              <th style="text-align:left;padding:8px 10px;">Observação</th>
+            </tr>
+          </thead>
+          <tbody id="pt-tbody"></tbody>
+        </table>
+      </div>
+      <!-- Paginação -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
+        <button type="button" id="pt-prev" class="btn-secondary" style="padding:4px 12px;font-size:12px;">← Anterior</button>
+        <span id="pt-pagina" style="font-size:12px;color:var(--ink-soft);"></span>
+        <button type="button" id="pt-next" class="btn-secondary" style="padding:4px 12px;font-size:12px;">Próxima →</button>
+      </div>
+    </div>
+
+  </div><!-- /riTortasContent -->
 
   </div> <!-- /container -->
 
@@ -18442,11 +18553,15 @@ document.querySelectorAll('.ri-subtab-btn').forEach(btn => {
     riActiveTab = tab;
     document.querySelectorAll('.ri-subtab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    document.getElementById('riGeralContent').style.display  = tab === 'geral'     ? '' : 'none';
-    document.getElementById('riProdContent').style.display   = tab === 'producao'  ? '' : 'none';
+    document.getElementById('riGeralContent').style.display    = tab === 'geral'     ? '' : 'none';
+    document.getElementById('riProdContent').style.display     = tab === 'producao'  ? '' : 'none';
+    document.getElementById('riTortasContent').style.display   = tab === 'tortas'    ? '' : 'none';
     if(tab === 'producao'){
       const filteredDates = getFilteredDates();
       renderVolumePorProduto(filteredDates);
+    }
+    if(tab === 'tortas'){
+      PT_init();
     }
   });
 });
@@ -22250,6 +22365,534 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ══ FIM MÓDULO RASTREAMENTO ══ */
+
+// ─────────────────────────────────────────────
+// MÓDULO PRODUÇÃO TORTAS (PT_)
+// ─────────────────────────────────────────────
+
+(function(){
+
+  // ── Constantes de meta ──
+  const PT_META_DIARIA = 1000;
+  const PT_META_MENSAL = {
+    '2026-10': 15000,
+    '2026-11': 14000,
+    '2026-12': 28500
+  };
+
+  // ── Estado ──
+  let PT_dados      = [];   // todos os registros brutos da query
+  let PT_filtrados  = [];   // após filtros
+  let PT_paginaAtual = 1;
+  const PT_POR_PAGINA = 20;
+  let PT_sortCol    = 'data';
+  let PT_sortAsc    = false;
+  let PT_chartBarras = null;
+  let PT_chartLinha  = null;
+  let PT_inicializado = false;
+
+  // ── Utilitários de data ──
+  function ptHoje(){ return new Date().toISOString().slice(0,10); }
+
+  function ptInicioSemana(){
+    const d = new Date();
+    const dia = d.getDay(); // 0=dom
+    const diff = dia === 0 ? -6 : 1 - dia;
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().slice(0,10);
+  }
+
+  function ptRangePeriodo(){
+    const periodo = document.getElementById('pt-periodo').value;
+    const hoje    = ptHoje();
+    if(periodo === 'semana'){
+      return { ini: ptInicioSemana(), fim: hoje };
+    }
+    if(periodo === 'mes'){
+      const mesSel = document.getElementById('pt-mes').value;
+      if(mesSel){
+        const [y, m] = mesSel.split('-').map(Number);
+        const ultimo = new Date(y, m, 0).getDate();
+        return { ini: `${mesSel}-01`, fim: `${mesSel}-${String(ultimo).padStart(2,'0')}` };
+      }
+      const agora = new Date();
+      const y = agora.getFullYear();
+      const m = String(agora.getMonth()+1).padStart(2,'0');
+      const ultimo = new Date(y, agora.getMonth()+1, 0).getDate();
+      return { ini: `${y}-${m}-01`, fim: `${y}-${m}-${String(ultimo).padStart(2,'0')}` };
+    }
+    if(periodo === '7'){
+      const d = new Date(); d.setDate(d.getDate()-6);
+      return { ini: d.toISOString().slice(0,10), fim: hoje };
+    }
+    if(periodo === '30'){
+      const d = new Date(); d.setDate(d.getDate()-29);
+      return { ini: d.toISOString().slice(0,10), fim: hoje };
+    }
+    if(periodo === 'custom'){
+      return {
+        ini: document.getElementById('pt-data-ini').value || '2026-01-01',
+        fim: document.getElementById('pt-data-fim').value || hoje
+      };
+    }
+    return { ini: '2026-01-01', fim: hoje };
+  }
+
+  function ptFmtData(iso){
+    if(!iso) return '';
+    const [y,m,d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  function ptFmtNum(n){
+    if(n == null || isNaN(n)) return '—';
+    return Number(n).toLocaleString('pt-BR');
+  }
+
+  function ptFmtPct(n){
+    if(n == null || isNaN(n)) return '—';
+    return n.toFixed(1).replace('.',',') + '%';
+  }
+
+  // ── Buscar dados do Supabase ──
+  async function PT_fetchDados(ini, fim){
+    const sb = getSupabaseClient();
+    let all = [];
+    let from = 0;
+    const PAGE = 1000;
+    while(true){
+      const { data, error } = await sb
+        .from('producao_diaria')
+        .select('data,produto,producao_planejada,producao_real,paradas_desvios,apontamento_completo')
+        .ilike('setor','confeitaria')
+        .or('produto.ilike.%1,2KG%,produto.ilike.%800G%')
+        .gte('data', ini)
+        .lte('data', fim)
+        .order('data', { ascending: false })
+        .range(from, from + PAGE - 1);
+      if(error){ console.error('PT_ fetch error', error); break; }
+      if(!data || data.length === 0) break;
+      all = all.concat(data);
+      if(data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all;
+  }
+
+  // ── Parsear valor numérico de producao_planejada / producao_real ──
+  function ptParseVal(s){
+    if(!s) return null;
+    const t = String(s).trim();
+    if(!/^\d+([.,]\d+)?$/.test(t)) return null;
+    return parseFloat(t.replace(',','.'));
+  }
+
+  // ── Filtrar registros em memória ──
+  function PT_filtrarDados(){
+    const produto  = document.getElementById('pt-produto').value.trim().toUpperCase();
+    const tamanho  = document.getElementById('pt-tamanho').value.trim().toUpperCase();
+    const busca    = (document.getElementById('pt-busca').value || '').trim().toUpperCase();
+
+    PT_filtrados = PT_dados.filter(r => {
+      const prod = (r.produto || '').toUpperCase();
+      if(produto && !prod.includes(produto)) return false;
+      if(tamanho && !prod.includes(tamanho)) return false;
+      if(busca   && !prod.includes(busca))   return false;
+      return true;
+    });
+
+    PT_sortDados();
+  }
+
+  function PT_sortDados(){
+    PT_filtrados.sort((a,b) => {
+      let va, vb;
+      if(PT_sortCol === 'data'){
+        va = a.data || '';
+        vb = b.data || '';
+      } else if(PT_sortCol === 'produto'){
+        va = (a.produto || '').toUpperCase();
+        vb = (b.produto || '').toUpperCase();
+      } else if(PT_sortCol === 'planejado'){
+        va = ptParseVal(a.producao_planejada) ?? -1;
+        vb = ptParseVal(b.producao_planejada) ?? -1;
+      } else if(PT_sortCol === 'real'){
+        va = ptParseVal(a.producao_real) ?? -1;
+        vb = ptParseVal(b.producao_real) ?? -1;
+      } else if(PT_sortCol === 'dif'){
+        const pa = ptParseVal(a.producao_planejada);
+        const ra = ptParseVal(a.producao_real);
+        const pb = ptParseVal(b.producao_planejada);
+        const rb = ptParseVal(b.producao_real);
+        va = (pa && pa > 0) ? ((ra||0) - pa) / pa * 100 : -999;
+        vb = (pb && pb > 0) ? ((rb||0) - pb) / pb * 100 : -999;
+      } else {
+        va = a[PT_sortCol] || '';
+        vb = b[PT_sortCol] || '';
+      }
+      if(va < vb) return PT_sortAsc ? -1 : 1;
+      if(va > vb) return PT_sortAsc ?  1 : -1;
+      return 0;
+    });
+  }
+
+  // ── KPI Cards ──
+  function PT_renderKPIs(){
+    const hoje = ptHoje();
+    // Dia: soma de producao_real onde data === hoje
+    const regHoje = PT_dados.filter(r => r.data === hoje);
+    const totalHoje = regHoje.reduce((s,r) => s + (ptParseVal(r.producao_real)||0), 0);
+    const pctDia = totalHoje / PT_META_DIARIA * 100;
+
+    // Semana
+    const iniSem = ptInicioSemana();
+    const regSem = PT_dados.filter(r => r.data >= iniSem && r.data <= hoje);
+    const totalSem = regSem.reduce((s,r) => s + (ptParseVal(r.producao_real)||0), 0);
+    // dias úteis na semana até hoje
+    let diasSem = 0;
+    const d0 = new Date(iniSem + 'T00:00:00');
+    const d1 = new Date(hoje   + 'T00:00:00');
+    for(let dd = new Date(d0); dd <= d1; dd.setDate(dd.getDate()+1)){
+      const dw = dd.getDay();
+      if(dw !== 0 && dw !== 6) diasSem++;
+    }
+    const metaSem = diasSem * PT_META_DIARIA;
+    const pctSem = metaSem > 0 ? totalSem / metaSem * 100 : null;
+
+    // Mês
+    const mesAtual = hoje.slice(0,7);
+    const metaMes  = PT_META_MENSAL[mesAtual] || null;
+    const regMes   = PT_dados.filter(r => r.data && r.data.startsWith(mesAtual));
+    const totalMes = regMes.reduce((s,r) => s + (ptParseVal(r.producao_real)||0), 0);
+    const pctMes   = metaMes ? totalMes / metaMes * 100 : null;
+
+    // Acurácia (nos filtrados): 100 - |real - plan| / plan * 100, clamp 0-100
+    const comMeta = PT_filtrados.filter(r => {
+      const p = ptParseVal(r.producao_planejada);
+      return p !== null && p > 0;
+    });
+    let acuracia = null;
+    if(comMeta.length > 0){
+      const soma = comMeta.reduce((s,r) => {
+        const p = ptParseVal(r.producao_planejada);
+        const re = ptParseVal(r.producao_real) || 0;
+        const acc = Math.max(0, Math.min(100, 100 - Math.abs(re - p) / p * 100));
+        return s + acc;
+      }, 0);
+      acuracia = soma / comMeta.length;
+    }
+
+    function semClass(pct){
+      if(pct == null) return '';
+      if(pct >= 90) return 'sem-good';
+      if(pct >= 70) return 'sem-warn';
+      return 'sem-bad';
+    }
+
+    const grid = document.getElementById('pt-kpi-grid');
+    grid.innerHTML = `
+      <div class="kpi-card ${semClass(pctDia)}">
+        <div class="label">DIA — ${ptFmtData(hoje)}</div>
+        <div class="value">${ptFmtNum(totalHoje)}</div>
+        <div class="sub">Meta: ${ptFmtNum(PT_META_DIARIA)} · ${pctDia >= 0 ? ptFmtPct(pctDia) : '—'}</div>
+      </div>
+      <div class="kpi-card ${semClass(pctSem)}">
+        <div class="label">SEMANA (${diasSem} dias úteis)</div>
+        <div class="value">${ptFmtNum(totalSem)}</div>
+        <div class="sub">Meta: ${ptFmtNum(metaSem)} · ${pctSem != null ? ptFmtPct(pctSem) : '—'}</div>
+      </div>
+      <div class="kpi-card ${semClass(pctMes)}">
+        <div class="label">MÊS — ${mesAtual.replace('-','/')}</div>
+        <div class="value">${ptFmtNum(totalMes)}</div>
+        <div class="sub">Meta: ${metaMes != null ? ptFmtNum(metaMes) : 'Não definida'} · ${pctMes != null ? ptFmtPct(pctMes) : '—'}</div>
+      </div>
+      <div class="kpi-card ${semClass(acuracia)}">
+        <div class="label">ACURÁCIA (período filtrado)</div>
+        <div class="value">${acuracia != null ? ptFmtPct(acuracia) : '—'}</div>
+        <div class="sub">${comMeta.length} registros com meta · fórmula: 100 − |Real−Plan|/Plan</div>
+      </div>
+    `;
+  }
+
+  // ── Chart 1: Barras agrupadas por produto ──
+  function PT_renderBarras(){
+    const ctx = document.getElementById('pt-chart-barras');
+    if(!ctx) return;
+
+    // Agrupar por produto
+    const map = {};
+    PT_filtrados.forEach(r => {
+      const p = r.produto || 'Desconhecido';
+      if(!map[p]) map[p] = { plan: 0, real: 0 };
+      map[p].plan += ptParseVal(r.producao_planejada) || 0;
+      map[p].real += ptParseVal(r.producao_real)      || 0;
+    });
+
+    // Abreviar nome do produto para label
+    const labels = Object.keys(map).map(k => {
+      const s = k.length > 28 ? k.slice(0,26) + '…' : k;
+      return s;
+    });
+    const planData = Object.values(map).map(v => v.plan);
+    const realData = Object.values(map).map(v => v.real);
+
+    if(PT_chartBarras) PT_chartBarras.destroy();
+    PT_chartBarras = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Planejado',
+            data: planData,
+            backgroundColor: 'rgba(183,121,31,0.25)',
+            borderColor: '#b7791f',
+            borderWidth: 1.5,
+            borderRadius: 4
+          },
+          {
+            label: 'Realizado',
+            data: realData,
+            backgroundColor: 'rgba(183,121,31,0.70)',
+            borderColor: '#b7791f',
+            borderWidth: 1.5,
+            borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top' },
+          datalabels: { display: false }
+        },
+        scales: {
+          x: { ticks: { font: { size: 11 } } },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: v => v.toLocaleString('pt-BR')
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ── Chart 2: Linha histórica diária ──
+  function PT_renderLinha(){
+    const ctx = document.getElementById('pt-chart-linha');
+    if(!ctx) return;
+
+    // Agregar por data
+    const mapData = {};
+    PT_filtrados.forEach(r => {
+      if(!r.data) return;
+      if(!mapData[r.data]) mapData[r.data] = 0;
+      mapData[r.data] += ptParseVal(r.producao_real) || 0;
+    });
+
+    const datas = Object.keys(mapData).sort();
+    const reais = datas.map(d => mapData[d]);
+    const metas = datas.map(() => PT_META_DIARIA);
+    const labels = datas.map(ptFmtData);
+
+    if(PT_chartLinha) PT_chartLinha.destroy();
+    PT_chartLinha = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Realizado',
+            data: reais,
+            borderColor: '#b7791f',
+            backgroundColor: 'rgba(183,121,31,0.10)',
+            borderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            fill: true,
+            tension: 0.3
+          },
+          {
+            label: 'Meta (1.000/dia)',
+            data: metas,
+            borderColor: '#888',
+            borderWidth: 1.5,
+            borderDash: [6,4],
+            pointRadius: 0,
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top' },
+          datalabels: { display: false },
+          tooltip: {
+            callbacks: {
+              label(ctx){
+                const d = datas[ctx.dataIndex];
+                const real = mapData[d] || 0;
+                const dif  = real - PT_META_DIARIA;
+                if(ctx.datasetIndex === 0){
+                  return [
+                    `  Realizado: ${real.toLocaleString('pt-BR')}`,
+                    `  Meta: ${PT_META_DIARIA.toLocaleString('pt-BR')}`,
+                    `  Diferença: ${dif >= 0 ? '+' : ''}${dif.toLocaleString('pt-BR')}`
+                  ];
+                }
+                return null;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { font: { size: 11 }, maxRotation: 45 } },
+          y: {
+            beginAtZero: true,
+            ticks: { callback: v => v.toLocaleString('pt-BR') }
+          }
+        }
+      }
+    });
+  }
+
+  // ── Tabela ──
+  function PT_renderTabela(){
+    const tbody = document.getElementById('pt-tbody');
+    const total = PT_filtrados.length;
+    const totalPags = Math.max(1, Math.ceil(total / PT_POR_PAGINA));
+    if(PT_paginaAtual > totalPags) PT_paginaAtual = totalPags;
+
+    document.getElementById('pt-count').textContent  = `${total} registros`;
+    document.getElementById('pt-pagina').textContent = `Pág. ${PT_paginaAtual} de ${totalPags}`;
+    document.getElementById('pt-prev').disabled = PT_paginaAtual <= 1;
+    document.getElementById('pt-next').disabled = PT_paginaAtual >= totalPags;
+
+    const inicio = (PT_paginaAtual - 1) * PT_POR_PAGINA;
+    const slice  = PT_filtrados.slice(inicio, inicio + PT_POR_PAGINA);
+
+    tbody.innerHTML = slice.map(r => {
+      const plan = ptParseVal(r.producao_planejada);
+      const real = ptParseVal(r.producao_real);
+      let difPct  = null;
+      let difClass = '';
+      if(plan !== null && plan > 0 && real !== null){
+        difPct = (real - plan) / plan * 100;
+        difClass = difPct >= 0 ? 'color:var(--good);font-weight:600;' : 'color:var(--red);font-weight:600;';
+      }
+      const planStr = plan !== null ? ptFmtNum(plan) : '<span style="color:var(--ink-soft)">—</span>';
+      const realStr = real !== null ? ptFmtNum(real) : '<span style="color:var(--ink-soft)">—</span>';
+      const difStr  = difPct !== null
+        ? `<span style="${difClass}">${difPct >= 0 ? '+' : ''}${ptFmtPct(difPct)}</span>`
+        : '<span style="color:var(--ink-soft)">—</span>';
+      const obs = r.paradas_desvios ? `<span title="${r.paradas_desvios}" style="max-width:180px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.paradas_desvios}</span>` : '';
+      return `<tr style="border-bottom:1px solid var(--line);">
+        <td style="padding:7px 10px;white-space:nowrap;">${ptFmtData(r.data)}</td>
+        <td style="padding:7px 10px;">${r.produto || ''}</td>
+        <td style="padding:7px 10px;text-align:right;">${planStr}</td>
+        <td style="padding:7px 10px;text-align:right;">${realStr}</td>
+        <td style="padding:7px 10px;text-align:right;">${difStr}</td>
+        <td style="padding:7px 10px;">${obs}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Popular dropdown de produtos ──
+  function PT_popularProdutos(){
+    const sel = document.getElementById('pt-produto');
+    const prods = [...new Set(PT_dados.map(r => r.produto).filter(Boolean))].sort();
+    const atual = sel.value;
+    sel.innerHTML = '<option value="">Todos</option>' +
+      prods.map(p => `<option value="${p}"${p === atual ? ' selected' : ''}>${p}</option>`).join('');
+  }
+
+  // ── Renderização completa ──
+  function PT_render(){
+    PT_filtrarDados();
+    PT_renderKPIs();
+    PT_renderBarras();
+    PT_renderLinha();
+    PT_renderTabela();
+  }
+
+  // ── Init: busca dados e configura eventos ──
+  window.PT_init = async function(){
+    if(PT_inicializado){
+      PT_render();
+      return;
+    }
+    PT_inicializado = true;
+
+    // Spinner
+    const grid = document.getElementById('pt-kpi-grid');
+    grid.innerHTML = '<div style="color:var(--ink-soft);padding:12px;">Carregando dados…</div>';
+
+    try {
+      const { ini, fim } = ptRangePeriodo();
+      PT_dados = await PT_fetchDados(ini, fim);
+      PT_popularProdutos();
+      PT_render();
+    } catch(e){
+      grid.innerHTML = `<div style="color:var(--red);padding:12px;">Erro ao carregar: ${e.message}</div>`;
+    }
+
+    // ── Eventos dos filtros ──
+    document.getElementById('pt-periodo').addEventListener('change', function(){
+      const v = this.value;
+      document.getElementById('pt-mes-wrap').style.display = v === 'mes' ? '' : 'none';
+      const cw1 = document.getElementById('pt-custom-wrap');
+      const cw2 = document.getElementById('pt-custom-wrap2');
+      if(cw1) cw1.style.display = v === 'custom' ? '' : 'none';
+      if(cw2) cw2.style.display = v === 'custom' ? '' : 'none';
+    });
+
+    document.getElementById('pt-filtrar-btn').addEventListener('click', async () => {
+      const grid2 = document.getElementById('pt-kpi-grid');
+      grid2.innerHTML = '<div style="color:var(--ink-soft);padding:12px;">Atualizando…</div>';
+      try {
+        const { ini, fim } = ptRangePeriodo();
+        PT_dados = await PT_fetchDados(ini, fim);
+        PT_popularProdutos();
+        PT_paginaAtual = 1;
+        PT_render();
+      } catch(e){
+        grid2.innerHTML = `<div style="color:var(--red);padding:12px;">Erro: ${e.message}</div>`;
+      }
+    });
+
+    document.getElementById('pt-produto').addEventListener('change', () => { PT_paginaAtual = 1; PT_render(); });
+    document.getElementById('pt-tamanho').addEventListener('change', () => { PT_paginaAtual = 1; PT_render(); });
+
+    document.getElementById('pt-busca').addEventListener('input', () => { PT_paginaAtual = 1; PT_render(); });
+
+    document.getElementById('pt-prev').addEventListener('click', () => {
+      if(PT_paginaAtual > 1){ PT_paginaAtual--; PT_renderTabela(); }
+    });
+    document.getElementById('pt-next').addEventListener('click', () => {
+      const totalPags = Math.max(1, Math.ceil(PT_filtrados.length / PT_POR_PAGINA));
+      if(PT_paginaAtual < totalPags){ PT_paginaAtual++; PT_renderTabela(); }
+    });
+
+    // Ordenação por coluna
+    document.querySelectorAll('.pt-th').forEach(th => {
+      th.addEventListener('click', () => {
+        const col = th.dataset.col;
+        if(PT_sortCol === col){ PT_sortAsc = !PT_sortAsc; }
+        else { PT_sortCol = col; PT_sortAsc = col !== 'data'; }
+        PT_sortDados();
+        PT_renderTabela();
+      });
+    });
+  };
+
+})();
+
+/* ══ FIM MÓDULO PRODUÇÃO TORTAS ══ */
 
 </script>
 </body>
