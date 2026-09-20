@@ -22818,12 +22818,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const totDifStr = totDifPct !== null
         ? `<span style="${totDifClass}">${totDifPct >= 0 ? '+' : ''}${ptFmtPct(totDifPct)}</span>`
         : '<span style="color:var(--ink-soft)">—</span>';
-      tfoot.innerHTML = `<tr style="border-top:2px solid var(--line);background:var(--chip-bg);">
-        <td colspan="2" style="padding:8px 10px;font-weight:700;font-size:13px;">TOTAL</td>
-        <td style="padding:8px 10px;text-align:right;font-weight:700;">${hasPlan ? ptFmtNum(totalPlan) : '—'}</td>
-        <td style="padding:8px 10px;text-align:right;font-weight:700;">${hasReal ? ptFmtNum(totalReal) : '—'}</td>
-        <td style="padding:8px 10px;text-align:right;">${totDifStr}</td>
-        <td></td>
+      // position:sticky;bottom:0 mantém o total fixo enquanto o tbody rola
+      const tfootStyle = 'position:sticky;bottom:0;background:var(--chip-bg);border-top:2px solid var(--line);';
+      tfoot.innerHTML = `<tr>
+        <td colspan="2" style="${tfootStyle}padding:8px 10px;font-weight:700;font-size:13px;">TOTAL</td>
+        <td style="${tfootStyle}padding:8px 10px;text-align:right;font-weight:700;">${hasPlan ? ptFmtNum(totalPlan) : '—'}</td>
+        <td style="${tfootStyle}padding:8px 10px;text-align:right;font-weight:700;">${hasReal ? ptFmtNum(totalReal) : '—'}</td>
+        <td style="${tfootStyle}padding:8px 10px;text-align:right;">${totDifStr}</td>
+        <td style="${tfootStyle}"></td>
       </tr>`;
     }
   }
