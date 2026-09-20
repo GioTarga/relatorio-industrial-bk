@@ -468,6 +468,9 @@
   .kpi-card.sem-warn .value{ color:#a8740b; }
   .kpi-card.sem-bad{ border-color:#f3c9c0; background:linear-gradient(180deg,#fff 0%, var(--bad-bg) 130%); }
   .kpi-card.sem-bad .value{ color:var(--red); }
+  /* Linha "semana anterior" dentro do card de semana */
+  .kpi-card .pt-sem-ant{ border-top:1px solid var(--line); margin-top:8px; padding-top:6px; font-size:11px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .kpi-card .pt-sem-ant strong{ color:var(--ink); }
 
   /* ============ CONTROLES DE ZOOM ============ */
   .zoom-controls{
@@ -22348,8 +22351,10 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ── Estado ──
-  let PT_dados      = [];   // todos os registros brutos da query
-  let PT_filtrados  = [];   // após filtros
+  let PT_dados          = [];   // todos os registros brutos da query (período selecionado)
+  let PT_filtrados      = [];   // após filtros locais (produto/tamanho/busca)
+  let PT_dados_sem_atual = [];  // semana corrente (Seg–Sex), independente do filtro global
+  let PT_dados_sem_ant   = [];  // semana anterior (Seg–Sex), independente do filtro global
   let PT_paginaAtual = 1;
   const PT_POR_PAGINA = 20;
   let PT_sortCol    = 'data';
@@ -22368,6 +22373,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const diff = dia === 0 ? -6 : 1 - dia;
     d.setDate(d.getDate() + diff);
     return d.toISOString().slice(0,10);
+  }
+
+  // Retorna { ini, fim } da semana Seg–Sex. offset: 0=atual, -1=anterior
+  function ptSemanaRange(offset) {
+    const d = new Date();
+    const dw = d.getDay();
+    const diffSeg = dw === 0 ? -6 : 1 - dw;
+    const seg = new Date(d);
+    seg.setDate(d.getDate() + diffSeg + offset * 7);
+    const sex = new Date(seg);
+    sex.setDate(seg.getDate() + 4);
+    return { ini: seg.toISOString().slice(0,10), fim: sex.toISOString().slice(0,10) };
+  }
+
+  // Conta dias úteis (Seg–Sex) em intervalo ISO
+  function ptDiasUteis(ini, fim) {
+    let n = 0;
+    const d0 = new Date(ini + 'T00:00:00');
+    const d1 = new Date(fim + 'T00:00:00');
+    for(let d = new Date(d0); d <= d1; d.setDate(d.getDate()+1)){
+      const dw = d.getDay();
+      if(dw !== 0 && dw !== 6) n++;
+    }
+    return n;
   }
 
   // Usa o filtro global (dateStartInput / dateEndInput)
@@ -22492,19 +22521,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const pctDia = totalDia / PT_META_DIARIA * 100;
     const difDia = totalDia - PT_META_DIARIA;
 
-    // SEMANA — soma todo o período selecionado (ini→fim)
-    const totalSem = PT_dados.reduce((s,r) => s + (ptParseVal(r.producao_real)||0), 0);
-    // Dias úteis no intervalo selecionado
-    let diasSem = 0;
-    const dSemIni = new Date(ini + 'T00:00:00');
-    const dSemFim = new Date(fim + 'T00:00:00');
-    for(let dd = new Date(dSemIni); dd <= dSemFim; dd.setDate(dd.getDate()+1)){
-      const dw = dd.getDay();
-      if(dw !== 0 && dw !== 6) diasSem++;
+    // SEMANA ATUAL e ANTERIOR — sempre Seg–Sex, independente do filtro global
+    // Aplica o filtro de tamanho (dropdown) nos dados das semanas para coerência com os demais cards
+    const _tamanhoFiltro = (document.getElementById('pt-tamanho').value || '').trim().toUpperCase();
+    function ptFiltrarSemPorTamanho(dados) {
+      if(!_tamanhoFiltro) return dados;
+      return dados.filter(r => (r.produto||'').toUpperCase().includes(_tamanhoFiltro));
     }
-    const metaSem = diasSem * PT_META_DIARIA;
-    const pctSem = metaSem > 0 ? totalSem / metaSem * 100 : null;
-    const difSem = totalSem - metaSem;
+    const semAtual = ptSemanaRange(0);
+    const semAnt   = ptSemanaRange(-1);
+    const dadosSemAtual = ptFiltrarSemPorTamanho(PT_dados_sem_atual);
+    const dadosSemAnt   = ptFiltrarSemPorTamanho(PT_dados_sem_ant);
+    const totalSem      = dadosSemAtual.reduce((s,r) => s + (ptParseVal(r.producao_real)||0), 0);
+    const totalSemAnt   = dadosSemAnt.reduce((s,r) => s + (ptParseVal(r.producao_real)||0), 0);
+    const diasSem       = ptDiasUteis(semAtual.ini, semAtual.fim);
+    const diasSemAnt    = ptDiasUteis(semAnt.ini, semAnt.fim);
+    const metaSem       = diasSem * PT_META_DIARIA;
+    const metaSemAnt    = diasSemAnt * PT_META_DIARIA;
+    const pctSem        = metaSem > 0 ? totalSem / metaSem * 100 : null;
+    const pctSemAnt     = metaSemAnt > 0 ? totalSemAnt / metaSemAnt * 100 : null;
 
     // MÊS — usa o mês do fim do período
     const mesRef = fim.slice(0,7);
@@ -22567,11 +22602,14 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
       <div class="kpi-card ${semClass(pctSem)}">
-        <div class="label">PERÍODO — ${diasSem} dia${diasSem!==1?'s':''} útil${diasSem!==1?'eis':''}</div>
+        <div class="label">SEMANA ATUAL — ${ptFmtData(semAtual.ini)} a ${ptFmtData(semAtual.fim)}</div>
         <div class="value" style="font-size:2.4rem;font-weight:800;letter-spacing:-1px;line-height:1.1;">${ptFmtNum(totalSem)}</div>
         <div style="margin-top:8px;display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--ink-soft);">
           <span>Meta <strong style="color:var(--ink);font-size:13px;">${ptFmtNum(metaSem)}</strong></span>
           <span>Atingido ${difPctBadge(totalSem, metaSem)}</span>
+        </div>
+        <div class="pt-sem-ant">
+          Sem. anterior: <strong>${ptFmtNum(totalSemAnt)}</strong> ${difPctBadge(totalSemAnt, metaSemAnt)}
         </div>
       </div>
       <div class="kpi-card ${semClass(pctMes)}">
@@ -22661,9 +22699,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctx = document.getElementById('pt-chart-linha');
     if(!ctx) return;
 
-    // Agregar por data
+    // Agregar por data usando PT_dados (total, sem filtro de tamanho),
+    // pois a meta de 1.000/dia é sobre o conjunto completo de tortas (1,2KG + 800G).
+    // O filtro de tamanho se aplica ao gráfico de barras e à tabela, não ao histórico.
     const mapData = {};
-    PT_filtrados.forEach(r => {
+    PT_dados.forEach(r => {
       if(!r.data) return;
       if(!mapData[r.data]) mapData[r.data] = 0;
       mapData[r.data] += ptParseVal(r.producao_real) || 0;
@@ -22794,6 +22834,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const { ini, fim } = ptRangePeriodo();
     PT_periodoAtual = { ini, fim };
     PT_dados = await PT_fetchDados(ini, fim);
+
+    // Busca semana atual e anterior para os cards semanais fixos (independente do filtro global)
+    const _semAtual = ptSemanaRange(0);
+    const _semAnt   = ptSemanaRange(-1);
+    const _dadosSems = await PT_fetchDados(_semAnt.ini, _semAtual.fim);
+    PT_dados_sem_atual = _dadosSems.filter(r => r.data >= _semAtual.ini && r.data <= _semAtual.fim);
+    PT_dados_sem_ant   = _dadosSems.filter(r => r.data >= _semAnt.ini   && r.data <= _semAnt.fim);
+
     PT_popularProdutos();
     PT_render();
   }
