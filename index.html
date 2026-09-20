@@ -469,7 +469,7 @@
   .kpi-card.sem-bad{ border-color:#f3c9c0; background:linear-gradient(180deg,#fff 0%, var(--bad-bg) 130%); }
   .kpi-card.sem-bad .value{ color:var(--red); }
   /* Linha "semana anterior" dentro do card de semana */
-  .kpi-card .pt-sem-ant{ border-top:1px solid var(--line); margin-top:8px; padding-top:6px; font-size:11px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .kpi-card .pt-sem-ant{ border-top:1px solid var(--line); margin-top:8px; padding-top:6px; font-size:11px; color:var(--ink-soft); display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:wrap; text-align:center; }
   .kpi-card .pt-sem-ant strong{ color:var(--ink); }
 
   /* ============ CONTROLES DE ZOOM ============ */
@@ -3247,14 +3247,8 @@ body{background:#fff;color:#000}
     <div class="kpi-grid" id="pt-kpi-grid" style="margin-bottom:20px;"></div>
 
     <!-- Charts Row -->
-    <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:20px;">
-      <div class="panel" style="flex:1 1 340px;min-width:0;">
-        <div class="panel-title" style="color:#b7791f;">Previsto × Real por Produto</div>
-        <div style="position:relative;height:280px;">
-          <canvas id="pt-chart-barras"></canvas>
-        </div>
-      </div>
-      <div class="panel" style="flex:1 1 340px;min-width:0;">
+    <div style="margin-bottom:20px;">
+      <div class="panel" style="width:100%;box-sizing:border-box;">
         <div class="panel-title" style="color:#b7791f;">Histórico Diário</div>
         <div style="position:relative;height:280px;">
           <canvas id="pt-chart-linha"></canvas>
@@ -3285,6 +3279,7 @@ body{background:#fff;color:#000}
             </tr>
           </thead>
           <tbody id="pt-tbody"></tbody>
+          <tfoot id="pt-tfoot"></tfoot>
         </table>
       </div>
     </div>
@@ -22784,6 +22779,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('pt-count').textContent = `${total} registros`;
 
+    let totalPlan = 0, totalReal = 0, hasPlan = false, hasReal = false;
+
     tbody.innerHTML = PT_filtrados.map(r => {
       const plan = ptParseVal(r.producao_planejada);
       const real = ptParseVal(r.producao_real);
@@ -22793,6 +22790,8 @@ document.addEventListener('DOMContentLoaded', () => {
         difPct = (real - plan) / plan * 100;
         difClass = difPct >= 0 ? 'color:var(--good);font-weight:600;' : 'color:var(--red);font-weight:600;';
       }
+      if(plan !== null){ totalPlan += plan; hasPlan = true; }
+      if(real !== null){ totalReal += real; hasReal = true; }
       const planStr = plan !== null ? ptFmtNum(plan) : '<span style="color:var(--ink-soft)">—</span>';
       const realStr = real !== null ? ptFmtNum(real) : '<span style="color:var(--ink-soft)">—</span>';
       const difStr  = difPct !== null
@@ -22808,6 +22807,25 @@ document.addEventListener('DOMContentLoaded', () => {
         <td style="padding:7px 10px;">${obs}</td>
       </tr>`;
     }).join('');
+
+    // ── Linha de totais no rodapé ──
+    const tfoot = document.getElementById('pt-tfoot');
+    if(tfoot){
+      const totDifPct  = hasPlan && totalPlan > 0 && hasReal ? (totalReal - totalPlan) / totalPlan * 100 : null;
+      const totDifClass = totDifPct !== null
+        ? (totDifPct >= 0 ? 'color:var(--good);font-weight:700;' : 'color:var(--red);font-weight:700;')
+        : '';
+      const totDifStr = totDifPct !== null
+        ? `<span style="${totDifClass}">${totDifPct >= 0 ? '+' : ''}${ptFmtPct(totDifPct)}</span>`
+        : '<span style="color:var(--ink-soft)">—</span>';
+      tfoot.innerHTML = `<tr style="border-top:2px solid var(--line);background:var(--chip-bg);">
+        <td colspan="2" style="padding:8px 10px;font-weight:700;font-size:13px;">TOTAL</td>
+        <td style="padding:8px 10px;text-align:right;font-weight:700;">${hasPlan ? ptFmtNum(totalPlan) : '—'}</td>
+        <td style="padding:8px 10px;text-align:right;font-weight:700;">${hasReal ? ptFmtNum(totalReal) : '—'}</td>
+        <td style="padding:8px 10px;text-align:right;">${totDifStr}</td>
+        <td></td>
+      </tr>`;
+    }
   }
 
   // ── Popular datalist de produtos (autocomplete) ──
@@ -22822,7 +22840,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function PT_render(){
     PT_filtrarDados();
     PT_renderKPIs();
-    PT_renderBarras();
     PT_renderLinha();
     PT_renderTabela();
   }
