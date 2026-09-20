@@ -3266,8 +3266,16 @@ body{background:#fff;color:#000}
         </div>
       </div>
       <!-- Tabela com cabeçalho sticky e scroll vertical -->
-      <div style="overflow-x:auto;max-height:480px;overflow-y:auto;">
+      <div style="overflow-x:auto;max-height:444px;overflow-y:auto;">
         <table id="pt-tabela" style="width:100%;border-collapse:collapse;font-size:13px;">
+          <colgroup>
+            <col style="width:110px;">
+            <col>
+            <col style="width:120px;">
+            <col style="width:95px;">
+            <col style="width:72px;">
+            <col style="width:150px;">
+          </colgroup>
           <thead>
             <tr style="border-bottom:2px solid var(--line);">
               <th class="pt-th" data-col="data" style="text-align:left;padding:8px 10px;cursor:pointer;white-space:nowrap;background:var(--paper);position:sticky;top:0;z-index:1;">Data ↕</th>
@@ -3279,6 +3287,19 @@ body{background:#fff;color:#000}
             </tr>
           </thead>
           <tbody id="pt-tbody"></tbody>
+        </table>
+      </div>
+      <!-- Linha de total fora do scroll para não sobrepor os dados -->
+      <div style="overflow-x:auto;border-top:2px solid var(--line);">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed;">
+          <colgroup>
+            <col style="width:110px;">
+            <col>
+            <col style="width:120px;">
+            <col style="width:95px;">
+            <col style="width:72px;">
+            <col style="width:150px;">
+          </colgroup>
           <tfoot id="pt-tfoot"></tfoot>
         </table>
       </div>
@@ -22818,8 +22839,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const totDifStr = totDifPct !== null
         ? `<span style="${totDifClass}">${totDifPct >= 0 ? '+' : ''}${ptFmtPct(totDifPct)}</span>`
         : '<span style="color:var(--ink-soft)">—</span>';
-      // position:sticky;bottom:0 mantém o total fixo enquanto o tbody rola
-      const tfootStyle = 'position:sticky;bottom:0;background:var(--chip-bg);border-top:2px solid var(--line);';
+      const tfootStyle = 'background:var(--chip-bg);';
       tfoot.innerHTML = `<tr>
         <td colspan="2" style="${tfootStyle}padding:8px 10px;font-weight:700;font-size:13px;">TOTAL</td>
         <td style="${tfootStyle}padding:8px 10px;text-align:right;font-weight:700;">${hasPlan ? ptFmtNum(totalPlan) : '—'}</td>
