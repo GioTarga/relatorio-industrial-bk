@@ -3265,8 +3265,8 @@ body{background:#fff;color:#000}
           <span id="pt-count" style="font-size:12px;color:var(--ink-soft);"></span>
         </div>
       </div>
-      <!-- Tabela com cabeçalho sticky e scroll vertical -->
-      <div style="overflow-x:auto;max-height:444px;overflow-y:auto;">
+      <!-- Tabela única: thead sticky no topo, tfoot sticky no rodapé, tbody scrollável -->
+      <div style="overflow-x:auto;max-height:500px;overflow-y:auto;">
         <table id="pt-tabela" style="width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed;">
           <colgroup>
             <col style="width:110px;">
@@ -3280,33 +3280,18 @@ body{background:#fff;color:#000}
           </colgroup>
           <thead>
             <tr style="border-bottom:2px solid var(--line);">
-              <th class="pt-th" data-col="data" style="text-align:left;padding:8px 10px;cursor:pointer;white-space:nowrap;background:var(--paper);position:sticky;top:0;z-index:1;">Data ↕</th>
-              <th style="text-align:center;padding:8px 10px;white-space:nowrap;background:var(--paper);position:sticky;top:0;z-index:1;">Código</th>
-              <th class="pt-th" data-col="produto" style="text-align:left;padding:8px 10px;cursor:pointer;background:var(--paper);position:sticky;top:0;z-index:1;">Produto ↕</th>
-              <th class="pt-th" data-col="planejado" style="text-align:center;padding:8px 10px;cursor:pointer;white-space:nowrap;background:var(--paper);position:sticky;top:0;z-index:1;">Planejado ↕</th>
-              <th class="pt-th" data-col="real" style="text-align:center;padding:8px 10px;cursor:pointer;white-space:nowrap;background:var(--paper);position:sticky;top:0;z-index:1;">Apontado ↕</th>
-              <th class="pt-th" data-col="estoque" style="text-align:center;padding:8px 10px;cursor:pointer;white-space:nowrap;background:var(--paper);position:sticky;top:0;z-index:1;">Entrada Estoque ↕</th>
-              <th class="pt-th" data-col="dif" style="text-align:center;padding:8px 10px;cursor:pointer;white-space:nowrap;background:var(--paper);position:sticky;top:0;z-index:1;">Dif% ↕</th>
-              <th style="text-align:left;padding:8px 10px;background:var(--paper);position:sticky;top:0;z-index:1;">Observação</th>
+              <th class="pt-th" data-col="data" style="text-align:left;padding:8px 10px;cursor:pointer;white-space:nowrap;background:var(--paper);position:sticky;top:0;z-index:2;">Data ↕</th>
+              <th style="text-align:center;padding:8px 10px;white-space:nowrap;background:var(--paper);position:sticky;top:0;z-index:2;">Código</th>
+              <th class="pt-th" data-col="produto" style="text-align:left;padding:8px 10px;cursor:pointer;background:var(--paper);position:sticky;top:0;z-index:2;">Produto ↕</th>
+              <th class="pt-th" data-col="planejado" style="text-align:center;padding:8px 10px;cursor:pointer;white-space:nowrap;background:var(--paper);position:sticky;top:0;z-index:2;">Planejado ↕</th>
+              <th class="pt-th" data-col="real" style="text-align:center;padding:8px 10px;cursor:pointer;white-space:nowrap;background:var(--paper);position:sticky;top:0;z-index:2;">Apontado ↕</th>
+              <th class="pt-th" data-col="estoque" style="text-align:center;padding:8px 10px;cursor:pointer;white-space:nowrap;background:var(--paper);position:sticky;top:0;z-index:2;">Entrada Estoque ↕</th>
+              <th class="pt-th" data-col="dif" style="text-align:center;padding:8px 10px;cursor:pointer;white-space:nowrap;background:var(--paper);position:sticky;top:0;z-index:2;">Dif% ↕</th>
+              <th style="text-align:left;padding:8px 10px;background:var(--paper);position:sticky;top:0;z-index:2;">Observação</th>
             </tr>
           </thead>
           <tbody id="pt-tbody"></tbody>
-        </table>
-      </div>
-      <!-- Linha de total fora do scroll para não sobrepor os dados -->
-      <div style="overflow-x:auto;border-top:2px solid var(--line);">
-        <table style="width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed;">
-          <colgroup>
-            <col style="width:110px;">
-            <col style="width:90px;">
-            <col>
-            <col style="width:105px;">
-            <col style="width:105px;">
-            <col style="width:120px;">
-            <col style="width:68px;">
-            <col style="width:130px;">
-          </colgroup>
-          <tfoot id="pt-tfoot"></tfoot>
+          <tfoot id="pt-tfoot" style="position:sticky;bottom:0;z-index:2;"></tfoot>
         </table>
       </div>
     </div>
@@ -22859,7 +22844,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ? `<span style="${totDifClass}">${totDifPct >= 0 ? '+' : ''}${ptFmtPct(totDifPct)}</span>`
         : '<span style="color:var(--ink-soft)">—</span>';
       const s = 'background:var(--chip-bg);';
-      tfoot.innerHTML = `<tr>
+      tfoot.innerHTML = `<tr style="border-top:2px solid var(--line);">
         <td colspan="3" style="${s}padding:8px 10px;font-weight:700;font-size:13px;">TOTAL</td>
         <td style="${s}padding:8px 10px;text-align:center;font-weight:700;">${hasPlan ? ptFmtNum(totalPlan) : '—'}</td>
         <td style="${s}padding:8px 10px;text-align:center;font-weight:700;">${hasReal ? ptFmtNum(totalReal) : '—'}</td>
