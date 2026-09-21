@@ -22509,13 +22509,13 @@ document.addEventListener('DOMContentLoaded', () => {
         va = ptParseVal(a.producao_planejada) ?? -1;
         vb = ptParseVal(b.producao_planejada) ?? -1;
       } else if(PT_sortCol === 'real'){
-        va = ptParseVal(a.producao_real) ?? -1;
-        vb = ptParseVal(b.producao_real) ?? -1;
+        va = ptParseVal(a.entrada_estoque) ?? -1;
+        vb = ptParseVal(b.entrada_estoque) ?? -1;
       } else if(PT_sortCol === 'dif'){
         const pa = ptParseVal(a.producao_planejada);
-        const ra = ptParseVal(a.producao_real);
+        const ra = ptParseVal(a.entrada_estoque);
         const pb = ptParseVal(b.producao_planejada);
-        const rb = ptParseVal(b.producao_real);
+        const rb = ptParseVal(b.entrada_estoque);
         va = (pa && pa > 0) ? ((ra||0) - pa) / pa * 100 : -999;
         vb = (pb && pb > 0) ? ((rb||0) - pb) / pb * 100 : -999;
       } else {
@@ -22535,7 +22535,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // DIA — usa o último dia do período selecionado (fim)
     const dataRef = fim;
     const regDia = PT_dados.filter(r => r.data === dataRef);
-    const totalDia = regDia.reduce((s,r) => s + (ptParseVal(r.producao_real)||0), 0);
+    const totalDia = regDia.reduce((s,r) => s + (ptParseVal(r.entrada_estoque)||0), 0);
     const planDia  = regDia.reduce((s,r) => s + (ptParseVal(r.producao_planejada)||0), 0);
     const pctDia = totalDia / PT_META_DIARIA * 100;
     const difDia = totalDia - PT_META_DIARIA;
@@ -22551,8 +22551,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const semAnt   = ptSemanaRange(-1);
     const dadosSemAtual = ptFiltrarSemPorTamanho(PT_dados_sem_atual);
     const dadosSemAnt   = ptFiltrarSemPorTamanho(PT_dados_sem_ant);
-    const totalSem      = dadosSemAtual.reduce((s,r) => s + (ptParseVal(r.producao_real)||0), 0);
-    const totalSemAnt   = dadosSemAnt.reduce((s,r) => s + (ptParseVal(r.producao_real)||0), 0);
+    const totalSem      = dadosSemAtual.reduce((s,r) => s + (ptParseVal(r.entrada_estoque)||0), 0);
+    const totalSemAnt   = dadosSemAnt.reduce((s,r) => s + (ptParseVal(r.entrada_estoque)||0), 0);
     const diasSem       = ptDiasUteis(semAtual.ini, semAtual.fim);
     const diasSemAnt    = ptDiasUteis(semAnt.ini, semAnt.fim);
     const metaSem       = diasSem * PT_META_DIARIA;
@@ -22576,7 +22576,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Busca todos os dados do mês de referência (PT_dados já foi carregado com o período selecionado;
     // para o MÊS buscamos qualquer registro do mês dentro de PT_dados)
     const regMes   = PT_dados.filter(r => r.data && r.data.startsWith(mesRef));
-    const totalMes = regMes.reduce((s,r) => s + (ptParseVal(r.producao_real)||0), 0);
+    const totalMes = regMes.reduce((s,r) => s + (ptParseVal(r.entrada_estoque)||0), 0);
     const pctMes   = metaMes ? totalMes / metaMes * 100 : null;
     const difMes   = totalMes - (metaMes || 0);
 
@@ -22589,7 +22589,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(comMeta.length > 0){
       const soma = comMeta.reduce((s,r) => {
         const p = ptParseVal(r.producao_planejada);
-        const re = ptParseVal(r.producao_real) || 0;
+        const re = ptParseVal(r.entrada_estoque) || 0;
         const acc = Math.max(0, Math.min(100, 100 - Math.abs(re - p) / p * 100));
         return s + acc;
       }, 0);
@@ -22658,7 +22658,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const p = r.produto || 'Desconhecido';
       if(!map[p]) map[p] = { plan: 0, real: 0 };
       map[p].plan += ptParseVal(r.producao_planejada) || 0;
-      map[p].real += ptParseVal(r.producao_real)      || 0;
+      map[p].real += ptParseVal(r.entrada_estoque)    || 0;
     });
 
     // Abreviar nome do produto para label
@@ -22684,7 +22684,7 @@ document.addEventListener('DOMContentLoaded', () => {
             borderRadius: 4
           },
           {
-            label: 'Realizado',
+            label: 'Entrada Estoque',
             data: realData,
             backgroundColor: 'rgba(183,121,31,0.70)',
             borderColor: '#b7791f',
@@ -22725,7 +22725,7 @@ document.addEventListener('DOMContentLoaded', () => {
     PT_dados.forEach(r => {
       if(!r.data) return;
       if(!mapData[r.data]) mapData[r.data] = 0;
-      mapData[r.data] += ptParseVal(r.producao_real) || 0;
+      mapData[r.data] += ptParseVal(r.entrada_estoque) || 0;
     });
 
     const datas = Object.keys(mapData).sort();
@@ -22740,7 +22740,7 @@ document.addEventListener('DOMContentLoaded', () => {
         labels,
         datasets: [
           {
-            label: 'Realizado',
+            label: 'Entrada Estoque',
             data: reais,
             borderColor: '#b7791f',
             backgroundColor: 'rgba(183,121,31,0.10)',
@@ -22775,7 +22775,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dif  = real - PT_META_DIARIA;
                 if(ctx.datasetIndex === 0){
                   return [
-                    `  Realizado: ${real.toLocaleString('pt-BR')}`,
+                    `  Entrada Estoque: ${real.toLocaleString('pt-BR')}`,
                     `  Meta: ${PT_META_DIARIA.toLocaleString('pt-BR')}`,
                     `  Diferença: ${dif >= 0 ? '+' : ''}${dif.toLocaleString('pt-BR')}`
                   ];
