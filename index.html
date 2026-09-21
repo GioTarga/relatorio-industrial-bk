@@ -22452,7 +22452,7 @@ document.addEventListener('DOMContentLoaded', () => {
     while(true){
       const { data, error } = await sb
         .from('producao_diaria')
-        .select('data,produto,producao_planejada,producao_real,paradas_desvios,apontamento_completo')
+        .select('data,produto,producao_planejada,producao_real,entrada_estoque,paradas_desvios,apontamento_completo')
         .ilike('setor','confeitaria')
         .gte('data', ini)
         .lte('data', fim)
