@@ -3336,7 +3336,7 @@ body{background:#fff;color:#000}
     </div>
 
     <!-- KPI Cards -->
-    <div id="perdas-kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px;"></div>
+    <div id="perdas-kpi-grid" class="kpi-grid" style="margin-bottom:20px;"></div>
 
     <!-- Gráfico: kg por motivo -->
     <div class="panel" style="margin-bottom:20px;">
@@ -23122,39 +23122,57 @@ document.addEventListener('DOMContentLoaded', () => {
     const grid = document.getElementById('perdas-kpi-grid');
     if(!grid) return;
 
-    const totalKg = PERDAS_filtrados.reduce((s, r) => s + (parseFloat(r.quantidade_kg) || 0), 0);
-    const setoresUnicos  = new Set(PERDAS_filtrados.map(r => r.setor)).size;
-    const produtosUnicos = new Set(PERDAS_filtrados.map(r => r.produto)).size;
-    const registros      = PERDAS_filtrados.length;
+    const fmt = kg => kg.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' kg';
 
-    // Motivo mais frequente
-    const freqMotivo = {};
-    PERDAS_filtrados.forEach(r => { if(r.motivo) freqMotivo[r.motivo] = (freqMotivo[r.motivo]||0) + 1; });
-    const topMotivo = Object.entries(freqMotivo).sort((a,b) => b[1]-a[1])[0];
+    // Último dia lançado (maior data nos dados filtrados)
+    const datas = [...new Set(PERDAS_filtrados.map(r => r.data))].sort();
+    const ultimoDia = datas.length ? datas[datas.length - 1] : null;
+    const kgDia = PERDAS_filtrados
+      .filter(r => r.data === ultimoDia)
+      .reduce((s, r) => s + (parseFloat(r.quantidade_kg) || 0), 0);
+
+    // Semana atual (últimos 7 dias a partir do último dia lançado)
+    let kgSemana = 0;
+    if(ultimoDia){
+      const limSemana = new Date(ultimoDia);
+      limSemana.setDate(limSemana.getDate() - 6);
+      const limStr = limSemana.toISOString().slice(0,10);
+      kgSemana = PERDAS_filtrados
+        .filter(r => r.data >= limStr && r.data <= ultimoDia)
+        .reduce((s, r) => s + (parseFloat(r.quantidade_kg) || 0), 0);
+    }
+
+    // Mês atual (mesmo ano/mês do último dia lançado)
+    let kgMes = 0;
+    let labelMes = 'Mês';
+    if(ultimoDia){
+      const anoMes = ultimoDia.slice(0,7); // 'YYYY-MM'
+      const [ano, mes] = anoMes.split('-');
+      const nomeMes = new Date(Number(ano), Number(mes)-1, 1)
+        .toLocaleString('pt-BR',{month:'long'});
+      labelMes = `${nomeMes.charAt(0).toUpperCase()}${nomeMes.slice(1)}/${ano.slice(2)}`;
+      kgMes = PERDAS_filtrados
+        .filter(r => r.data && r.data.startsWith(anoMes))
+        .reduce((s, r) => s + (parseFloat(r.quantidade_kg) || 0), 0);
+    }
+
+    const labelDia = ultimoDia
+      ? ultimoDia.split('-').reverse().join('/')
+      : 'Dia';
 
     grid.innerHTML = `
-      <div class="stat-card" style="background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);padding:16px 18px;text-align:center;">
-        <div class="stat-label">Total Perdido</div>
-        <div class="stat-value red">${totalKg.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} kg</div>
+      <div class="kpi-card sem-bad">
+        <div class="label">Total Perdido — ${labelDia}</div>
+        <div class="value">${fmt(kgDia)}</div>
       </div>
-      <div class="stat-card" style="background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);padding:16px 18px;text-align:center;">
-        <div class="stat-label">Registros</div>
-        <div class="stat-value neutral">${registros}</div>
+      <div class="kpi-card sem-bad">
+        <div class="label">Total Perdido — Semana</div>
+        <div class="value">${fmt(kgSemana)}</div>
       </div>
-      <div class="stat-card" style="background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);padding:16px 18px;text-align:center;">
-        <div class="stat-label">Produtos Distintos</div>
-        <div class="stat-value neutral">${produtosUnicos}</div>
+      <div class="kpi-card sem-bad">
+        <div class="label">Total Perdido — ${labelMes}</div>
+        <div class="value">${fmt(kgMes)}</div>
       </div>
-      <div class="stat-card" style="background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);padding:16px 18px;text-align:center;">
-        <div class="stat-label">Setores</div>
-        <div class="stat-value neutral">${setoresUnicos}</div>
-      </div>
-      ${topMotivo ? `
-      <div class="stat-card" style="background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);padding:16px 18px;text-align:center;">
-        <div class="stat-label">Principal Motivo</div>
-        <div style="font-size:14px;font-weight:700;color:var(--warn);line-height:1.3;margin-top:4px;">${topMotivo[0]}</div>
-        <div class="stat-sub">${topMotivo[1]} ocorrência${topMotivo[1]>1?'s':''}</div>
-      </div>` : ''}
     `;
   }
 
