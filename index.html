@@ -3015,6 +3015,7 @@ body{background:#fff;color:#000}
     <button type="button" class="ri-subtab-btn active" data-ritab="geral">Geral</button>
     <button type="button" class="ri-subtab-btn" data-ritab="producao">Produção</button>
     <button type="button" class="ri-subtab-btn" data-ritab="tortas">Produção Tortas</button>
+    <button type="button" class="ri-subtab-btn" data-ritab="perdas">Registro de Perdas</button>
   </div>
 
   <!-- Conteúdo: Geral -->
@@ -3297,6 +3298,90 @@ body{background:#fff;color:#000}
     </div>
 
   </div><!-- /riTortasContent -->
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- ABA: REGISTRO DE PERDAS                                  -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div id="riPerdasContent" style="display:none;">
+
+    <!-- Filtros -->
+    <div class="panel" style="margin-bottom:16px;">
+      <div class="panel-title" style="color:var(--red-dark);">Filtros — Registro de Perdas</div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <label style="font-size:11px;color:var(--ink-soft);font-weight:600;">SETOR</label>
+          <select id="perdas-setor" class="filter-select">
+            <option value="">Todos</option>
+            <option value="Embalagem">Embalagem</option>
+            <option value="Salgado">Salgado</option>
+            <option value="Padaria">Padaria</option>
+            <option value="Confeitaria">Confeitaria</option>
+            <option value="Fritador">Fritador</option>
+            <option value="Croissant">Croissant</option>
+            <option value="Giro-Dia">Giro-Dia</option>
+            <option value="Giro-Noite">Giro-Noite</option>
+            <option value="Cozinha">Cozinha</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <label style="font-size:11px;color:var(--ink-soft);font-weight:600;">MOTIVO</label>
+          <select id="perdas-motivo" class="filter-select">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div style="align-self:flex-end;font-size:11px;color:var(--ink-soft);padding-bottom:6px;">
+          📅 Período: filtro global do topo da página
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div id="perdas-kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px;"></div>
+
+    <!-- Gráfico: kg por motivo -->
+    <div class="panel" style="margin-bottom:20px;">
+      <div class="panel-title" style="color:var(--red-dark);">Perdas por Motivo (kg)</div>
+      <div style="position:relative;height:260px;">
+        <canvas id="perdas-chart-motivo"></canvas>
+      </div>
+    </div>
+
+    <!-- Gráfico: histórico diário -->
+    <div class="panel" style="margin-bottom:20px;">
+      <div class="panel-title" style="color:var(--red-dark);">Histórico Diário de Perdas (kg)</div>
+      <div style="position:relative;height:220px;">
+        <canvas id="perdas-chart-linha"></canvas>
+      </div>
+    </div>
+
+    <!-- Tabela detalhada -->
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div class="panel-title" style="color:var(--red-dark);margin-bottom:0;">Registros de Perdas</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" id="perdas-busca" placeholder="Buscar produto…" class="filter-select" style="width:200px;">
+          <span id="perdas-count" style="font-size:12px;color:var(--ink-soft);"></span>
+        </div>
+      </div>
+      <div style="overflow-x:auto;max-height:500px;overflow-y:auto;">
+        <table id="perdas-tabela" style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="border-bottom:2px solid var(--line);background:var(--cream);">
+              <th style="text-align:left;padding:8px 12px;white-space:nowrap;position:sticky;top:0;background:var(--cream);font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft);">Data</th>
+              <th style="text-align:left;padding:8px 12px;white-space:nowrap;position:sticky;top:0;background:var(--cream);font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft);">Setor</th>
+              <th style="text-align:left;padding:8px 12px;position:sticky;top:0;background:var(--cream);font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft);">Produto</th>
+              <th style="text-align:right;padding:8px 12px;white-space:nowrap;position:sticky;top:0;background:var(--cream);font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft);">Qtd (kg)</th>
+              <th style="text-align:left;padding:8px 12px;position:sticky;top:0;background:var(--cream);font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft);">Motivo</th>
+              <th style="text-align:left;padding:8px 12px;position:sticky;top:0;background:var(--cream);font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft);">Observação</th>
+            </tr>
+          </thead>
+          <tbody id="perdas-tbody"></tbody>
+          <tfoot id="perdas-tfoot" style="position:sticky;bottom:0;background:var(--cream);font-weight:700;border-top:2px solid var(--line);"></tfoot>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /riPerdasContent -->
 
   </div> <!-- /container -->
 
@@ -18532,12 +18617,16 @@ document.querySelectorAll('.ri-subtab-btn').forEach(btn => {
     document.getElementById('riGeralContent').style.display    = tab === 'geral'     ? '' : 'none';
     document.getElementById('riProdContent').style.display     = tab === 'producao'  ? '' : 'none';
     document.getElementById('riTortasContent').style.display   = tab === 'tortas'    ? '' : 'none';
+    document.getElementById('riPerdasContent').style.display   = tab === 'perdas'    ? '' : 'none';
     if(tab === 'producao'){
       const filteredDates = getFilteredDates();
       renderVolumePorProduto(filteredDates);
     }
     if(tab === 'tortas'){
       PT_init();
+    }
+    if(tab === 'perdas'){
+      renderPerdas();
     }
   });
 });
@@ -22952,6 +23041,325 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 
 /* ══ FIM MÓDULO PRODUÇÃO TORTAS ══ */
+
+// ─────────────────────────────────────────────
+// MÓDULO REGISTRO DE PERDAS
+// ─────────────────────────────────────────────
+(function(){
+
+  let PERDAS_dados = [];         // dados brutos do Supabase
+  let PERDAS_filtrados = [];     // após filtros de setor/motivo/busca
+  let PERDAS_carregando = false;
+  let PERDAS_inicializado = false;
+  let PERDAS_periodoAtual = { ini: '', fim: '' };
+
+  // Instâncias Chart.js para destruir antes de recriar
+  let perdasChartMotivo = null;
+  let perdasChartLinha  = null;
+
+  // ── Período global ──────────────────────────
+  function perdasRangePeriodo(){
+    const ini = (typeof dateStartInput !== 'undefined' && dateStartInput.value) || '';
+    const fim = (typeof dateEndInput   !== 'undefined' && dateEndInput.value)   || '';
+    return { ini, fim };
+  }
+
+  // ── Busca dados no Supabase ──────────────────
+  async function PERDAS_fetchDados(){
+    const { ini, fim } = perdasRangePeriodo();
+    PERDAS_periodoAtual = { ini, fim };
+
+    let url = `${SUPABASE_URL}/rest/v1/perdas_producao?select=*&order=data.desc,setor.asc,produto.asc`;
+    if(ini && fim){
+      url += `&data=gte.${ini}&data=lte.${fim}`;
+    } else if(ini){
+      url += `&data=gte.${ini}`;
+    } else if(fim){
+      url += `&data=lte.${fim}`;
+    }
+
+    const resp = await fetch(url, {
+      headers: {
+        'apikey':        SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Accept':        'application/json'
+      }
+    });
+    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    PERDAS_dados = await resp.json();
+
+    // Popular select de motivos dinamicamente
+    const motivos = [...new Set(PERDAS_dados.map(r => r.motivo).filter(Boolean))].sort();
+    const sel = document.getElementById('perdas-motivo');
+    if(sel){
+      const atual = sel.value;
+      sel.innerHTML = '<option value="">Todos</option>';
+      motivos.forEach(m => {
+        const o = document.createElement('option');
+        o.value = m; o.textContent = m;
+        sel.appendChild(o);
+      });
+      if(motivos.includes(atual)) sel.value = atual;
+    }
+  }
+
+  // ── Filtrar ──────────────────────────────────
+  function PERDAS_filtrar(){
+    const setor  = (document.getElementById('perdas-setor')?.value  || '').toLowerCase();
+    const motivo = (document.getElementById('perdas-motivo')?.value || '').toLowerCase();
+    const busca  = (document.getElementById('perdas-busca')?.value  || '').toLowerCase();
+
+    PERDAS_filtrados = PERDAS_dados.filter(r => {
+      if(setor  && (r.setor  || '').toLowerCase() !== setor)                    return false;
+      if(motivo && (r.motivo || '').toLowerCase() !== motivo)                   return false;
+      if(busca  && !(r.produto || '').toLowerCase().includes(busca))             return false;
+      return true;
+    });
+  }
+
+  // ── KPI Cards ────────────────────────────────
+  function PERDAS_renderKPIs(){
+    const grid = document.getElementById('perdas-kpi-grid');
+    if(!grid) return;
+
+    const totalKg = PERDAS_filtrados.reduce((s, r) => s + (parseFloat(r.quantidade_kg) || 0), 0);
+    const setoresUnicos  = new Set(PERDAS_filtrados.map(r => r.setor)).size;
+    const produtosUnicos = new Set(PERDAS_filtrados.map(r => r.produto)).size;
+    const registros      = PERDAS_filtrados.length;
+
+    // Motivo mais frequente
+    const freqMotivo = {};
+    PERDAS_filtrados.forEach(r => { if(r.motivo) freqMotivo[r.motivo] = (freqMotivo[r.motivo]||0) + 1; });
+    const topMotivo = Object.entries(freqMotivo).sort((a,b) => b[1]-a[1])[0];
+
+    grid.innerHTML = `
+      <div class="stat-card" style="background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);padding:16px 18px;text-align:center;">
+        <div class="stat-label">Total Perdido</div>
+        <div class="stat-value red">${totalKg.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} kg</div>
+      </div>
+      <div class="stat-card" style="background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);padding:16px 18px;text-align:center;">
+        <div class="stat-label">Registros</div>
+        <div class="stat-value neutral">${registros}</div>
+      </div>
+      <div class="stat-card" style="background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);padding:16px 18px;text-align:center;">
+        <div class="stat-label">Produtos Distintos</div>
+        <div class="stat-value neutral">${produtosUnicos}</div>
+      </div>
+      <div class="stat-card" style="background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);padding:16px 18px;text-align:center;">
+        <div class="stat-label">Setores</div>
+        <div class="stat-value neutral">${setoresUnicos}</div>
+      </div>
+      ${topMotivo ? `
+      <div class="stat-card" style="background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);padding:16px 18px;text-align:center;">
+        <div class="stat-label">Principal Motivo</div>
+        <div style="font-size:14px;font-weight:700;color:var(--warn);line-height:1.3;margin-top:4px;">${topMotivo[0]}</div>
+        <div class="stat-sub">${topMotivo[1]} ocorrência${topMotivo[1]>1?'s':''}</div>
+      </div>` : ''}
+    `;
+  }
+
+  // ── Gráfico: kg por motivo (barras) ─────────
+  function PERDAS_renderChartMotivo(){
+    const canvas = document.getElementById('perdas-chart-motivo');
+    if(!canvas || typeof Chart === 'undefined') return;
+    if(perdasChartMotivo){ perdasChartMotivo.destroy(); perdasChartMotivo = null; }
+
+    const agrup = {};
+    PERDAS_filtrados.forEach(r => {
+      const m = r.motivo || 'Sem motivo';
+      agrup[m] = (agrup[m] || 0) + (parseFloat(r.quantidade_kg) || 0);
+    });
+    const labels = Object.keys(agrup).sort((a,b) => agrup[b]-agrup[a]);
+    const values = labels.map(l => agrup[l]);
+
+    if(!labels.length){
+      canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+      return;
+    }
+
+    perdasChartMotivo = new Chart(canvas.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'kg perdido',
+          data: values,
+          backgroundColor: 'rgba(161,1,1,0.7)',
+          borderColor: '#A10101',
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toLocaleString('pt-BR',{minimumFractionDigits:2})} kg` } }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+          y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('pt-BR',{minimumFractionDigits:1}) + ' kg', font: { size: 11 } } }
+        }
+      }
+    });
+  }
+
+  // ── Gráfico: histórico diário (linha) ────────
+  function PERDAS_renderChartLinha(){
+    const canvas = document.getElementById('perdas-chart-linha');
+    if(!canvas || typeof Chart === 'undefined') return;
+    if(perdasChartLinha){ perdasChartLinha.destroy(); perdasChartLinha = null; }
+
+    const agrup = {};
+    PERDAS_filtrados.forEach(r => {
+      const d = r.data;
+      agrup[d] = (agrup[d] || 0) + (parseFloat(r.quantidade_kg) || 0);
+    });
+    const datas = Object.keys(agrup).sort();
+    const values = datas.map(d => agrup[d]);
+
+    if(!datas.length){
+      canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+      return;
+    }
+
+    const labels = datas.map(d => {
+      const [y,m,dd] = d.split('-');
+      return `${dd}/${m}`;
+    });
+
+    perdasChartLinha = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'kg perdido',
+          data: values,
+          borderColor: '#A10101',
+          backgroundColor: 'rgba(161,1,1,0.08)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 5,
+          pointBackgroundColor: '#A10101'
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toLocaleString('pt-BR',{minimumFractionDigits:2})} kg` } }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+          y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('pt-BR',{minimumFractionDigits:1}) + ' kg', font: { size: 11 } } }
+        }
+      }
+    });
+  }
+
+  // ── Tabela ────────────────────────────────────
+  function PERDAS_renderTabela(){
+    const tbody = document.getElementById('perdas-tbody');
+    const tfoot = document.getElementById('perdas-tfoot');
+    const count = document.getElementById('perdas-count');
+    if(!tbody) return;
+
+    const totalKg = PERDAS_filtrados.reduce((s, r) => s + (parseFloat(r.quantidade_kg) || 0), 0);
+
+    tbody.innerHTML = PERDAS_filtrados.map(r => {
+      const d = r.data ? r.data.split('-').reverse().join('/') : '';
+      const kg = (parseFloat(r.quantidade_kg) || 0).toLocaleString('pt-BR',{minimumFractionDigits:3,maximumFractionDigits:3});
+      return `<tr style="border-bottom:1px solid var(--line);">
+        <td style="padding:7px 12px;font-size:12px;white-space:nowrap;">${d}</td>
+        <td style="padding:7px 12px;font-size:12px;">
+          <span style="background:var(--cream);border:1px solid var(--line);border-radius:var(--radius-pill);padding:2px 8px;font-size:10.5px;font-weight:700;color:var(--ink-soft);">${r.setor || ''}</span>
+        </td>
+        <td style="padding:7px 12px;font-size:12px;font-weight:500;">${r.produto || ''}</td>
+        <td style="padding:7px 12px;font-size:12px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:var(--red);">${kg}</td>
+        <td style="padding:7px 12px;font-size:12px;color:var(--warn);">${r.motivo || '—'}</td>
+        <td style="padding:7px 12px;font-size:12px;color:var(--ink-soft);">${r.observacao || '—'}</td>
+      </tr>`;
+    }).join('');
+
+    if(tfoot){
+      tfoot.innerHTML = `<tr>
+        <td colspan="3" style="padding:8px 12px;font-size:12px;font-weight:700;">TOTAL</td>
+        <td style="padding:8px 12px;font-size:12px;text-align:right;font-variant-numeric:tabular-nums;font-weight:800;color:var(--red);">${totalKg.toLocaleString('pt-BR',{minimumFractionDigits:3})} kg</td>
+        <td colspan="2"></td>
+      </tr>`;
+    }
+    if(count) count.textContent = `${PERDAS_filtrados.length} registro${PERDAS_filtrados.length !== 1 ? 's' : ''}`;
+  }
+
+  // ── Render completo (filtros já aplicados) ────
+  function PERDAS_render(){
+    PERDAS_filtrar();
+    PERDAS_renderKPIs();
+    PERDAS_renderChartMotivo();
+    PERDAS_renderChartLinha();
+    PERDAS_renderTabela();
+  }
+
+  // ── Carrega dados e renderiza ─────────────────
+  async function PERDAS_carregarDados(){
+    if(PERDAS_carregando) return;
+    PERDAS_carregando = true;
+    const grid = document.getElementById('perdas-kpi-grid');
+    if(grid) grid.innerHTML = `<div style="padding:20px;color:var(--ink-soft);font-size:13px;">Carregando…</div>`;
+    try {
+      await PERDAS_fetchDados();
+      PERDAS_render();
+    } finally {
+      PERDAS_carregando = false;
+    }
+  }
+
+  // ── Ponto de entrada público ──────────────────
+  window.renderPerdas = async function(){
+    const { ini, fim } = perdasRangePeriodo();
+
+    if(!PERDAS_inicializado){
+      PERDAS_inicializado = true;
+
+      // Registra listeners dos filtros locais — apenas uma vez
+      document.getElementById('perdas-setor')?.addEventListener('change', () => PERDAS_render());
+      document.getElementById('perdas-motivo')?.addEventListener('change', () => PERDAS_render());
+      document.getElementById('perdas-busca')?.addEventListener('input',  () => PERDAS_render());
+    }
+
+    // Re-busca se período mudou ou primeira vez
+    if(ini !== PERDAS_periodoAtual.ini || fim !== PERDAS_periodoAtual.fim || !PERDAS_dados.length){
+      await PERDAS_carregarDados();
+    } else {
+      PERDAS_render();
+    }
+  };
+
+  // ── Sincroniza com filtro global ──────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    function perdasOnPeriodChange(){
+      if(document.getElementById('riPerdasContent')?.style.display !== 'none'){
+        PERDAS_carregarDados().catch(() => {});
+      } else {
+        // Aba oculta — força re-fetch na próxima abertura
+        PERDAS_periodoAtual = { ini: '', fim: '' };
+      }
+    }
+    if(typeof dateStartInput !== 'undefined'){
+      dateStartInput.addEventListener('change', perdasOnPeriodChange);
+      dateEndInput.addEventListener('change',   perdasOnPeriodChange);
+    }
+    const btnRef = document.getElementById('btnRefreshData');
+    if(btnRef){
+      btnRef.addEventListener('click', () => {
+        PERDAS_periodoAtual = { ini: '', fim: '' };
+        if(document.getElementById('riPerdasContent')?.style.display !== 'none'){
+          PERDAS_carregarDados().catch(() => {});
+        }
+      });
+    }
+  });
+
+})();
+/* ══ FIM MÓDULO REGISTRO DE PERDAS ══ */
 
 </script>
 </body>
