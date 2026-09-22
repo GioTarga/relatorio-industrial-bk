@@ -23160,6 +23160,17 @@ document.addEventListener('DOMContentLoaded', () => {
       ? ultimoDia.split('-').reverse().join('/')
       : 'Dia';
 
+    // Produto com maior perda no mês
+    const anoMesFinal = ultimoDia ? ultimoDia.slice(0,7) : null;
+    const porProdutoMes = {};
+    PERDAS_filtrados
+      .filter(r => anoMesFinal && r.data && r.data.startsWith(anoMesFinal))
+      .forEach(r => {
+        const p = r.produto || 'Desconhecido';
+        porProdutoMes[p] = (porProdutoMes[p] || 0) + (parseFloat(r.quantidade_kg) || 0);
+      });
+    const topProduto = Object.entries(porProdutoMes).sort((a,b) => b[1]-a[1])[0];
+
     grid.innerHTML = `
       <div class="kpi-card sem-bad">
         <div class="label">Total Perdido — ${labelDia}</div>
@@ -23172,6 +23183,11 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="kpi-card sem-bad">
         <div class="label">Total Perdido — ${labelMes}</div>
         <div class="value">${fmt(kgMes)}</div>
+      </div>
+      <div class="kpi-card sem-warn">
+        <div class="label">Maior Perda do Mês</div>
+        <div class="value" style="font-size:15px;line-height:1.3;">${topProduto ? topProduto[0] : '—'}</div>
+        ${topProduto ? `<div style="font-size:11px;color:var(--ink-soft);margin-top:6px;">${fmt(topProduto[1])}</div>` : ''}
       </div>
     `;
   }
