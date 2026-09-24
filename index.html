@@ -18222,8 +18222,7 @@ function processFile(file,tipo){
         return;
       }
       // Parse dos dados
-      const items=[];let semCodigo=0,estoqueInvalido=0,reservaInvalida=0,duplicados=0;
-      const codigosVistos=new Set();
+      const items=[];let semCodigo=0,estoqueInvalido=0,reservaInvalida=0;
       let currentFamilia=''; // família atual capturada dos cabeçalhos de seção CIGAM
       for(let i=headerIdx+1;i<rows.length;i++){
         const row=rows[i];
@@ -18241,8 +18240,6 @@ function processFile(file,tipo){
           continue;
         }
         const codigo=normCod(rawCod)||rawCod;
-        if(codigosVistos.has(codigo)){duplicados++;continue;}
-        codigosVistos.add(codigo);
         const rawEst=rawEstCheck;
         const estoque=estoqueCheck;
         if(isNaN(estoque)){estoqueInvalido++;continue;}
@@ -18279,7 +18276,7 @@ function processFile(file,tipo){
         });
       }
       const summary={total:items.length+semCodigo+estoqueInvalido,validos:items.length,
-        semCodigo,estoqueInvalido,reservaInvalida,duplicados,semReserva:iRes<0};
+        semCodigo,estoqueInvalido,reservaInvalida,semReserva:iRes<0};
       showImportPreview(summary);
       // Confirmar importação
       // ── Validar período antes de prosseguir ──────────────────────────────
@@ -18299,7 +18296,6 @@ function processFile(file,tipo){
         (semCodigo?`⚠ Sem código: ${semCodigo}\n`:'')+
         (estoqueInvalido?`⚠ Estoque inválido: ${estoqueInvalido}\n`:'')+
         (reservaInvalida?`⚠ Reserva inválida (usou 0): ${reservaInvalida}\n`:'')+
-        (duplicados?`⚠ Duplicados removidos: ${duplicados}\n`:'')+
         (iRes<0?`ℹ️ Coluna Reserva não encontrada — usando reserva=0 para todos\n`:'')+
         `\nPeríodo: ${periodoInicio===periodoFim?periodoInicio:periodoInicio+' a '+periodoFim}`;
       if(confirm(msg)){
@@ -18368,7 +18364,6 @@ function showImportPreview(data){
       <div><strong style="font-size:18px;color:var(--ink)">${data.validos}</strong><br><span style="color:var(--ink-soft)">Válidos</span></div>
       <div><strong style="font-size:18px;color:${data.semCodigo>0?'var(--warn)':'var(--good)'}">${data.semCodigo}</strong><br><span style="color:var(--ink-soft)">Sem código</span></div>
       <div><strong style="font-size:18px;color:${data.estoqueInvalido>0?'var(--warn)':'var(--good)'}">${data.estoqueInvalido}</strong><br><span style="color:var(--ink-soft)">Estoque inválido</span></div>
-      <div><strong style="font-size:18px;color:${data.duplicados>0?'var(--warn)':'var(--good)'}">${data.duplicados}</strong><br><span style="color:var(--ink-soft)">Duplicados</span></div>
     </div>
     ${data.semReserva?'<div style="margin-top:10px;font-size:11px;color:var(--warn);font-weight:600">⚠ Coluna de Reserva não encontrada no XLSX — os cálculos de saldo não serão precisos. Verifique se o arquivo contém a coluna de Reserva.</div>':''}`;
 }
