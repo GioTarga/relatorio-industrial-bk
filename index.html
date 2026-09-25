@@ -4024,8 +4024,9 @@ body{background:#fff;color:#000}
 
       <div class="panel">
         <div class="panel-title">Saldo de Estoque Atual</div>
-        <div class="trend-foot" style="margin-bottom:12px;">Saldo = Última Contagem + Entradas lançadas depois − Requisições lançadas depois. Itens sem nenhuma contagem ainda partem de 0 (menos confiável — cadastre uma contagem inicial assim que possível).</div>
-        <input type="text" id="eqSaldoFiltro" placeholder="Buscar produto..." style="max-width:320px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--cream);margin-bottom:10px;">
+        <div class="trend-foot" style="margin-bottom:12px;">Saldo = Última Contagem + Entradas lançadas depois − Requisições lançadas depois. Itens sem nenhuma contagem ainda partem de 0 (menos confiável — cadastre uma contagem inicial assim que possível). Atualiza sozinho sempre que uma requisição, contagem ou entrada é lançada, editada ou excluída.</div>
+        <input type="text" id="eqSaldoFiltro" placeholder="Buscar produto..." style="max-width:320px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--cream);margin-bottom:14px;">
+        <div class="chart-wrap" id="eqSaldoChartWrap" style="margin-bottom:18px;"></div>
         <div class="table-wrap" style="max-height:400px;">
           <table class="detail" id="eqSaldoTable">
             <thead>
@@ -12538,6 +12539,7 @@ async function EQ_saveSingleEntrada(row){
     feedback.textContent = `✓ "${payload.item}" salvo.`;
     feedback.className = 'lanc-feedback ok';
     EQ_KNOWN_ITEMS = null;
+    EQ_DASH_refreshIfLoaded();
   }catch(err){
     console.error('Erro ao salvar entrada:', err);
     btn.disabled = false; btn.textContent = 'Salvar este item';
@@ -12572,6 +12574,7 @@ document.getElementById('eqFormEntrada').addEventListener('submit', async (e)=>{
     document.getElementById('eqEntradaItems').innerHTML = '';
     EQ_addEntradaItem();
     EQ_KNOWN_ITEMS = null;
+    EQ_DASH_refreshIfLoaded();
   }catch(err){
     console.error('Erro ao salvar entradas:', err);
     feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
@@ -12667,6 +12670,7 @@ async function EQ_saveSingleRequisicao(row){
     feedback.textContent = `✓ "${payload.item}" salvo.`;
     feedback.className = 'lanc-feedback ok';
     EQ_KNOWN_ITEMS = null;
+    EQ_DASH_refreshIfLoaded();
   }catch(err){
     console.error('Erro ao salvar requisição:', err);
     btn.disabled = false; btn.textContent = 'Salvar este item';
@@ -12704,6 +12708,7 @@ document.getElementById('eqFormRequisicao').addEventListener('submit', async (e)
     document.getElementById('eqRequisicaoItems').innerHTML = '';
     EQ_addRequisicaoItem();
     EQ_KNOWN_ITEMS = null;
+    EQ_DASH_refreshIfLoaded();
   }catch(err){
     console.error('Erro ao salvar requisições:', err);
     feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
@@ -12945,6 +12950,7 @@ async function EQ_saveSingleContagem(row){
     feedback.textContent = `✓ "${payload.item}" salvo.`;
     feedback.className = 'lanc-feedback ok';
     EQ_KNOWN_ITEMS = null;
+    EQ_DASH_refreshIfLoaded();
   }catch(err){
     console.error('Erro ao salvar contagem:', err);
     btn.disabled = false; btn.textContent = 'Salvar este item';
@@ -12979,6 +12985,7 @@ document.getElementById('eqFormContagem').addEventListener('submit', async (e)=>
     document.getElementById('eqContagemItems').innerHTML = '';
     EQ_addContagemItem();
     EQ_KNOWN_ITEMS = null;
+    EQ_DASH_refreshIfLoaded();
   }catch(err){
     console.error('Erro ao salvar contagens:', err);
     feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
@@ -13225,6 +13232,7 @@ async function EQ_saveEditRow(id, tipo){
     EQ_renderHistTable(tipo);
     feedback.textContent = '✓ Registro atualizado.';
     feedback.className = 'lanc-feedback ok';
+    EQ_DASH_refreshIfLoaded();
   }catch(err){
     console.error('Erro ao atualizar registro de estoque:', err);
     feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
@@ -13244,6 +13252,7 @@ async function EQ_deleteRow(id, tipo){
     EQ_renderHistTable(tipo);
     feedback.textContent = '✓ Registro excluído.';
     feedback.className = 'lanc-feedback ok';
+    EQ_DASH_refreshIfLoaded();
   }catch(err){
     console.error('Erro ao excluir registro de estoque:', err);
     feedback.textContent = '⚠ Erro ao excluir: ' + (err.message || err);
@@ -13405,6 +13414,7 @@ async function EQ_DASH_loadData(){
     EQ_DASH_renderLowStock();
     EQ_DASH_renderMinimosPanel();
     EQ_DASH_renderSaldoAtual();
+    EQ_DASH_renderSaldoChart();
     infoEl.textContent = `${resultado.length} insumo(s) no período`;
   }catch(err){
     console.error('Erro ao carregar painel de estoque:', err);
@@ -13445,7 +13455,70 @@ function EQ_DASH_renderSaldoAtual(){
     </tr>`;
   }).join('');
 }
-document.getElementById('eqSaldoFiltro').addEventListener('input', EQ_DASH_renderSaldoAtual);
+
+/* ---------- Gráfico de barras: Estoque Atual por Insumo ----------
+   Mesma fonte de dados e mesmo filtro de busca da tabela "Saldo de
+   Estoque Atual" acima — sempre que ela é recalculada (EQ_DASH_loadData,
+   chamado após qualquer requisição/contagem/entrada lançada, editada ou
+   excluída), esse gráfico é redesenhado junto. */
+function EQ_DASH_renderSaldoChart(){
+  const filtro = (document.getElementById('eqSaldoFiltro').value || '').toLowerCase().trim();
+  const wrap = document.getElementById('eqSaldoChartWrap');
+  let itens = Object.keys(EQ_DASH_SALDO_ATUAL);
+  if(filtro) itens = itens.filter(i => i.toLowerCase().includes(filtro));
+  if(itens.length === 0){
+    wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">📦</span>Nenhum insumo encontrado.</div>`;
+    return;
+  }
+  // Maior saldo primeiro; sem filtro, mostra só os 30 com mais estoque pra
+  // não virar uma lista infinita — refine a busca acima pra achar um item específico.
+  let ordenado = [...itens].sort((a,b)=> EQ_DASH_SALDO_ATUAL[b].saldo - EQ_DASH_SALDO_ATUAL[a].saldo);
+  const truncado = !filtro && ordenado.length > 30;
+  if(truncado) ordenado = ordenado.slice(0, 30);
+  ordenado.reverse(); // maior saldo fica no topo da barra horizontal
+
+  const barH = 20, gap = 10, leftPad = 200, rightPad = 130, topPad = 8;
+  const chartW = getResponsiveChartW('eqSaldoChartWrap', 820);
+  const barWmax = chartW - leftPad - rightPad;
+  const chartH = ordenado.length*(barH+gap) + topPad;
+  const maxVal = Math.max(...ordenado.map(i=>Math.abs(EQ_DASH_SALDO_ATUAL[i].saldo)), 1);
+  let bars = '';
+  ordenado.forEach((item,i)=>{
+    const s = EQ_DASH_SALDO_ATUAL[item];
+    const y = topPad + i*(barH+gap);
+    const w = Math.max((Math.abs(s.saldo)/maxVal)*barWmax, 2);
+    const cor = s.saldo < 0 ? 'var(--red)' : 'var(--good)';
+    const label = truncateProdLabel(item, 22);
+    bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="10.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${label}${s.semContagem ? ' ⚠' : ''}<title>${item}${s.semContagem ? ' — sem contagem cadastrada, saldo parte de 0' : ''}</title></text>`;
+    bars += `<rect x="${leftPad}" y="${y}" width="${barWmax}" height="${barH}" fill="#f3d9d0" stroke="#e0a89a" stroke-width="1" rx="5"/>`;
+    bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="${cor}" rx="5"/>`;
+    bars += `<text x="${leftPad+Math.max(w,barWmax)+8}" y="${y+barH/2+4}" font-size="10.5" fill="${cor}" font-weight="700">${EQ_DASH_fmtNum(s.saldo)} ${s.unidade||''}</text>`;
+  });
+  const visibleRows = 8;
+  const containerH = visibleRows*(barH+gap) + topPad + 6;
+  wrap.innerHTML = `
+    ${truncado ? `<div class="trend-foot" style="margin-bottom:8px;">Mostrando os 30 insumos com maior saldo — use a busca acima pra achar outro.</div>` : ''}
+    <div style="max-height:${containerH}px; width:${chartW}px; overflow-y:auto; overflow-x:hidden; display:inline-block; text-align:left;">
+      <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:block;">
+        ${bars}
+      </svg>
+    </div>`;
+}
+
+function EQ_DASH_onSaldoFiltroInput(){
+  EQ_DASH_renderSaldoAtual();
+  EQ_DASH_renderSaldoChart();
+}
+document.getElementById('eqSaldoFiltro').addEventListener('input', EQ_DASH_onSaldoFiltroInput);
+
+/* Chama EQ_DASH_loadData só se o painel de Almoxarifado já foi aberto ao
+   menos uma vez nessa sessão — assim toda requisição, contagem ou entrada
+   lançada (ou editada/excluída) em qualquer aba do sistema já deixa o
+   gráfico de Estoque Atual pronto e atualizado na próxima vez que o
+   usuário abrir o Almoxarifado, sem precisar clicar em "Atualizar". */
+function EQ_DASH_refreshIfLoaded(){
+  if(EQ_DASH_loadedOnce) EQ_DASH_loadData();
+}
 
 /* ---------- Alerta de estoque baixo ---------- */
 function EQ_heatColor(pct){
@@ -13769,6 +13842,7 @@ async function REF_submitForm(e){
     });
     document.querySelectorAll('#refChecklistTbody tr[data-extra="1"]').forEach(tr=> tr.remove());
     REF_loadData();
+    EQ_DASH_refreshIfLoaded();
   }catch(err){
     console.error('Erro ao salvar requisição do Refeitório:', err);
     feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
@@ -13952,6 +14026,7 @@ async function REF_saveEditRow(id){
     REF_renderHistTable();
     REF_renderKPIs();
     REF_renderChart();
+    EQ_DASH_refreshIfLoaded();
   }catch(err){
     console.error('Erro ao atualizar requisição do Refeitório:', err);
     alert('Erro ao salvar: ' + (err.message || err));
@@ -13968,6 +14043,7 @@ async function REF_deleteRow(id){
     REF_renderHistTable();
     REF_renderKPIs();
     REF_renderChart();
+    EQ_DASH_refreshIfLoaded();
   }catch(err){
     console.error('Erro ao excluir requisição do Refeitório:', err);
     alert('Erro ao excluir: ' + (err.message || err));
