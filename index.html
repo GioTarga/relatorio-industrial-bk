@@ -4052,7 +4052,7 @@ body{background:#fff;color:#000}
         <div class="text-block">
           <div class="eyebrow">Bread King · Refeitório</div>
           <h1>Refeitório</h1>
-          <div class="subtitle">Requisições diárias de insumos (FOR-SGQ-027) e consumo por item</div>
+          <div class="subtitle">Consumo de insumos por item — lançamentos ficam na aba Lançamento → Refeitório</div>
         </div>
       </div>
     </div>
@@ -4101,38 +4101,6 @@ body{background:#fff;color:#000}
           <div class="label">Dias com Requisição</div>
           <div class="value" id="refKpiDias">—</div>
         </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">Nova Requisição — Refeitório (FOR-SGQ-027)</div>
-        <div class="trend-foot" style="margin-bottom:12px;">Preencha só os itens que saíram nessa requisição. Item e unidade já vêm da lista padrão do formulário — ajuste a unidade se precisar.</div>
-        <form id="refForm" class="lanc-form">
-          <div class="lanc-field">
-            <label>Data da Solicitação</label>
-            <input type="date" id="refFormData" required>
-          </div>
-          <div class="lanc-field span-2">
-            <label>Líder / Solicitante</label>
-            <input type="text" id="refFormLider" placeholder="Nome de quem solicitou">
-          </div>
-          <div class="lanc-field span-3">
-            <input type="text" id="refChecklistFiltro" placeholder="Buscar insumo na lista…" style="max-width:320px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--cream);margin-bottom:10px;">
-            <div class="table-wrap" style="max-height:490px;">
-              <table class="detail" id="refChecklistTable">
-                <thead>
-                  <tr><th>Item</th><th class="center">Unidade</th><th class="center">Qtd. Solicitada</th><th class="center">Qtd. Entregue</th></tr>
-                </thead>
-                <tbody id="refChecklistTbody"></tbody>
-              </table>
-            </div>
-            <div class="trend-foot" id="refChecklistFiltroInfo" style="margin-top:6px;"></div>
-            <button type="button" class="lanc-add-item-btn" id="refAddExtraBtn" style="margin-top:10px;">+ Adicionar item fora da lista padrão</button>
-          </div>
-          <div class="lanc-submit-row">
-            <button type="submit" class="lanc-submit-btn" id="refSubmitBtn">Salvar Requisição</button>
-            <span class="lanc-feedback" id="refFormFeedback"></span>
-          </div>
-        </form>
       </div>
 
       <div class="panel">
@@ -4652,6 +4620,7 @@ body{background:#fff;color:#000}
           <button type="button" class="lanc-tab-btn active" data-lanctab="producao">Produção Diária</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="manutencao">Manutenção</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="estoque">Estoque</button>
+          <button type="button" class="lanc-tab-btn" data-lanctab="refeitorio">Refeitório</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="prodproc">Produtividade & Processos</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="maquinas">Máquinas</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="produtos">Produtos</button>
@@ -4981,6 +4950,39 @@ body{background:#fff;color:#000}
           <datalist id="lpUnidadeListEstoque">
             <option value="Kg"><option value="Litro"><option value="Unid"><option value="Pacote"><option value="Caixa"><option value="Saco">
           </datalist>
+        </div>
+
+        <!-- Formulário: Refeitório -->
+        <div id="lancPanelRefeitorio" class="panel" style="display:none;">
+          <div class="panel-title">Nova Requisição — Refeitório (FOR-SGQ-027)</div>
+          <div class="trend-foot" style="margin-bottom:12px;">Preencha só os itens que saíram nessa requisição. Item e unidade já vêm da lista padrão do formulário — ajuste a unidade se precisar.</div>
+          <form id="refForm" class="lanc-form">
+            <div class="lanc-field">
+              <label>Data da Solicitação</label>
+              <input type="date" id="refFormData" required>
+            </div>
+            <div class="lanc-field span-2">
+              <label>Líder / Solicitante</label>
+              <input type="text" id="refFormLider" placeholder="Nome de quem solicitou">
+            </div>
+            <div class="lanc-field span-3">
+              <input type="text" id="refChecklistFiltro" placeholder="Buscar insumo na lista…" style="max-width:320px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--cream);margin-bottom:10px;">
+              <div class="table-wrap" style="max-height:490px;">
+                <table class="detail" id="refChecklistTable">
+                  <thead>
+                    <tr><th>Item</th><th class="center">Unidade</th><th class="center">Qtd. Solicitada</th><th class="center">Qtd. Entregue</th></tr>
+                  </thead>
+                  <tbody id="refChecklistTbody"></tbody>
+                </table>
+              </div>
+              <div class="trend-foot" id="refChecklistFiltroInfo" style="margin-top:6px;"></div>
+              <button type="button" class="lanc-add-item-btn" id="refAddExtraBtn" style="margin-top:10px;">+ Adicionar item fora da lista padrão</button>
+            </div>
+            <div class="lanc-submit-row">
+              <button type="submit" class="lanc-submit-btn" id="refSubmitBtn">Salvar Requisição</button>
+              <span class="lanc-feedback" id="refFormFeedback"></span>
+            </div>
+          </form>
         </div>
 
         <!-- Formulário: Produtividade & Processos -->
@@ -11030,11 +11032,13 @@ document.querySelectorAll('.lanc-tab-btn').forEach(btn=>{
     document.getElementById('lancPanelProducao').style.display = tab === 'producao' ? 'block' : 'none';
     document.getElementById('lancPanelManutencao').style.display = tab === 'manutencao' ? 'block' : 'none';
     document.getElementById('lancPanelEstoque').style.display = tab === 'estoque' ? 'block' : 'none';
+    document.getElementById('lancPanelRefeitorio').style.display = tab === 'refeitorio' ? 'block' : 'none';
     document.getElementById('lancPanelProdProc').style.display = tab === 'prodproc' ? 'block' : 'none';
     document.getElementById('lancPanelMaquinas').style.display = tab === 'maquinas' ? 'block' : 'none';
     document.getElementById('lancPanelProdutos').style.display = tab === 'produtos' ? 'block' : 'none';
     document.getElementById('lancPanelSetores').style.display = tab === 'setores' ? 'block' : 'none';
     if(tab === 'estoque') EQ_populateDropdowns();
+    if(tab === 'refeitorio') REF_initLancamento();
     if(tab === 'producao') LANC_populateDropdowns();
     if(tab === 'prodproc') PPL_init();
     if(tab === 'maquinas') MQ_init();
@@ -13637,6 +13641,9 @@ const REF_ITENS_PADRAO = [
 ];
 const REF_SETOR = 'REFEITÓRIO';
 
+/* Página de dados (relatório) — KPIs, gráfico de consumo e histórico.
+   O lançamento em si (checklist da FOR-SGQ-027) mora na aba Lançamento →
+   Refeitório, ver REF_initLancamento — assim essa tela fica só com dados. */
 function REF_init(){
   const hoje = new Date();
   const startEl = document.getElementById('refDataIni');
@@ -13645,14 +13652,22 @@ function REF_init(){
   if(!startEl.value){ const d = new Date(); d.setDate(d.getDate()-30); startEl.value = d.toISOString().slice(0,10); }
   initDateRangePicker('ref', startEl, endEl, REF_loadData);
   document.getElementById('refBtnRefresh').addEventListener('click', REF_loadData);
-
-  REF_populateChecklist();
-  document.getElementById('refAddExtraBtn').addEventListener('click', REF_addExtraRow);
-  document.getElementById('refChecklistFiltro').addEventListener('input', REF_filterChecklist);
-  REF_setDefaultFormDate();
-  document.getElementById('refForm').addEventListener('submit', REF_submitForm);
-
   REF_loadData();
+}
+
+/* Chamado toda vez que o usuário abre a aba Refeitório dentro de
+   Lançamento (mesmo padrão do LM_initForm pra Manutenção). O dataset
+   guard evita registrar os listeners de novo a cada clique na aba. */
+function REF_initLancamento(){
+  REF_populateChecklist();
+  REF_setDefaultFormDate();
+  const form = document.getElementById('refForm');
+  if(!form.dataset.refInited){
+    form.dataset.refInited = '1';
+    document.getElementById('refAddExtraBtn').addEventListener('click', REF_addExtraRow);
+    document.getElementById('refChecklistFiltro').addEventListener('input', REF_filterChecklist);
+    form.addEventListener('submit', REF_submitForm);
+  }
 }
 
 function REF_setDefaultFormDate(){
