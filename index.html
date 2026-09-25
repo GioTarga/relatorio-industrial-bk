@@ -2937,6 +2937,10 @@ body{background:#fff;color:#000}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
         Estoque
       </button>
+      <button class="nav-item" data-page="refeitorio">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h1v11"/><path d="M9 2v9"/><path d="M15 2v7a2 2 0 0 0 2 2v11"/><path d="M15 2c-1.5 0-3 1.5-3 4v3"/></svg>
+        Refeitório
+      </button>
       <button class="nav-item" data-page="melhoria">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></svg>
         Melhoria Contínua
@@ -4040,6 +4044,119 @@ body{background:#fff;color:#000}
 
     </div>
   </div> <!-- /page-estoque -->
+
+  <div id="page-refeitorio" class="report-page" style="display:none;">
+
+    <div class="topbar">
+      <div class="brand">
+        <div class="text-block">
+          <div class="eyebrow">Bread King · Refeitório</div>
+          <h1>Refeitório</h1>
+          <div class="subtitle">Requisições diárias de insumos (FOR-SGQ-027) e consumo por item</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="period-bar">
+      <label>Período</label>
+      <div class="dr-wrap" id="drWrap_ref">
+        <button type="button" class="dr-btn" id="drBtn_ref"></button>
+        <div class="dr-panel" id="drPanel_ref">
+          <div class="dr-header">
+            <button type="button" class="dr-nav" id="drPrev_ref">‹</button>
+            <div class="dr-month-label" id="drLabel_ref"></div>
+            <button type="button" class="dr-nav" id="drNext_ref">›</button>
+          </div>
+          <div class="dr-weekdays"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+          <div class="dr-grid" id="drGrid_ref"></div>
+          <div class="dr-hint" id="drHint_ref">Clique numa data para começar, e em outra pra fechar o intervalo</div>
+          <div class="dr-footer">
+            <button type="button" id="drClear_ref">Limpar</button>
+            <button type="button" id="drToday_ref">Hoje</button>
+          </div>
+        </div>
+      </div>
+      <input type="date" id="refDataIni" style="display:none;">
+      <input type="date" id="refDataFim" style="display:none;">
+      <button class="btn-refresh" id="refBtnRefresh">⟳ Atualizar</button>
+      <span class="period-info" id="refPeriodInfo"></span>
+    </div>
+
+    <div class="container">
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="label">Lançamentos no Período</div>
+          <div class="value" id="refKpiLancamentos">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">Itens Distintos</div>
+          <div class="value" id="refKpiItens">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">Item Mais Consumido</div>
+          <div class="value" id="refKpiTopItem" style="font-size:16px;">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">Dias com Requisição</div>
+          <div class="value" id="refKpiDias">—</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Nova Requisição — Refeitório (FOR-SGQ-027)</div>
+        <div class="trend-foot" style="margin-bottom:12px;">Preencha só os itens que saíram nessa requisição. Item e unidade já vêm da lista padrão do formulário — ajuste a unidade se precisar.</div>
+        <form id="refForm" class="lanc-form">
+          <div class="lanc-field">
+            <label>Data da Solicitação</label>
+            <input type="date" id="refFormData" required>
+          </div>
+          <div class="lanc-field span-2">
+            <label>Líder / Solicitante</label>
+            <input type="text" id="refFormLider" placeholder="Nome de quem solicitou">
+          </div>
+          <div class="lanc-field span-3">
+            <div class="table-wrap" style="max-height:620px;">
+              <table class="detail" id="refChecklistTable">
+                <thead>
+                  <tr><th>Item</th><th class="center">Unidade</th><th class="center">Qtd. Solicitada</th><th class="center">Qtd. Entregue</th></tr>
+                </thead>
+                <tbody id="refChecklistTbody"></tbody>
+              </table>
+            </div>
+            <button type="button" class="lanc-add-item-btn" id="refAddExtraBtn" style="margin-top:10px;">+ Adicionar item fora da lista padrão</button>
+          </div>
+          <div class="lanc-submit-row">
+            <button type="submit" class="lanc-submit-btn" id="refSubmitBtn">Salvar Requisição</button>
+            <span class="lanc-feedback" id="refFormFeedback"></span>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Ranking de Consumo por Insumo</div>
+        <div class="chart-wrap" id="refChartWrap"></div>
+        <div class="trend-foot">Soma da Qtd. Solicitada (ou Qtd. Entregue, quando a solicitada não foi lançada) no período selecionado, por item.</div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Histórico de Requisições — Refeitório</div>
+        <div class="table-wrap" style="max-height:420px;">
+          <table class="detail" id="refHistTable">
+            <thead>
+              <tr>
+                <th>Data</th><th>Líder</th><th>Item</th><th class="center">Unidade</th>
+                <th class="center">Qtd. Solicitada</th><th class="center">Qtd. Entregue</th>
+                <th>Observação</th><th class="center">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="refHistTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div> <!-- /page-refeitorio -->
 
   <div id="page-pcp-estoque" class="report-page" style="display:none;">
 
@@ -5740,6 +5857,7 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     document.getElementById('page-rascunho').style.display = target === 'rascunho' ? 'block' : 'none';
     document.getElementById('page-manutencao').style.display = target === 'manutencao' ? 'block' : 'none';
     document.getElementById('page-estoque').style.display = target === 'estoque' ? 'block' : 'none';
+    document.getElementById('page-refeitorio').style.display = target === 'refeitorio' ? 'block' : 'none';
     document.getElementById('page-pcp-estoque').style.display = target === 'pcp-estoque' ? 'block' : 'none';
     document.getElementById('page-melhoria').style.display = target === 'melhoria' ? 'block' : 'none';
     document.getElementById('page-lancamento').style.display = target === 'lancamento' ? 'block' : 'none';
@@ -5750,6 +5868,10 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     }
     if(target === 'pcp-estoque' && typeof PCP_init === 'function'){
       PCP_init();
+    }
+    if(target === 'refeitorio' && !REF_loadedOnce){
+      REF_loadedOnce = true;
+      REF_init();
     }
     if(target === 'melhoria' && !MC_loadedOnce){
       MC_loadedOnce = true;
@@ -13463,6 +13585,358 @@ function EQ_DASH_render(){
 
 function EQ_DASH_fmtNum(v){
   return Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+}
+
+/* ============================================================================
+   PÁGINA REFEITÓRIO — requisições diárias de insumos do refeitório
+   (FOR-SGQ-027) e consumo por item. Reaproveita a tabela estoque_requisicoes
+   (mesma usada pelo Almoxarifado), lançando sempre com setor='REFEITÓRIO' —
+   assim o Painel de Estoque continua enxergando essas saídas no saldo geral,
+   sem precisar de tabela nova.
+   ============================================================================ */
+let REF_loadedOnce = false;
+let REF_DATA = []; // linhas cruas de estoque_requisicoes (setor=REFEITÓRIO) no período selecionado
+
+// Lista padrão de insumos do FOR-SGQ-027 — fonte única de verdade pro
+// checklist de lançamento rápido. A unidade é só um valor inicial sugerido;
+// pode ser ajustada linha a linha na hora do lançamento.
+const REF_ITENS_PADRAO = [
+  { item: 'Frango', unidade: 'Kg' },
+  { item: 'Sobre Coxa Frango', unidade: 'Kg' },
+  { item: 'Carne', unidade: 'Kg' },
+  { item: 'Carne Moída', unidade: 'Kg' },
+  { item: 'Suíno', unidade: 'Kg' },
+  { item: 'Linguiça', unidade: 'Kg' },
+  { item: 'Calabresa', unidade: 'Kg' },
+  { item: 'Presunto', unidade: 'Kg' },
+  { item: 'Queijo', unidade: 'Kg' },
+  { item: 'Leite', unidade: 'Litro' },
+  { item: 'Creme de Leite', unidade: 'Kg' },
+  { item: 'Requeijão Cremoso', unidade: 'Kg' },
+  { item: 'Alface', unidade: 'Un' },
+  { item: 'Alho', unidade: 'Kg' },
+  { item: 'Batata', unidade: 'Kg' },
+  { item: 'Batata Baby', unidade: 'Kg' },
+  { item: 'Batata Doce', unidade: 'Kg' },
+  { item: 'Beterraba', unidade: 'Kg' },
+  { item: 'Brócolis', unidade: 'Kg' },
+  { item: 'Cebola', unidade: 'Kg' },
+  { item: 'Cenoura', unidade: 'Kg' },
+  { item: 'Chuchu', unidade: 'Kg' },
+  { item: 'Pepino', unidade: 'Kg' },
+  { item: 'Repolho', unidade: 'Un' },
+  { item: 'Tomate', unidade: 'Kg' },
+  { item: 'Tempero Verde', unidade: 'Maço' },
+  { item: 'Açúcar', unidade: 'Kg' },
+  { item: 'Sal', unidade: 'Kg' },
+  { item: 'Farinha de Trigo', unidade: 'Kg' },
+  { item: 'Colorau', unidade: 'Kg' },
+  { item: 'Salgado Lanche', unidade: 'Un' },
+];
+const REF_SETOR = 'REFEITÓRIO';
+
+function REF_init(){
+  const hoje = new Date();
+  const startEl = document.getElementById('refDataIni');
+  const endEl   = document.getElementById('refDataFim');
+  if(!endEl.value)   endEl.value   = hoje.toISOString().slice(0,10);
+  if(!startEl.value){ const d = new Date(); d.setDate(d.getDate()-30); startEl.value = d.toISOString().slice(0,10); }
+  initDateRangePicker('ref', startEl, endEl, REF_loadData);
+  document.getElementById('refBtnRefresh').addEventListener('click', REF_loadData);
+
+  REF_populateChecklist();
+  document.getElementById('refAddExtraBtn').addEventListener('click', REF_addExtraRow);
+  REF_setDefaultFormDate();
+  document.getElementById('refForm').addEventListener('submit', REF_submitForm);
+
+  REF_loadData();
+}
+
+function REF_setDefaultFormDate(){
+  const el = document.getElementById('refFormData');
+  if(el && !el.value) el.value = new Date().toISOString().slice(0,10);
+}
+
+/* ---------- Checklist de lançamento rápido ---------- */
+function REF_populateChecklist(){
+  const tbody = document.getElementById('refChecklistTbody');
+  tbody.innerHTML = REF_ITENS_PADRAO.map((it, idx) => `
+    <tr data-idx="${idx}" data-padrao="1">
+      <td style="font-weight:600;">${it.item}</td>
+      <td class="center"><input type="text" class="ref-chk-unidade" style="width:90px;text-align:center;" value="${it.unidade}"></td>
+      <td class="center"><input type="number" step="0.01" min="0" class="ref-chk-qtd-solicitada" style="width:100px;text-align:center;" placeholder="—"></td>
+      <td class="center"><input type="number" step="0.01" min="0" class="ref-chk-qtd-liberada" style="width:100px;text-align:center;" placeholder="—"></td>
+    </tr>`).join('');
+}
+
+function REF_addExtraRow(){
+  const tbody = document.getElementById('refChecklistTbody');
+  const tr = document.createElement('tr');
+  tr.dataset.extra = '1';
+  tr.innerHTML = `
+    <td><input type="text" class="ref-chk-item-extra" list="eqItemList" placeholder="Nome do insumo" style="width:100%;"></td>
+    <td class="center"><input type="text" class="ref-chk-unidade" list="lpUnidadeListEstoque" style="width:90px;text-align:center;" placeholder="Un"></td>
+    <td class="center"><input type="number" step="0.01" min="0" class="ref-chk-qtd-solicitada" style="width:100px;text-align:center;" placeholder="—"></td>
+    <td class="center"><input type="number" step="0.01" min="0" class="ref-chk-qtd-liberada" style="width:100px;text-align:center;" placeholder="—">
+      <button type="button" class="lanc-item-remove" data-remove-extra style="margin-left:6px;">✕</button>
+    </td>`;
+  tr.querySelector('[data-remove-extra]').addEventListener('click', ()=> tr.remove());
+  tbody.appendChild(tr);
+}
+
+/* Monta os payloads pra inserir em estoque_requisicoes — só entram linhas
+   com pelo menos Qtd. Solicitada ou Qtd. Entregue preenchida. */
+function REF_buildPayloads(data, lider){
+  const payloads = [];
+  document.querySelectorAll('#refChecklistTbody tr').forEach(tr=>{
+    const isExtra = tr.dataset.extra === '1';
+    const item = isExtra
+      ? (tr.querySelector('.ref-chk-item-extra')?.value || '').trim()
+      : tr.children[0].textContent.trim();
+    if(!item) return;
+    const unidade = normalizeUnitDisplay(tr.querySelector('.ref-chk-unidade').value) || null;
+    const qtdSolRaw = tr.querySelector('.ref-chk-qtd-solicitada').value;
+    const qtdLibRaw = tr.querySelector('.ref-chk-qtd-liberada').value;
+    if(qtdSolRaw === '' && qtdLibRaw === '') return;
+    payloads.push({
+      data, data_emissao: data, setor: REF_SETOR, lider: lider || null,
+      item, unidade,
+      quantidade_solicitada: qtdSolRaw !== '' ? parseFloat(qtdSolRaw) : null,
+      quantidade_liberada: qtdLibRaw !== '' ? parseFloat(qtdLibRaw) : null,
+      observacao: null,
+    });
+  });
+  return payloads;
+}
+
+async function REF_submitForm(e){
+  e.preventDefault();
+  const feedback = document.getElementById('refFormFeedback');
+  const btn = document.getElementById('refSubmitBtn');
+  const data = document.getElementById('refFormData').value;
+  if(!data){ feedback.textContent = '⚠ Preencha a Data da Solicitação.'; feedback.className = 'lanc-feedback err'; return; }
+  const lider = document.getElementById('refFormLider').value.trim();
+  const payloads = REF_buildPayloads(data, lider);
+  if(payloads.length === 0){ feedback.textContent = '⚠ Preencha ao menos um item com quantidade.'; feedback.className = 'lanc-feedback err'; return; }
+  btn.disabled = true;
+  feedback.textContent = `Salvando ${payloads.length} item(ns)...`;
+  feedback.className = 'lanc-feedback';
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from('estoque_requisicoes').insert(payloads);
+    if(error) throw error;
+    feedback.textContent = `✓ ${payloads.length} item(ns) salvos com sucesso!`;
+    feedback.className = 'lanc-feedback ok';
+    // Limpa as quantidades mas mantém a data e o líder — repete todo dia
+    document.querySelectorAll('#refChecklistTbody tr[data-padrao="1"]').forEach(tr=>{
+      tr.querySelector('.ref-chk-qtd-solicitada').value = '';
+      tr.querySelector('.ref-chk-qtd-liberada').value = '';
+    });
+    document.querySelectorAll('#refChecklistTbody tr[data-extra="1"]').forEach(tr=> tr.remove());
+    REF_loadData();
+  }catch(err){
+    console.error('Erro ao salvar requisição do Refeitório:', err);
+    feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
+    feedback.className = 'lanc-feedback err';
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+/* ---------- Carrega dados do período (dashboard + histórico) ---------- */
+async function REF_loadData(){
+  const ini = document.getElementById('refDataIni').value;
+  const fim = document.getElementById('refDataFim').value;
+  const infoEl = document.getElementById('refPeriodInfo');
+  infoEl.textContent = 'Carregando...';
+  try{
+    const client = LANC_getClient();
+    let query = client.from('estoque_requisicoes').select('*').eq('setor', REF_SETOR).order('data', { ascending:false });
+    if(ini) query = query.gte('data', ini);
+    if(fim) query = query.lte('data', fim);
+    const { data, error } = await query.limit(2000);
+    if(error) throw error;
+    REF_DATA = data || [];
+    REF_renderKPIs();
+    REF_renderChart();
+    REF_renderHistTable();
+    infoEl.textContent = `${REF_DATA.length} lançamento(s) no período`;
+  }catch(err){
+    console.error('Erro ao carregar dados do Refeitório:', err);
+    infoEl.textContent = '';
+    document.getElementById('refChartWrap').innerHTML = `<div class="empty-state"><span class="empty-icon">⚠</span>Erro ao carregar dados: ${err.message||err}</div>`;
+  }
+}
+
+/* Quantidade "efetiva" de uma linha pra fins de ranking de consumo:
+   usa a solicitada quando existe (é o que sai no dia a dia), e cai pra
+   liberada só quando a solicitada não foi lançada. */
+function REF_qtdEfetiva(row){
+  if(row.quantidade_solicitada != null) return Number(row.quantidade_solicitada);
+  if(row.quantidade_liberada != null) return Number(row.quantidade_liberada);
+  return 0;
+}
+
+function REF_renderKPIs(){
+  document.getElementById('refKpiLancamentos').textContent = REF_DATA.length;
+  const itensSet = new Set(REF_DATA.map(r=>r.item));
+  document.getElementById('refKpiItens').textContent = itensSet.size;
+  const diasSet = new Set(REF_DATA.map(r=>r.data));
+  document.getElementById('refKpiDias').textContent = diasSet.size;
+
+  const porItem = {};
+  REF_DATA.forEach(r=>{ porItem[r.item] = (porItem[r.item]||0) + REF_qtdEfetiva(r); });
+  const itens = Object.keys(porItem);
+  if(itens.length === 0){
+    document.getElementById('refKpiTopItem').textContent = '—';
+  } else {
+    const top = itens.sort((a,b)=> porItem[b]-porItem[a])[0];
+    document.getElementById('refKpiTopItem').textContent = `${top} (${EQ_DASH_fmtNum(porItem[top])})`;
+  }
+}
+
+function REF_renderChart(){
+  const wrap = document.getElementById('refChartWrap');
+  const porItem = {};
+  const unidadePorItem = {};
+  REF_DATA.forEach(r=>{
+    porItem[r.item] = (porItem[r.item]||0) + REF_qtdEfetiva(r);
+    if(r.unidade) unidadePorItem[r.item] = r.unidade;
+  });
+  const itens = Object.keys(porItem).filter(i => porItem[i] > 0);
+  if(itens.length === 0){
+    wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">🍽</span>Nenhuma requisição com quantidade lançada no período selecionado.</div>`;
+    return;
+  }
+  const ordenado = itens.sort((a,b)=> porItem[a]-porItem[b]); // menor pro maior -> maior fica no topo
+  const barH = 20, gap = 10, leftPad = 170, rightPad = 120, topPad = 8;
+  const chartW = getResponsiveChartW('refChartWrap', 820);
+  const barWmax = chartW - leftPad - rightPad;
+  const chartH = ordenado.length*(barH+gap) + topPad;
+  const maxVal = Math.max(...ordenado.map(i=>porItem[i]), 1);
+  let bars = '';
+  ordenado.forEach((item,i)=>{
+    const y = topPad + i*(barH+gap);
+    const val = porItem[item];
+    const w = Math.max((val/maxVal)*barWmax, 2);
+    const label = truncateProdLabel(item, 20);
+    bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="10.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${label}<title>${item}</title></text>`;
+    bars += `<rect x="${leftPad}" y="${y}" width="${barWmax}" height="${barH}" fill="#f3d9d0" stroke="#e0a89a" stroke-width="1" rx="5"/>`;
+    bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="var(--red)" rx="5"/>`;
+    bars += `<text x="${leftPad+Math.max(w,barWmax)+8}" y="${y+barH/2+4}" font-size="10.5" fill="var(--red)" font-weight="700">${EQ_DASH_fmtNum(val)} ${unidadePorItem[item]||''}</text>`;
+  });
+  const visibleRows = 8;
+  const containerH = visibleRows*(barH+gap) + topPad + 6;
+  wrap.innerHTML = `
+    <div style="max-height:${containerH}px; width:${chartW}px; overflow-y:auto; overflow-x:hidden; display:inline-block; text-align:left;">
+      <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:block;">
+        ${bars}
+      </svg>
+    </div>`;
+}
+
+/* ---------- Histórico (tabela com editar/excluir) ---------- */
+function REF_renderHistTable(){
+  const tbody = document.getElementById('refHistTbody');
+  if(REF_DATA.length === 0){
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhuma requisição do Refeitório nesse período.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = REF_DATA.map(row => REF_buildHistRowHtml(row)).join('');
+  tbody.querySelectorAll('tr[data-id]').forEach(tr=>{
+    const id = tr.dataset.id;
+    tr.querySelector('.lanc-hist-btn.edit').addEventListener('click', ()=> REF_startEditRow(id));
+    tr.querySelector('.lanc-hist-btn.delete').addEventListener('click', ()=> REF_deleteRow(id));
+  });
+}
+
+function REF_buildHistRowHtml(row){
+  return `<tr data-id="${row.id}">
+    <td>${EQ_fmtDataBR(row.data)}</td>
+    <td>${row.lider||'—'}</td>
+    <td>${row.item||'—'}</td>
+    <td class="center">${row.unidade||'—'}</td>
+    <td class="center">${row.quantidade_solicitada ?? '—'}</td>
+    <td class="center">${row.quantidade_liberada ?? '—'}</td>
+    <td>${row.observacao||'—'}</td>
+    <td class="center">
+      <button type="button" class="lanc-hist-btn edit">Editar</button>
+      <button type="button" class="lanc-hist-btn delete">Excluir</button>
+    </td></tr>`;
+}
+
+function REF_buildHistEditRowHtml(row){
+  return `<tr data-id="${row.id}">
+    <td><input type="date" class="refh-data" value="${row.data||''}"></td>
+    <td><input type="text" class="refh-lider" value="${(row.lider||'').replace(/"/g,'&quot;')}"></td>
+    <td><input type="text" class="refh-item" value="${(row.item||'').replace(/"/g,'&quot;')}"></td>
+    <td><input type="text" class="refh-unidade" style="width:80px;" value="${(row.unidade||'').replace(/"/g,'&quot;')}"></td>
+    <td><input type="number" step="0.01" class="refh-qtd-solicitada" style="width:90px;" value="${row.quantidade_solicitada ?? ''}"></td>
+    <td><input type="number" step="0.01" class="refh-qtd-liberada" style="width:90px;" value="${row.quantidade_liberada ?? ''}"></td>
+    <td><input type="text" class="refh-obs" value="${(row.observacao||'').replace(/"/g,'&quot;')}"></td>
+    <td class="center">
+      <button type="button" class="lanc-hist-btn save">Salvar</button>
+      <button type="button" class="lanc-hist-btn cancel">Cancelar</button>
+    </td></tr>`;
+}
+
+function REF_startEditRow(id){
+  const row = REF_DATA.find(r => String(r.id) === String(id));
+  if(!row) return;
+  const tr = document.querySelector(`#refHistTbody tr[data-id="${id}"]`);
+  if(!tr) return;
+  tr.outerHTML = REF_buildHistEditRowHtml(row);
+  const newTr = document.querySelector(`#refHistTbody tr[data-id="${id}"]`);
+  newTr.querySelector('.lanc-hist-btn.save').addEventListener('click', ()=> REF_saveEditRow(id));
+  newTr.querySelector('.lanc-hist-btn.cancel').addEventListener('click', REF_renderHistTable);
+}
+
+async function REF_saveEditRow(id){
+  const tr = document.querySelector(`#refHistTbody tr[data-id="${id}"]`);
+  if(!tr) return;
+  const val = (cls) => tr.querySelector('.'+cls).value;
+  const payload = {
+    data: val('refh-data') || null,
+    lider: val('refh-lider').trim() || null,
+    item: val('refh-item').trim(),
+    unidade: normalizeUnitDisplay(val('refh-unidade')) || null,
+    quantidade_solicitada: val('refh-qtd-solicitada') !== '' ? parseFloat(val('refh-qtd-solicitada')) : null,
+    quantidade_liberada: val('refh-qtd-liberada') !== '' ? parseFloat(val('refh-qtd-liberada')) : null,
+    observacao: val('refh-obs').trim() || null,
+  };
+  if(!payload.item){
+    alert('Item é obrigatório.');
+    return;
+  }
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from('estoque_requisicoes').update(payload).eq('id', id);
+    if(error) throw error;
+    const idx = REF_DATA.findIndex(r => String(r.id) === String(id));
+    if(idx >= 0) REF_DATA[idx] = Object.assign({}, REF_DATA[idx], payload);
+    REF_renderHistTable();
+    REF_renderKPIs();
+    REF_renderChart();
+  }catch(err){
+    console.error('Erro ao atualizar requisição do Refeitório:', err);
+    alert('Erro ao salvar: ' + (err.message || err));
+  }
+}
+
+async function REF_deleteRow(id){
+  if(!confirm('Excluir essa requisição? Essa ação não pode ser desfeita.')) return;
+  try{
+    const client = LANC_getClient();
+    const { error } = await client.from('estoque_requisicoes').delete().eq('id', id);
+    if(error) throw error;
+    REF_DATA = REF_DATA.filter(r => String(r.id) !== String(id));
+    REF_renderHistTable();
+    REF_renderKPIs();
+    REF_renderChart();
+  }catch(err){
+    console.error('Erro ao excluir requisição do Refeitório:', err);
+    alert('Erro ao excluir: ' + (err.message || err));
+  }
 }
 
 /* ============================================================================
