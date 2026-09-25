@@ -12634,6 +12634,46 @@ EQ_addRequisicaoItem();
 EQ_setDefaultDate('eqRequisicaoData');
 EQ_setDefaultDate('eqRequisicaoDataEmissao');
 
+// ─────────────────────────────────────────────
+// VALIDAÇÃO DE SALDO — trava requisição que zeraria ou negativaria o estoque
+// ─────────────────────────────────────────────
+
+// Calcula o saldo atual de 1 item (mesma lógica de EQ_DASH_loadData: última
+// contagem + entradas depois − requisições depois), escopado a esse item só
+// pra não ter que recarregar o dashboard inteiro na hora do lançamento.
+async function EQ_calcularSaldoItem(item){
+  const client = LANC_getClient();
+  const [contagemRes, entradasRes, requisicoesRes] = await Promise.all([
+    client.from('estoque_contagens').select('data,quantidade').eq('item', item).order('data', { ascending:false }).limit(1),
+    client.from('estoque_entradas').select('data,quantidade').eq('item', item).order('data', { ascending:false }).limit(3000),
+    client.from('estoque_requisicoes').select('data,quantidade_liberada').eq('item', item).order('data', { ascending:false }).limit(3000),
+  ]);
+  if(contagemRes.error) throw contagemRes.error;
+  if(entradasRes.error) throw entradasRes.error;
+  if(requisicoesRes.error) throw requisicoesRes.error;
+  const base = (contagemRes.data || [])[0] || null;
+  const baseData = base ? base.data : null;
+  const baseQtd = base ? Number(base.quantidade) : 0;
+  const entradasDepois = (entradasRes.data || [])
+    .filter(e => baseData === null || e.data > baseData)
+    .reduce((s,e)=> s + Number(e.quantidade||0), 0);
+  const requisicoesDepois = (requisicoesRes.data || [])
+    .filter(r => baseData === null || r.data > baseData)
+    .reduce((s,r)=> s + Number(r.quantidade_liberada||0), 0);
+  return baseQtd + entradasDepois - requisicoesDepois;
+}
+
+// Retorna null (requisição pode ser salva) ou uma mensagem de erro pra exibir,
+// verificando se o saldo atual já está zerado/negativo ou se a quantidade
+// pedida ultrapassaria o saldo disponível.
+async function EQ_validarSaldoRequisicao(item, quantidadePedida){
+  const saldoAtual = await EQ_calcularSaldoItem(item);
+  if(saldoAtual <= 0 || quantidadePedida > saldoAtual){
+    return `⚠ "${item}" está com saldo de ${EQ_DASH_fmtNum(saldoAtual)} — não é possível liberar ${EQ_DASH_fmtNum(quantidadePedida)} sem registrar uma nova entrada primeiro.`;
+  }
+  return null;
+}
+
 function EQ_buildRequisicaoPayload(row, data, dataEmissao, setor, lider){
   const item = row.querySelector('.eq-req-item').value.trim();
   const qtdLiberadaRaw = row.querySelector('.eq-req-qtd-liberada').value;
@@ -12659,7 +12699,23 @@ async function EQ_saveSingleRequisicao(row){
   const lider = document.getElementById('eqRequisicaoLider').value.trim();
   const payload = EQ_buildRequisicaoPayload(row, data, dataEmissao, setor, lider);
   if(!payload){ feedback.textContent = '⚠ Preencha Item e Qtd. Liberada antes de salvar.'; feedback.className = 'lanc-feedback err'; return; }
-  btn.disabled = true; btn.textContent = 'Salvando...';
+  btn.disabled = true; btn.textContent = 'Verificando saldo...';
+  try{
+    const erroSaldo = await EQ_validarSaldoRequisicao(payload.item, payload.quantidade_liberada);
+    if(erroSaldo){
+      feedback.textContent = erroSaldo;
+      feedback.className = 'lanc-feedback err';
+      btn.disabled = false; btn.textContent = 'Salvar este item';
+      return;
+    }
+  }catch(err){
+    console.error('Erro ao verificar saldo:', err);
+    feedback.textContent = '⚠ Não foi possível verificar o saldo do item. Tente novamente.';
+    feedback.className = 'lanc-feedback err';
+    btn.disabled = false; btn.textContent = 'Salvar este item';
+    return;
+  }
+  btn.textContent = 'Salvando...';
   try{
     const client = LANC_getClient();
     const { error } = await client.from('estoque_requisicoes').insert([payload]);
@@ -12697,8 +12753,33 @@ document.getElementById('eqFormRequisicao').addEventListener('submit', async (e)
     payloads.push(p);
   }
   btn.disabled = true;
-  feedback.textContent = 'Salvando ' + payloads.length + ' item(ns)...';
+  feedback.textContent = 'Verificando saldo disponível...';
   feedback.className = 'lanc-feedback';
+
+  // Soma as quantidades pedidas por item nesta requisição, pra checar contra
+  // o saldo disponível de uma vez só (2 linhas do mesmo item não podem furar
+  // a trava pedindo "metade" cada uma).
+  const qtdPorItem = {};
+  payloads.forEach(p => { qtdPorItem[p.item] = (qtdPorItem[p.item] || 0) + p.quantidade_liberada; });
+  try{
+    for(const item of Object.keys(qtdPorItem)){
+      const erroSaldo = await EQ_validarSaldoRequisicao(item, qtdPorItem[item]);
+      if(erroSaldo){
+        feedback.textContent = erroSaldo;
+        feedback.className = 'lanc-feedback err';
+        btn.disabled = false;
+        return;
+      }
+    }
+  }catch(err){
+    console.error('Erro ao verificar saldo:', err);
+    feedback.textContent = '⚠ Não foi possível verificar o saldo dos itens. Tente novamente.';
+    feedback.className = 'lanc-feedback err';
+    btn.disabled = false;
+    return;
+  }
+
+  feedback.textContent = 'Salvando ' + payloads.length + ' item(ns)...';
   try{
     const client = LANC_getClient();
     const { error } = await client.from('estoque_requisicoes').insert(payloads);
