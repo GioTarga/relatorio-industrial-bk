@@ -447,6 +447,8 @@
   .row-noplan{ background:#fbf6ea !important; }
 
   .trend-foot{ font-size:11.5px; color:var(--ink-soft); margin-top:10px; }
+  .lanc-item-hint{ font-size:11px; color:var(--ink-soft); margin-top:4px; min-height:14px; }
+  .lanc-item-hint.tem-embalagem{ color:var(--gold); font-weight:600; }
 
   footer{ text-align:center;font-size:11px;color:var(--ink-soft);padding:24px; }
 
@@ -4685,7 +4687,7 @@ body{background:#fff;color:#000}
                     <th>Data</th><th>Setor</th><th>Produto</th><th>Máquina</th>
                     <th class="center">Equipe</th><th class="center">Planejada</th><th class="center">Real</th>
                     <th>Unidade</th><th class="center">Início</th><th class="center">Fim</th>
-                    <th class="center">Duração</th><th>Desvios</th><th>Observação</th><th class="center">Recheio (cx)</th><th class="center">Apontamento Completo?</th><th class="center">Ações</th>
+                    <th class="center">Duração</th><th>Desvios</th><th>Observação</th><th class="center">Recheio (cx)</th><th>Tipo Recheio</th><th class="center">Apontamento Completo?</th><th class="center">Ações</th>
                   </tr>
                 </thead>
                 <tbody id="lpHistTbody"></tbody>
@@ -11297,6 +11299,11 @@ const LP_TIPO_PLANEJAMENTO_TEXTO = {
   desvio_nao_justificado: 'Desvio Não Justificado',
 };
 
+// Tipos de recheio das empadas/salgados — acompanha o campo Recheio Consumido
+// (caixas), só aparece pro setor Salgado. Fonte única usada tanto no
+// formulário de lançamento quanto na edição do histórico.
+const LP_TIPOS_RECHEIO = ['Frango','Carne','Pres/Queijo','Calabresa','Salsicha','Palmito','Carne c/ Ovo','Queijo'];
+
 // Codifica o campo producao_planejada para salvar no banco.
 // Quando tipo = "numero" → salva só o número.
 // Outros tipos → salva "Texto Canônico|número" (ex: "Produção Não Apontada|3420"),
@@ -11386,6 +11393,13 @@ function lpCreateItemRow(initial){
       <div class="lanc-field lp-recheio-wrap" style="display:none;">
         <label>Recheio Consumido (caixas)</label>
         <input type="number" step="0.01" class="lp-recheio" placeholder="Ex: 12">
+      </div>
+      <div class="lanc-field lp-tipo-recheio-wrap" style="display:none;">
+        <label>Tipo de Recheio</label>
+        <select class="lp-tipo-recheio">
+          <option value="">Selecione...</option>
+          ${LP_TIPOS_RECHEIO.map(t => `<option value="${t}">${t}</option>`).join('')}
+        </select>
       </div>
       <div class="lanc-field span-3">
         <label>Paradas, Ausências e Desvios de Produção</label>
@@ -11533,6 +11547,7 @@ function lpCreateItemRow(initial){
   if(initial.fim) row.querySelector('.lp-fim').value = initial.fim;
   if(initial.observacao) row.querySelector('.lp-observacao').value = initial.observacao;
   if(initial.recheio != null) row.querySelector('.lp-recheio').value = initial.recheio;
+  if(initial.tipoRecheio) row.querySelector('.lp-tipo-recheio').value = initial.tipoRecheio;
   if(initial.apontamentoCompleto) row.querySelector('.lp-apontamento-completo').value = initial.apontamentoCompleto;
   if(Array.isArray(initial.paradas)){
     initial.paradas.forEach(p => {
@@ -11552,9 +11567,16 @@ function lpCreateItemRow(initial){
    reaparece conforme o Setor selecionado em cada linha do lançamento. */
 function LP_toggleRecheioField(row, setorValue){
   const wrap = row.querySelector('.lp-recheio-wrap');
+  const tipoWrap = row.querySelector('.lp-tipo-recheio-wrap');
   if(!wrap) return;
-  wrap.style.display = setorValue === 'SALGADO' ? '' : 'none';
-  if(setorValue !== 'SALGADO') row.querySelector('.lp-recheio').value = '';
+  const isSalgado = setorValue === 'SALGADO';
+  wrap.style.display = isSalgado ? '' : 'none';
+  if(tipoWrap) tipoWrap.style.display = isSalgado ? '' : 'none';
+  if(!isSalgado){
+    row.querySelector('.lp-recheio').value = '';
+    const tipoEl = row.querySelector('.lp-tipo-recheio');
+    if(tipoEl) tipoEl.value = '';
+  }
 }
 
 function lpUpdateRowProdutoMaquinaList(row, uid){
@@ -11596,6 +11618,7 @@ function LP_collectDraftState(){
       fim: row.querySelector('.lp-fim').value,
       observacao: row.querySelector('.lp-observacao').value,
       recheio: row.querySelector('.lp-recheio').value,
+      tipoRecheio: row.querySelector('.lp-tipo-recheio').value,
       apontamentoCompleto: row.querySelector('.lp-apontamento-completo').value,
       paradas,
     };
@@ -11897,6 +11920,7 @@ async function LP_saveSingleItem(row){
     duracao_parada: paradasCombinadas.duracao_parada,
     observacao: row.querySelector('.lp-observacao').value.trim() || null,
     recheio_consumido_caixas: row.querySelector('.lp-recheio').value.trim() ? parseFloat(row.querySelector('.lp-recheio').value) : null,
+    tipo_recheio: row.querySelector('.lp-tipo-recheio').value || null,
     apontamento_completo: apontamentoEl.value === 'true',
   };
 
@@ -11986,6 +12010,7 @@ document.getElementById('lancFormProducao').addEventListener('submit', async (e)
       duracao_parada: paradasCombinadasLote.duracao_parada,
       observacao: row.querySelector('.lp-observacao').value.trim() || null,
       recheio_consumido_caixas: row.querySelector('.lp-recheio').value.trim() ? parseFloat(row.querySelector('.lp-recheio').value) : null,
+      tipo_recheio: row.querySelector('.lp-tipo-recheio').value || null,
       apontamento_completo: apontamentoEl.value === 'true',
     });
   }
@@ -12101,7 +12126,7 @@ function LP_fmtTime(t){
 function LP_renderHistTable(){
   const tbody = document.getElementById('lpHistTbody');
   if(LP_HIST_DATA.length === 0){
-    tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum lançamento encontrado nesse filtro.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="17" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum lançamento encontrado nesse filtro.</td></tr>';
     return;
   }
   tbody.innerHTML = LP_HIST_DATA.map(row => LP_buildHistRowHtml(row)).join('');
@@ -12129,6 +12154,7 @@ function LP_buildHistRowHtml(row){
       <td class="lanc-hist-wrap">${row.paradas_desvios||'—'}</td>
       <td class="lanc-hist-wrap">${row.observacao||'—'}</td>
       <td class="center">${row.recheio_consumido_caixas != null ? Number(row.recheio_consumido_caixas).toLocaleString('pt-BR') : '—'}</td>
+      <td>${row.tipo_recheio||'—'}</td>
       <td class="center">${row.apontamento_completo===true?'✓ Sim':row.apontamento_completo===false?'✗ Não':'—'}</td>
       <td class="center">
         <button type="button" class="lanc-hist-btn edit">Editar</button>
@@ -12161,6 +12187,10 @@ function LP_buildHistEditRowHtml(row){
       <td><input type="text" class="eh-paradas" value="${(row.paradas_desvios||'').replace(/"/g,'&quot;')}"></td>
       <td><input type="text" class="eh-observacao" value="${(row.observacao||'').replace(/"/g,'&quot;')}"></td>
       <td><input type="number" step="0.01" class="eh-recheio" value="${row.recheio_consumido_caixas ?? ''}"></td>
+      <td><select class="eh-tipo-recheio">
+        <option value="" ${!row.tipo_recheio?'selected':''}>—</option>
+        ${LP_TIPOS_RECHEIO.map(t => `<option value="${t}" ${row.tipo_recheio===t?'selected':''}>${t}</option>`).join('')}
+      </select></td>
       <td><select class="eh-apontamento-completo">
         <option value="" ${row.apontamento_completo==null?'selected':''}>—</option>
         <option value="true" ${row.apontamento_completo===true?'selected':''}>Sim</option>
@@ -12205,6 +12235,7 @@ async function LP_saveEditRow(id){
     paradas_desvios: val('eh-paradas').trim() || null,
     observacao: val('eh-observacao').trim() || null,
     recheio_consumido_caixas: val('eh-recheio') !== '' ? parseFloat(val('eh-recheio')) : null,
+    tipo_recheio: val('eh-tipo-recheio') || null,
     apontamento_completo: val('eh-apontamento-completo') === '' ? null : val('eh-apontamento-completo') === 'true',
   };
   if(!payload.produto || payload.producao_real === null){
@@ -12322,35 +12353,78 @@ document.getElementById('lancFormManutencao').addEventListener('submit', async (
 /* ============================================================================
    ESTOQUE — Entradas, Contagens e Histórico
    ============================================================================
-   Mesmo padrão de item/produto: nome do insumo em texto livre com
-   autocomplete (cresce sozinho conforme lança), sem tabela de catálogo à
-   parte. A lista de itens/unidades conhecidos vem direto do Supabase (não
-   do DATA da Produção, que é outra base), buscada uma vez e cacheada. */
-let EQ_KNOWN_ITEMS = null; // cache: { itens:[...], unidades:[...] }
+   Nome do insumo em texto livre com autocomplete. A lista de sugestões junta
+   dois universos: itens já lançados (Supabase, cresce sozinho conforme usa)
+   e o catálogo oficial em estoque_catalogo_insumos (extraído do inventário
+   do estoquista), que também traz Unidade/Embalagem pra auto-preencher o
+   formulário assim que o item é reconhecido — ver EQ_wireCatalogoAutofill. */
+let EQ_KNOWN_ITEMS = null;   // cache: { itens:[...], unidades:[...] }
+let EQ_CATALOGO_MAP = null;  // cache: { 'NOME DO ITEM': {unidade, embalagem_tipo, embalagem_qtd, embalagem_unidade, codigo} }
 
 async function EQ_fetchKnownItems(){
   if(EQ_KNOWN_ITEMS) return EQ_KNOWN_ITEMS;
   try{
     const client = LANC_getClient();
-    const [entradas, contagens, requisicoes] = await Promise.all([
+    const [entradas, contagens, requisicoes, catalogo] = await Promise.all([
       client.from('estoque_entradas').select('item, unidade').limit(5000),
       client.from('estoque_contagens').select('item, unidade').limit(5000),
       client.from('estoque_requisicoes').select('item, unidade').limit(5000),
+      client.from('estoque_catalogo_insumos').select('item, unidade, embalagem_tipo, embalagem_qtd, embalagem_unidade, codigo').limit(2000),
     ]);
     const itens = new Set(), unidades = new Set();
     (entradas.data || []).forEach(r=>{ if(r.item) itens.add(r.item); if(r.unidade) unidades.add(r.unidade); });
     (contagens.data || []).forEach(r=>{ if(r.item) itens.add(r.item); if(r.unidade) unidades.add(r.unidade); });
     (requisicoes.data || []).forEach(r=>{ if(r.item) itens.add(r.item); if(r.unidade) unidades.add(r.unidade); });
+    const catalogoMap = {};
+    (catalogo.data || []).forEach(r=>{
+      if(!r.item) return;
+      itens.add(r.item);
+      if(r.unidade) unidades.add(r.unidade);
+      catalogoMap[r.item] = r;
+    });
     EQ_KNOWN_ITEMS = { itens: [...itens].sort(), unidades: [...unidades].sort() };
+    EQ_CATALOGO_MAP = catalogoMap;
   }catch(err){
     console.error('Erro ao buscar itens de estoque conhecidos:', err);
     EQ_KNOWN_ITEMS = { itens: [], unidades: [] };
+    EQ_CATALOGO_MAP = {};
   }
   return EQ_KNOWN_ITEMS;
 }
 
+// Liga o campo Item de uma linha de lançamento ao catálogo: assim que o
+// texto digitado bate exatamente com um item do catálogo (nome vindo da
+// datalist), preenche a Unidade — só se ainda estiver vazia, pra nunca
+// sobrescrever o que a pessoa já ajustou na mão — e mostra a embalagem
+// como dica de referência (ex: "Embalagem: Saco 25kg").
+function EQ_wireCatalogoAutofill(row, itemSel, unidadeSel, hintSel){
+  const itemEl = row.querySelector(itemSel);
+  const unidadeEl = row.querySelector(unidadeSel);
+  const hintEl = row.querySelector(hintSel);
+  if(!itemEl || !hintEl) return;
+  itemEl.addEventListener('input', async ()=>{
+    if(!EQ_CATALOGO_MAP) await EQ_fetchKnownItems();
+    const cat = EQ_CATALOGO_MAP ? EQ_CATALOGO_MAP[itemEl.value.trim()] : null;
+    if(!cat){
+      hintEl.textContent = '';
+      hintEl.classList.remove('tem-embalagem');
+      return;
+    }
+    if(unidadeEl && !unidadeEl.value.trim()) unidadeEl.value = cat.unidade || '';
+    if(cat.embalagem_tipo || cat.embalagem_qtd){
+      const partes = [cat.embalagem_tipo, cat.embalagem_qtd ? `${cat.embalagem_qtd}${(cat.embalagem_unidade||'').toLowerCase()}` : null].filter(Boolean);
+      hintEl.textContent = `📦 Embalagem: ${partes.join(' ')}`;
+      hintEl.classList.add('tem-embalagem');
+    }else{
+      hintEl.textContent = `Unidade de lançamento: ${cat.unidade}`;
+      hintEl.classList.remove('tem-embalagem');
+    }
+  });
+}
+
 async function EQ_populateDropdowns(){
   EQ_KNOWN_ITEMS = null; // força buscar de novo, pode ter item novo desde a última vez
+  EQ_CATALOGO_MAP = null;
   const { itens } = await EQ_fetchKnownItems();
   document.getElementById('eqItemList').innerHTML = itens.map(i=>`<option value="${i}">`).join('');
 }
@@ -12408,6 +12482,7 @@ function EQ_createEntradaRow(){
       <div class="lanc-field span-2">
         <label>Item</label>
         <input type="text" class="eq-item" list="eqItemList" placeholder="Nome do insumo" required>
+        <div class="lanc-item-hint eq-item-hint"></div>
       </div>
       <div class="lanc-field">
         <label>Unidade</label>
@@ -12481,6 +12556,7 @@ function EQ_createEntradaRow(){
   `;
   row.querySelector('[data-remove]').addEventListener('click', ()=>{ row.remove(); EQ_updateItemNumbers('eqEntradaItems'); });
   row.querySelector('[data-save]').addEventListener('click', ()=> EQ_saveSingleEntrada(row));
+  EQ_wireCatalogoAutofill(row, '.eq-item', '.eq-unidade', '.eq-item-hint');
   return row;
 }
 function EQ_updateItemNumbers(containerId){
@@ -12602,6 +12678,7 @@ function EQ_createRequisicaoRow(){
       <div class="lanc-field span-2">
         <label>Item</label>
         <input type="text" class="eq-req-item" list="eqItemList" placeholder="Nome do insumo" required>
+        <div class="lanc-item-hint eq-item-hint"></div>
       </div>
       <div class="lanc-field">
         <label>Unidade</label>
@@ -12623,6 +12700,7 @@ function EQ_createRequisicaoRow(){
   `;
   row.querySelector('[data-remove]').addEventListener('click', ()=>{ row.remove(); EQ_updateItemNumbers('eqRequisicaoItems'); });
   row.querySelector('[data-save]').addEventListener('click', ()=> EQ_saveSingleRequisicao(row));
+  EQ_wireCatalogoAutofill(row, '.eq-req-item', '.eq-req-unidade', '.eq-item-hint');
   return row;
 }
 function EQ_addRequisicaoItem(){
@@ -12817,6 +12895,7 @@ function EQ_createContagemRow(){
       <div class="lanc-field span-2">
         <label>Item</label>
         <input type="text" class="eq-item" list="eqItemList" placeholder="Nome do insumo" required>
+        <div class="lanc-item-hint eq-item-hint"></div>
       </div>
       <div class="lanc-field">
         <label>Unidade</label>
@@ -12834,6 +12913,7 @@ function EQ_createContagemRow(){
   `;
   row.querySelector('[data-remove]').addEventListener('click', ()=>{ row.remove(); EQ_updateItemNumbers('eqContagemItems'); });
   row.querySelector('[data-save]').addEventListener('click', ()=> EQ_saveSingleContagem(row));
+  EQ_wireCatalogoAutofill(row, '.eq-item', '.eq-unidade', '.eq-item-hint');
   return row;
 }
 function EQ_addContagemItem(){
