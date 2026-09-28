@@ -23908,8 +23908,11 @@ document.addEventListener('DOMContentLoaded', () => {
 // ─────────────────────────────────────────────
 (function(){
 
-  let PERDAS_dados = [];         // dados brutos do Supabase
+  let PERDAS_dados = [];         // dados brutos do Supabase (período do filtro global)
   let PERDAS_filtrados = [];     // após filtros de setor/motivo/busca
+  let PERDAS_dados_sem_atual = []; // semana (Seg–Sex) que contém a data final do filtro
+  let PERDAS_dados_sem_ant   = []; // semana anterior a essa
+  let PERDAS_dados_mes       = []; // mês inteiro que contém a data final do filtro
   let PERDAS_carregando = false;
   let PERDAS_inicializado = false;
   let PERDAS_periodoAtual = { ini: '', fim: '' };
@@ -23925,11 +23928,28 @@ document.addEventListener('DOMContentLoaded', () => {
     return { ini, fim };
   }
 
-  // ── Busca dados no Supabase ──────────────────
-  async function PERDAS_fetchDados(){
-    const { ini, fim } = perdasRangePeriodo();
-    PERDAS_periodoAtual = { ini, fim };
+  function perdasFmtData(iso){
+    if(!iso) return '';
+    const [y,m,d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  }
 
+  // Retorna { ini, fim } da semana Seg–Sex que contém refIso. offset: 0=atual, -1=anterior.
+  // Mesma lógica usada na aba Produção Tortas (ptSemanaRange) — duplicada aqui
+  // porque cada módulo do relatório vive na sua própria IIFE.
+  function perdasSemanaRange(offset, refIso){
+    const d = refIso ? new Date(refIso + 'T00:00:00') : new Date();
+    const dw = d.getDay();
+    const diffSeg = dw === 0 ? -6 : 1 - dw;
+    const seg = new Date(d);
+    seg.setDate(d.getDate() + diffSeg + offset * 7);
+    const sex = new Date(seg);
+    sex.setDate(seg.getDate() + 4);
+    return { ini: seg.toISOString().slice(0,10), fim: sex.toISOString().slice(0,10) };
+  }
+
+  // ── Busca uma faixa de datas qualquer no Supabase (sem efeitos colaterais) ──
+  async function perdasFetchRange(ini, fim){
     let url = `${SUPABASE_URL}/rest/v1/perdas_producao?select=*&order=data.desc,setor.asc,produto.asc`;
     if(ini && fim){
       url += `&data=gte.${ini}&data=lte.${fim}`;
@@ -23938,7 +23958,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if(fim){
       url += `&data=lte.${fim}`;
     }
-
     const resp = await fetch(url, {
       headers: {
         'apikey':        SUPABASE_ANON_KEY,
@@ -23947,7 +23966,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
     if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    PERDAS_dados = await resp.json();
+    return await resp.json();
+  }
+
+  // ── Busca dados no Supabase (período selecionado no filtro global) ──
+  async function PERDAS_fetchDados(){
+    const { ini, fim } = perdasRangePeriodo();
+    PERDAS_periodoAtual = { ini, fim };
+    PERDAS_dados = await perdasFetchRange(ini, fim);
 
     // Popular select de motivos dinamicamente
     const motivos = [...new Set(PERDAS_dados.map(r => r.motivo).filter(Boolean))].sort();
@@ -23984,65 +24010,71 @@ document.addEventListener('DOMContentLoaded', () => {
     if(!grid) return;
 
     const fmt = kg => kg.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' kg';
+    const { fim } = perdasRangePeriodo();
+    const refFim = fim || new Date().toISOString().slice(0,10);
 
-    // Último dia lançado (maior data nos dados filtrados)
-    const datas = [...new Set(PERDAS_filtrados.map(r => r.data))].sort();
-    const ultimoDia = datas.length ? datas[datas.length - 1] : null;
+    // Aplica os mesmos filtros locais (setor/motivo/busca) nos dados de
+    // semana/mês, pra ficar coerente com o que a pessoa está vendo nos
+    // gráficos e na tabela abaixo.
+    const setorF  = (document.getElementById('perdas-setor')?.value  || '').toLowerCase();
+    const motivoF = (document.getElementById('perdas-motivo')?.value || '').toLowerCase();
+    const buscaF  = (document.getElementById('perdas-busca')?.value  || '').toLowerCase();
+    function perdasAplicaFiltros(dados){
+      return dados.filter(r => {
+        if(setorF  && (r.setor  || '').toLowerCase() !== setorF)         return false;
+        if(motivoF && (r.motivo || '').toLowerCase() !== motivoF)        return false;
+        if(buscaF  && !(r.produto || '').toLowerCase().includes(buscaF)) return false;
+        return true;
+      });
+    }
+
+    // DIA — usa a data final do filtro selecionado (mesma configuração da
+    // aba Produção Tortas, em vez do último dia com lançamento).
     const kgDia = PERDAS_filtrados
-      .filter(r => r.data === ultimoDia)
+      .filter(r => r.data === refFim)
       .reduce((s, r) => s + (parseFloat(r.quantidade_kg) || 0), 0);
 
-    // Semana atual (últimos 7 dias a partir do último dia lançado)
-    let kgSemana = 0;
-    if(ultimoDia){
-      const limSemana = new Date(ultimoDia);
-      limSemana.setDate(limSemana.getDate() - 6);
-      const limStr = limSemana.toISOString().slice(0,10);
-      kgSemana = PERDAS_filtrados
-        .filter(r => r.data >= limStr && r.data <= ultimoDia)
-        .reduce((s, r) => s + (parseFloat(r.quantidade_kg) || 0), 0);
-    }
+    // SEMANA ATUAL/ANTERIOR — semana (Seg–Sex) que contém a data final do
+    // filtro, buscada à parte (PERDAS_dados_sem_atual/ant) pra não depender
+    // do range escolhido no filtro global.
+    const semAtual = perdasSemanaRange(0, refFim);
+    const semAnt   = perdasSemanaRange(-1, refFim);
+    const dadosSemAtual = perdasAplicaFiltros(PERDAS_dados_sem_atual);
+    const dadosSemAnt   = perdasAplicaFiltros(PERDAS_dados_sem_ant);
+    const kgSemana    = dadosSemAtual.reduce((s,r) => s + (parseFloat(r.quantidade_kg) || 0), 0);
+    const kgSemanaAnt = dadosSemAnt.reduce((s,r) => s + (parseFloat(r.quantidade_kg) || 0), 0);
 
-    // Mês atual (mesmo ano/mês do último dia lançado)
-    let kgMes = 0;
-    let labelMes = 'Mês';
-    if(ultimoDia){
-      const anoMes = ultimoDia.slice(0,7); // 'YYYY-MM'
-      const [ano, mes] = anoMes.split('-');
-      const nomeMes = new Date(Number(ano), Number(mes)-1, 1)
-        .toLocaleString('pt-BR',{month:'long'});
-      labelMes = `${nomeMes.charAt(0).toUpperCase()}${nomeMes.slice(1)}/${ano.slice(2)}`;
-      kgMes = PERDAS_filtrados
-        .filter(r => r.data && r.data.startsWith(anoMes))
-        .reduce((s, r) => s + (parseFloat(r.quantidade_kg) || 0), 0);
-    }
+    // MÊS — mês calendário inteiro que contém a data final do filtro,
+    // buscado à parte (PERDAS_dados_mes) pelo mesmo motivo.
+    const mesRef = refFim.slice(0,7);
+    const [anoM, mesM] = mesRef.split('-');
+    const nomeMes = new Date(Number(anoM), Number(mesM)-1, 1).toLocaleString('pt-BR',{month:'long'});
+    const labelMes = `${nomeMes.charAt(0).toUpperCase()}${nomeMes.slice(1)}/${anoM.slice(2)}`;
+    const dadosMes = perdasAplicaFiltros(PERDAS_dados_mes);
+    const kgMes = dadosMes.reduce((s,r) => s + (parseFloat(r.quantidade_kg) || 0), 0);
 
-    const labelDia = ultimoDia
-      ? ultimoDia.split('-').reverse().join('/')
-      : 'Dia';
-
-    // Produto com maior perda no mês
-    const anoMesFinal = ultimoDia ? ultimoDia.slice(0,7) : null;
+    // Produto com maior perda no mês (usa os mesmos dados já filtrados do card do Mês)
     const porProdutoMes = {};
-    PERDAS_filtrados
-      .filter(r => anoMesFinal && r.data && r.data.startsWith(anoMesFinal))
-      .forEach(r => {
-        const p = r.produto || 'Desconhecido';
-        porProdutoMes[p] = (porProdutoMes[p] || 0) + (parseFloat(r.quantidade_kg) || 0);
-      });
+    dadosMes.forEach(r => {
+      const p = r.produto || 'Desconhecido';
+      porProdutoMes[p] = (porProdutoMes[p] || 0) + (parseFloat(r.quantidade_kg) || 0);
+    });
     const topProduto = Object.entries(porProdutoMes).sort((a,b) => b[1]-a[1])[0];
 
     grid.innerHTML = `
       <div class="kpi-card sem-bad">
-        <div class="label">Total Perdido — ${labelDia}</div>
+        <div class="label">DIA — ${perdasFmtData(refFim)}</div>
         <div class="value">${fmt(kgDia)}</div>
       </div>
       <div class="kpi-card sem-bad">
-        <div class="label">Total Perdido — Semana</div>
+        <div class="label">SEMANA ATUAL — ${perdasFmtData(semAtual.ini)} a ${perdasFmtData(semAtual.fim)}</div>
         <div class="value">${fmt(kgSemana)}</div>
+        <div class="pt-sem-ant">
+          Sem. anterior: <strong>${fmt(kgSemanaAnt)}</strong>
+        </div>
       </div>
       <div class="kpi-card sem-bad">
-        <div class="label">Total Perdido — ${labelMes}</div>
+        <div class="label">MÊS — ${labelMes}</div>
         <div class="value">${fmt(kgMes)}</div>
       </div>
       <div class="kpi-card sem-warn">
@@ -24252,6 +24284,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if(grid) grid.innerHTML = `<div style="padding:20px;color:var(--ink-soft);font-size:13px;">Carregando…</div>`;
     try {
       await PERDAS_fetchDados();
+
+      // Semana atual/anterior e Mês — mesma configuração da aba Produção
+      // Tortas: a semana (Seg–Sex) e o mês que contêm a data final do
+      // filtro, buscados à parte porque o filtro selecionado pode ser mais
+      // estreito que eles (ex: um único dia).
+      const { fim } = perdasRangePeriodo();
+      const refFim = fim || new Date().toISOString().slice(0,10);
+      const semAtual = perdasSemanaRange(0, refFim);
+      const semAnt   = perdasSemanaRange(-1, refFim);
+      const dadosSemanas = await perdasFetchRange(semAnt.ini, semAtual.fim);
+      PERDAS_dados_sem_atual = dadosSemanas.filter(r => r.data >= semAtual.ini && r.data <= semAtual.fim);
+      PERDAS_dados_sem_ant   = dadosSemanas.filter(r => r.data >= semAnt.ini   && r.data <= semAnt.fim);
+
+      const mesRef = refFim.slice(0,7);
+      const [my, mm] = mesRef.split('-').map(Number);
+      const mesIni = `${mesRef}-01`;
+      const mesFimStr = new Date(my, mm, 0).toISOString().slice(0,10);
+      PERDAS_dados_mes = await perdasFetchRange(mesIni, mesFimStr);
+
       PERDAS_render();
     } finally {
       PERDAS_carregando = false;
