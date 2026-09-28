@@ -11563,16 +11563,19 @@ function lpCreateItemRow(initial){
 /* Filtra o datalist de Produto/Máquina desse item específico pelo setor
    selecionado NESSE item (cada item tem seu próprio par de datalists,
    diferente do resto do formulário, porque o setor agora varia por linha). */
-/* Recheio Consumido (caixas) só faz sentido pro setor Salgado — some/
-   reaparece conforme o Setor selecionado em cada linha do lançamento. */
+/* Recheio Consumido (caixas) + Tipo de Recheio só fazem sentido pros setores
+   que trabalham com produtos recheados — Salgado, Pão Batata e Croissant —
+   some/reaparece conforme o Setor selecionado em cada linha do lançamento.
+   Nomes batem com o cadastro em public.setores (maiúsculas, com acento). */
+const LP_SETORES_COM_RECHEIO = ['SALGADO', 'PÃO BATATA', 'CROISSANT'];
 function LP_toggleRecheioField(row, setorValue){
   const wrap = row.querySelector('.lp-recheio-wrap');
   const tipoWrap = row.querySelector('.lp-tipo-recheio-wrap');
   if(!wrap) return;
-  const isSalgado = setorValue === 'SALGADO';
-  wrap.style.display = isSalgado ? '' : 'none';
-  if(tipoWrap) tipoWrap.style.display = isSalgado ? '' : 'none';
-  if(!isSalgado){
+  const temRecheio = LP_SETORES_COM_RECHEIO.includes((setorValue || '').toUpperCase());
+  wrap.style.display = temRecheio ? '' : 'none';
+  if(tipoWrap) tipoWrap.style.display = temRecheio ? '' : 'none';
+  if(!temRecheio){
     row.querySelector('.lp-recheio').value = '';
     const tipoEl = row.querySelector('.lp-tipo-recheio');
     if(tipoEl) tipoEl.value = '';
