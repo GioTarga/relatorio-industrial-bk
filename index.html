@@ -447,8 +447,6 @@
   .row-noplan{ background:#fbf6ea !important; }
 
   .trend-foot{ font-size:11.5px; color:var(--ink-soft); margin-top:10px; }
-  .lanc-item-hint{ font-size:11px; color:var(--ink-soft); margin-top:4px; min-height:14px; }
-  .lanc-item-hint.tem-embalagem{ color:var(--gold); font-weight:600; }
 
   footer{ text-align:center;font-size:11px;color:var(--ink-soft);padding:24px; }
 
@@ -2939,10 +2937,6 @@ body{background:#fff;color:#000}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
         Estoque
       </button>
-      <button class="nav-item" data-page="refeitorio">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h1v11"/><path d="M9 2v9"/><path d="M15 2v7a2 2 0 0 0 2 2v11"/><path d="M15 2c-1.5 0-3 1.5-3 4v3"/></svg>
-        Refeitório
-      </button>
       <button class="nav-item" data-page="melhoria">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></svg>
         Melhoria Contínua
@@ -3077,7 +3071,7 @@ body{background:#fff;color:#000}
   <div class="panel" id="atendimentoTrendPanel" style="display:none;">
     <div class="panel-title">Histórico de Atendimento % — Meta × Realizado</div>
     <div class="chart-wrap" id="atendimentoTrendWrap"></div>
-    <div class="trend-foot">% de Atendimento (Real ÷ Planejado) por dia, considerando todos os setores e lançamentos com meta cadastrada no período. A linha de Meta fica sempre em 100%.</div>
+    <div class="trend-foot" id="atendimentoTrendFoot">% de Atendimento (Real ÷ Planejado) por dia, considerando todos os setores e lançamentos com meta cadastrada no período. A linha de Meta fica sempre em 100%.</div>
   </div>
 
   <div class="panel">
@@ -3085,7 +3079,7 @@ body{background:#fff;color:#000}
     <div class="chart-wrap" id="causesWrap"></div>
   </div>
 
-  <div class="panel">
+  <div class="panel" id="lostProdPanel">
     <div class="panel-title" id="metaTitle">Atendimento de Meta</div>
     <div class="chart-wrap" id="lostProdWrap"></div>
     <div class="legend" id="metaLegend">
@@ -3096,7 +3090,7 @@ body{background:#fff;color:#000}
     <div class="trend-foot" id="metaFoot">Comparação entre a quantidade planejada (Meta) e a produzida (Realizado) por produto, somado dentro do período e setor selecionados. Só entram produtos com planejamento cadastrado.</div>
   </div>
 
-  <div class="panel">
+  <div class="panel" id="prodRatePanel">
     <div class="panel-title">Ranking de Produtividade dos Produtos</div>
     <div class="chart-wrap" id="prodRateWrap"></div>
     <div class="trend-foot" id="prodRateFoot">Produtividade = Produção Real ÷ (Fim − Início da Produção), somada no período e setor selecionados. Só entram produtos com Início e Fim da Produção registrados. Clique numa barra pra ver a evolução diária daquele produto.</div>
@@ -3136,7 +3130,7 @@ body{background:#fff;color:#000}
     </div>
   </div>
 
-  <div class="panel">
+  <div class="panel" id="foraDoPlanoPanel">
     <div class="panel-title">Produtos Produzidos Fora do Plano de Produção</div>
     <div class="chart-wrap" id="trendWrap"></div>
     <div class="trend-foot" id="trendFoot">Quantidade de itens produzidos sem planejamento prévio, por dia, dentro do período selecionado.</div>
@@ -3155,7 +3149,7 @@ body{background:#fff;color:#000}
     </div>
     <div class="table-wrap" id="tableWrap">
       <table class="detail">
-        <thead>
+        <thead id="tableHead">
           <tr>
             <th>Data</th>
             <th>Setor</th>
@@ -3310,103 +3304,6 @@ body{background:#fff;color:#000}
   <!-- ═══════════════════════════════════════════════════════ -->
   <div id="riPerdasContent" style="display:none;">
 
-    <!-- Lançamento de nova perda — segue o formulário físico FOR-PCP-033
-         (Apontamento de Perdas - Controle Linha): Responsável, Produto,
-         Motivo, Data/Hora, Quantidade, Unidade, Destino do Produto. -->
-    <div class="panel" style="margin-bottom:16px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div class="panel-title" style="color:var(--red-dark);margin-bottom:0;">Lançar Perda</div>
-        <button type="button" class="lanc-add-item-btn" id="perdasToggleFormBtn">+ Novo Registro</button>
-      </div>
-      <form id="perdasForm" style="display:none;margin-top:14px;">
-        <div class="lanc-item-grid">
-          <div class="lanc-field">
-            <label>Data</label>
-            <input type="date" id="perdas-in-data" required>
-          </div>
-          <div class="lanc-field">
-            <label>Hora</label>
-            <input type="time" id="perdas-in-hora">
-          </div>
-          <div class="lanc-field">
-            <label>Setor</label>
-            <select id="perdas-in-setor" required></select>
-          </div>
-          <div class="lanc-field span-2">
-            <label>Produto</label>
-            <input type="text" id="perdas-in-produto" list="perdasProdutoList" placeholder="Nome do produto" required>
-            <datalist id="perdasProdutoList"></datalist>
-          </div>
-          <div class="lanc-field">
-            <label>Quantidade</label>
-            <input type="number" step="0.001" id="perdas-in-qtd" placeholder="Ex: 2.5" required>
-          </div>
-          <div class="lanc-field">
-            <label>Unidade</label>
-            <select id="perdas-in-unidade">
-              <option value="Kg" selected>Kg</option>
-              <option value="Unidade">Unidade</option>
-              <option value="Bandeja">Bandeja</option>
-              <option value="Caixa">Caixa</option>
-              <option value="Litro">Litro</option>
-              <option value="__outro__">Outro (especificar)</option>
-            </select>
-          </div>
-          <div class="lanc-field" id="perdas-in-unidade-outro-wrap" style="display:none;">
-            <label>Especifique a Unidade</label>
-            <input type="text" id="perdas-in-unidade-outro" placeholder="Ex: Fardo">
-          </div>
-          <div class="lanc-field">
-            <label>Motivo</label>
-            <select id="perdas-in-motivo" required>
-              <option value="">Selecione...</option>
-              <option value="Amassado">Amassado</option>
-              <option value="Quebrado">Quebrado</option>
-              <option value="Fora do padrão">Fora do padrão</option>
-              <option value="Massa aberta">Massa aberta</option>
-              <option value="Colado na forma">Colado na forma</option>
-              <option value="Manchado (tinta/óleo)">Manchado (tinta/óleo)</option>
-              <option value="Descascado">Descascado</option>
-              <option value="Contaminado">Contaminado</option>
-              <option value="Descartado">Descartado</option>
-              <option value="__outro__">Outro (especificar)</option>
-            </select>
-          </div>
-          <div class="lanc-field" id="perdas-in-motivo-outro-wrap" style="display:none;">
-            <label>Especifique o Motivo</label>
-            <input type="text" id="perdas-in-motivo-outro" placeholder="Ex: caiu no chão">
-          </div>
-          <div class="lanc-field">
-            <label>Destino do Produto</label>
-            <select id="perdas-in-destino">
-              <option value="">Selecione...</option>
-              <option value="Descarte">Descarte</option>
-              <option value="Refeitório">Refeitório</option>
-              <option value="Lixo">Lixo</option>
-              <option value="__outro__">Outro (especificar)</option>
-            </select>
-          </div>
-          <div class="lanc-field" id="perdas-in-destino-outro-wrap" style="display:none;">
-            <label>Especifique o Destino</label>
-            <input type="text" id="perdas-in-destino-outro" placeholder="Ex: Doação">
-          </div>
-          <div class="lanc-field">
-            <label>Responsável</label>
-            <input type="text" id="perdas-in-lider" list="perdasLiderList" placeholder="Nome do líder">
-            <datalist id="perdasLiderList"></datalist>
-          </div>
-          <div class="lanc-field span-3">
-            <label>Observação</label>
-            <textarea id="perdas-in-obs" rows="2" placeholder="Opcional"></textarea>
-          </div>
-        </div>
-        <div style="display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-top:14px;">
-          <span class="lanc-feedback" id="perdasFormFeedback"></span>
-          <button type="submit" class="lanc-hist-btn save" id="perdasSubmitBtn">Salvar Perda</button>
-        </div>
-      </form>
-    </div>
-
     <!-- Filtros -->
     <div class="panel" style="margin-bottom:16px;">
       <div class="panel-title" style="color:var(--red-dark);">Filtros — Registro de Perdas</div>
@@ -3476,7 +3373,6 @@ body{background:#fff;color:#000}
               <th style="text-align:right;padding:8px 12px;white-space:nowrap;position:sticky;top:0;background:var(--cream);font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft);">Qtd (kg)</th>
               <th style="text-align:left;padding:8px 12px;position:sticky;top:0;background:var(--cream);font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft);">Motivo</th>
               <th style="text-align:left;padding:8px 12px;position:sticky;top:0;background:var(--cream);font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft);">Destino</th>
-              <th style="text-align:left;padding:8px 12px;position:sticky;top:0;background:var(--cream);font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft);">Líder</th>
             </tr>
           </thead>
           <tbody id="perdas-tbody"></tbody>
@@ -4123,9 +4019,8 @@ body{background:#fff;color:#000}
 
       <div class="panel">
         <div class="panel-title">Saldo de Estoque Atual</div>
-        <div class="trend-foot" style="margin-bottom:12px;">Saldo = Última Contagem + Entradas lançadas depois − Requisições lançadas depois. Itens sem nenhuma contagem ainda partem de 0 (menos confiável — cadastre uma contagem inicial assim que possível). Atualiza sozinho sempre que uma requisição, contagem ou entrada é lançada, editada ou excluída.</div>
-        <input type="text" id="eqSaldoFiltro" placeholder="Buscar produto..." style="max-width:320px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--cream);margin-bottom:14px;">
-        <div class="chart-wrap" id="eqSaldoChartWrap" style="margin-bottom:18px;"></div>
+        <div class="trend-foot" style="margin-bottom:12px;">Saldo = Última Contagem + Entradas lançadas depois − Requisições lançadas depois. Itens sem nenhuma contagem ainda partem de 0 (menos confiável — cadastre uma contagem inicial assim que possível).</div>
+        <input type="text" id="eqSaldoFiltro" placeholder="Buscar produto..." style="max-width:320px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--cream);margin-bottom:10px;">
         <div class="table-wrap" style="max-height:400px;">
           <table class="detail" id="eqSaldoTable">
             <thead>
@@ -4144,89 +4039,6 @@ body{background:#fff;color:#000}
 
     </div>
   </div> <!-- /page-estoque -->
-
-  <div id="page-refeitorio" class="report-page" style="display:none;">
-
-    <div class="topbar">
-      <div class="brand">
-        <div class="text-block">
-          <div class="eyebrow">Bread King · Refeitório</div>
-          <h1>Refeitório</h1>
-          <div class="subtitle">Consumo de insumos por item — lançamentos ficam na aba Lançamento → Refeitório</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="period-bar">
-      <label>Período</label>
-      <div class="dr-wrap" id="drWrap_ref">
-        <button type="button" class="dr-btn" id="drBtn_ref"></button>
-        <div class="dr-panel" id="drPanel_ref">
-          <div class="dr-header">
-            <button type="button" class="dr-nav" id="drPrev_ref">‹</button>
-            <div class="dr-month-label" id="drLabel_ref"></div>
-            <button type="button" class="dr-nav" id="drNext_ref">›</button>
-          </div>
-          <div class="dr-weekdays"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
-          <div class="dr-grid" id="drGrid_ref"></div>
-          <div class="dr-hint" id="drHint_ref">Clique numa data para começar, e em outra pra fechar o intervalo</div>
-          <div class="dr-footer">
-            <button type="button" id="drClear_ref">Limpar</button>
-            <button type="button" id="drToday_ref">Hoje</button>
-          </div>
-        </div>
-      </div>
-      <input type="date" id="refDataIni" style="display:none;">
-      <input type="date" id="refDataFim" style="display:none;">
-      <button class="btn-refresh" id="refBtnRefresh">⟳ Atualizar</button>
-      <span class="period-info" id="refPeriodInfo"></span>
-    </div>
-
-    <div class="container">
-
-      <div class="kpi-grid">
-        <div class="kpi-card">
-          <div class="label">Lançamentos no Período</div>
-          <div class="value" id="refKpiLancamentos">—</div>
-        </div>
-        <div class="kpi-card">
-          <div class="label">Itens Distintos</div>
-          <div class="value" id="refKpiItens">—</div>
-        </div>
-        <div class="kpi-card">
-          <div class="label">Item Mais Consumido</div>
-          <div class="value" id="refKpiTopItem" style="font-size:16px;">—</div>
-        </div>
-        <div class="kpi-card">
-          <div class="label">Dias com Requisição</div>
-          <div class="value" id="refKpiDias">—</div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">Ranking de Consumo por Insumo</div>
-        <div class="chart-wrap" id="refChartWrap"></div>
-        <div class="trend-foot">Soma da Qtd. Solicitada (ou Qtd. Entregue, quando a solicitada não foi lançada) no período selecionado, por item.</div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">Histórico de Requisições — Refeitório</div>
-        <div class="table-wrap" style="max-height:420px;">
-          <table class="detail" id="refHistTable">
-            <thead>
-              <tr>
-                <th>Data</th><th>Líder</th><th>Item</th><th class="center">Unidade</th>
-                <th class="center">Qtd. Solicitada</th><th class="center">Qtd. Entregue</th>
-                <th>Observação</th><th class="center">Ações</th>
-              </tr>
-            </thead>
-            <tbody id="refHistTbody"></tbody>
-          </table>
-        </div>
-      </div>
-
-    </div>
-  </div> <!-- /page-refeitorio -->
 
   <div id="page-pcp-estoque" class="report-page" style="display:none;">
 
@@ -4720,7 +4532,6 @@ body{background:#fff;color:#000}
           <button type="button" class="lanc-tab-btn active" data-lanctab="producao">Produção Diária</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="manutencao">Manutenção</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="estoque">Estoque</button>
-          <button type="button" class="lanc-tab-btn" data-lanctab="refeitorio">Refeitório</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="prodproc">Produtividade & Processos</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="maquinas">Máquinas</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="produtos">Produtos</button>
@@ -4784,7 +4595,7 @@ body{background:#fff;color:#000}
                     <th>Data</th><th>Setor</th><th>Produto</th><th>Máquina</th>
                     <th class="center">Equipe</th><th class="center">Planejada</th><th class="center">Real</th>
                     <th>Unidade</th><th class="center">Início</th><th class="center">Fim</th>
-                    <th class="center">Duração</th><th>Desvios</th><th>Observação</th><th class="center">Recheio (cx)</th><th>Tipo Recheio</th><th class="center">Apontamento Completo?</th><th class="center">Ações</th>
+                    <th class="center">Duração</th><th>Desvios</th><th>Observação</th><th class="center">Recheio (cx)</th><th class="center">Apontamento Completo?</th><th class="center">Ações</th>
                   </tr>
                 </thead>
                 <tbody id="lpHistTbody"></tbody>
@@ -5050,39 +4861,6 @@ body{background:#fff;color:#000}
           <datalist id="lpUnidadeListEstoque">
             <option value="Kg"><option value="Litro"><option value="Unid"><option value="Pacote"><option value="Caixa"><option value="Saco">
           </datalist>
-        </div>
-
-        <!-- Formulário: Refeitório -->
-        <div id="lancPanelRefeitorio" class="panel" style="display:none;">
-          <div class="panel-title">Nova Requisição — Refeitório (FOR-SGQ-027)</div>
-          <div class="trend-foot" style="margin-bottom:12px;">Preencha só os itens que saíram nessa requisição. Item e unidade já vêm da lista padrão do formulário — ajuste a unidade se precisar.</div>
-          <form id="refForm" class="lanc-form">
-            <div class="lanc-field">
-              <label>Data da Solicitação</label>
-              <input type="date" id="refFormData" required>
-            </div>
-            <div class="lanc-field span-2">
-              <label>Líder / Solicitante</label>
-              <input type="text" id="refFormLider" placeholder="Nome de quem solicitou">
-            </div>
-            <div class="lanc-field span-3">
-              <input type="text" id="refChecklistFiltro" placeholder="Buscar insumo na lista…" style="max-width:320px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--cream);margin-bottom:10px;">
-              <div class="table-wrap" style="max-height:490px;">
-                <table class="detail" id="refChecklistTable">
-                  <thead>
-                    <tr><th>Item</th><th class="center">Unidade</th><th class="center">Qtd. Solicitada</th><th class="center">Qtd. Entregue</th></tr>
-                  </thead>
-                  <tbody id="refChecklistTbody"></tbody>
-                </table>
-              </div>
-              <div class="trend-foot" id="refChecklistFiltroInfo" style="margin-top:6px;"></div>
-              <button type="button" class="lanc-add-item-btn" id="refAddExtraBtn" style="margin-top:10px;">+ Adicionar item fora da lista padrão</button>
-            </div>
-            <div class="lanc-submit-row">
-              <button type="submit" class="lanc-submit-btn" id="refSubmitBtn">Salvar Requisição</button>
-              <span class="lanc-feedback" id="refFormFeedback"></span>
-            </div>
-          </form>
         </div>
 
         <!-- Formulário: Produtividade & Processos -->
@@ -5961,7 +5739,6 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     document.getElementById('page-rascunho').style.display = target === 'rascunho' ? 'block' : 'none';
     document.getElementById('page-manutencao').style.display = target === 'manutencao' ? 'block' : 'none';
     document.getElementById('page-estoque').style.display = target === 'estoque' ? 'block' : 'none';
-    document.getElementById('page-refeitorio').style.display = target === 'refeitorio' ? 'block' : 'none';
     document.getElementById('page-pcp-estoque').style.display = target === 'pcp-estoque' ? 'block' : 'none';
     document.getElementById('page-melhoria').style.display = target === 'melhoria' ? 'block' : 'none';
     document.getElementById('page-lancamento').style.display = target === 'lancamento' ? 'block' : 'none';
@@ -5972,10 +5749,6 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     }
     if(target === 'pcp-estoque' && typeof PCP_init === 'function'){
       PCP_init();
-    }
-    if(target === 'refeitorio' && !REF_loadedOnce){
-      REF_loadedOnce = true;
-      REF_init();
     }
     if(target === 'melhoria' && !MC_loadedOnce){
       MC_loadedOnce = true;
@@ -6612,6 +6385,7 @@ function transformSupabaseRowsToData(rows){
     const equipe = (r.equipe !== null && r.equipe !== undefined) ? String(r.equipe) : '';
     const maquina = r.maquina || '';
     const produto = r.produto || '';
+    const codigo = (r.codigo_produto !== null && r.codigo_produto !== undefined) ? String(r.codigo_produto).trim() : '';
     if(!produto) return;
 
     // producao_planejada vem como texto (aceita número OU "S/ Quantidade
@@ -6634,7 +6408,7 @@ function transformSupabaseRowsToData(rows){
     const recheio = (r.recheio_consumido_caixas !== null && r.recheio_consumido_caixas !== undefined) ? Number(r.recheio_consumido_caixas) : null;
 
     if(!byDate[dateISO]) byDate[dateISO] = [];
-    byDate[dateISO].push({ setor, equipe, maquina, produto, prev, foraDoPlano, semQuantidade, real, uni, dif, obs, inicio, fim, duracaoParada, apontamentoCompleto, recheio });
+    byDate[dateISO].push({ setor, equipe, maquina, produto, codigo, prev, foraDoPlano, semQuantidade, real, uni, dif, obs, inicio, fim, duracaoParada, apontamentoCompleto, recheio });
   });
 
   const result = {};
@@ -6828,8 +6602,78 @@ function getPreviousPeriodDates(filteredDates){
    render usam esta função para obter apenas as linhas daquele setor */
 let selectedSector = '';
 function getDayRows(dayKey){
-  const rows = DATA[dayKey].rows;
+  const day = DATA[dayKey];
+  if(!day) return []; // defensivo: permite consultar datas fora do período carregado (ex: "dia anterior")
+  const rows = day.rows;
   return selectedSector ? rows.filter(r => r.setor === selectedSector) : rows;
+}
+
+/* ---------- Padrão dos painéis "Geral" por setor (dia anterior / semana / mês) ----------
+   Diferente do filtro global de datas (dateStartInput/dateEndInput), esses cards
+   usam sempre o dado mais recente carregado como referência de "hoje" — não a
+   data real do dispositivo — pra funcionar de forma consistente com qualquer
+   base histórica (inclusive fora do ar por alguns dias). */
+function isoAddDays(iso, n){
+  const d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0,10);
+}
+function stdReferenceDate(){
+  return allDates.length ? allDates[allDates.length-1] : null;
+}
+function stdWeekRange(refISO){
+  const d = new Date(refISO + 'T00:00:00');
+  const dw = d.getDay(); // 0 = domingo
+  const diffSeg = dw === 0 ? -6 : 1 - dw;
+  const seg = new Date(d); seg.setDate(d.getDate() + diffSeg);
+  const dom = new Date(seg); dom.setDate(seg.getDate() + 6);
+  return { ini: seg.toISOString().slice(0,10), fim: dom.toISOString().slice(0,10) };
+}
+function stdDatesInRange(ini, fim){
+  const out = [];
+  for(let d = new Date(ini + 'T00:00:00'); d <= new Date(fim + 'T00:00:00'); d.setDate(d.getDate()+1)){
+    out.push(d.toISOString().slice(0,10));
+  }
+  return out;
+}
+/* % de Atendimento (média de Real÷Planejado, só lançamentos com meta) de um conjunto de dias */
+function stdPctAtendimento(dates){
+  let difSum = 0, difN = 0;
+  dates.forEach(d=>{
+    getDayRows(d).forEach(r=>{
+      if(r.prev !== null && r.prev > 0){
+        difSum += (r.real/r.prev)*100;
+        difN++;
+      }
+    });
+  });
+  return difN ? difSum/difN : null;
+}
+/* Acurácia = 100 - |real-plan|/plan*100, clamp 0-100, média nos lançamentos com meta */
+function stdAcuracia(dates){
+  let soma = 0, n = 0;
+  dates.forEach(d=>{
+    getDayRows(d).forEach(r=>{
+      if(r.prev !== null && r.prev > 0){
+        const acc = Math.max(0, Math.min(100, 100 - Math.abs(r.real - r.prev)/r.prev*100));
+        soma += acc; n++;
+      }
+    });
+  });
+  return n ? soma/n : null;
+}
+function stdPctClass(pct){
+  if(pct == null) return '';
+  if(pct >= 90) return 'sem-good';
+  if(pct >= 70) return 'sem-warn';
+  return 'sem-bad';
+}
+function stdFmtPct(pct){
+  return pct == null ? '—' : (pct.toFixed(1).replace('.', ',') + '%');
+}
+function stdFmtDataBR(iso){
+  if(!iso) return '—';
+  return iso.split('-').reverse().join('/');
 }
 
 /* Soma o total em Kg (Kg direto + Unid com peso no nome, via getKgForRow)
@@ -6945,42 +6789,9 @@ function renderKPIs(filteredDates){
 
   document.getElementById('kpiGrid').style.gridTemplateColumns = 'repeat(4,1fr)';
 
-  if(selectedSector === ''){
-    // Aba Geral: visão de atendimento consolidada, não por status de item
-    const atendimentoPct = avgDif + 100;
-    const prevAtendPct   = prev ? (prev.avgDif === null ? 0 : prev.avgDif) + 100 : null;
-    const atendClass = atendimentoPct >= 100 ? 'sem-good' : atendimentoPct >= 85 ? 'sem-warn' : 'sem-bad';
-    document.getElementById('kpiGrid').innerHTML = `
-      <div class="kpi-card ${atendClass}">
-        <div class="label">Atendimento %</div>
-        <div class="value">${atendimentoPct.toFixed(1)}%</div>
-        ${deltaHtml(atendimentoPct, prevAtendPct, false)}
-      </div>
-      <div class="kpi-card warn">
-        <div class="label">Tempo Parado</div>
-        <div class="value" style="font-size:22px;">${TP_fmtDuration(curr.tempoParadoMin*60)}</div>
-        ${prev ? deltaHtml(
-            filteredDates.length ? curr.tempoParadoMin / filteredDates.length : 0,
-            prevDates.length     ? prev.tempoParadoMin / prevDates.length     : null,
-            true
-          ) : ''}
-      </div>
-      <div class="kpi-card">
-        <div class="label">Qtd. de Produções Não Planejadas</div>
-        <div class="value">${curr.naoPlanejadasCount}</div>
-        ${prev ? deltaHtml(
-            filteredDates.length ? curr.naoPlanejadasCount / filteredDates.length : 0,
-            prevDates.length     ? prev.naoPlanejadasCount / prevDates.length     : null,
-            true
-          ) : ''}
-      </div>
-      <div class="kpi-card ${accClass}">
-        <div class="label">Acurácia</div>
-        <div class="value">${avgDif>0?'+':''}${avgDif.toFixed(1)}%</div>
-        ${prev ? deltaHtml(avgDif, prev.avgDif === null ? 0 : prev.avgDif, false) : ''}
-      </div>
-    `;
-  } else {
+  if(selectedSector === 'FRITADOR'){
+    // Fritador mantém o painel original, fora da padronização — ver
+    // decisão do usuário: "com exceção do fritador".
     document.getElementById('kpiGrid').innerHTML = `
       <div class="kpi-card ${belowClass}">
         <div class="label">Abaixo do Planejado</div>
@@ -7001,6 +6812,43 @@ function renderKPIs(filteredDates){
         <div class="label">Acurácia de Produção</div>
         <div class="value">${avgDif>0?'+':''}${avgDif.toFixed(1)}%</div>
         ${prev ? deltaHtml(avgDif, prev.avgDif === null ? 0 : prev.avgDif, false) : ''}
+      </div>
+    `;
+  } else {
+    // Painel padronizado (todos os setores + aba Geral, exceto Fritador):
+    // % de Atendimento do dia anterior / semana / mês + Acurácia. A
+    // referência de "hoje" é o dia mais recente carregado (não a data real
+    // do dispositivo), pra não depender do relógio do navegador.
+    const refDate = stdReferenceDate();
+    const diaAnterior = refDate ? isoAddDays(refDate, -1) : null;
+    const pctDia = diaAnterior ? stdPctAtendimento([diaAnterior]) : null;
+
+    const semana = refDate ? stdWeekRange(refDate) : null;
+    const diasSemana = semana ? stdDatesInRange(semana.ini, semana.fim) : [];
+    const pctSemana = semana ? stdPctAtendimento(diasSemana) : null;
+
+    const mesRef = refDate ? refDate.slice(0,7) : null;
+    const diasMes = mesRef ? allDates.filter(d => d.startsWith(mesRef)) : [];
+    const pctMes = mesRef ? stdPctAtendimento(diasMes) : null;
+
+    const acuracia = stdAcuracia(filteredDates);
+
+    document.getElementById('kpiGrid').innerHTML = `
+      <div class="kpi-card ${stdPctClass(pctDia)}">
+        <div class="label">% Atendimento — Dia Anterior${diaAnterior ? ' (' + stdFmtDataBR(diaAnterior) + ')' : ''}</div>
+        <div class="value">${stdFmtPct(pctDia)}</div>
+      </div>
+      <div class="kpi-card ${stdPctClass(pctSemana)}">
+        <div class="label">% Atendimento — Semana${semana ? ' (' + stdFmtDataBR(semana.ini) + ' a ' + stdFmtDataBR(semana.fim) + ')' : ''}</div>
+        <div class="value">${stdFmtPct(pctSemana)}</div>
+      </div>
+      <div class="kpi-card ${stdPctClass(pctMes)}">
+        <div class="label">% Atendimento — Mês${mesRef ? ' (' + mesRef.replace('-','/') + ')' : ''}</div>
+        <div class="value">${stdFmtPct(pctMes)}</div>
+      </div>
+      <div class="kpi-card ${stdPctClass(acuracia)}">
+        <div class="label">Acurácia</div>
+        <div class="value">${stdFmtPct(acuracia)}</div>
       </div>
     `;
   }
@@ -7395,11 +7243,16 @@ let QA_MANUT_CACHE = { key: null, data: null };
    em 100% representando a Meta ao lado da linha do Realizado. ---------- */
 function renderAtendimentoTrend(filteredDates){
   const panel = document.getElementById('atendimentoTrendPanel');
-  if(selectedSector !== ''){
+  // Faz parte do painel padronizado (linha 2) em toda aba, exceto Fritador,
+  // que mantém o layout original.
+  if(selectedSector === 'FRITADOR'){
     panel.style.display = 'none';
     return;
   }
   panel.style.display = '';
+  document.getElementById('atendimentoTrendFoot').textContent = selectedSector
+    ? `% de Atendimento (Real ÷ Planejado) por dia, considerando o setor ${selectedSector} e lançamentos com meta cadastrada no período. A linha de Meta fica sempre em 100%.`
+    : '% de Atendimento (Real ÷ Planejado) por dia, considerando todos os setores e lançamentos com meta cadastrada no período. A linha de Meta fica sempre em 100%.';
 
   // Calcula atendimento % por dia para um conjunto de datas
   function calcPoints(dates){
@@ -7500,11 +7353,10 @@ function renderAtendimentoTrend(filteredDates){
 
 function renderQualidadeApontamento(filteredDates){
   const panel = document.getElementById('qualidadeApontamentoPanel');
-  if(selectedSector !== ''){
-    panel.style.display = 'none';
-    return;
-  }
-  panel.style.display = 'block';
+  // Removido da padronização dos painéis (não faz parte do novo layout de
+  // 4 linhas). Fritador não usava esse painel antes, então nada muda pra ele.
+  panel.style.display = 'none';
+  return;
 
   const porSetor = {};
   filteredDates.forEach(d=>{
@@ -7580,32 +7432,67 @@ async function QA_renderManutencao(filteredDates){
   }
 }
 
+/* Cabeçalho original (só Fritador) — Data/Setor/Produto/Equipe/Máquina/
+   Prod. Prevista/Prod. Real/Uni./Dif. %/Observações e Causa/Duração */
+const TABLE_HEAD_FRITADOR = `
+  <tr>
+    <th>Data</th>
+    <th>Setor</th>
+    <th>Produto</th>
+    <th class="center">Equipe</th>
+    <th>Máquina</th>
+    <th class="center">Prod. Prevista</th>
+    <th class="center">Prod. Real</th>
+    <th class="center">Uni.</th>
+    <th class="center">Dif. %</th>
+    <th>Observações e Causa</th>
+    <th class="center">Duração da Parada</th>
+  </tr>
+`;
+/* Cabeçalho padronizado (todos os setores + Geral, exceto Fritador) —
+   Data | Código | Produto | Planejado | Realizado | Dif % | Tempo Total
+   Parado | Observação. */
+const TABLE_HEAD_PADRAO = `
+  <tr>
+    <th>Data</th>
+    <th>Código</th>
+    <th>Produto</th>
+    <th class="center">Planejado</th>
+    <th class="center">Realizado</th>
+    <th class="center">Dif %</th>
+    <th class="center">Tempo Total Parado</th>
+    <th>Observação</th>
+  </tr>
+`;
+
 function renderTable(filteredDates){
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = '';
   const produtoFiltro = document.getElementById('fProdutoDetalhe').value;
+  const isFritador = selectedSector === 'FRITADOR';
+
+  document.getElementById('tableHead').innerHTML = isFritador ? TABLE_HEAD_FRITADOR : TABLE_HEAD_PADRAO;
 
   if(filteredDates.length === 1){
-    document.getElementById('tableTitle').textContent = `Detalhamento por Produto — ${DATA[filteredDates[0]].label}`;
+    document.getElementById('tableTitle').textContent = `Registros de Produção — ${DATA[filteredDates[0]].label}`;
   } else if(filteredDates.length > 1){
-    document.getElementById('tableTitle').textContent = `Detalhamento por Produto — ${DATA[filteredDates[0]].label} a ${DATA[filteredDates[filteredDates.length-1]].label}`;
+    document.getElementById('tableTitle').textContent = `Registros de Produção — ${DATA[filteredDates[0]].label} a ${DATA[filteredDates[filteredDates.length-1]].label}`;
   } else {
-    document.getElementById('tableTitle').textContent = 'Detalhamento por Produto';
+    document.getElementById('tableTitle').textContent = 'Registros de Produção';
   }
 
   let totalRows = 0;
   let totalKg = 0;
   let rowsComPeso = 0;
+  const colCount = isFritador ? 11 : 8;
   // Mais recente primeiro
   filteredDates.slice().reverse().forEach(dayKey=>{
-    const day = DATA[dayKey];
     getDayRows(dayKey).forEach(r=>{
       if(produtoFiltro && r.produto !== produtoFiltro) return;
       totalRows++;
       const kgRow = getKgForRow(r);
       if(kgRow !== null){ totalKg += kgRow; rowsComPeso++; }
       const isNoPlan = typeof r.prev !== 'number';
-      const isForaDoPlano = rowIsForaDoPlano(r);
       const prevTxt = isNoPlan ? `<span class="no-plan">${planLabelText(r)}</span>` : r.prev.toLocaleString('pt-BR');
       let difHtml = '<span class="diff-cell diff-neutral">—</span>';
       if(r.dif !== null){
@@ -7617,25 +7504,38 @@ function renderTable(filteredDates){
       const obsHtml = hasObs ? `<span class="obs-text has-obs">${r.obs}</span>` : `<span class="obs-text">—</span>`;
       const tr = document.createElement('tr');
       if(isNoPlan) tr.className = 'row-noplan';
-      tr.innerHTML = `
-      <td>${dayKey.split('-').reverse().join('/')}</td>
-        <td><span class="sector-tag">${r.setor}</span></td>
-        <td class="prod-name">${r.produto}</td>
-        <td class="center">${r.equipe||'—'}</td>
-        <td>${r.maquina||'—'}</td>
-        <td class="center">${prevTxt}</td>
-        <td class="center">${formatRealWithKgEquiv(r.real, r.uni, r.produto)}</td>
-        <td class="center">${r.uni}</td>
-        <td class="center">${difHtml}</td>
-        <td>${obsHtml}</td>
-        <td class="center">${fmtDuracaoParada(r.duracaoParada)}</td>
-      `;
+      if(isFritador){
+        tr.innerHTML = `
+        <td>${dayKey.split('-').reverse().join('/')}</td>
+          <td><span class="sector-tag">${r.setor}</span></td>
+          <td class="prod-name">${r.produto}</td>
+          <td class="center">${r.equipe||'—'}</td>
+          <td>${r.maquina||'—'}</td>
+          <td class="center">${prevTxt}</td>
+          <td class="center">${formatRealWithKgEquiv(r.real, r.uni, r.produto)}</td>
+          <td class="center">${r.uni}</td>
+          <td class="center">${difHtml}</td>
+          <td>${obsHtml}</td>
+          <td class="center">${fmtDuracaoParada(r.duracaoParada)}</td>
+        `;
+      } else {
+        tr.innerHTML = `
+        <td>${dayKey.split('-').reverse().join('/')}</td>
+          <td class="center">${r.codigo || '—'}</td>
+          <td class="prod-name">${r.produto}</td>
+          <td class="center">${prevTxt}</td>
+          <td class="center">${formatRealWithKgEquiv(r.real, r.uni, r.produto)}</td>
+          <td class="center">${difHtml}</td>
+          <td class="center">${fmtDuracaoParada(r.duracaoParada)}</td>
+          <td>${obsHtml}</td>
+        `;
+      }
       tbody.appendChild(tr);
     });
   });
   if(totalRows === 0){
-    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro para o setor/produto selecionado neste período.</td></tr>`;
-  } else if(rowsComPeso > 0 && selectedSector === 'FRITADOR'){
+    tbody.innerHTML = `<tr><td colspan="${colCount}" style="text-align:center;color:var(--ink-soft);padding:20px;">Nenhum registro para o setor/produto selecionado neste período.</td></tr>`;
+  } else if(rowsComPeso > 0 && isFritador){
     const totalKgTxt = totalKg.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
     const totalTr = document.createElement('tr');
     totalTr.className = 'total-row';
@@ -8075,6 +7975,10 @@ function computeCapacidadeSalgado(filteredDates){
 
 function renderCapacidadeSalgado(filteredDates){
   const panel = document.getElementById('capacidadeSalgadoPanel');
+  // Removido da padronização dos painéis (não faz parte do novo layout de
+  // 4 linhas, que se aplica também ao setor Salgado agora).
+  panel.style.display = 'none';
+  return;
   if(selectedSector !== 'SALGADO'){
     panel.style.display = 'none';
     return;
@@ -8177,6 +8081,9 @@ function computeConsumoRecheioSalgado(filteredDates){
 
 function renderConsumoRecheioSalgado(filteredDates){
   const panel = document.getElementById('recheioSalgadoPanel');
+  // Removido da padronização dos painéis (idem capacidadeSalgadoPanel).
+  panel.style.display = 'none';
+  return;
   if(selectedSector !== 'SALGADO'){
     panel.style.display = 'none';
     return;
@@ -8614,8 +8521,20 @@ function refreshDaySelectOptions(filteredDates){
   }
 }
 
+/* Painéis que só existem no layout original do Fritador (fora da
+   padronização de 4 linhas dos demais setores): comparativo por produto +
+   pódio, Atendimento de Meta, Ranking de Produtividade e Fora do Plano. */
+function applyStandardPanelVisibility(){
+  const showFritadorOnly = selectedSector === 'FRITADOR';
+  ['comparativoRow','lostProdPanel','prodRatePanel','foraDoPlanoPanel'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.style.display = showFritadorOnly ? '' : 'none';
+  });
+}
+
 function refreshAll(){
   if(DR_updaters.main) DR_updaters.main();
+  applyStandardPanelVisibility();
   const filteredDates = getFilteredDates();
   // Mantém os chips de comparação sincronizados sempre que o período principal muda
   updateComparisonChips(filteredDates);
@@ -11132,13 +11051,11 @@ document.querySelectorAll('.lanc-tab-btn').forEach(btn=>{
     document.getElementById('lancPanelProducao').style.display = tab === 'producao' ? 'block' : 'none';
     document.getElementById('lancPanelManutencao').style.display = tab === 'manutencao' ? 'block' : 'none';
     document.getElementById('lancPanelEstoque').style.display = tab === 'estoque' ? 'block' : 'none';
-    document.getElementById('lancPanelRefeitorio').style.display = tab === 'refeitorio' ? 'block' : 'none';
     document.getElementById('lancPanelProdProc').style.display = tab === 'prodproc' ? 'block' : 'none';
     document.getElementById('lancPanelMaquinas').style.display = tab === 'maquinas' ? 'block' : 'none';
     document.getElementById('lancPanelProdutos').style.display = tab === 'produtos' ? 'block' : 'none';
     document.getElementById('lancPanelSetores').style.display = tab === 'setores' ? 'block' : 'none';
     if(tab === 'estoque') EQ_populateDropdowns();
-    if(tab === 'refeitorio') REF_initLancamento();
     if(tab === 'producao') LANC_populateDropdowns();
     if(tab === 'prodproc') PPL_init();
     if(tab === 'maquinas') MQ_init();
@@ -11396,11 +11313,6 @@ const LP_TIPO_PLANEJAMENTO_TEXTO = {
   desvio_nao_justificado: 'Desvio Não Justificado',
 };
 
-// Tipos de recheio das empadas/salgados — acompanha o campo Recheio Consumido
-// (caixas), só aparece pro setor Salgado. Fonte única usada tanto no
-// formulário de lançamento quanto na edição do histórico.
-const LP_TIPOS_RECHEIO = ['Frango','Carne','Pres/Queijo','Calabresa','Salsicha','Palmito','Carne c/ Ovo','Queijo'];
-
 // Codifica o campo producao_planejada para salvar no banco.
 // Quando tipo = "numero" → salva só o número.
 // Outros tipos → salva "Texto Canônico|número" (ex: "Produção Não Apontada|3420"),
@@ -11490,13 +11402,6 @@ function lpCreateItemRow(initial){
       <div class="lanc-field lp-recheio-wrap" style="display:none;">
         <label>Recheio Consumido (caixas)</label>
         <input type="number" step="0.01" class="lp-recheio" placeholder="Ex: 12">
-      </div>
-      <div class="lanc-field lp-tipo-recheio-wrap" style="display:none;">
-        <label>Tipo de Recheio</label>
-        <select class="lp-tipo-recheio">
-          <option value="">Selecione...</option>
-          ${LP_TIPOS_RECHEIO.map(t => `<option value="${t}">${t}</option>`).join('')}
-        </select>
       </div>
       <div class="lanc-field span-3">
         <label>Paradas, Ausências e Desvios de Produção</label>
@@ -11644,7 +11549,6 @@ function lpCreateItemRow(initial){
   if(initial.fim) row.querySelector('.lp-fim').value = initial.fim;
   if(initial.observacao) row.querySelector('.lp-observacao').value = initial.observacao;
   if(initial.recheio != null) row.querySelector('.lp-recheio').value = initial.recheio;
-  if(initial.tipoRecheio) row.querySelector('.lp-tipo-recheio').value = initial.tipoRecheio;
   if(initial.apontamentoCompleto) row.querySelector('.lp-apontamento-completo').value = initial.apontamentoCompleto;
   if(Array.isArray(initial.paradas)){
     initial.paradas.forEach(p => {
@@ -11660,23 +11564,13 @@ function lpCreateItemRow(initial){
 /* Filtra o datalist de Produto/Máquina desse item específico pelo setor
    selecionado NESSE item (cada item tem seu próprio par de datalists,
    diferente do resto do formulário, porque o setor agora varia por linha). */
-/* Recheio Consumido (caixas) + Tipo de Recheio só fazem sentido pros setores
-   que trabalham com produtos recheados — Salgado, Pão Batata e Croissant —
-   some/reaparece conforme o Setor selecionado em cada linha do lançamento.
-   Nomes batem com o cadastro em public.setores (maiúsculas, com acento). */
-const LP_SETORES_COM_RECHEIO = ['SALGADO', 'PÃO BATATA', 'CROISSANT'];
+/* Recheio Consumido (caixas) só faz sentido pro setor Salgado — some/
+   reaparece conforme o Setor selecionado em cada linha do lançamento. */
 function LP_toggleRecheioField(row, setorValue){
   const wrap = row.querySelector('.lp-recheio-wrap');
-  const tipoWrap = row.querySelector('.lp-tipo-recheio-wrap');
   if(!wrap) return;
-  const temRecheio = LP_SETORES_COM_RECHEIO.includes((setorValue || '').toUpperCase());
-  wrap.style.display = temRecheio ? '' : 'none';
-  if(tipoWrap) tipoWrap.style.display = temRecheio ? '' : 'none';
-  if(!temRecheio){
-    row.querySelector('.lp-recheio').value = '';
-    const tipoEl = row.querySelector('.lp-tipo-recheio');
-    if(tipoEl) tipoEl.value = '';
-  }
+  wrap.style.display = setorValue === 'SALGADO' ? '' : 'none';
+  if(setorValue !== 'SALGADO') row.querySelector('.lp-recheio').value = '';
 }
 
 function lpUpdateRowProdutoMaquinaList(row, uid){
@@ -11718,7 +11612,6 @@ function LP_collectDraftState(){
       fim: row.querySelector('.lp-fim').value,
       observacao: row.querySelector('.lp-observacao').value,
       recheio: row.querySelector('.lp-recheio').value,
-      tipoRecheio: row.querySelector('.lp-tipo-recheio').value,
       apontamentoCompleto: row.querySelector('.lp-apontamento-completo').value,
       paradas,
     };
@@ -12020,7 +11913,6 @@ async function LP_saveSingleItem(row){
     duracao_parada: paradasCombinadas.duracao_parada,
     observacao: row.querySelector('.lp-observacao').value.trim() || null,
     recheio_consumido_caixas: row.querySelector('.lp-recheio').value.trim() ? parseFloat(row.querySelector('.lp-recheio').value) : null,
-    tipo_recheio: row.querySelector('.lp-tipo-recheio').value || null,
     apontamento_completo: apontamentoEl.value === 'true',
   };
 
@@ -12110,7 +12002,6 @@ document.getElementById('lancFormProducao').addEventListener('submit', async (e)
       duracao_parada: paradasCombinadasLote.duracao_parada,
       observacao: row.querySelector('.lp-observacao').value.trim() || null,
       recheio_consumido_caixas: row.querySelector('.lp-recheio').value.trim() ? parseFloat(row.querySelector('.lp-recheio').value) : null,
-      tipo_recheio: row.querySelector('.lp-tipo-recheio').value || null,
       apontamento_completo: apontamentoEl.value === 'true',
     });
   }
@@ -12226,7 +12117,7 @@ function LP_fmtTime(t){
 function LP_renderHistTable(){
   const tbody = document.getElementById('lpHistTbody');
   if(LP_HIST_DATA.length === 0){
-    tbody.innerHTML = '<tr><td colspan="17" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum lançamento encontrado nesse filtro.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum lançamento encontrado nesse filtro.</td></tr>';
     return;
   }
   tbody.innerHTML = LP_HIST_DATA.map(row => LP_buildHistRowHtml(row)).join('');
@@ -12254,7 +12145,6 @@ function LP_buildHistRowHtml(row){
       <td class="lanc-hist-wrap">${row.paradas_desvios||'—'}</td>
       <td class="lanc-hist-wrap">${row.observacao||'—'}</td>
       <td class="center">${row.recheio_consumido_caixas != null ? Number(row.recheio_consumido_caixas).toLocaleString('pt-BR') : '—'}</td>
-      <td>${row.tipo_recheio||'—'}</td>
       <td class="center">${row.apontamento_completo===true?'✓ Sim':row.apontamento_completo===false?'✗ Não':'—'}</td>
       <td class="center">
         <button type="button" class="lanc-hist-btn edit">Editar</button>
@@ -12287,10 +12177,6 @@ function LP_buildHistEditRowHtml(row){
       <td><input type="text" class="eh-paradas" value="${(row.paradas_desvios||'').replace(/"/g,'&quot;')}"></td>
       <td><input type="text" class="eh-observacao" value="${(row.observacao||'').replace(/"/g,'&quot;')}"></td>
       <td><input type="number" step="0.01" class="eh-recheio" value="${row.recheio_consumido_caixas ?? ''}"></td>
-      <td><select class="eh-tipo-recheio">
-        <option value="" ${!row.tipo_recheio?'selected':''}>—</option>
-        ${LP_TIPOS_RECHEIO.map(t => `<option value="${t}" ${row.tipo_recheio===t?'selected':''}>${t}</option>`).join('')}
-      </select></td>
       <td><select class="eh-apontamento-completo">
         <option value="" ${row.apontamento_completo==null?'selected':''}>—</option>
         <option value="true" ${row.apontamento_completo===true?'selected':''}>Sim</option>
@@ -12335,7 +12221,6 @@ async function LP_saveEditRow(id){
     paradas_desvios: val('eh-paradas').trim() || null,
     observacao: val('eh-observacao').trim() || null,
     recheio_consumido_caixas: val('eh-recheio') !== '' ? parseFloat(val('eh-recheio')) : null,
-    tipo_recheio: val('eh-tipo-recheio') || null,
     apontamento_completo: val('eh-apontamento-completo') === '' ? null : val('eh-apontamento-completo') === 'true',
   };
   if(!payload.produto || payload.producao_real === null){
@@ -12453,78 +12338,35 @@ document.getElementById('lancFormManutencao').addEventListener('submit', async (
 /* ============================================================================
    ESTOQUE — Entradas, Contagens e Histórico
    ============================================================================
-   Nome do insumo em texto livre com autocomplete. A lista de sugestões junta
-   dois universos: itens já lançados (Supabase, cresce sozinho conforme usa)
-   e o catálogo oficial em estoque_catalogo_insumos (extraído do inventário
-   do estoquista), que também traz Unidade/Embalagem pra auto-preencher o
-   formulário assim que o item é reconhecido — ver EQ_wireCatalogoAutofill. */
-let EQ_KNOWN_ITEMS = null;   // cache: { itens:[...], unidades:[...] }
-let EQ_CATALOGO_MAP = null;  // cache: { 'NOME DO ITEM': {unidade, embalagem_tipo, embalagem_qtd, embalagem_unidade, codigo} }
+   Mesmo padrão de item/produto: nome do insumo em texto livre com
+   autocomplete (cresce sozinho conforme lança), sem tabela de catálogo à
+   parte. A lista de itens/unidades conhecidos vem direto do Supabase (não
+   do DATA da Produção, que é outra base), buscada uma vez e cacheada. */
+let EQ_KNOWN_ITEMS = null; // cache: { itens:[...], unidades:[...] }
 
 async function EQ_fetchKnownItems(){
   if(EQ_KNOWN_ITEMS) return EQ_KNOWN_ITEMS;
   try{
     const client = LANC_getClient();
-    const [entradas, contagens, requisicoes, catalogo] = await Promise.all([
+    const [entradas, contagens, requisicoes] = await Promise.all([
       client.from('estoque_entradas').select('item, unidade').limit(5000),
       client.from('estoque_contagens').select('item, unidade').limit(5000),
       client.from('estoque_requisicoes').select('item, unidade').limit(5000),
-      client.from('estoque_catalogo_insumos').select('item, unidade, embalagem_tipo, embalagem_qtd, embalagem_unidade, codigo').limit(2000),
     ]);
     const itens = new Set(), unidades = new Set();
     (entradas.data || []).forEach(r=>{ if(r.item) itens.add(r.item); if(r.unidade) unidades.add(r.unidade); });
     (contagens.data || []).forEach(r=>{ if(r.item) itens.add(r.item); if(r.unidade) unidades.add(r.unidade); });
     (requisicoes.data || []).forEach(r=>{ if(r.item) itens.add(r.item); if(r.unidade) unidades.add(r.unidade); });
-    const catalogoMap = {};
-    (catalogo.data || []).forEach(r=>{
-      if(!r.item) return;
-      itens.add(r.item);
-      if(r.unidade) unidades.add(r.unidade);
-      catalogoMap[r.item] = r;
-    });
     EQ_KNOWN_ITEMS = { itens: [...itens].sort(), unidades: [...unidades].sort() };
-    EQ_CATALOGO_MAP = catalogoMap;
   }catch(err){
     console.error('Erro ao buscar itens de estoque conhecidos:', err);
     EQ_KNOWN_ITEMS = { itens: [], unidades: [] };
-    EQ_CATALOGO_MAP = {};
   }
   return EQ_KNOWN_ITEMS;
 }
 
-// Liga o campo Item de uma linha de lançamento ao catálogo: assim que o
-// texto digitado bate exatamente com um item do catálogo (nome vindo da
-// datalist), preenche a Unidade — só se ainda estiver vazia, pra nunca
-// sobrescrever o que a pessoa já ajustou na mão — e mostra a embalagem
-// como dica de referência (ex: "Embalagem: Saco 25kg").
-function EQ_wireCatalogoAutofill(row, itemSel, unidadeSel, hintSel){
-  const itemEl = row.querySelector(itemSel);
-  const unidadeEl = row.querySelector(unidadeSel);
-  const hintEl = row.querySelector(hintSel);
-  if(!itemEl || !hintEl) return;
-  itemEl.addEventListener('input', async ()=>{
-    if(!EQ_CATALOGO_MAP) await EQ_fetchKnownItems();
-    const cat = EQ_CATALOGO_MAP ? EQ_CATALOGO_MAP[itemEl.value.trim()] : null;
-    if(!cat){
-      hintEl.textContent = '';
-      hintEl.classList.remove('tem-embalagem');
-      return;
-    }
-    if(unidadeEl && !unidadeEl.value.trim()) unidadeEl.value = cat.unidade || '';
-    if(cat.embalagem_tipo || cat.embalagem_qtd){
-      const partes = [cat.embalagem_tipo, cat.embalagem_qtd ? `${cat.embalagem_qtd}${(cat.embalagem_unidade||'').toLowerCase()}` : null].filter(Boolean);
-      hintEl.textContent = `📦 Embalagem: ${partes.join(' ')}`;
-      hintEl.classList.add('tem-embalagem');
-    }else{
-      hintEl.textContent = `Unidade de lançamento: ${cat.unidade}`;
-      hintEl.classList.remove('tem-embalagem');
-    }
-  });
-}
-
 async function EQ_populateDropdowns(){
   EQ_KNOWN_ITEMS = null; // força buscar de novo, pode ter item novo desde a última vez
-  EQ_CATALOGO_MAP = null;
   const { itens } = await EQ_fetchKnownItems();
   document.getElementById('eqItemList').innerHTML = itens.map(i=>`<option value="${i}">`).join('');
 }
@@ -12582,7 +12424,6 @@ function EQ_createEntradaRow(){
       <div class="lanc-field span-2">
         <label>Item</label>
         <input type="text" class="eq-item" list="eqItemList" placeholder="Nome do insumo" required>
-        <div class="lanc-item-hint eq-item-hint"></div>
       </div>
       <div class="lanc-field">
         <label>Unidade</label>
@@ -12656,7 +12497,6 @@ function EQ_createEntradaRow(){
   `;
   row.querySelector('[data-remove]').addEventListener('click', ()=>{ row.remove(); EQ_updateItemNumbers('eqEntradaItems'); });
   row.querySelector('[data-save]').addEventListener('click', ()=> EQ_saveSingleEntrada(row));
-  EQ_wireCatalogoAutofill(row, '.eq-item', '.eq-unidade', '.eq-item-hint');
   return row;
 }
 function EQ_updateItemNumbers(containerId){
@@ -12715,7 +12555,6 @@ async function EQ_saveSingleEntrada(row){
     feedback.textContent = `✓ "${payload.item}" salvo.`;
     feedback.className = 'lanc-feedback ok';
     EQ_KNOWN_ITEMS = null;
-    EQ_DASH_refreshIfLoaded();
   }catch(err){
     console.error('Erro ao salvar entrada:', err);
     btn.disabled = false; btn.textContent = 'Salvar este item';
@@ -12750,7 +12589,6 @@ document.getElementById('eqFormEntrada').addEventListener('submit', async (e)=>{
     document.getElementById('eqEntradaItems').innerHTML = '';
     EQ_addEntradaItem();
     EQ_KNOWN_ITEMS = null;
-    EQ_DASH_refreshIfLoaded();
   }catch(err){
     console.error('Erro ao salvar entradas:', err);
     feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
@@ -12778,7 +12616,6 @@ function EQ_createRequisicaoRow(){
       <div class="lanc-field span-2">
         <label>Item</label>
         <input type="text" class="eq-req-item" list="eqItemList" placeholder="Nome do insumo" required>
-        <div class="lanc-item-hint eq-item-hint"></div>
       </div>
       <div class="lanc-field">
         <label>Unidade</label>
@@ -12800,7 +12637,6 @@ function EQ_createRequisicaoRow(){
   `;
   row.querySelector('[data-remove]').addEventListener('click', ()=>{ row.remove(); EQ_updateItemNumbers('eqRequisicaoItems'); });
   row.querySelector('[data-save]').addEventListener('click', ()=> EQ_saveSingleRequisicao(row));
-  EQ_wireCatalogoAutofill(row, '.eq-req-item', '.eq-req-unidade', '.eq-item-hint');
   return row;
 }
 function EQ_addRequisicaoItem(){
@@ -12811,46 +12647,6 @@ document.getElementById('eqRequisicaoAddBtn').addEventListener('click', EQ_addRe
 EQ_addRequisicaoItem();
 EQ_setDefaultDate('eqRequisicaoData');
 EQ_setDefaultDate('eqRequisicaoDataEmissao');
-
-// ─────────────────────────────────────────────
-// VALIDAÇÃO DE SALDO — trava requisição que zeraria ou negativaria o estoque
-// ─────────────────────────────────────────────
-
-// Calcula o saldo atual de 1 item (mesma lógica de EQ_DASH_loadData: última
-// contagem + entradas depois − requisições depois), escopado a esse item só
-// pra não ter que recarregar o dashboard inteiro na hora do lançamento.
-async function EQ_calcularSaldoItem(item){
-  const client = LANC_getClient();
-  const [contagemRes, entradasRes, requisicoesRes] = await Promise.all([
-    client.from('estoque_contagens').select('data,quantidade').eq('item', item).order('data', { ascending:false }).limit(1),
-    client.from('estoque_entradas').select('data,quantidade').eq('item', item).order('data', { ascending:false }).limit(3000),
-    client.from('estoque_requisicoes').select('data,quantidade_liberada').eq('item', item).order('data', { ascending:false }).limit(3000),
-  ]);
-  if(contagemRes.error) throw contagemRes.error;
-  if(entradasRes.error) throw entradasRes.error;
-  if(requisicoesRes.error) throw requisicoesRes.error;
-  const base = (contagemRes.data || [])[0] || null;
-  const baseData = base ? base.data : null;
-  const baseQtd = base ? Number(base.quantidade) : 0;
-  const entradasDepois = (entradasRes.data || [])
-    .filter(e => baseData === null || e.data > baseData)
-    .reduce((s,e)=> s + Number(e.quantidade||0), 0);
-  const requisicoesDepois = (requisicoesRes.data || [])
-    .filter(r => baseData === null || r.data > baseData)
-    .reduce((s,r)=> s + Number(r.quantidade_liberada||0), 0);
-  return baseQtd + entradasDepois - requisicoesDepois;
-}
-
-// Retorna null (requisição pode ser salva) ou uma mensagem de erro pra exibir,
-// verificando se o saldo atual já está zerado/negativo ou se a quantidade
-// pedida ultrapassaria o saldo disponível.
-async function EQ_validarSaldoRequisicao(item, quantidadePedida){
-  const saldoAtual = await EQ_calcularSaldoItem(item);
-  if(saldoAtual <= 0 || quantidadePedida > saldoAtual){
-    return `⚠ "${item}" está com saldo de ${EQ_DASH_fmtNum(saldoAtual)} — não é possível liberar ${EQ_DASH_fmtNum(quantidadePedida)} sem registrar uma nova entrada primeiro.`;
-  }
-  return null;
-}
 
 function EQ_buildRequisicaoPayload(row, data, dataEmissao, setor, lider){
   const item = row.querySelector('.eq-req-item').value.trim();
@@ -12877,23 +12673,7 @@ async function EQ_saveSingleRequisicao(row){
   const lider = document.getElementById('eqRequisicaoLider').value.trim();
   const payload = EQ_buildRequisicaoPayload(row, data, dataEmissao, setor, lider);
   if(!payload){ feedback.textContent = '⚠ Preencha Item e Qtd. Liberada antes de salvar.'; feedback.className = 'lanc-feedback err'; return; }
-  btn.disabled = true; btn.textContent = 'Verificando saldo...';
-  try{
-    const erroSaldo = await EQ_validarSaldoRequisicao(payload.item, payload.quantidade_liberada);
-    if(erroSaldo){
-      feedback.textContent = erroSaldo;
-      feedback.className = 'lanc-feedback err';
-      btn.disabled = false; btn.textContent = 'Salvar este item';
-      return;
-    }
-  }catch(err){
-    console.error('Erro ao verificar saldo:', err);
-    feedback.textContent = '⚠ Não foi possível verificar o saldo do item. Tente novamente.';
-    feedback.className = 'lanc-feedback err';
-    btn.disabled = false; btn.textContent = 'Salvar este item';
-    return;
-  }
-  btn.textContent = 'Salvando...';
+  btn.disabled = true; btn.textContent = 'Salvando...';
   try{
     const client = LANC_getClient();
     const { error } = await client.from('estoque_requisicoes').insert([payload]);
@@ -12904,7 +12684,6 @@ async function EQ_saveSingleRequisicao(row){
     feedback.textContent = `✓ "${payload.item}" salvo.`;
     feedback.className = 'lanc-feedback ok';
     EQ_KNOWN_ITEMS = null;
-    EQ_DASH_refreshIfLoaded();
   }catch(err){
     console.error('Erro ao salvar requisição:', err);
     btn.disabled = false; btn.textContent = 'Salvar este item';
@@ -12931,33 +12710,8 @@ document.getElementById('eqFormRequisicao').addEventListener('submit', async (e)
     payloads.push(p);
   }
   btn.disabled = true;
-  feedback.textContent = 'Verificando saldo disponível...';
-  feedback.className = 'lanc-feedback';
-
-  // Soma as quantidades pedidas por item nesta requisição, pra checar contra
-  // o saldo disponível de uma vez só (2 linhas do mesmo item não podem furar
-  // a trava pedindo "metade" cada uma).
-  const qtdPorItem = {};
-  payloads.forEach(p => { qtdPorItem[p.item] = (qtdPorItem[p.item] || 0) + p.quantidade_liberada; });
-  try{
-    for(const item of Object.keys(qtdPorItem)){
-      const erroSaldo = await EQ_validarSaldoRequisicao(item, qtdPorItem[item]);
-      if(erroSaldo){
-        feedback.textContent = erroSaldo;
-        feedback.className = 'lanc-feedback err';
-        btn.disabled = false;
-        return;
-      }
-    }
-  }catch(err){
-    console.error('Erro ao verificar saldo:', err);
-    feedback.textContent = '⚠ Não foi possível verificar o saldo dos itens. Tente novamente.';
-    feedback.className = 'lanc-feedback err';
-    btn.disabled = false;
-    return;
-  }
-
   feedback.textContent = 'Salvando ' + payloads.length + ' item(ns)...';
+  feedback.className = 'lanc-feedback';
   try{
     const client = LANC_getClient();
     const { error } = await client.from('estoque_requisicoes').insert(payloads);
@@ -12967,7 +12721,6 @@ document.getElementById('eqFormRequisicao').addEventListener('submit', async (e)
     document.getElementById('eqRequisicaoItems').innerHTML = '';
     EQ_addRequisicaoItem();
     EQ_KNOWN_ITEMS = null;
-    EQ_DASH_refreshIfLoaded();
   }catch(err){
     console.error('Erro ao salvar requisições:', err);
     feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
@@ -12995,7 +12748,6 @@ function EQ_createContagemRow(){
       <div class="lanc-field span-2">
         <label>Item</label>
         <input type="text" class="eq-item" list="eqItemList" placeholder="Nome do insumo" required>
-        <div class="lanc-item-hint eq-item-hint"></div>
       </div>
       <div class="lanc-field">
         <label>Unidade</label>
@@ -13013,7 +12765,6 @@ function EQ_createContagemRow(){
   `;
   row.querySelector('[data-remove]').addEventListener('click', ()=>{ row.remove(); EQ_updateItemNumbers('eqContagemItems'); });
   row.querySelector('[data-save]').addEventListener('click', ()=> EQ_saveSingleContagem(row));
-  EQ_wireCatalogoAutofill(row, '.eq-item', '.eq-unidade', '.eq-item-hint');
   return row;
 }
 function EQ_addContagemItem(){
@@ -13211,7 +12962,6 @@ async function EQ_saveSingleContagem(row){
     feedback.textContent = `✓ "${payload.item}" salvo.`;
     feedback.className = 'lanc-feedback ok';
     EQ_KNOWN_ITEMS = null;
-    EQ_DASH_refreshIfLoaded();
   }catch(err){
     console.error('Erro ao salvar contagem:', err);
     btn.disabled = false; btn.textContent = 'Salvar este item';
@@ -13246,7 +12996,6 @@ document.getElementById('eqFormContagem').addEventListener('submit', async (e)=>
     document.getElementById('eqContagemItems').innerHTML = '';
     EQ_addContagemItem();
     EQ_KNOWN_ITEMS = null;
-    EQ_DASH_refreshIfLoaded();
   }catch(err){
     console.error('Erro ao salvar contagens:', err);
     feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
@@ -13493,7 +13242,6 @@ async function EQ_saveEditRow(id, tipo){
     EQ_renderHistTable(tipo);
     feedback.textContent = '✓ Registro atualizado.';
     feedback.className = 'lanc-feedback ok';
-    EQ_DASH_refreshIfLoaded();
   }catch(err){
     console.error('Erro ao atualizar registro de estoque:', err);
     feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
@@ -13513,7 +13261,6 @@ async function EQ_deleteRow(id, tipo){
     EQ_renderHistTable(tipo);
     feedback.textContent = '✓ Registro excluído.';
     feedback.className = 'lanc-feedback ok';
-    EQ_DASH_refreshIfLoaded();
   }catch(err){
     console.error('Erro ao excluir registro de estoque:', err);
     feedback.textContent = '⚠ Erro ao excluir: ' + (err.message || err);
@@ -13675,7 +13422,6 @@ async function EQ_DASH_loadData(){
     EQ_DASH_renderLowStock();
     EQ_DASH_renderMinimosPanel();
     EQ_DASH_renderSaldoAtual();
-    EQ_DASH_renderSaldoChart();
     infoEl.textContent = `${resultado.length} insumo(s) no período`;
   }catch(err){
     console.error('Erro ao carregar painel de estoque:', err);
@@ -13716,70 +13462,7 @@ function EQ_DASH_renderSaldoAtual(){
     </tr>`;
   }).join('');
 }
-
-/* ---------- Gráfico de barras: Estoque Atual por Insumo ----------
-   Mesma fonte de dados e mesmo filtro de busca da tabela "Saldo de
-   Estoque Atual" acima — sempre que ela é recalculada (EQ_DASH_loadData,
-   chamado após qualquer requisição/contagem/entrada lançada, editada ou
-   excluída), esse gráfico é redesenhado junto. */
-function EQ_DASH_renderSaldoChart(){
-  const filtro = (document.getElementById('eqSaldoFiltro').value || '').toLowerCase().trim();
-  const wrap = document.getElementById('eqSaldoChartWrap');
-  let itens = Object.keys(EQ_DASH_SALDO_ATUAL);
-  if(filtro) itens = itens.filter(i => i.toLowerCase().includes(filtro));
-  if(itens.length === 0){
-    wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">📦</span>Nenhum insumo encontrado.</div>`;
-    return;
-  }
-  // Maior saldo primeiro; sem filtro, mostra só os 30 com mais estoque pra
-  // não virar uma lista infinita — refine a busca acima pra achar um item específico.
-  let ordenado = [...itens].sort((a,b)=> EQ_DASH_SALDO_ATUAL[b].saldo - EQ_DASH_SALDO_ATUAL[a].saldo);
-  const truncado = !filtro && ordenado.length > 30;
-  if(truncado) ordenado = ordenado.slice(0, 30);
-  ordenado.reverse(); // maior saldo fica no topo da barra horizontal
-
-  const barH = 20, gap = 10, leftPad = 200, rightPad = 130, topPad = 8;
-  const chartW = getResponsiveChartW('eqSaldoChartWrap', 820);
-  const barWmax = chartW - leftPad - rightPad;
-  const chartH = ordenado.length*(barH+gap) + topPad;
-  const maxVal = Math.max(...ordenado.map(i=>Math.abs(EQ_DASH_SALDO_ATUAL[i].saldo)), 1);
-  let bars = '';
-  ordenado.forEach((item,i)=>{
-    const s = EQ_DASH_SALDO_ATUAL[item];
-    const y = topPad + i*(barH+gap);
-    const w = Math.max((Math.abs(s.saldo)/maxVal)*barWmax, 2);
-    const cor = s.saldo < 0 ? 'var(--red)' : 'var(--good)';
-    const label = truncateProdLabel(item, 22);
-    bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="10.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${label}${s.semContagem ? ' ⚠' : ''}<title>${item}${s.semContagem ? ' — sem contagem cadastrada, saldo parte de 0' : ''}</title></text>`;
-    bars += `<rect x="${leftPad}" y="${y}" width="${barWmax}" height="${barH}" fill="#f3d9d0" stroke="#e0a89a" stroke-width="1" rx="5"/>`;
-    bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="${cor}" rx="5"/>`;
-    bars += `<text x="${leftPad+Math.max(w,barWmax)+8}" y="${y+barH/2+4}" font-size="10.5" fill="${cor}" font-weight="700">${EQ_DASH_fmtNum(s.saldo)} ${s.unidade||''}</text>`;
-  });
-  const visibleRows = 8;
-  const containerH = visibleRows*(barH+gap) + topPad + 6;
-  wrap.innerHTML = `
-    ${truncado ? `<div class="trend-foot" style="margin-bottom:8px;">Mostrando os 30 insumos com maior saldo — use a busca acima pra achar outro.</div>` : ''}
-    <div style="max-height:${containerH}px; width:${chartW}px; overflow-y:auto; overflow-x:hidden; display:inline-block; text-align:left;">
-      <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:block;">
-        ${bars}
-      </svg>
-    </div>`;
-}
-
-function EQ_DASH_onSaldoFiltroInput(){
-  EQ_DASH_renderSaldoAtual();
-  EQ_DASH_renderSaldoChart();
-}
-document.getElementById('eqSaldoFiltro').addEventListener('input', EQ_DASH_onSaldoFiltroInput);
-
-/* Chama EQ_DASH_loadData só se o painel de Almoxarifado já foi aberto ao
-   menos uma vez nessa sessão — assim toda requisição, contagem ou entrada
-   lançada (ou editada/excluída) em qualquer aba do sistema já deixa o
-   gráfico de Estoque Atual pronto e atualizado na próxima vez que o
-   usuário abrir o Almoxarifado, sem precisar clicar em "Atualizar". */
-function EQ_DASH_refreshIfLoaded(){
-  if(EQ_DASH_loadedOnce) EQ_DASH_loadData();
-}
+document.getElementById('eqSaldoFiltro').addEventListener('input', EQ_DASH_renderSaldoAtual);
 
 /* ---------- Alerta de estoque baixo ---------- */
 function EQ_heatColor(pct){
@@ -13925,390 +13608,6 @@ function EQ_DASH_render(){
 
 function EQ_DASH_fmtNum(v){
   return Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
-}
-
-/* ============================================================================
-   PÁGINA REFEITÓRIO — requisições diárias de insumos do refeitório
-   (FOR-SGQ-027) e consumo por item. Reaproveita a tabela estoque_requisicoes
-   (mesma usada pelo Almoxarifado), lançando sempre com setor='REFEITÓRIO' —
-   assim o Painel de Estoque continua enxergando essas saídas no saldo geral,
-   sem precisar de tabela nova.
-   ============================================================================ */
-let REF_loadedOnce = false;
-let REF_DATA = []; // linhas cruas de estoque_requisicoes (setor=REFEITÓRIO) no período selecionado
-
-// Lista padrão de insumos do FOR-SGQ-027 — fonte única de verdade pro
-// checklist de lançamento rápido. A unidade é só um valor inicial sugerido;
-// pode ser ajustada linha a linha na hora do lançamento.
-const REF_ITENS_PADRAO = [
-  { item: 'Frango', unidade: 'Kg' },
-  { item: 'Sobre Coxa Frango', unidade: 'Kg' },
-  { item: 'Carne', unidade: 'Kg' },
-  { item: 'Carne Moída', unidade: 'Kg' },
-  { item: 'Suíno', unidade: 'Kg' },
-  { item: 'Linguiça', unidade: 'Kg' },
-  { item: 'Calabresa', unidade: 'Kg' },
-  { item: 'Presunto', unidade: 'Kg' },
-  { item: 'Queijo', unidade: 'Kg' },
-  { item: 'Leite', unidade: 'Litro' },
-  { item: 'Creme de Leite', unidade: 'Kg' },
-  { item: 'Requeijão Cremoso', unidade: 'Kg' },
-  { item: 'Alface', unidade: 'Un' },
-  { item: 'Alho', unidade: 'Kg' },
-  { item: 'Batata', unidade: 'Kg' },
-  { item: 'Batata Baby', unidade: 'Kg' },
-  { item: 'Batata Doce', unidade: 'Kg' },
-  { item: 'Beterraba', unidade: 'Kg' },
-  { item: 'Brócolis', unidade: 'Kg' },
-  { item: 'Cebola', unidade: 'Kg' },
-  { item: 'Cenoura', unidade: 'Kg' },
-  { item: 'Chuchu', unidade: 'Kg' },
-  { item: 'Pepino', unidade: 'Kg' },
-  { item: 'Repolho', unidade: 'Un' },
-  { item: 'Tomate', unidade: 'Kg' },
-  { item: 'Tempero Verde', unidade: 'Maço' },
-  { item: 'Açúcar', unidade: 'Kg' },
-  { item: 'Sal', unidade: 'Kg' },
-  { item: 'Farinha de Trigo', unidade: 'Kg' },
-  { item: 'Colorau', unidade: 'Kg' },
-  { item: 'Salgado Lanche', unidade: 'Un' },
-];
-const REF_SETOR = 'REFEITÓRIO';
-
-/* Página de dados (relatório) — KPIs, gráfico de consumo e histórico.
-   O lançamento em si (checklist da FOR-SGQ-027) mora na aba Lançamento →
-   Refeitório, ver REF_initLancamento — assim essa tela fica só com dados. */
-function REF_init(){
-  const hoje = new Date();
-  const startEl = document.getElementById('refDataIni');
-  const endEl   = document.getElementById('refDataFim');
-  if(!endEl.value)   endEl.value   = hoje.toISOString().slice(0,10);
-  if(!startEl.value){ const d = new Date(); d.setDate(d.getDate()-30); startEl.value = d.toISOString().slice(0,10); }
-  initDateRangePicker('ref', startEl, endEl, REF_loadData);
-  document.getElementById('refBtnRefresh').addEventListener('click', REF_loadData);
-  REF_loadData();
-}
-
-/* Chamado toda vez que o usuário abre a aba Refeitório dentro de
-   Lançamento (mesmo padrão do LM_initForm pra Manutenção). O dataset
-   guard evita registrar os listeners de novo a cada clique na aba. */
-function REF_initLancamento(){
-  REF_populateChecklist();
-  REF_setDefaultFormDate();
-  const form = document.getElementById('refForm');
-  if(!form.dataset.refInited){
-    form.dataset.refInited = '1';
-    document.getElementById('refAddExtraBtn').addEventListener('click', REF_addExtraRow);
-    document.getElementById('refChecklistFiltro').addEventListener('input', REF_filterChecklist);
-    form.addEventListener('submit', REF_submitForm);
-  }
-}
-
-function REF_setDefaultFormDate(){
-  const el = document.getElementById('refFormData');
-  if(el && !el.value) el.value = new Date().toISOString().slice(0,10);
-}
-
-/* ---------- Checklist de lançamento rápido ---------- */
-function REF_populateChecklist(){
-  const tbody = document.getElementById('refChecklistTbody');
-  tbody.innerHTML = REF_ITENS_PADRAO.map((it, idx) => `
-    <tr data-idx="${idx}" data-padrao="1" data-item="${it.item.toLowerCase()}">
-      <td style="font-weight:600;">${it.item}</td>
-      <td class="center"><input type="text" class="ref-chk-unidade" style="width:90px;text-align:center;" value="${it.unidade}"></td>
-      <td class="center"><input type="number" step="0.01" min="0" class="ref-chk-qtd-solicitada" style="width:100px;text-align:center;" placeholder="—"></td>
-      <td class="center"><input type="number" step="0.01" min="0" class="ref-chk-qtd-liberada" style="width:100px;text-align:center;" placeholder="—"></td>
-    </tr>`).join('');
-  REF_filterChecklist();
-}
-
-/* Filtra as linhas padrão do checklist pelo texto digitado — os itens
-   extras (fora da lista padrão) ficam sempre visíveis, já que representam
-   algo que o usuário já está preenchendo. */
-function REF_filterChecklist(){
-  const filtro = (document.getElementById('refChecklistFiltro').value || '').toLowerCase().trim();
-  let visiveis = 0, total = 0;
-  document.querySelectorAll('#refChecklistTbody tr[data-padrao="1"]').forEach(tr=>{
-    total++;
-    const match = !filtro || tr.dataset.item.includes(filtro);
-    tr.style.display = match ? '' : 'none';
-    if(match) visiveis++;
-  });
-  const info = document.getElementById('refChecklistFiltroInfo');
-  info.textContent = filtro ? `${visiveis} de ${total} insumo(s) padrão encontrados` : '';
-}
-
-function REF_addExtraRow(){
-  const tbody = document.getElementById('refChecklistTbody');
-  const tr = document.createElement('tr');
-  tr.dataset.extra = '1';
-  tr.innerHTML = `
-    <td><input type="text" class="ref-chk-item-extra" list="eqItemList" placeholder="Nome do insumo" style="width:100%;"></td>
-    <td class="center"><input type="text" class="ref-chk-unidade" list="lpUnidadeListEstoque" style="width:90px;text-align:center;" placeholder="Un"></td>
-    <td class="center"><input type="number" step="0.01" min="0" class="ref-chk-qtd-solicitada" style="width:100px;text-align:center;" placeholder="—"></td>
-    <td class="center"><input type="number" step="0.01" min="0" class="ref-chk-qtd-liberada" style="width:100px;text-align:center;" placeholder="—">
-      <button type="button" class="lanc-item-remove" data-remove-extra style="margin-left:6px;">✕</button>
-    </td>`;
-  tr.querySelector('[data-remove-extra]').addEventListener('click', ()=> tr.remove());
-  tbody.appendChild(tr);
-}
-
-/* Monta os payloads pra inserir em estoque_requisicoes — só entram linhas
-   com pelo menos Qtd. Solicitada ou Qtd. Entregue preenchida. */
-function REF_buildPayloads(data, lider){
-  const payloads = [];
-  document.querySelectorAll('#refChecklistTbody tr').forEach(tr=>{
-    const isExtra = tr.dataset.extra === '1';
-    const item = isExtra
-      ? (tr.querySelector('.ref-chk-item-extra')?.value || '').trim()
-      : tr.children[0].textContent.trim();
-    if(!item) return;
-    const unidade = normalizeUnitDisplay(tr.querySelector('.ref-chk-unidade').value) || null;
-    const qtdSolRaw = tr.querySelector('.ref-chk-qtd-solicitada').value;
-    const qtdLibRaw = tr.querySelector('.ref-chk-qtd-liberada').value;
-    if(qtdSolRaw === '' && qtdLibRaw === '') return;
-    payloads.push({
-      data, data_emissao: data, setor: REF_SETOR, lider: lider || null,
-      item, unidade,
-      quantidade_solicitada: qtdSolRaw !== '' ? parseFloat(qtdSolRaw) : null,
-      quantidade_liberada: qtdLibRaw !== '' ? parseFloat(qtdLibRaw) : null,
-      observacao: null,
-    });
-  });
-  return payloads;
-}
-
-async function REF_submitForm(e){
-  e.preventDefault();
-  const feedback = document.getElementById('refFormFeedback');
-  const btn = document.getElementById('refSubmitBtn');
-  const data = document.getElementById('refFormData').value;
-  if(!data){ feedback.textContent = '⚠ Preencha a Data da Solicitação.'; feedback.className = 'lanc-feedback err'; return; }
-  const lider = document.getElementById('refFormLider').value.trim();
-  const payloads = REF_buildPayloads(data, lider);
-  if(payloads.length === 0){ feedback.textContent = '⚠ Preencha ao menos um item com quantidade.'; feedback.className = 'lanc-feedback err'; return; }
-  btn.disabled = true;
-  feedback.textContent = `Salvando ${payloads.length} item(ns)...`;
-  feedback.className = 'lanc-feedback';
-  try{
-    const client = LANC_getClient();
-    const { error } = await client.from('estoque_requisicoes').insert(payloads);
-    if(error) throw error;
-    feedback.textContent = `✓ ${payloads.length} item(ns) salvos com sucesso!`;
-    feedback.className = 'lanc-feedback ok';
-    // Limpa as quantidades mas mantém a data e o líder — repete todo dia
-    document.querySelectorAll('#refChecklistTbody tr[data-padrao="1"]').forEach(tr=>{
-      tr.querySelector('.ref-chk-qtd-solicitada').value = '';
-      tr.querySelector('.ref-chk-qtd-liberada').value = '';
-    });
-    document.querySelectorAll('#refChecklistTbody tr[data-extra="1"]').forEach(tr=> tr.remove());
-    REF_loadData();
-    EQ_DASH_refreshIfLoaded();
-  }catch(err){
-    console.error('Erro ao salvar requisição do Refeitório:', err);
-    feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
-    feedback.className = 'lanc-feedback err';
-  }finally{
-    btn.disabled = false;
-  }
-}
-
-/* ---------- Carrega dados do período (dashboard + histórico) ---------- */
-async function REF_loadData(){
-  const ini = document.getElementById('refDataIni').value;
-  const fim = document.getElementById('refDataFim').value;
-  const infoEl = document.getElementById('refPeriodInfo');
-  infoEl.textContent = 'Carregando...';
-  try{
-    const client = LANC_getClient();
-    let query = client.from('estoque_requisicoes').select('*').eq('setor', REF_SETOR).order('data', { ascending:false });
-    if(ini) query = query.gte('data', ini);
-    if(fim) query = query.lte('data', fim);
-    const { data, error } = await query.limit(2000);
-    if(error) throw error;
-    REF_DATA = data || [];
-    REF_renderKPIs();
-    REF_renderChart();
-    REF_renderHistTable();
-    infoEl.textContent = `${REF_DATA.length} lançamento(s) no período`;
-  }catch(err){
-    console.error('Erro ao carregar dados do Refeitório:', err);
-    infoEl.textContent = '';
-    document.getElementById('refChartWrap').innerHTML = `<div class="empty-state"><span class="empty-icon">⚠</span>Erro ao carregar dados: ${err.message||err}</div>`;
-  }
-}
-
-/* Quantidade "efetiva" de uma linha pra fins de ranking de consumo:
-   usa a solicitada quando existe (é o que sai no dia a dia), e cai pra
-   liberada só quando a solicitada não foi lançada. */
-function REF_qtdEfetiva(row){
-  if(row.quantidade_solicitada != null) return Number(row.quantidade_solicitada);
-  if(row.quantidade_liberada != null) return Number(row.quantidade_liberada);
-  return 0;
-}
-
-function REF_renderKPIs(){
-  document.getElementById('refKpiLancamentos').textContent = REF_DATA.length;
-  const itensSet = new Set(REF_DATA.map(r=>r.item));
-  document.getElementById('refKpiItens').textContent = itensSet.size;
-  const diasSet = new Set(REF_DATA.map(r=>r.data));
-  document.getElementById('refKpiDias').textContent = diasSet.size;
-
-  const porItem = {};
-  REF_DATA.forEach(r=>{ porItem[r.item] = (porItem[r.item]||0) + REF_qtdEfetiva(r); });
-  const itens = Object.keys(porItem);
-  if(itens.length === 0){
-    document.getElementById('refKpiTopItem').textContent = '—';
-  } else {
-    const top = itens.sort((a,b)=> porItem[b]-porItem[a])[0];
-    document.getElementById('refKpiTopItem').textContent = `${top} (${EQ_DASH_fmtNum(porItem[top])})`;
-  }
-}
-
-function REF_renderChart(){
-  const wrap = document.getElementById('refChartWrap');
-  const porItem = {};
-  const unidadePorItem = {};
-  REF_DATA.forEach(r=>{
-    porItem[r.item] = (porItem[r.item]||0) + REF_qtdEfetiva(r);
-    if(r.unidade) unidadePorItem[r.item] = r.unidade;
-  });
-  const itens = Object.keys(porItem).filter(i => porItem[i] > 0);
-  if(itens.length === 0){
-    wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">🍽</span>Nenhuma requisição com quantidade lançada no período selecionado.</div>`;
-    return;
-  }
-  const ordenado = itens.sort((a,b)=> porItem[a]-porItem[b]); // menor pro maior -> maior fica no topo
-  const barH = 20, gap = 10, leftPad = 170, rightPad = 120, topPad = 8;
-  const chartW = getResponsiveChartW('refChartWrap', 820);
-  const barWmax = chartW - leftPad - rightPad;
-  const chartH = ordenado.length*(barH+gap) + topPad;
-  const maxVal = Math.max(...ordenado.map(i=>porItem[i]), 1);
-  let bars = '';
-  ordenado.forEach((item,i)=>{
-    const y = topPad + i*(barH+gap);
-    const val = porItem[item];
-    const w = Math.max((val/maxVal)*barWmax, 2);
-    const label = truncateProdLabel(item, 20);
-    bars += `<text x="${leftPad-10}" y="${y+barH/2+4}" font-size="10.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${label}<title>${item}</title></text>`;
-    bars += `<rect x="${leftPad}" y="${y}" width="${barWmax}" height="${barH}" fill="#f3d9d0" stroke="#e0a89a" stroke-width="1" rx="5"/>`;
-    bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="var(--red)" rx="5"/>`;
-    bars += `<text x="${leftPad+Math.max(w,barWmax)+8}" y="${y+barH/2+4}" font-size="10.5" fill="var(--red)" font-weight="700">${EQ_DASH_fmtNum(val)} ${unidadePorItem[item]||''}</text>`;
-  });
-  const visibleRows = 8;
-  const containerH = visibleRows*(barH+gap) + topPad + 6;
-  wrap.innerHTML = `
-    <div style="max-height:${containerH}px; width:${chartW}px; overflow-y:auto; overflow-x:hidden; display:inline-block; text-align:left;">
-      <svg viewBox="0 0 ${chartW} ${chartH+10}" width="${chartW}" height="${chartH+10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:block;">
-        ${bars}
-      </svg>
-    </div>`;
-}
-
-/* ---------- Histórico (tabela com editar/excluir) ---------- */
-function REF_renderHistTable(){
-  const tbody = document.getElementById('refHistTbody');
-  if(REF_DATA.length === 0){
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhuma requisição do Refeitório nesse período.</td></tr>`;
-    return;
-  }
-  tbody.innerHTML = REF_DATA.map(row => REF_buildHistRowHtml(row)).join('');
-  tbody.querySelectorAll('tr[data-id]').forEach(tr=>{
-    const id = tr.dataset.id;
-    tr.querySelector('.lanc-hist-btn.edit').addEventListener('click', ()=> REF_startEditRow(id));
-    tr.querySelector('.lanc-hist-btn.delete').addEventListener('click', ()=> REF_deleteRow(id));
-  });
-}
-
-function REF_buildHistRowHtml(row){
-  return `<tr data-id="${row.id}">
-    <td>${EQ_fmtDataBR(row.data)}</td>
-    <td>${row.lider||'—'}</td>
-    <td>${row.item||'—'}</td>
-    <td class="center">${row.unidade||'—'}</td>
-    <td class="center">${row.quantidade_solicitada ?? '—'}</td>
-    <td class="center">${row.quantidade_liberada ?? '—'}</td>
-    <td>${row.observacao||'—'}</td>
-    <td class="center">
-      <button type="button" class="lanc-hist-btn edit">Editar</button>
-      <button type="button" class="lanc-hist-btn delete">Excluir</button>
-    </td></tr>`;
-}
-
-function REF_buildHistEditRowHtml(row){
-  return `<tr data-id="${row.id}">
-    <td><input type="date" class="refh-data" value="${row.data||''}"></td>
-    <td><input type="text" class="refh-lider" value="${(row.lider||'').replace(/"/g,'&quot;')}"></td>
-    <td><input type="text" class="refh-item" value="${(row.item||'').replace(/"/g,'&quot;')}"></td>
-    <td><input type="text" class="refh-unidade" style="width:80px;" value="${(row.unidade||'').replace(/"/g,'&quot;')}"></td>
-    <td><input type="number" step="0.01" class="refh-qtd-solicitada" style="width:90px;" value="${row.quantidade_solicitada ?? ''}"></td>
-    <td><input type="number" step="0.01" class="refh-qtd-liberada" style="width:90px;" value="${row.quantidade_liberada ?? ''}"></td>
-    <td><input type="text" class="refh-obs" value="${(row.observacao||'').replace(/"/g,'&quot;')}"></td>
-    <td class="center">
-      <button type="button" class="lanc-hist-btn save">Salvar</button>
-      <button type="button" class="lanc-hist-btn cancel">Cancelar</button>
-    </td></tr>`;
-}
-
-function REF_startEditRow(id){
-  const row = REF_DATA.find(r => String(r.id) === String(id));
-  if(!row) return;
-  const tr = document.querySelector(`#refHistTbody tr[data-id="${id}"]`);
-  if(!tr) return;
-  tr.outerHTML = REF_buildHistEditRowHtml(row);
-  const newTr = document.querySelector(`#refHistTbody tr[data-id="${id}"]`);
-  newTr.querySelector('.lanc-hist-btn.save').addEventListener('click', ()=> REF_saveEditRow(id));
-  newTr.querySelector('.lanc-hist-btn.cancel').addEventListener('click', REF_renderHistTable);
-}
-
-async function REF_saveEditRow(id){
-  const tr = document.querySelector(`#refHistTbody tr[data-id="${id}"]`);
-  if(!tr) return;
-  const val = (cls) => tr.querySelector('.'+cls).value;
-  const payload = {
-    data: val('refh-data') || null,
-    lider: val('refh-lider').trim() || null,
-    item: val('refh-item').trim(),
-    unidade: normalizeUnitDisplay(val('refh-unidade')) || null,
-    quantidade_solicitada: val('refh-qtd-solicitada') !== '' ? parseFloat(val('refh-qtd-solicitada')) : null,
-    quantidade_liberada: val('refh-qtd-liberada') !== '' ? parseFloat(val('refh-qtd-liberada')) : null,
-    observacao: val('refh-obs').trim() || null,
-  };
-  if(!payload.item){
-    alert('Item é obrigatório.');
-    return;
-  }
-  try{
-    const client = LANC_getClient();
-    const { error } = await client.from('estoque_requisicoes').update(payload).eq('id', id);
-    if(error) throw error;
-    const idx = REF_DATA.findIndex(r => String(r.id) === String(id));
-    if(idx >= 0) REF_DATA[idx] = Object.assign({}, REF_DATA[idx], payload);
-    REF_renderHistTable();
-    REF_renderKPIs();
-    REF_renderChart();
-    EQ_DASH_refreshIfLoaded();
-  }catch(err){
-    console.error('Erro ao atualizar requisição do Refeitório:', err);
-    alert('Erro ao salvar: ' + (err.message || err));
-  }
-}
-
-async function REF_deleteRow(id){
-  if(!confirm('Excluir essa requisição? Essa ação não pode ser desfeita.')) return;
-  try{
-    const client = LANC_getClient();
-    const { error } = await client.from('estoque_requisicoes').delete().eq('id', id);
-    if(error) throw error;
-    REF_DATA = REF_DATA.filter(r => String(r.id) !== String(id));
-    REF_renderHistTable();
-    REF_renderKPIs();
-    REF_renderChart();
-    EQ_DASH_refreshIfLoaded();
-  }catch(err){
-    console.error('Erro ao excluir requisição do Refeitório:', err);
-    alert('Erro ao excluir: ' + (err.message || err));
-  }
 }
 
 /* ============================================================================
@@ -19069,7 +18368,8 @@ function processFile(file,tipo){
         return;
       }
       // Parse dos dados
-      const items=[];let semCodigo=0,estoqueInvalido=0,reservaInvalida=0;
+      const items=[];let semCodigo=0,estoqueInvalido=0,reservaInvalida=0,duplicados=0;
+      const codigosVistos=new Set();
       let currentFamilia=''; // família atual capturada dos cabeçalhos de seção CIGAM
       for(let i=headerIdx+1;i<rows.length;i++){
         const row=rows[i];
@@ -19087,6 +18387,8 @@ function processFile(file,tipo){
           continue;
         }
         const codigo=normCod(rawCod)||rawCod;
+        if(codigosVistos.has(codigo)){duplicados++;continue;}
+        codigosVistos.add(codigo);
         const rawEst=rawEstCheck;
         const estoque=estoqueCheck;
         if(isNaN(estoque)){estoqueInvalido++;continue;}
@@ -19123,7 +18425,7 @@ function processFile(file,tipo){
         });
       }
       const summary={total:items.length+semCodigo+estoqueInvalido,validos:items.length,
-        semCodigo,estoqueInvalido,reservaInvalida,semReserva:iRes<0};
+        semCodigo,estoqueInvalido,reservaInvalida,duplicados,semReserva:iRes<0};
       showImportPreview(summary);
       // Confirmar importação
       // ── Validar período antes de prosseguir ──────────────────────────────
@@ -19143,6 +18445,7 @@ function processFile(file,tipo){
         (semCodigo?`⚠ Sem código: ${semCodigo}\n`:'')+
         (estoqueInvalido?`⚠ Estoque inválido: ${estoqueInvalido}\n`:'')+
         (reservaInvalida?`⚠ Reserva inválida (usou 0): ${reservaInvalida}\n`:'')+
+        (duplicados?`⚠ Duplicados removidos: ${duplicados}\n`:'')+
         (iRes<0?`ℹ️ Coluna Reserva não encontrada — usando reserva=0 para todos\n`:'')+
         `\nPeríodo: ${periodoInicio===periodoFim?periodoInicio:periodoInicio+' a '+periodoFim}`;
       if(confirm(msg)){
@@ -19211,6 +18514,7 @@ function showImportPreview(data){
       <div><strong style="font-size:18px;color:var(--ink)">${data.validos}</strong><br><span style="color:var(--ink-soft)">Válidos</span></div>
       <div><strong style="font-size:18px;color:${data.semCodigo>0?'var(--warn)':'var(--good)'}">${data.semCodigo}</strong><br><span style="color:var(--ink-soft)">Sem código</span></div>
       <div><strong style="font-size:18px;color:${data.estoqueInvalido>0?'var(--warn)':'var(--good)'}">${data.estoqueInvalido}</strong><br><span style="color:var(--ink-soft)">Estoque inválido</span></div>
+      <div><strong style="font-size:18px;color:${data.duplicados>0?'var(--warn)':'var(--good)'}">${data.duplicados}</strong><br><span style="color:var(--ink-soft)">Duplicados</span></div>
     </div>
     ${data.semReserva?'<div style="margin-top:10px;font-size:11px;color:var(--warn);font-weight:600">⚠ Coluna de Reserva não encontrada no XLSX — os cálculos de saldo não serão precisos. Verifique se o arquivo contém a coluna de Reserva.</div>':''}`;
 }
@@ -23291,9 +22595,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Estado ──
   let PT_dados          = [];   // todos os registros brutos da query (período selecionado)
   let PT_filtrados      = [];   // após filtros locais (produto/tamanho/busca)
-  let PT_dados_sem_atual = [];  // semana (Seg–Sex) que contém a data final do filtro
-  let PT_dados_sem_ant   = [];  // semana anterior a essa
-  let PT_dados_mes       = [];  // mês inteiro que contém a data final do filtro
+  let PT_dados_sem_atual = [];  // semana corrente (Seg–Sex), independente do filtro global
+  let PT_dados_sem_ant   = [];  // semana anterior (Seg–Sex), independente do filtro global
   let PT_paginaAtual = 1;
   const PT_POR_PAGINA = 20;
   let PT_sortCol    = 'data';
@@ -23314,14 +22617,9 @@ document.addEventListener('DOMContentLoaded', () => {
     return d.toISOString().slice(0,10);
   }
 
-  // Retorna { ini, fim } da semana Seg–Sex. offset: 0=atual, -1=anterior.
-  // refIso: data (YYYY-MM-DD) que ancora "hoje" pro cálculo — por padrão a
-  // data real do dispositivo, mas os cards do relatório sempre passam a data
-  // final do filtro global, pra semana/mês seguirem o período selecionado
-  // em vez de ficarem presos ao dia real (era o bug reportado: os cards de
-  // Semana e Mês não mudavam ao trocar o filtro de período).
-  function ptSemanaRange(offset, refIso) {
-    const d = refIso ? new Date(refIso + 'T00:00:00') : new Date();
+  // Retorna { ini, fim } da semana Seg–Sex. offset: 0=atual, -1=anterior
+  function ptSemanaRange(offset) {
+    const d = new Date();
     const dw = d.getDay();
     const diffSeg = dw === 0 ? -6 : 1 - dw;
     const seg = new Date(d);
@@ -23465,16 +22763,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const pctDia = totalDia / PT_META_DIARIA * 100;
     const difDia = totalDia - PT_META_DIARIA;
 
-    // SEMANA ATUAL e ANTERIOR — a semana (Seg–Sex) que contém a data final
-    // do filtro selecionado, e a semana anterior a essa.
+    // SEMANA ATUAL e ANTERIOR — sempre Seg–Sex, independente do filtro global
     // Aplica o filtro de tamanho (dropdown) nos dados das semanas para coerência com os demais cards
     const _tamanhoFiltro = (document.getElementById('pt-tamanho').value || '').trim().toUpperCase();
     function ptFiltrarSemPorTamanho(dados) {
       if(!_tamanhoFiltro) return dados;
       return dados.filter(r => (r.produto||'').toUpperCase().includes(_tamanhoFiltro));
     }
-    const semAtual = ptSemanaRange(0, fim);
-    const semAnt   = ptSemanaRange(-1, fim);
+    const semAtual = ptSemanaRange(0);
+    const semAnt   = ptSemanaRange(-1);
     const dadosSemAtual = ptFiltrarSemPorTamanho(PT_dados_sem_atual);
     const dadosSemAnt   = ptFiltrarSemPorTamanho(PT_dados_sem_ant);
     const totalSem      = dadosSemAtual.reduce((s,r) => s + (ptParseVal(r.entrada_estoque)||0), 0);
@@ -23499,9 +22796,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       metaMes = diasUteis * PT_META_DIARIA;
     }
-    // PT_dados_mes já vem carregado com o mês inteiro (ver PT_carregarDados) —
-    // não usa PT_dados aqui porque o filtro global pode cobrir menos que o mês.
-    const regMes   = PT_dados_mes.filter(r => r.data && r.data.startsWith(mesRef));
+    // Busca todos os dados do mês de referência (PT_dados já foi carregado com o período selecionado;
+    // para o MÊS buscamos qualquer registro do mês dentro de PT_dados)
+    const regMes   = PT_dados.filter(r => r.data && r.data.startsWith(mesRef));
     const totalMes = regMes.reduce((s,r) => s + (ptParseVal(r.entrada_estoque)||0), 0);
     const pctMes   = metaMes ? totalMes / metaMes * 100 : null;
     const difMes   = totalMes - (metaMes || 0);
@@ -23817,24 +23114,12 @@ document.addEventListener('DOMContentLoaded', () => {
     PT_periodoAtual = { ini, fim };
     PT_dados = await PT_fetchDados(ini, fim);
 
-    // Semana atual/anterior — a semana (Seg–Sex) que contém a data final do
-    // filtro selecionado, não a semana real de hoje. Busca à parte porque o
-    // filtro global pode cobrir só 1 dia, e a semana pode ficar fora dele.
-    const _semAtual = ptSemanaRange(0, fim);
-    const _semAnt   = ptSemanaRange(-1, fim);
+    // Busca semana atual e anterior para os cards semanais fixos (independente do filtro global)
+    const _semAtual = ptSemanaRange(0);
+    const _semAnt   = ptSemanaRange(-1);
     const _dadosSems = await PT_fetchDados(_semAnt.ini, _semAtual.fim);
     PT_dados_sem_atual = _dadosSems.filter(r => r.data >= _semAtual.ini && r.data <= _semAtual.fim);
     PT_dados_sem_ant   = _dadosSems.filter(r => r.data >= _semAnt.ini   && r.data <= _semAnt.fim);
-
-    // Mês — todos os registros do mês calendário que contém a data final do
-    // filtro, buscados à parte pelo mesmo motivo: o filtro pode ser mais
-    // estreito que o mês inteiro (era o outro card que não batia com o
-    // esperado — mostrava só o total do período filtrado, não do mês todo).
-    const _mesRef = fim.slice(0,7);
-    const [_my, _mm] = _mesRef.split('-').map(Number);
-    const _mesIni = `${_mesRef}-01`;
-    const _mesFim = new Date(_my, _mm, 0).toISOString().slice(0,10);
-    PT_dados_mes = await PT_fetchDados(_mesIni, _mesFim);
 
     PT_popularProdutos();
     PT_render();
@@ -23908,11 +23193,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // ─────────────────────────────────────────────
 (function(){
 
-  let PERDAS_dados = [];         // dados brutos do Supabase (período do filtro global)
+  let PERDAS_dados = [];         // dados brutos do Supabase
   let PERDAS_filtrados = [];     // após filtros de setor/motivo/busca
-  let PERDAS_dados_sem_atual = []; // semana (Seg–Sex) que contém a data final do filtro
-  let PERDAS_dados_sem_ant   = []; // semana anterior a essa
-  let PERDAS_dados_mes       = []; // mês inteiro que contém a data final do filtro
   let PERDAS_carregando = false;
   let PERDAS_inicializado = false;
   let PERDAS_periodoAtual = { ini: '', fim: '' };
@@ -23928,28 +23210,11 @@ document.addEventListener('DOMContentLoaded', () => {
     return { ini, fim };
   }
 
-  function perdasFmtData(iso){
-    if(!iso) return '';
-    const [y,m,d] = iso.split('-');
-    return `${d}/${m}/${y}`;
-  }
+  // ── Busca dados no Supabase ──────────────────
+  async function PERDAS_fetchDados(){
+    const { ini, fim } = perdasRangePeriodo();
+    PERDAS_periodoAtual = { ini, fim };
 
-  // Retorna { ini, fim } da semana Seg–Sex que contém refIso. offset: 0=atual, -1=anterior.
-  // Mesma lógica usada na aba Produção Tortas (ptSemanaRange) — duplicada aqui
-  // porque cada módulo do relatório vive na sua própria IIFE.
-  function perdasSemanaRange(offset, refIso){
-    const d = refIso ? new Date(refIso + 'T00:00:00') : new Date();
-    const dw = d.getDay();
-    const diffSeg = dw === 0 ? -6 : 1 - dw;
-    const seg = new Date(d);
-    seg.setDate(d.getDate() + diffSeg + offset * 7);
-    const sex = new Date(seg);
-    sex.setDate(seg.getDate() + 4);
-    return { ini: seg.toISOString().slice(0,10), fim: sex.toISOString().slice(0,10) };
-  }
-
-  // ── Busca uma faixa de datas qualquer no Supabase (sem efeitos colaterais) ──
-  async function perdasFetchRange(ini, fim){
     let url = `${SUPABASE_URL}/rest/v1/perdas_producao?select=*&order=data.desc,setor.asc,produto.asc`;
     if(ini && fim){
       url += `&data=gte.${ini}&data=lte.${fim}`;
@@ -23958,6 +23223,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if(fim){
       url += `&data=lte.${fim}`;
     }
+
     const resp = await fetch(url, {
       headers: {
         'apikey':        SUPABASE_ANON_KEY,
@@ -23966,14 +23232,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
     if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    return await resp.json();
-  }
-
-  // ── Busca dados no Supabase (período selecionado no filtro global) ──
-  async function PERDAS_fetchDados(){
-    const { ini, fim } = perdasRangePeriodo();
-    PERDAS_periodoAtual = { ini, fim };
-    PERDAS_dados = await perdasFetchRange(ini, fim);
+    PERDAS_dados = await resp.json();
 
     // Popular select de motivos dinamicamente
     const motivos = [...new Set(PERDAS_dados.map(r => r.motivo).filter(Boolean))].sort();
@@ -24010,71 +23269,65 @@ document.addEventListener('DOMContentLoaded', () => {
     if(!grid) return;
 
     const fmt = kg => kg.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' kg';
-    const { fim } = perdasRangePeriodo();
-    const refFim = fim || new Date().toISOString().slice(0,10);
 
-    // Aplica os mesmos filtros locais (setor/motivo/busca) nos dados de
-    // semana/mês, pra ficar coerente com o que a pessoa está vendo nos
-    // gráficos e na tabela abaixo.
-    const setorF  = (document.getElementById('perdas-setor')?.value  || '').toLowerCase();
-    const motivoF = (document.getElementById('perdas-motivo')?.value || '').toLowerCase();
-    const buscaF  = (document.getElementById('perdas-busca')?.value  || '').toLowerCase();
-    function perdasAplicaFiltros(dados){
-      return dados.filter(r => {
-        if(setorF  && (r.setor  || '').toLowerCase() !== setorF)         return false;
-        if(motivoF && (r.motivo || '').toLowerCase() !== motivoF)        return false;
-        if(buscaF  && !(r.produto || '').toLowerCase().includes(buscaF)) return false;
-        return true;
-      });
-    }
-
-    // DIA — usa a data final do filtro selecionado (mesma configuração da
-    // aba Produção Tortas, em vez do último dia com lançamento).
+    // Último dia lançado (maior data nos dados filtrados)
+    const datas = [...new Set(PERDAS_filtrados.map(r => r.data))].sort();
+    const ultimoDia = datas.length ? datas[datas.length - 1] : null;
     const kgDia = PERDAS_filtrados
-      .filter(r => r.data === refFim)
+      .filter(r => r.data === ultimoDia)
       .reduce((s, r) => s + (parseFloat(r.quantidade_kg) || 0), 0);
 
-    // SEMANA ATUAL/ANTERIOR — semana (Seg–Sex) que contém a data final do
-    // filtro, buscada à parte (PERDAS_dados_sem_atual/ant) pra não depender
-    // do range escolhido no filtro global.
-    const semAtual = perdasSemanaRange(0, refFim);
-    const semAnt   = perdasSemanaRange(-1, refFim);
-    const dadosSemAtual = perdasAplicaFiltros(PERDAS_dados_sem_atual);
-    const dadosSemAnt   = perdasAplicaFiltros(PERDAS_dados_sem_ant);
-    const kgSemana    = dadosSemAtual.reduce((s,r) => s + (parseFloat(r.quantidade_kg) || 0), 0);
-    const kgSemanaAnt = dadosSemAnt.reduce((s,r) => s + (parseFloat(r.quantidade_kg) || 0), 0);
+    // Semana atual (últimos 7 dias a partir do último dia lançado)
+    let kgSemana = 0;
+    if(ultimoDia){
+      const limSemana = new Date(ultimoDia);
+      limSemana.setDate(limSemana.getDate() - 6);
+      const limStr = limSemana.toISOString().slice(0,10);
+      kgSemana = PERDAS_filtrados
+        .filter(r => r.data >= limStr && r.data <= ultimoDia)
+        .reduce((s, r) => s + (parseFloat(r.quantidade_kg) || 0), 0);
+    }
 
-    // MÊS — mês calendário inteiro que contém a data final do filtro,
-    // buscado à parte (PERDAS_dados_mes) pelo mesmo motivo.
-    const mesRef = refFim.slice(0,7);
-    const [anoM, mesM] = mesRef.split('-');
-    const nomeMes = new Date(Number(anoM), Number(mesM)-1, 1).toLocaleString('pt-BR',{month:'long'});
-    const labelMes = `${nomeMes.charAt(0).toUpperCase()}${nomeMes.slice(1)}/${anoM.slice(2)}`;
-    const dadosMes = perdasAplicaFiltros(PERDAS_dados_mes);
-    const kgMes = dadosMes.reduce((s,r) => s + (parseFloat(r.quantidade_kg) || 0), 0);
+    // Mês atual (mesmo ano/mês do último dia lançado)
+    let kgMes = 0;
+    let labelMes = 'Mês';
+    if(ultimoDia){
+      const anoMes = ultimoDia.slice(0,7); // 'YYYY-MM'
+      const [ano, mes] = anoMes.split('-');
+      const nomeMes = new Date(Number(ano), Number(mes)-1, 1)
+        .toLocaleString('pt-BR',{month:'long'});
+      labelMes = `${nomeMes.charAt(0).toUpperCase()}${nomeMes.slice(1)}/${ano.slice(2)}`;
+      kgMes = PERDAS_filtrados
+        .filter(r => r.data && r.data.startsWith(anoMes))
+        .reduce((s, r) => s + (parseFloat(r.quantidade_kg) || 0), 0);
+    }
 
-    // Produto com maior perda no mês (usa os mesmos dados já filtrados do card do Mês)
+    const labelDia = ultimoDia
+      ? ultimoDia.split('-').reverse().join('/')
+      : 'Dia';
+
+    // Produto com maior perda no mês
+    const anoMesFinal = ultimoDia ? ultimoDia.slice(0,7) : null;
     const porProdutoMes = {};
-    dadosMes.forEach(r => {
-      const p = r.produto || 'Desconhecido';
-      porProdutoMes[p] = (porProdutoMes[p] || 0) + (parseFloat(r.quantidade_kg) || 0);
-    });
+    PERDAS_filtrados
+      .filter(r => anoMesFinal && r.data && r.data.startsWith(anoMesFinal))
+      .forEach(r => {
+        const p = r.produto || 'Desconhecido';
+        porProdutoMes[p] = (porProdutoMes[p] || 0) + (parseFloat(r.quantidade_kg) || 0);
+      });
     const topProduto = Object.entries(porProdutoMes).sort((a,b) => b[1]-a[1])[0];
 
     grid.innerHTML = `
       <div class="kpi-card sem-bad">
-        <div class="label">DIA — ${perdasFmtData(refFim)}</div>
+        <div class="label">Total Perdido — ${labelDia}</div>
         <div class="value">${fmt(kgDia)}</div>
       </div>
       <div class="kpi-card sem-bad">
-        <div class="label">SEMANA ATUAL — ${perdasFmtData(semAtual.ini)} a ${perdasFmtData(semAtual.fim)}</div>
+        <div class="label">Total Perdido — Semana</div>
         <div class="value">${fmt(kgSemana)}</div>
-        <div class="pt-sem-ant">
-          Sem. anterior: <strong>${fmt(kgSemanaAnt)}</strong>
-        </div>
       </div>
       <div class="kpi-card sem-bad">
-        <div class="label">MÊS — ${labelMes}</div>
+        <div class="label">Total Perdido — ${labelMes}</div>
         <div class="value">${fmt(kgMes)}</div>
       </div>
       <div class="kpi-card sem-warn">
@@ -24252,8 +23505,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td style="padding:7px 12px;font-size:12px;font-weight:500;">${r.produto || ''}</td>
         <td style="padding:7px 12px;font-size:12px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:var(--red);">${kg}</td>
         <td style="padding:7px 12px;font-size:12px;color:var(--warn);">${r.motivo || '—'}</td>
-        <td style="padding:7px 12px;font-size:12px;color:var(--ink-soft);">${r.destino || '—'}</td>
-        <td style="padding:7px 12px;font-size:12px;color:var(--ink-soft);">${r.lider || '—'}</td>
+        <td style="padding:7px 12px;font-size:12px;color:var(--ink-soft);">${r.observacao || '—'}</td>
       </tr>`;
     }).join('');
 
@@ -24261,7 +23513,7 @@ document.addEventListener('DOMContentLoaded', () => {
       tfoot.innerHTML = `<tr>
         <td colspan="3" style="padding:8px 12px;font-size:12px;font-weight:700;">TOTAL</td>
         <td style="padding:8px 12px;font-size:12px;text-align:right;font-variant-numeric:tabular-nums;font-weight:800;color:var(--red);">${totalKg.toLocaleString('pt-BR',{minimumFractionDigits:3})} kg</td>
-        <td colspan="3"></td>
+        <td colspan="2"></td>
       </tr>`;
     }
     if(count) count.textContent = `${PERDAS_filtrados.length} registro${PERDAS_filtrados.length !== 1 ? 's' : ''}`;
@@ -24284,154 +23536,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if(grid) grid.innerHTML = `<div style="padding:20px;color:var(--ink-soft);font-size:13px;">Carregando…</div>`;
     try {
       await PERDAS_fetchDados();
-
-      // Semana atual/anterior e Mês — mesma configuração da aba Produção
-      // Tortas: a semana (Seg–Sex) e o mês que contêm a data final do
-      // filtro, buscados à parte porque o filtro selecionado pode ser mais
-      // estreito que eles (ex: um único dia).
-      const { fim } = perdasRangePeriodo();
-      const refFim = fim || new Date().toISOString().slice(0,10);
-      const semAtual = perdasSemanaRange(0, refFim);
-      const semAnt   = perdasSemanaRange(-1, refFim);
-      const dadosSemanas = await perdasFetchRange(semAnt.ini, semAtual.fim);
-      PERDAS_dados_sem_atual = dadosSemanas.filter(r => r.data >= semAtual.ini && r.data <= semAtual.fim);
-      PERDAS_dados_sem_ant   = dadosSemanas.filter(r => r.data >= semAnt.ini   && r.data <= semAnt.fim);
-
-      const mesRef = refFim.slice(0,7);
-      const [my, mm] = mesRef.split('-').map(Number);
-      const mesIni = `${mesRef}-01`;
-      const mesFimStr = new Date(my, mm, 0).toISOString().slice(0,10);
-      PERDAS_dados_mes = await perdasFetchRange(mesIni, mesFimStr);
-
       PERDAS_render();
     } finally {
       PERDAS_carregando = false;
     }
   }
 
-  /* ============================================================================
-     LANÇAMENTO DE PERDA — formulário embutido na própria aba do relatório,
-     espelhando o formulário físico FOR-PCP-033 (Apontamento de Perdas).
-     Grava direto em perdas_producao e recarrega o relatório acima.
-     ============================================================================ */
-  let PERDAS_FORM_INICIALIZADO = false;
-
-  // Alterna o bloco "Especifique..." de um <select> com opção __outro__.
-  function PERDAS_wireOutroToggle(selectEl, wrapEl, inputEl){
-    if(!selectEl || !wrapEl || !inputEl) return;
-    selectEl.addEventListener('change', ()=>{
-      const isOutro = selectEl.value === '__outro__';
-      wrapEl.style.display = isOutro ? '' : 'none';
-      if(!isOutro) inputEl.value = '';
-    });
-  }
-  // Resolve o valor final de um par select+outro: usa o texto livre quando
-  // "Outro (especificar)" foi escolhido, senão o próprio valor do select.
-  function PERDAS_resolveValor(selectEl, inputEl){
-    return selectEl.value === '__outro__' ? inputEl.value.trim() : selectEl.value;
-  }
-
-  async function PERDAS_initForm(){
-    if(PERDAS_FORM_INICIALIZADO) return;
-    PERDAS_FORM_INICIALIZADO = true;
-
-    const toggleBtn = document.getElementById('perdasToggleFormBtn');
-    const form = document.getElementById('perdasForm');
-    toggleBtn?.addEventListener('click', ()=>{
-      const aberto = form.style.display !== 'none';
-      form.style.display = aberto ? 'none' : '';
-      toggleBtn.textContent = aberto ? '+ Novo Registro' : 'Fechar';
-    });
-
-    // Data de hoje como padrão, igual aos outros lançamentos do BK360.
-    const dataEl = document.getElementById('perdas-in-data');
-    if(dataEl && !dataEl.value){
-      const hoje = new Date();
-      dataEl.value = hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0')+'-'+String(hoje.getDate()).padStart(2,'0');
-    }
-
-    // Setor — mesma lista canônica (public.setores) usada no resto do BK360.
-    const setorEl = document.getElementById('perdas-in-setor');
-    await ST_populateSelect(setorEl, '');
-    setorEl?.addEventListener('change', ()=>{
-      // Sugere o líder do setor como Responsável, sem sobrescrever o que já foi digitado.
-      const liderEl = document.getElementById('perdas-in-lider');
-      if(liderEl && !liderEl.value.trim()) liderEl.value = ST_LIDER_MAP[setorEl.value] || '';
-    });
-
-    // Produto — mesmo catálogo oficial usado em Produção Diária, evita nome divergente.
-    await PRODCAT_load();
-    PRODCAT_preencherDatalist(document.getElementById('perdasProdutoList'));
-    PRODCAT_wireCodigoLookup(document.getElementById('perdas-in-produto'));
-
-    // Responsável — sugere pelos líderes já cadastrados em setores.
-    const liderListEl = document.getElementById('perdasLiderList');
-    if(liderListEl) liderListEl.innerHTML = Object.values(ST_LIDER_MAP).filter(Boolean).map(l=>`<option value="${l}">`).join('');
-
-    PERDAS_wireOutroToggle(document.getElementById('perdas-in-unidade'), document.getElementById('perdas-in-unidade-outro-wrap'), document.getElementById('perdas-in-unidade-outro'));
-    PERDAS_wireOutroToggle(document.getElementById('perdas-in-motivo'), document.getElementById('perdas-in-motivo-outro-wrap'), document.getElementById('perdas-in-motivo-outro'));
-    PERDAS_wireOutroToggle(document.getElementById('perdas-in-destino'), document.getElementById('perdas-in-destino-outro-wrap'), document.getElementById('perdas-in-destino-outro'));
-
-    form?.addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const feedback = document.getElementById('perdasFormFeedback');
-      const submitBtn = document.getElementById('perdasSubmitBtn');
-
-      const produtoDigitado = document.getElementById('perdas-in-produto').value.trim();
-      const produtoCat = PRODCAT_validar(produtoDigitado);
-      if(!produtoCat){
-        feedback.textContent = `⚠ "${produtoDigitado}" não está no catálogo de produtos. Escolha um item da lista.`;
-        feedback.className = 'lanc-feedback err';
-        return;
-      }
-      const motivo = PERDAS_resolveValor(document.getElementById('perdas-in-motivo'), document.getElementById('perdas-in-motivo-outro'));
-      if(!motivo){
-        feedback.textContent = '⚠ Selecione ou especifique o Motivo da perda.';
-        feedback.className = 'lanc-feedback err';
-        return;
-      }
-
-      const payload = {
-        data: dataEl.value,
-        hora: document.getElementById('perdas-in-hora').value || null,
-        setor: setorEl.value || null,
-        produto: produtoCat.descricao,
-        quantidade_kg: parseFloat(document.getElementById('perdas-in-qtd').value),
-        unidade: PERDAS_resolveValor(document.getElementById('perdas-in-unidade'), document.getElementById('perdas-in-unidade-outro')) || 'Kg',
-        motivo,
-        destino: PERDAS_resolveValor(document.getElementById('perdas-in-destino'), document.getElementById('perdas-in-destino-outro')) || null,
-        lider: document.getElementById('perdas-in-lider').value.trim() || null,
-        observacao: document.getElementById('perdas-in-obs').value.trim() || null,
-      };
-
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Salvando...';
-      try{
-        const client = getSupabaseClient();
-        const { error } = await client.from('perdas_producao').insert([payload]);
-        if(error) throw error;
-        feedback.textContent = '✓ Perda registrada com sucesso.';
-        feedback.className = 'lanc-feedback ok';
-        form.reset();
-        dataEl.value = payload.data; // mantém a mesma data pro próximo lançamento
-        document.getElementById('perdas-in-unidade').value = 'Kg';
-        PERDAS_periodoAtual = { ini: '', fim: '' }; // força re-fetch do relatório acima
-        await PERDAS_carregarDados();
-      }catch(err){
-        console.error('Erro ao salvar perda:', err);
-        feedback.textContent = '⚠ Erro ao salvar: ' + (err.message || err);
-        feedback.className = 'lanc-feedback err';
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Salvar Perda';
-      }
-    });
-  }
-
   // ── Ponto de entrada público ──────────────────
   window.renderPerdas = async function(){
     const { ini, fim } = perdasRangePeriodo();
-    await PERDAS_initForm();
 
     if(!PERDAS_inicializado){
       PERDAS_inicializado = true;
