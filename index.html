@@ -2465,6 +2465,11 @@ body{background:#fff;color:#000}
   font-weight: 600;
   letter-spacing: 0.2px;
 }
+#page-rastreamento .rast-massa-row { display:flex; gap:8px; align-items:center; margin-bottom:6px; }
+#page-rastreamento .rast-massa-row .rast-m-massa { flex:2; }
+#page-rastreamento .rast-massa-row .rast-m-qtd { flex:1; }
+#page-rastreamento .rast-massa-del { background:none; border:1px solid var(--line); border-radius:8px; width:34px; height:34px; font-size:18px; line-height:1; cursor:pointer; color:var(--ink-muted); }
+#page-rastreamento .rast-massa-del:hover { color:var(--red); border-color:var(--red); }
 #page-rastreamento .rast-help-error { font-size: 11px; color: var(--red); display: none; margin-top: 3px; }
 
 /* Autocomplete */
@@ -5507,10 +5512,6 @@ body{background:#fff;color:#000}
                      oninput="RAST_onCarrinhoChange()">
               <span class="rast-help-error" id="rast-carrinho-err">⚠ Lançamento aberto para este carrinho hoje.</span>
             </div>
-            <div class="rast-form-group" style="max-width:200px;">
-              <label>Nº da massa <span style="font-weight:400;color:var(--ink-soft);font-size:11px;">(opcional)</span></label>
-              <input type="text" id="rast-p-massa" placeholder="Ex: M-04">
-            </div>
           </div>
         </div>
 
@@ -5524,9 +5525,11 @@ body{background:#fff;color:#000}
             </div>
           </div>
           <div class="rast-form-row">
-            <div class="rast-form-group">
-              <label id="rast-lbl-qtd-grupo">Quantidade de telas</label>
-              <input type="number" id="rast-p-telas" placeholder="Ex: 19" min="1" oninput="RAST_calcTotal()">
+            <div class="rast-form-group" style="flex:2.2;">
+              <label id="rast-lbl-qtd-grupo">Massa(s) e quantidade de telas</label>
+              <div id="rast-massa-rows"></div>
+              <button type="button" class="rast-btn rast-btn-ghost" style="margin-top:6px;align-self:flex-start;" onclick="RAST_addMassaRow()">＋ Outra massa neste carrinho</button>
+              <span style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Se o carrinho recebeu mais de uma massa, adicione uma linha para cada massa com as telas dela.</span>
             </div>
             <div class="rast-form-group">
               <label id="rast-lbl-qtd-unid">Produtos por tela</label>
@@ -5543,11 +5546,15 @@ body{background:#fff;color:#000}
         </div>
 
         <div class="rast-card">
-          <div class="rast-card-title">4 — Responsável</div>
+          <div class="rast-card-title">4 — Responsáveis</div>
           <div class="rast-form-row">
             <div class="rast-form-group">
-              <label>Nome do responsável pelo lançamento</label>
+              <label>Responsável pela produção <span style="font-weight:400;color:var(--ink-soft);font-size:11px;">(quem produziu)</span></label>
               <input type="text" id="rast-p-resp" placeholder="Nome completo">
+            </div>
+            <div class="rast-form-group">
+              <label>Conferente <span style="font-weight:400;color:var(--ink-soft);font-size:11px;">(quem está lançando)</span></label>
+              <input type="text" id="rast-p-conf" placeholder="Nome completo">
             </div>
           </div>
         </div>
@@ -5637,8 +5644,10 @@ body{background:#fff;color:#000}
                 <th>Código Produção</th>
                 <th>Produzido em</th>
                 <th>Resp. Produção</th>
+                <th>Conferente</th>
                 <th>Massa</th>
                 <th>Status</th>
+                <th>Conformidade</th>
                 <th class="rast-td-num">Qtd Emb.</th>
                 <th>Código Embalagem</th>
                 <th>Embalado em</th>
@@ -5647,7 +5656,7 @@ body{background:#fff;color:#000}
               </tr>
             </thead>
             <tbody id="rast-hist-body">
-              <tr><td colspan="15" class="rast-empty">Selecione o módulo para carregar…</td></tr>
+              <tr><td colspan="16" class="rast-empty">Selecione o módulo para carregar…</td></tr>
             </tbody>
           </table>
         </div>
@@ -21807,16 +21816,61 @@ function RAST_setUnidade(u) {
   document.getElementById('rast-unit-telas').classList.toggle('active',  u==='telas');
   document.getElementById('rast-unit-caixas').classList.toggle('active', u==='caixas');
   const isTelas = u === 'telas';
-  document.getElementById('rast-lbl-qtd-grupo').textContent = isTelas ? 'Quantidade de telas'  : 'Quantidade de caixas';
+  document.getElementById('rast-lbl-qtd-grupo').textContent = isTelas ? 'Massa(s) e quantidade de telas'  : 'Massa(s) e quantidade de caixas';
   document.getElementById('rast-lbl-qtd-unid').textContent  = isTelas ? 'Produtos por tela'    : 'Produtos por caixa';
-  document.getElementById('rast-p-telas').placeholder       = isTelas ? 'Ex: 19' : 'Ex: 10';
+  document.querySelectorAll('#rast-massa-rows .rast-m-qtd').forEach(i => { i.placeholder = isTelas ? 'Telas' : 'Caixas'; });
   document.getElementById('rast-p-por-tela').placeholder    = isTelas ? 'Ex: 16' : 'Ex: 20';
   RAST_calcTotal();
 }
 
+// ─── Massas do carrinho (um carrinho pode receber mais de uma massa) ───
+function RAST_addMassaRow() {
+  const box = document.getElementById('rast-massa-rows');
+  if (!box) return;
+  const isTelas = RAST_unidadeAtual === 'telas';
+  const row = document.createElement('div');
+  row.className = 'rast-massa-row';
+  row.innerHTML =
+    '<input type="text" class="rast-m-massa" placeholder="Nº da massa (ex: 7)" autocomplete="off">'+
+    '<input type="number" class="rast-m-qtd" min="1" placeholder="'+(isTelas?'Telas':'Caixas')+'" oninput="RAST_calcTotal()">'+
+    '<button type="button" class="rast-massa-del" title="Remover massa" onclick="RAST_removeMassaRow(this)">×</button>';
+  box.appendChild(row);
+  RAST_refreshMassaRows();
+}
+function RAST_removeMassaRow(btn) {
+  const box = document.getElementById('rast-massa-rows');
+  if (box.children.length <= 1) return;
+  btn.closest('.rast-massa-row').remove();
+  RAST_refreshMassaRows();
+  RAST_calcTotal();
+}
+function RAST_refreshMassaRows() {
+  const rows = document.querySelectorAll('#rast-massa-rows .rast-massa-row');
+  rows.forEach(r => { r.querySelector('.rast-massa-del').style.visibility = rows.length > 1 ? 'visible' : 'hidden'; });
+}
+function RAST_resetMassaRows() {
+  const box = document.getElementById('rast-massa-rows');
+  if (!box) return;
+  box.innerHTML = '';
+  RAST_addMassaRow();
+}
+// Lê as linhas preenchidas: [{massa, qtd}]
+function RAST_getMassas() {
+  return Array.from(document.querySelectorAll('#rast-massa-rows .rast-massa-row')).map(r => ({
+    massa: r.querySelector('.rast-m-massa').value.trim(),
+    qtd:   parseInt(r.querySelector('.rast-m-qtd').value) || 0,
+  })).filter(m => m.qtd > 0 || m.massa);
+}
+// Texto resumido para exibição: "7 (6) + 8 (14)" ou só o nº quando há uma massa
+function RAST_massasTexto(massas) {
+  if (!massas.length) return null;
+  if (massas.length === 1) return massas[0].massa || null;
+  return massas.map(m => (m.massa || 's/ nº') + ' ('+m.qtd+')').join(' + ');
+}
+
 // ─── Total ───
 function RAST_calcTotal() {
-  const t = parseInt(document.getElementById('rast-p-telas').value)    || 0;
+  const t = RAST_getMassas().reduce((a, m) => a + m.qtd, 0);
   const p = parseInt(document.getElementById('rast-p-por-tela').value) || 0;
   document.getElementById('rast-total-v').textContent =
     (t && p) ? (t*p).toLocaleString('pt-BR')+' un.' : '—';
@@ -21857,13 +21911,17 @@ async function RAST_verificarCarrinhoDuplicado(num) {
 async function RAST_showPreview() {
   if (!RAST_prodSelecionado) return RAST_toast('Selecione um produto','e');
   const carrinho = parseInt(document.getElementById('rast-p-carrinho').value);
-  const telas    = parseInt(document.getElementById('rast-p-telas').value);
+  const massas   = RAST_getMassas();
+  const telas    = massas.reduce((a, m) => a + m.qtd, 0);
   const porTela  = parseInt(document.getElementById('rast-p-por-tela').value);
   const resp     = document.getElementById('rast-p-resp').value.trim();
+  const conf     = document.getElementById('rast-p-conf').value.trim();
   if (!carrinho||carrinho<1) return RAST_toast('Informe o número do carrinho','e');
   if (!telas||telas<1)       return RAST_toast('Informe a quantidade de '+RAST_unidadeAtual,'e');
+  if (massas.some(m => m.massa && !m.qtd) || (massas.length>1 && massas.some(m => !m.qtd))) return RAST_toast('Informe a quantidade de '+RAST_unidadeAtual+' de cada massa','e');
   if (!porTela||porTela<1)   return RAST_toast('Informe os produtos por '+(RAST_unidadeAtual==='telas'?'tela':'caixa'),'e');
-  if (!resp)                 return RAST_toast('Informe o responsável','e');
+  if (!resp)                 return RAST_toast('Informe o responsável pela produção','e');
+  if (!conf)                 return RAST_toast('Informe o conferente','e');
 
   const today = new Date().toISOString().slice(0,10);
   const sb = getSupabaseClient();
@@ -21881,16 +21939,17 @@ async function RAST_showPreview() {
   const unLbl  = RAST_unidadeAtual==='telas' ? 'telas' : 'caixas';
   const unLbl1 = RAST_unidadeAtual==='telas' ? 'tela'  : 'caixa';
 
-  const massaVal = (document.getElementById('rast-p-massa')?.value||'').trim();
+  const massaVal = RAST_massasTexto(massas) || '';
   document.getElementById('rast-p-summary-content').innerHTML =
     '<div class="rast-summary-row"><span class="rast-s-key">Produto</span><span class="rast-s-val">'+RAST_esc(RAST_prodSelecionado.descricao)+'</span></div>'+
     '<div class="rast-summary-row"><span class="rast-s-key">Código</span><span class="rast-s-val"><span class="rast-chip">'+RAST_esc(RAST_prodSelecionado.codigo)+'</span></span></div>'+
     '<div class="rast-summary-row"><span class="rast-s-key">Carrinho</span><span class="rast-s-val">'+carrinho+'</span></div>'+
-    (massaVal ? '<div class="rast-summary-row"><span class="rast-s-key">Nº da Massa</span><span class="rast-s-val"><span class="rast-chip">'+RAST_esc(massaVal)+'</span></span></div>' : '')+
+    (massaVal ? '<div class="rast-summary-row"><span class="rast-s-key">'+(massas.length>1?'Massas (telas)':'Nº da Massa')+'</span><span class="rast-s-val"><span class="rast-chip">'+RAST_esc(massaVal)+'</span></span></div>' : '')+
     '<div class="rast-summary-row"><span class="rast-s-key">'+RAST_ucFirst(unLbl)+' × por '+unLbl1+'</span><span class="rast-s-val">'+telas+' × '+porTela+'</span></div>'+
     '<div class="rast-summary-row"><span class="rast-s-key">Unidade</span><span class="rast-s-val">'+RAST_ucFirst(unLbl)+'</span></div>'+
     '<div class="rast-summary-row"><span class="rast-s-key">Total</span><span class="rast-s-val highlight">'+total.toLocaleString('pt-BR')+' unidades</span></div>'+
-    '<div class="rast-summary-row"><span class="rast-s-key">Responsável</span><span class="rast-s-val">'+RAST_esc(resp)+'</span></div>';
+    '<div class="rast-summary-row"><span class="rast-s-key">Resp. produção</span><span class="rast-s-val">'+RAST_esc(resp)+'</span></div>'+
+    '<div class="rast-summary-row"><span class="rast-s-key">Conferente</span><span class="rast-s-val">'+RAST_esc(conf)+'</span></div>';
   document.getElementById('rast-p-preview').style.display = 'block';
   document.getElementById('rast-p-btn-row').style.display  = 'none';
   document.getElementById('rast-p-preview').scrollIntoView({ behavior:'smooth' });
@@ -21900,36 +21959,41 @@ async function RAST_salvarProducao() {
   const btn = document.getElementById('rast-btn-conf-prod');
   btn.disabled = true; btn.textContent = 'Salvando…';
   const carrinho = parseInt(document.getElementById('rast-p-carrinho').value);
-  const telas    = parseInt(document.getElementById('rast-p-telas').value);
+  const massas   = RAST_getMassas();
+  const telas    = massas.reduce((a, m) => a + m.qtd, 0);
   const porTela  = parseInt(document.getElementById('rast-p-por-tela').value);
   const resp     = document.getElementById('rast-p-resp').value.trim();
+  const conf     = document.getElementById('rast-p-conf').value.trim();
   const agora    = new Date();
   const codigo   = RAST_gerarCodigo(agora);
   const sb = getSupabaseClient();
 
-  const massaSave = (document.getElementById('rast-p-massa')?.value||'').trim() || null;
+  const massaSave = RAST_massasTexto(massas);
   const { error } = await sb.from('rastreamento_carrinhos').insert({
     produto: RAST_prodSelecionado.descricao, codigo_produto: RAST_prodSelecionado.codigo,
     numero_carrinho: carrinho, qtd_telas: telas, qtd_por_tela: porTela,
-    qtd_produzida: telas*porTela, responsavel_producao: resp,
+    qtd_produzida: telas*porTela, responsavel_producao: resp, conferente: conf,
     produzido_em: agora.toISOString(), codigo_producao: codigo,
     unidade: RAST_unidadeAtual, status: 'Aguardando Embalagem',
     numero_massa: massaSave,
+    massas: massas.length ? massas : null,
   });
 
   if (error) {
     RAST_toast('Erro ao salvar: '+(error.message||'tente novamente'),'e');
     btn.disabled=false; btn.textContent='✓ Confirmar e Salvar'; return;
   }
+  try { localStorage.setItem('RAST_conferente', conf); } catch(e) {}
   RAST_toast('Carrinho '+carrinho+' registrado! Código: '+codigo,'s');
   RAST_resetProd(); await RAST_loadAll();
 }
 
 function RAST_resetProd() {
   RAST_prodSelecionado = null;
-  ['rast-p-busca','rast-p-codigo','rast-p-carrinho','rast-p-massa','rast-p-telas','rast-p-por-tela','rast-p-resp'].forEach(id=>{
+  ['rast-p-busca','rast-p-codigo','rast-p-carrinho','rast-p-por-tela','rast-p-resp'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
+  RAST_resetMassaRows();
   document.getElementById('rast-total-v').textContent = '—';
   document.getElementById('rast-p-preview').style.display='none';
   document.getElementById('rast-p-btn-row').style.display='flex';
@@ -21944,6 +22008,9 @@ function RAST_resetProd() {
 function RAST_abrirFormProd() {
   const panel = document.getElementById('rast-prod-panel');
   panel.style.display = 'block';
+  if (!document.querySelector('#rast-massa-rows .rast-massa-row')) RAST_addMassaRow();
+  const confEl = document.getElementById('rast-p-conf');
+  if (confEl && !confEl.value) { try { confEl.value = localStorage.getItem('RAST_conferente') || ''; } catch(e) {} }
   panel.scrollIntoView({ behavior: 'smooth' });
 }
 function RAST_cancelarFormProd() { RAST_resetProd(); }
@@ -21978,7 +22045,7 @@ async function RAST_loadKanbanProd() {
         '<span class="rast-kcard-num">Carrinho '+d.numero_carrinho+'</span>'+
       '</div>'+
       '<div class="rast-kcard-meta">'+d.qtd_produzida.toLocaleString('pt-BR')+' '+unLbl(d)+' · '+RAST_fmtDt(d.produzido_em)+'</div>'+
-      '<div class="rast-kcard-meta" style="margin-top:2px;font-size:11px;opacity:.7;">'+RAST_esc(d.responsavel_producao)+'</div>'+
+      '<div class="rast-kcard-meta" style="margin-top:2px;font-size:11px;opacity:.7;">Prod.: '+RAST_esc(d.responsavel_producao||'—')+' · Conf.: '+RAST_esc(d.conferente||'—')+'</div>'+
       '<div style="margin-top:6px;">'+statusHtml+'</div>'+
     '</div>';
   }).join('') : '<div style="color:var(--ink-muted);font-size:13px;padding:12px 0;text-align:center;">Nenhuma produção no período.</div>';
@@ -22034,7 +22101,7 @@ async function RAST_loadKanban() {
         d.qtd_produzida.toLocaleString('pt-BR')+' '+unLbl(d)+
         ' · '+RAST_fmtDt(d.produzido_em)+
       '</div>'+
-      '<div class="rast-kcard-meta" style="margin-top:2px;font-size:11px;opacity:.7;">'+RAST_esc(d.responsavel_producao)+'</div>'+
+      '<div class="rast-kcard-meta" style="margin-top:2px;font-size:11px;opacity:.7;">Prod.: '+RAST_esc(d.responsavel_producao||'—')+' · Conf.: '+RAST_esc(d.conferente||'—')+'</div>'+
       '<button class="rast-kcard-btn" onclick="RAST_abrirEmbCard(\''+d.id+'\')">Embalar</button>'+
     '</div>'
   ).join('') : '<div style="color:var(--ink-muted);font-size:13px;padding:12px 0;text-align:center;">Nenhum carrinho na fila 🎉</div>';
@@ -22072,7 +22139,8 @@ function RAST_abrirEmbCard(id) {
     '<div class="rast-summary-row"><span class="rast-s-key">Qtd produzida</span><span class="rast-s-val highlight">'+r.qtd_produzida.toLocaleString('pt-BR')+' un.</span></div>'+
     '<div class="rast-summary-row"><span class="rast-s-key">Código produção</span><span class="rast-s-val"><span class="rast-chip">'+r.codigo_producao+'</span></span></div>'+
     '<div class="rast-summary-row"><span class="rast-s-key">Produzido em</span><span class="rast-s-val">'+RAST_fmtDt(r.produzido_em)+'</span></div>'+
-    '<div class="rast-summary-row"><span class="rast-s-key">Resp. produção</span><span class="rast-s-val">'+RAST_esc(r.responsavel_producao)+'</span></div>';
+    '<div class="rast-summary-row"><span class="rast-s-key">Resp. produção</span><span class="rast-s-val">'+RAST_esc(r.responsavel_producao||'—')+'</span></div>'+
+    '<div class="rast-summary-row"><span class="rast-s-key">Conferente</span><span class="rast-s-val">'+RAST_esc(r.conferente||'—')+'</span></div>';
   document.getElementById('rast-e-qtd').value  = r.qtd_produzida;
   document.getElementById('rast-e-resp').value = '';
   document.getElementById('rast-e-div-box').innerHTML = '';
@@ -22159,7 +22227,7 @@ function RAST_resetEmb() {
 async function RAST_loadHistorico() {
   const { from, to } = RAST_getPeriod();
   const tbody = document.getElementById('rast-hist-body');
-  tbody.innerHTML = '<tr><td colspan="15" class="rast-empty">Carregando…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="16" class="rast-empty">Carregando…</td></tr>';
   const sb = getSupabaseClient();
   const fromTs = from+'T00:00:00+00:00';
   const toTs   = to+'T23:59:59+00:00';
@@ -22171,7 +22239,7 @@ async function RAST_loadHistorico() {
   if (RAST_filtroProduto) qHist = qHist.ilike('produto', '%'+RAST_filtroProduto+'%');
   const { data, error } = await qHist;
   if (error||!data||!data.length) {
-    tbody.innerHTML='<tr><td colspan="15" class="rast-empty">Nenhum registro no período.</td></tr>'; return;
+    tbody.innerHTML='<tr><td colspan="16" class="rast-empty">Nenhum registro no período.</td></tr>'; return;
   }
   const badge = s =>
     s==='Embalado' ? '<span class="rast-badge rast-b-embal">Embalado</span>'
@@ -22191,7 +22259,8 @@ async function RAST_loadHistorico() {
       '<td class="rast-td-num">'+r.qtd_produzida.toLocaleString('pt-BR')+'</td>'+
       '<td class="rast-td-mono">'+r.codigo_producao+'</td>'+
       '<td class="rast-td-dim">'+RAST_fmtDt(r.produzido_em)+'</td>'+
-      '<td>'+RAST_esc(r.responsavel_producao)+'</td>'+
+      '<td>'+(r.responsavel_producao?RAST_esc(r.responsavel_producao):'<span class="rast-td-dim">—</span>')+'</td>'+
+      '<td>'+(r.conferente?RAST_esc(r.conferente):'<span class="rast-td-dim">—</span>')+'</td>'+
       '<td class="rast-td-dim">'+(r.numero_massa?RAST_esc(r.numero_massa):'<span class="rast-td-dim">—</span>')+'</td>'+
       '<td>'+badge(r.status)+'</td>'+
       '<td>'+conformidade(r)+'</td>'+
@@ -22298,8 +22367,9 @@ function RAST_abrirDetalhe(id, origem) {
     row('Qtd Produzida', '<span class="rast-s-val highlight">'+r.qtd_produzida.toLocaleString('pt-BR')+' '+unLbl+'</span>') +
     row('Código Produção', '<span class="rast-chip">'+RAST_esc(r.codigo_producao)+'</span>') +
     row('Produzido em', RAST_fmtDt(r.produzido_em)) +
-    row('Resp. Produção', RAST_esc(r.responsavel_producao)) +
-    (r.numero_massa ? row('Nº da Massa', '<span class="rast-chip">'+RAST_esc(r.numero_massa)+'</span>') : '') +
+    row('Resp. Produção', r.responsavel_producao ? RAST_esc(r.responsavel_producao) : '<span class="rast-td-dim">—</span>') +
+    row('Conferente', r.conferente ? RAST_esc(r.conferente) : '<span class="rast-td-dim">—</span>') +
+    (r.numero_massa ? row((Array.isArray(r.massas) && r.massas.length>1) ? 'Massas (telas)' : 'Nº da Massa', '<span class="rast-chip">'+RAST_esc(r.numero_massa)+'</span>') : '') +
     '<div style="margin:12px 0 8px;border-top:1px solid var(--border,#e8e0d4);"></div>'+
     row('Status', statusHtml) +
     row('Qtd Embalada', r.qtd_embalada != null ? r.qtd_embalada.toLocaleString('pt-BR')+' '+unLbl : '<span class="rast-td-dim">—</span>') +
