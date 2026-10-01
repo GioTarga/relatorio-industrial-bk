@@ -5655,7 +5655,7 @@ body{background:#fff;color:#000}
               <tr>
                 <th>Produto</th>
                 <th class="rast-td-ctr">Carrinho</th>
-                <th>Massa</th>
+                <th>N° da Massa</th>
                 <th>Produção</th>
                 <th>Responsáveis</th>
                 <th>Status</th>
@@ -22263,7 +22263,7 @@ async function RAST_loadHistorico() {
   tbody.innerHTML = data.map(r=>
     '<tr>'+
       '<td><span class="rast-h-prod" title="'+RAST_esc(r.produto)+' · '+RAST_esc(r.codigo_produto)+'">'+RAST_esc(r.produto)+'</span></td>'+
-      '<td class="rast-td-ctr"><span class="rast-h-cart">'+r.numero_carrinho+'</span><span class="rast-h-line">'+RAST_ucFirst(r.unidade||'telas')+'</span></td>'+
+      '<td class="rast-td-ctr"><span class="rast-h-cart">'+r.numero_carrinho+'</span></td>'+
       '<td class="rast-td-dim">'+(r.numero_massa?RAST_esc(r.numero_massa):dash)+'</td>'+
       '<td><span class="rast-h-strong">'+r.qtd_produzida.toLocaleString('pt-BR')+' un.</span>'+
         '<span class="rast-h-line">'+RAST_fmtDt(r.produzido_em)+'</span>'+
