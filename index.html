@@ -1541,11 +1541,19 @@ body{background:#fff;color:#000}
   #page-mapa-rendimentos .mr-table th{ position:sticky; top:0; background:var(--paper); text-align:left; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); padding:10px 12px; border-bottom:2px solid var(--line); }
   #page-mapa-rendimentos .mr-table td{ padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
   #page-mapa-rendimentos .mr-table tr:nth-child(even) td{ background:var(--cream); }
-  #page-mapa-rendimentos .mr-cadeia{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
-  #page-mapa-rendimentos .mr-chip{ background:#f3e1e1; color:var(--red); border-radius:10px; padding:2px 10px; font-weight:700; white-space:nowrap; }
-  #page-mapa-rendimentos .mr-chip.vazio{ background:#eee; color:#888; font-weight:600; }
-  #page-mapa-rendimentos .mr-chip.base{ background:var(--red); color:#fff; }
-  #page-mapa-rendimentos .mr-pend{ color:var(--ink-soft); font-style:italic; }
+  #page-mapa-rendimentos .mr-nota{ font-size:12px; color:var(--ink-soft); margin:-4px 0 10px; }
+  #page-mapa-rendimentos .mr-table td.mr-n, #page-mapa-rendimentos .mr-table th.mr-n{ text-align:center; white-space:nowrap; }
+  #page-mapa-rendimentos .mr-table td{ vertical-align:middle; }
+  #page-mapa-rendimentos .mr-prod{ min-width:200px; max-width:260px; font-weight:600; font-size:12.5px; }
+  #page-mapa-rendimentos .mr-table th, #page-mapa-rendimentos .mr-table td{ padding-left:8px; padding-right:8px; }
+  #page-mapa-rendimentos .mr-setor, #page-mapa-rendimentos .mr-data{ white-space:nowrap; font-size:12px; }
+  #page-mapa-rendimentos .mr-outras{ white-space:nowrap; }
+  #page-mapa-rendimentos .mr-info{ color:var(--red); cursor:help; font-weight:700; }
+  #page-mapa-rendimentos .mr-n b{ color:var(--red); font-size:14px; }
+  #page-mapa-rendimentos .mr-col{ font-size:11px; color:var(--ink-soft); font-style:italic; }
+  #page-mapa-rendimentos .mr-nd{ color:#c4b8b4; }
+  #page-mapa-rendimentos tr.mr-pendente td{ color:#7a6a66; }
+  #page-mapa-rendimentos tr.mr-pendente .mr-prod{ font-weight:500; }
   #page-mapa-rendimentos .mr-vazio{ color:var(--ink-soft); text-align:center; padding:24px 0; }
   #page-mapa-rendimentos .mr-acoes{ display:flex; gap:6px; white-space:nowrap; }
   #page-mapa-rendimentos .mr-obs{ display:block; font-size:11.5px; color:var(--ink-soft); margin-top:3px; }
@@ -5687,6 +5695,7 @@ body{background:#fff;color:#000}
 
       <div class="panel">
         <h2 class="panel-title">Mapa por produto</h2>
+        <div class="mr-nota">Valores correspondentes a <b>1 massa</b>. "a coletar" = etapa ainda sem medição.</div>
         <div class="mr-toolbar">
           <input type="text" id="mrBusca" placeholder="Buscar produto…">
           <select id="mrFiltro">
@@ -5697,8 +5706,8 @@ body{background:#fff;color:#000}
         </div>
         <div class="mr-table-wrap">
           <table class="mr-table">
-            <thead><tr><th>Produto</th><th>Setor</th><th>Rendimento (1 massa =)</th><th>Coleta</th><th></th></tr></thead>
-            <tbody id="mrTbody"><tr><td colspan="5" class="mr-vazio">Carregando…</td></tr></tbody>
+            <thead><tr><th>Produto</th><th>Setor</th><th class="mr-n">Kg massa</th><th class="mr-n">Blocos</th><th class="mr-n">Telas</th><th class="mr-n">Carrinho</th><th class="mr-n">Unid.</th><th class="mr-n">Pacotes</th><th id="mrThOutras">Outras</th><th>Coleta</th><th></th></tr></thead>
+            <tbody id="mrTbody"><tr><td colspan="11" class="mr-vazio">Carregando…</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -24153,7 +24162,7 @@ async function MR_load(){
     if(!document.querySelector('#mrEtapas .mr-etapa')) MR_resetEtapas();
     MR_render();
   }catch(e){
-    document.getElementById('mrTbody').innerHTML = '<tr><td colspan="5" class="mr-vazio">Não foi possível carregar o mapa.</td></tr>';
+    document.getElementById('mrTbody').innerHTML = '<tr><td colspan="11" class="mr-vazio">Não foi possível carregar o mapa.</td></tr>';
   }
 }
 function MR_fillProdutos(selecionado){
@@ -24188,14 +24197,15 @@ function MR_lerEtapas(){
     return { nome, qtd: v === '' ? null : Number(v) };
   }).filter(e => e.nome);
 }
-function MR_cadeiaHtml(etapas){
-  let h = '<span class="mr-chip base">1 Massa</span>';
-  etapas.forEach(e => {
-    h += '<span>=</span>' + (e.qtd == null
-      ? `<span class="mr-chip vazio">a coletar · ${ADM_esc(e.nome)}</span>`
-      : `<span class="mr-chip">${MR_fmt(e.qtd)} ${ADM_esc(e.nome)}</span>`);
-  });
-  return h;
+const MR_COLUNAS = ['kg de massa', 'blocos', 'telas', 'carrinho', 'unidades', 'pacotes'];
+function MR_celula(etapas, chave){
+  const e = etapas.find(x => (x.nome || '').trim().toLowerCase() === chave);
+  if(!e) return '<span class="mr-nd">–</span>';
+  return e.qtd == null ? '<span class="mr-col">a coletar</span>' : '<b>' + MR_fmt(e.qtd) + '</b>';
+}
+function MR_outras(etapas){
+  const o = etapas.filter(x => !MR_COLUNAS.includes((x.nome || '').trim().toLowerCase()));
+  return o.length ? o.map(x => `${ADM_esc(x.nome)}: ${x.qtd == null ? 'a coletar' : '<b>' + MR_fmt(x.qtd) + '</b>'}`).join(' · ') : '<span class="mr-nd">–</span>';
 }
 function MR_render(){
   const mapeados = MR_PRODUTOS.filter(p => MR_MAPA[p.codigo]).length;
@@ -24205,6 +24215,8 @@ function MR_render(){
   const q = document.getElementById('mrBusca').value.trim().toUpperCase();
   const f = document.getElementById('mrFiltro').value;
   const pode = MR_podeEditar();
+  const temOutras = Object.values(MR_MAPA).some(m => (m.etapas || []).some(x => !MR_COLUNAS.includes((x.nome || '').trim().toLowerCase())));
+  document.getElementById('mrThOutras').style.display = temOutras ? '' : 'none';
   const lista = MR_PRODUTOS.filter(p => {
     if(q && !(p.descricao || '').toUpperCase().includes(q) && !(p.codigo || '').toUpperCase().includes(q)) return false;
     if(f === 'coletado') return !!MR_MAPA[p.codigo];
@@ -24213,16 +24225,18 @@ function MR_render(){
   });
   lista.sort((a, b) => (MR_MAPA[b.codigo] ? 1 : 0) - (MR_MAPA[a.codigo] ? 1 : 0) || a.descricao.localeCompare(b.descricao));
   const tb = document.getElementById('mrTbody');
-  if(!lista.length){ tb.innerHTML = '<tr><td colspan="5" class="mr-vazio">Nenhum produto encontrado.</td></tr>'; return; }
+  if(!lista.length){ tb.innerHTML = '<tr><td colspan="11" class="mr-vazio">Nenhum produto encontrado.</td></tr>'; return; }
   tb.innerHTML = lista.map(p => {
     const m = MR_MAPA[p.codigo];
     const cod = ADM_esc(p.codigo);
     const acoes = !pode || !m ? ''
       : `<div class="mr-acoes"><button class="mr-btn-sec" data-mr="editar" data-cod="${cod}">Editar</button><button class="mr-btn-sec" data-mr="excluir" data-cod="${cod}">Excluir</button></div>`;
-    return `<tr><td>${ADM_esc(p.descricao)}${m && m.observacao ? `<span class="mr-obs">${ADM_esc(m.observacao)}</span>` : ''}</td>
-      <td>${ADM_esc(p.setor || '–')}</td>
-      <td>${m ? `<div class="mr-cadeia">${MR_cadeiaHtml(m.etapas || [])}</div>` : '<span class="mr-pend">Ainda não coletado</span>'}</td>
-      <td>${m ? MR_br(m.data_coleta) : '–'}</td><td>${acoes}</td></tr>`;
+    const et = m ? (m.etapas || []) : [];
+    const nums = MR_COLUNAS.map(c => `<td class="mr-n">${m ? MR_celula(et, c) : '<span class="mr-nd">–</span>'}</td>`).join('');
+    return `<tr class="${m ? '' : 'mr-pendente'}"><td class="mr-prod">${ADM_esc(p.descricao)}${m && m.observacao ? ` <span class="mr-info" title="${ADM_esc(m.observacao)}">ⓘ</span>` : ''}</td>
+      <td class="mr-setor">${ADM_esc(p.setor || '–')}</td>${nums}
+      ${temOutras ? `<td class="mr-outras">${m ? MR_outras(et) : '<span class="mr-nd">–</span>'}</td>` : ''}
+      <td class="mr-data">${m ? MR_br(m.data_coleta) : '<span class="mr-pend">Falta coletar</span>'}</td><td>${acoes}</td></tr>`;
   }).join('');
 }
 function MR_editar(cod){
