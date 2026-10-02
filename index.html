@@ -1516,7 +1516,6 @@ body{background:#fff;color:#000}
 
 
 #page-pcp-estoque .print-header .ph-title{font-size:14px;font-weight:700;text-align:center}
-
 </style>
 
 </style>
@@ -4158,9 +4157,16 @@ body{background:#fff;color:#000}
       </div>
 
       <div class="panel">
-        <div class="panel-title">Consumo do Refeitório por Item</div>
+        <div class="panel-title">Consumo do Refeitório</div>
         <div class="chart-wrap" id="rfDashChartWrap"></div>
-        <div class="trend-foot">Soma das retiradas de insumos lançadas para o setor Refeitório no período selecionado, por item.</div>
+        <div class="trend-foot" id="rfDashFoot"></div>
+        <div class="panel-title" style="margin-top:22px;">Histórico de Retiradas do Refeitório</div>
+        <div class="table-wrap" style="max-height:300px;">
+          <table class="detail">
+            <thead><tr><th>Data</th><th>Item</th><th>Unidade</th><th class="center">Qtd. Liberada</th></tr></thead>
+            <tbody id="rfDashTbody"></tbody>
+          </table>
+        </div>
       </div>
 
       <div class="panel">
@@ -23947,41 +23953,62 @@ async function RF_save(ev){
   }
 }
 
-// Gráfico do Almoxarifado: consumo do Refeitório por item no período (barras horizontais, maior no topo)
+// Gráfico do Almoxarifado: consumo do Refeitório no período, por item (com as datas) + histórico de retiradas
+let RF_DASH_STATE = { rows: [] };
+function RF_ddmm(iso){ return iso.slice(8, 10) + '/' + iso.slice(5, 7); }
+function RF_ddmmaaaa(iso){ return iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4); }
 function RF_DASH_render(requisicoes, ini, fim){
+  RF_DASH_STATE.rows = requisicoes
+    .filter(r => RF_ehRefeitorio(r.setor) && r.data >= ini && r.data <= fim)
+    .map(r => ({ data: r.data, item: r.item, unidade: r.unidade || '', qtd: Number(r.quantidade_liberada || 0) }))
+    .sort((a, b) => a.data < b.data ? -1 : a.data > b.data ? 1 : a.item.localeCompare(b.item));
+  RF_DASH_draw();
+}
+function RF_DASH_draw(){
   const wrap = document.getElementById('rfDashChartWrap');
   if(!wrap) return;
-  const porItem = {};
-  requisicoes.forEach(r => {
-    if(!RF_ehRefeitorio(r.setor) || r.data < ini || r.data > fim) return;
-    const chave = r.item + '||' + (r.unidade || '');
-    if(!porItem[chave]) porItem[chave] = { item: r.item, unidade: r.unidade || '', total: 0 };
-    porItem[chave].total += Number(r.quantidade_liberada || 0);
-  });
-  const lista = Object.values(porItem).sort((a, b) => a.total - b.total);
-  if(!lista.length){
+  const rows = RF_DASH_STATE.rows;
+  const foot = document.getElementById('rfDashFoot');
+  const tb = document.getElementById('rfDashTbody');
+  tb.innerHTML = rows.length
+    ? rows.map(r => `<tr><td>${RF_ddmmaaaa(r.data)}</td><td>${ADM_esc(r.item)}</td><td>${ADM_esc(r.unidade)}</td><td class="center">${EQ_DASH_fmtNum(r.qtd)}</td></tr>`).join('')
+    : '<tr><td colspan="4">Sem retiradas no período.</td></tr>';
+  if(!rows.length){
     wrap.innerHTML = '<div class="empty-state"><span class="empty-icon">🍽</span>Nenhuma retirada do Refeitório no período selecionado.</div>';
+    foot.textContent = '';
     return;
   }
-  const barH = 20, gap = 10, leftPad = 210, rightPad = 150, topPad = 8;
   const chartW = getResponsiveChartW('rfDashChartWrap', 820);
-  const barWmax = chartW - leftPad - rightPad;
-  const chartH = lista.length * (barH + gap) + topPad;
-  const maxVal = Math.max(...lista.map(r => r.total), 1);
-  let bars = '';
-  lista.forEach((r, i) => {
-    const y = topPad + i * (barH + gap);
-    const w = Math.max((r.total / maxVal) * barWmax, 2);
-    bars += `<text x="${leftPad - 10}" y="${y + barH / 2 + 4}" font-size="10.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${ADM_esc(truncateProdLabel(r.item, 24))}<title>${ADM_esc(r.item)}</title></text>`;
-    bars += `<rect x="${leftPad}" y="${y}" width="${barWmax}" height="${barH}" fill="#f3d9d0" stroke="#e0a89a" stroke-width="1" rx="5"/>`;
-    bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="var(--red)" rx="5"/>`;
-    bars += `<text x="${leftPad + barWmax + 8}" y="${y + barH / 2 + 4}" font-size="10.5" fill="var(--red)" font-weight="700">${EQ_DASH_fmtNum(r.total)} ${ADM_esc(r.unidade)}</text>`;
-  });
-  const containerH = Math.min(lista.length, 6) * (barH + gap) + topPad + 6;
-  wrap.innerHTML = `
-    <div style="max-height:${containerH}px; width:${chartW}px; overflow-y:auto; overflow-x:hidden; display:inline-block; text-align:left;">
-      <svg viewBox="0 0 ${chartW} ${chartH + 10}" width="${chartW}" height="${chartH + 10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:block;">${bars}</svg>
-    </div>`;
+  const fam = 'font-family:\'Inter\',Arial,sans-serif;';
+    const porItem = {};
+    rows.forEach(r => {
+      const k = r.item + '||' + r.unidade;
+      const o = porItem[k] || (porItem[k] = { item: r.item, unidade: r.unidade, total: 0, dias: {} });
+      o.total += r.qtd; o.dias[r.data] = (o.dias[r.data] || 0) + r.qtd;
+    });
+    const lista = Object.values(porItem).sort((a, b) => a.total - b.total);
+    const barH = 20, gap = 22, leftPad = 210, rightPad = 110, topPad = 8;
+    const barWmax = chartW - leftPad - rightPad;
+    const chartH = lista.length * (barH + gap) + topPad;
+    const maxVal = Math.max(...lista.map(r => r.total), 1);
+    let bars = '';
+    lista.forEach((r, i) => {
+      const y = topPad + i * (barH + gap);
+      const w = Math.max((r.total / maxVal) * barWmax, 2);
+      const dts = Object.keys(r.dias).sort();
+      const txtDatas = dts.slice(0, 5).map(RF_ddmm).join(', ') + (dts.length > 5 ? ' +' + (dts.length - 5) : '');
+      const tip = dts.map(d => RF_ddmmaaaa(d) + ': ' + EQ_DASH_fmtNum(r.dias[d]) + ' ' + r.unidade).join('\n');
+      bars += `<g><title>${ADM_esc(r.item)}\n${ADM_esc(tip)}</title>`;
+      bars += `<text x="${leftPad - 10}" y="${y + barH / 2 + 4}" font-size="10.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${ADM_esc(truncateProdLabel(r.item, 24))}</text>`;
+      bars += `<rect x="${leftPad}" y="${y}" width="${barWmax}" height="${barH}" fill="#f3d9d0" stroke="#e0a89a" stroke-width="1" rx="5"/>`;
+      bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="var(--red)" rx="5"/>`;
+      bars += `<text x="${leftPad + barWmax + 8}" y="${y + barH / 2 + 4}" font-size="10.5" fill="var(--red)" font-weight="700">${EQ_DASH_fmtNum(r.total)} ${ADM_esc(r.unidade)}</text>`;
+      bars += `<text x="${leftPad}" y="${y + barH + 12}" font-size="9.5" fill="#7a6a66">${ADM_esc(txtDatas)}</text></g>`;
+    });
+    const containerH = Math.min(lista.length, 6) * (barH + gap) + topPad + 6;
+    wrap.innerHTML = `<div style="max-height:${containerH}px; width:${chartW}px; overflow-y:auto; overflow-x:hidden; display:inline-block; text-align:left;">
+      <svg viewBox="0 0 ${chartW} ${chartH + 10}" width="${chartW}" height="${chartH + 10}" style="overflow:visible;${fam}display:block;">${bars}</svg></div>`;
+    foot.textContent = 'Total retirado por item no período, com os dias em que houve retirada. Passe o mouse na barra para ver a quantidade de cada dia.';
 }
 
 // ─────────────────────────────────────────────
