@@ -4158,6 +4158,12 @@ body{background:#fff;color:#000}
       </div>
 
       <div class="panel">
+        <div class="panel-title">Consumo do Refeitório por Item</div>
+        <div class="chart-wrap" id="rfDashChartWrap"></div>
+        <div class="trend-foot">Soma das retiradas de insumos lançadas para o setor Refeitório no período selecionado, por item.</div>
+      </div>
+
+      <div class="panel">
         <div class="panel-title">Saldo de Estoque Atual</div>
         <div class="trend-foot" style="margin-bottom:12px;">Saldo = Última Contagem + Entradas lançadas depois − Requisições lançadas depois. Itens sem nenhuma contagem ainda partem de 0 (menos confiável — cadastre uma contagem inicial assim que possível).</div>
         <input type="text" id="eqSaldoFiltro" placeholder="Buscar produto..." style="max-width:320px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--cream);margin-bottom:10px;">
@@ -4672,6 +4678,7 @@ body{background:#fff;color:#000}
           <button type="button" class="lanc-tab-btn active" data-lanctab="producao">Produção Diária</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="manutencao">Manutenção</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="estoque">Estoque</button>
+          <button type="button" class="lanc-tab-btn" data-lanctab="refeitorio">Refeitório</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="prodproc">Produtividade & Processos</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="maquinas">Máquinas</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="produtos">Produtos</button>
@@ -5218,6 +5225,44 @@ body{background:#fff;color:#000}
         </div>
 
         <!-- ── ABA SETORES ─────────────────────────────────────── -->
+        <!-- Refeitório: retirada de insumos do estoque para o refeitório (gravada em estoque_requisicoes com setor REFEITÓRIO) -->
+        <div id="lancPanelRefeitorio" class="panel" style="display:none;">
+          <div class="panel-title">Refeitório · Retirada de Insumos</div>
+          <form id="rfForm" class="lanc-form">
+            <div class="lanc-field">
+              <label>Data da Retirada</label>
+              <input type="date" id="rfData" required>
+            </div>
+            <div class="lanc-field">
+              <label>Data de Emissão</label>
+              <input type="date" id="rfDataEmissao">
+            </div>
+            <div class="lanc-field">
+              <label>Setor</label>
+              <input type="text" value="REFEITÓRIO" disabled>
+            </div>
+            <div class="lanc-field">
+              <label>Líder</label>
+              <input type="text" id="rfLider" placeholder="Nome de quem assinou/retirou">
+            </div>
+            <div class="lanc-field span-3">
+              <div id="rfItems" class="lanc-items"></div>
+              <button type="button" class="lanc-add-item-btn" id="rfAddBtn">+ Adicionar item</button>
+            </div>
+            <div class="lanc-submit-row">
+              <button type="submit" class="lanc-submit-btn" id="rfSubmitBtn">Salvar Lançamento</button>
+              <span class="lanc-feedback" id="rfFeedback"></span>
+            </div>
+          </form>
+          <div class="panel-title" style="margin-top:28px;">Últimas retiradas do Refeitório</div>
+          <div class="table-wrap" style="max-height:340px;">
+            <table class="detail">
+              <thead><tr><th>Data</th><th>Item</th><th class="center">Qtd. Liberada</th><th>Unidade</th><th>Líder</th></tr></thead>
+              <tbody id="rfHistTbody"><tr><td colspan="5">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
         <div id="lancPanelSetores" class="panel" style="display:none;">
           <div class="panel-title">Cadastro de Setores</div>
           <div class="trend-foot" style="margin-bottom:12px;">Registre os setores da produção e seus respectivos líderes. Os setores cadastrados aqui são utilizados como referência nos lançamentos de produção diária.</div>
@@ -11116,6 +11161,8 @@ document.querySelectorAll('.lanc-tab-btn').forEach(btn=>{
     document.getElementById('lancPanelMaquinas').style.display = tab === 'maquinas' ? 'block' : 'none';
     document.getElementById('lancPanelProdutos').style.display = tab === 'produtos' ? 'block' : 'none';
     document.getElementById('lancPanelSetores').style.display = tab === 'setores' ? 'block' : 'none';
+    document.getElementById('lancPanelRefeitorio').style.display = tab === 'refeitorio' ? 'block' : 'none';
+    if(tab === 'refeitorio') RF_init();
     if(tab === 'estoque') EQ_populateDropdowns();
     if(tab === 'producao') LANC_populateDropdowns();
     if(tab === 'prodproc') PPL_init();
@@ -13516,6 +13563,7 @@ async function EQ_DASH_loadData(){
     EQ_DASH_renderLowStock();
     EQ_DASH_renderMinimosPanel();
     EQ_DASH_renderSaldoAtual();
+    RF_DASH_render(requisicoesTodasRes.data || [], ini, fim);
     infoEl.textContent = `${resultado.length} insumo(s) no período`;
   }catch(err){
     console.error('Erro ao carregar painel de estoque:', err);
@@ -23788,6 +23836,153 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 /* ══ FIM MÓDULO REGISTRO DE PERDAS ══ */
 
+
+// ─────────────────────────────────────────────
+// REFEITÓRIO — lançamento de retiradas + consumo no Almoxarifado
+// ─────────────────────────────────────────────
+// As retiradas vão para estoque_requisicoes com setor REFEITÓRIO, então também entram no saldo e no histórico de Estoque.
+const RF_SETOR = 'REFEITÓRIO';
+function RF_ehRefeitorio(setor){
+  return String(setor || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().startsWith('REFEIT');
+}
+function RF_createRow(){
+  const row = document.createElement('div');
+  row.className = 'lanc-item';
+  row.innerHTML = `
+    <div class="lanc-item-header">
+      <span class="lanc-item-title">Item</span>
+      <button type="button" class="lanc-item-remove" data-remove>Remover</button>
+    </div>
+    <div class="lanc-item-grid">
+      <div class="lanc-field span-2">
+        <label>Item</label>
+        <input type="text" class="rf-item" list="eqItemList" placeholder="Nome do insumo" required>
+      </div>
+      <div class="lanc-field">
+        <label>Unidade</label>
+        <input type="text" class="rf-unidade" list="lpUnidadeListEstoque" placeholder="Ex: Kg, Litro, Pacote">
+      </div>
+      <div class="lanc-field">
+        <label>Qtd. Solicitada</label>
+        <input type="number" step="0.01" class="rf-qtd-sol" placeholder="Opcional">
+      </div>
+      <div class="lanc-field">
+        <label>Qtd. Liberada</label>
+        <input type="number" step="0.01" class="rf-qtd-lib" required>
+      </div>
+      <div class="lanc-field span-3">
+        <label>Observação</label>
+        <textarea class="rf-obs" placeholder="Opcional"></textarea>
+      </div>
+    </div>`;
+  row.querySelector('[data-remove]').addEventListener('click', ()=>{ row.remove(); EQ_updateItemNumbers('rfItems'); });
+  return row;
+}
+function RF_addItem(){
+  document.getElementById('rfItems').appendChild(RF_createRow());
+  EQ_updateItemNumbers('rfItems');
+}
+async function RF_loadHist(){
+  const tb = document.getElementById('rfHistTbody');
+  try{
+    const { data, error } = await LANC_getClient().from('estoque_requisicoes').select('*').order('data', { ascending:false }).limit(400);
+    if(error) throw error;
+    const linhas = (data || []).filter(r => RF_ehRefeitorio(r.setor)).slice(0, 25);
+    tb.innerHTML = linhas.length ? linhas.map(r => {
+      const [y, m, d] = String(r.data).split('-');
+      return `<tr><td>${d}/${m}/${y}</td><td>${ADM_esc(r.item)}</td><td class="center">${EQ_DASH_fmtNum(r.quantidade_liberada)}</td><td>${ADM_esc(r.unidade || '')}</td><td>${ADM_esc(r.lider || '')}</td></tr>`;
+    }).join('') : '<tr><td colspan="5">Nenhuma retirada lançada para o Refeitório.</td></tr>';
+  }catch(e){
+    tb.innerHTML = '<tr><td colspan="5">Não foi possível carregar o histórico.</td></tr>';
+  }
+}
+let RF_inited = false;
+function RF_init(){
+  if(typeof EQ_populateDropdowns === 'function') EQ_populateDropdowns(); // preenche as listas de item e unidade
+  if(!RF_inited){
+    RF_inited = true;
+    RF_addItem();
+    document.getElementById('rfAddBtn').addEventListener('click', RF_addItem);
+    document.getElementById('rfForm').addEventListener('submit', RF_save);
+  }
+  EQ_setDefaultDate('rfData');
+  RF_loadHist();
+}
+async function RF_save(ev){
+  ev.preventDefault();
+  const fb = document.getElementById('rfFeedback');
+  const btn = document.getElementById('rfSubmitBtn');
+  const data = document.getElementById('rfData').value;
+  if(!data){ fb.textContent = '⚠ Preencha a Data da Retirada antes de salvar.'; fb.className = 'lanc-feedback err'; return; }
+  const dataEmissao = document.getElementById('rfDataEmissao').value;
+  const lider = document.getElementById('rfLider').value.trim();
+  const payloads = [];
+  for(const row of document.querySelectorAll('#rfItems .lanc-item')){
+    const item = row.querySelector('.rf-item').value.trim();
+    const lib = row.querySelector('.rf-qtd-lib').value;
+    if(!item || lib === ''){ fb.textContent = '⚠ Cada item precisa ter Item e Qtd. Liberada preenchidos.'; fb.className = 'lanc-feedback err'; return; }
+    const sol = row.querySelector('.rf-qtd-sol').value;
+    payloads.push({
+      data, data_emissao: dataEmissao || null, setor: RF_SETOR, lider: lider || null, item,
+      unidade: normalizeUnitDisplay(row.querySelector('.rf-unidade').value) || null,
+      quantidade_solicitada: sol !== '' ? parseFloat(sol) : null,
+      quantidade_liberada: parseFloat(lib),
+      observacao: row.querySelector('.rf-obs').value.trim() || null
+    });
+  }
+  if(!payloads.length){ fb.textContent = '⚠ Adicione pelo menos 1 item.'; fb.className = 'lanc-feedback err'; return; }
+  btn.disabled = true; fb.textContent = 'Salvando ' + payloads.length + ' item(ns)...'; fb.className = 'lanc-feedback';
+  try{
+    const { error } = await LANC_getClient().from('estoque_requisicoes').insert(payloads);
+    if(error) throw error;
+    fb.textContent = `✓ ${payloads.length} item(ns) salvos com sucesso!`; fb.className = 'lanc-feedback ok';
+    document.getElementById('rfItems').innerHTML = '';
+    RF_addItem();
+    EQ_KNOWN_ITEMS = null;
+    RF_loadHist();
+  }catch(err){
+    fb.textContent = '⚠ Erro ao salvar: ' + (err.message || err); fb.className = 'lanc-feedback err';
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+// Gráfico do Almoxarifado: consumo do Refeitório por item no período (barras horizontais, maior no topo)
+function RF_DASH_render(requisicoes, ini, fim){
+  const wrap = document.getElementById('rfDashChartWrap');
+  if(!wrap) return;
+  const porItem = {};
+  requisicoes.forEach(r => {
+    if(!RF_ehRefeitorio(r.setor) || r.data < ini || r.data > fim) return;
+    const chave = r.item + '||' + (r.unidade || '');
+    if(!porItem[chave]) porItem[chave] = { item: r.item, unidade: r.unidade || '', total: 0 };
+    porItem[chave].total += Number(r.quantidade_liberada || 0);
+  });
+  const lista = Object.values(porItem).sort((a, b) => a.total - b.total);
+  if(!lista.length){
+    wrap.innerHTML = '<div class="empty-state"><span class="empty-icon">🍽</span>Nenhuma retirada do Refeitório no período selecionado.</div>';
+    return;
+  }
+  const barH = 20, gap = 10, leftPad = 210, rightPad = 150, topPad = 8;
+  const chartW = getResponsiveChartW('rfDashChartWrap', 820);
+  const barWmax = chartW - leftPad - rightPad;
+  const chartH = lista.length * (barH + gap) + topPad;
+  const maxVal = Math.max(...lista.map(r => r.total), 1);
+  let bars = '';
+  lista.forEach((r, i) => {
+    const y = topPad + i * (barH + gap);
+    const w = Math.max((r.total / maxVal) * barWmax, 2);
+    bars += `<text x="${leftPad - 10}" y="${y + barH / 2 + 4}" font-size="10.5" fill="#2a1a1a" text-anchor="end" font-weight="600">${ADM_esc(truncateProdLabel(r.item, 24))}<title>${ADM_esc(r.item)}</title></text>`;
+    bars += `<rect x="${leftPad}" y="${y}" width="${barWmax}" height="${barH}" fill="#f3d9d0" stroke="#e0a89a" stroke-width="1" rx="5"/>`;
+    bars += `<rect x="${leftPad}" y="${y}" width="${w}" height="${barH}" fill="var(--red)" rx="5"/>`;
+    bars += `<text x="${leftPad + barWmax + 8}" y="${y + barH / 2 + 4}" font-size="10.5" fill="var(--red)" font-weight="700">${EQ_DASH_fmtNum(r.total)} ${ADM_esc(r.unidade)}</text>`;
+  });
+  const containerH = Math.min(lista.length, 6) * (barH + gap) + topPad + 6;
+  wrap.innerHTML = `
+    <div style="max-height:${containerH}px; width:${chartW}px; overflow-y:auto; overflow-x:hidden; display:inline-block; text-align:left;">
+      <svg viewBox="0 0 ${chartW} ${chartH + 10}" width="${chartW}" height="${chartH + 10}" style="overflow:visible;font-family:'Inter',Arial,sans-serif;display:block;">${bars}</svg>
+    </div>`;
+}
 
 // ─────────────────────────────────────────────
 // MÓDULO CONTROLE DE ABSENTEÍSMO
