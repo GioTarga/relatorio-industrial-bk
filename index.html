@@ -1516,6 +1516,39 @@ body{background:#fff;color:#000}
 
 
 #page-pcp-estoque .print-header .ph-title{font-size:14px;font-weight:700;text-align:center}
+  #page-mapa-rendimentos .mr-row{ display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+  #page-mapa-rendimentos .mr-field{ display:flex; flex-direction:column; gap:4px; }
+  #page-mapa-rendimentos .mr-grow{ flex:1 1 360px; }
+  #page-mapa-rendimentos .mr-field label, #page-mapa-rendimentos .mr-label{ font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); font-weight:700; }
+  #page-mapa-rendimentos .mr-label{ margin:6px 0; }
+  #page-mapa-rendimentos input, #page-mapa-rendimentos select{ padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:13.5px; background:#fff; font-family:inherit; }
+  #page-mapa-rendimentos .mr-etapa{ display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+  #page-mapa-rendimentos .mr-etapa .mr-seta{ color:var(--ink-soft); font-weight:700; }
+  #page-mapa-rendimentos .mr-etapa input[type=number]{ width:110px; }
+  #page-mapa-rendimentos .mr-etapa select{ min-width:140px; }
+  #page-mapa-rendimentos .mr-etapa input.mr-nome-livre{ width:150px; }
+  #page-mapa-rendimentos .mr-x{ background:none; border:0; color:var(--red); font-size:18px; cursor:pointer; line-height:1; }
+  #page-mapa-rendimentos .mr-btn{ background:var(--red); color:#fff; border:0; border-radius:8px; padding:9px 18px; font-weight:700; cursor:pointer; }
+  #page-mapa-rendimentos .mr-btn:disabled{ opacity:.5; cursor:default; }
+  #page-mapa-rendimentos .mr-btn-sec{ background:#fff; color:var(--red); border:1px solid var(--red); border-radius:8px; padding:8px 14px; font-weight:700; cursor:pointer; font-size:12.5px; }
+  #page-mapa-rendimentos .mr-actions{ display:flex; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap; }
+  #page-mapa-rendimentos .mr-feedback{ font-size:12.5px; font-weight:600; }
+  #page-mapa-rendimentos .mr-feedback.ok{ color:#2e7d4f; } #page-mapa-rendimentos .mr-feedback.err{ color:var(--red); }
+  #page-mapa-rendimentos .mr-toolbar{ display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+  #page-mapa-rendimentos .mr-toolbar input{ flex:1 1 260px; }
+  #page-mapa-rendimentos .mr-table-wrap{ max-height:560px; overflow:auto; }
+  #page-mapa-rendimentos table.mr-table{ width:100%; border-collapse:collapse; font-size:13px; }
+  #page-mapa-rendimentos .mr-table th{ position:sticky; top:0; background:var(--paper); text-align:left; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); padding:10px 12px; border-bottom:2px solid var(--line); }
+  #page-mapa-rendimentos .mr-table td{ padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+  #page-mapa-rendimentos .mr-table tr:nth-child(even) td{ background:var(--cream); }
+  #page-mapa-rendimentos .mr-cadeia{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  #page-mapa-rendimentos .mr-chip{ background:#f3e1e1; color:var(--red); border-radius:10px; padding:2px 10px; font-weight:700; white-space:nowrap; }
+  #page-mapa-rendimentos .mr-chip.vazio{ background:#eee; color:#888; font-weight:600; }
+  #page-mapa-rendimentos .mr-chip.base{ background:var(--red); color:#fff; }
+  #page-mapa-rendimentos .mr-pend{ color:var(--ink-soft); font-style:italic; }
+  #page-mapa-rendimentos .mr-vazio{ color:var(--ink-soft); text-align:center; padding:24px 0; }
+  #page-mapa-rendimentos .mr-acoes{ display:flex; gap:6px; white-space:nowrap; }
+  #page-mapa-rendimentos .mr-obs{ display:block; font-size:11.5px; color:var(--ink-soft); margin-top:3px; }
 </style>
 
 </style>
@@ -3078,6 +3111,10 @@ body{background:#fff;color:#000}
       <button class="nav-item" data-page="rastreamento">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         Rastreamento
+      </button>
+      <button class="nav-item" data-page="mapa-rendimentos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
+        Mapa de Rendimentos
       </button>
       <button class="nav-item" data-page="absenteismo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
@@ -5601,6 +5638,71 @@ body{background:#fff;color:#000}
     </div>
   </div>
 
+  <div id="page-mapa-rendimentos" class="report-page" style="display:none;">
+    <div class="topbar">
+      <div class="brand">
+        <div class="text-block">
+          <div class="eyebrow">Bread King · Produção</div>
+          <h1>Mapa de Rendimentos</h1>
+          <div class="subtitle">Quanto cada massa rende, da massa até o pacote</div>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="label">Produtos com "Massa" no catálogo</div><div class="value" id="mrK1">–</div></div>
+        <div class="kpi-card"><div class="label">Com rendimento coletado</div><div class="value" id="mrK2">–</div></div>
+        <div class="kpi-card warn"><div class="label">Faltam coletar</div><div class="value" id="mrK3">–</div></div>
+      </div>
+
+      <div class="panel" id="mrFormPanel" style="display:none;">
+        <h2 class="panel-title" id="mrFormTitulo">Registrar rendimento</h2>
+        <form id="mrForm" autocomplete="off">
+          <div class="mr-row">
+            <div class="mr-field mr-grow">
+              <label for="mrProduto">Produto (catálogo)</label>
+              <select id="mrProduto" required></select>
+            </div>
+            <div class="mr-field">
+              <label for="mrData">Data da coleta</label>
+              <input type="date" id="mrData">
+            </div>
+          </div>
+          <div class="mr-label">Rendimento de <b>1 massa</b></div>
+          <div id="mrEtapas"></div>
+          <button type="button" class="mr-btn-sec" id="mrAddEtapa">+ Adicionar etapa</button>
+          <div class="mr-field" style="margin-top:12px;">
+            <label for="mrObs">Observação (opcional)</label>
+            <input type="text" id="mrObs" maxlength="200" placeholder="Ex: coleta feita com massa de 12h, bloco de 4,5 kg">
+          </div>
+          <div class="mr-actions">
+            <button type="submit" class="mr-btn" id="mrSalvar">Salvar rendimento</button>
+            <button type="button" class="mr-btn-sec" id="mrCancelar" style="display:none;">Cancelar edição</button>
+            <span id="mrFeedback" class="mr-feedback"></span>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">Mapa por produto</h2>
+        <div class="mr-toolbar">
+          <input type="text" id="mrBusca" placeholder="Buscar produto…">
+          <select id="mrFiltro">
+            <option value="todos">Todos</option>
+            <option value="coletado">Com rendimento</option>
+            <option value="pendente">Faltam coletar</option>
+          </select>
+        </div>
+        <div class="mr-table-wrap">
+          <table class="mr-table">
+            <thead><tr><th>Produto</th><th>Setor</th><th>Rendimento (1 massa =)</th><th>Coleta</th><th></th></tr></thead>
+            <tbody id="mrTbody"><tr><td colspan="5" class="mr-vazio">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="page-usuarios-admin" class="report-page" style="display:none;">
     <div class="topbar">
       <div class="brand">
@@ -6102,6 +6204,8 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     document.getElementById('page-lancamento').style.display = target === 'lancamento' ? 'block' : 'none';
     document.getElementById('page-expedicao').style.display = target === 'expedicao' ? 'block' : 'none';
     document.getElementById('page-rastreamento').style.display = target === 'rastreamento' ? 'block' : 'none';
+    document.getElementById('page-mapa-rendimentos').style.display = target === 'mapa-rendimentos' ? 'block' : 'none';
+    if(target === 'mapa-rendimentos' && typeof MR_load === 'function') MR_load();
     document.getElementById('page-absenteismo').style.display = target === 'absenteismo' ? 'block' : 'none';
     if(target === 'absenteismo' && typeof ABS_load === 'function') ABS_load();
     document.getElementById('page-usuarios-admin').style.display = target === 'usuarios-admin' ? 'block' : 'none';
@@ -24010,6 +24114,185 @@ function RF_DASH_draw(){
       <svg viewBox="0 0 ${chartW} ${chartH + 10}" width="${chartW}" height="${chartH + 10}" style="overflow:visible;${fam}display:block;">${bars}</svg></div>`;
     foot.textContent = 'Total retirado por item no período, com os dias em que houve retirada. Passe o mouse na barra para ver a quantidade de cada dia.';
 }
+
+// ─────────────────────────────────────────────
+// MÓDULO MAPA DE RENDIMENTOS
+// ─────────────────────────────────────────────
+// Catálogo: produtos de produtos_producao com "MASSA" no nome. Cada linha de mapa_rendimentos
+// guarda as etapas de 1 massa (ex.: Blocos 11, Telas 33…) em ordem; etapa sem valor = ainda não coletada.
+const MR_ETAPAS_SUGERIDAS = ['Blocos', 'Telas', 'Carrinho', 'Unidades', 'Pacotes', 'Caixas'];
+const MR_ETAPAS_PADRAO = ['Blocos', 'Telas', 'Carrinho', 'Unidades', 'Pacotes'];
+let MR_PRODUTOS = [];
+let MR_MAPA = {};
+let MR_EDITANDO = null;
+function MR_fmt(v){ return Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 }); }
+function MR_br(iso){ return iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4) : '–'; }
+function MR_podeEditar(){ return BK_podeGravar('insert', 'mapa_rendimentos'); }
+async function MR_load(){
+  try{
+    const client = getSupabaseClient();
+    const [prod, mapa] = await Promise.all([
+      client.from('produtos_producao').select('codigo, descricao, setor').ilike('descricao', '%massa%').order('descricao'),
+      client.from('mapa_rendimentos').select('*')
+    ]);
+    if(prod.error) throw prod.error;
+    if(mapa.error) throw mapa.error;
+    MR_PRODUTOS = prod.data || [];
+    MR_MAPA = {};
+    (mapa.data || []).forEach(r => { MR_MAPA[r.codigo] = r; });
+    document.getElementById('mrFormPanel').style.display = MR_podeEditar() ? '' : 'none';
+    MR_fillProdutos();
+    if(!document.querySelector('#mrEtapas .mr-etapa')) MR_resetEtapas();
+    MR_render();
+  }catch(e){
+    document.getElementById('mrTbody').innerHTML = '<tr><td colspan="5" class="mr-vazio">Não foi possível carregar o mapa.</td></tr>';
+  }
+}
+function MR_fillProdutos(selecionado){
+  const sel = document.getElementById('mrProduto');
+  const atual = selecionado || sel.value;
+  sel.innerHTML = '<option value="">Selecione o produto…</option>' + MR_PRODUTOS.map(p =>
+    `<option value="${ADM_esc(p.codigo)}">${ADM_esc(p.descricao)}${MR_MAPA[p.codigo] ? ' ✓' : ''}</option>`).join('');
+  sel.value = atual || '';
+}
+function MR_addEtapa(nome, valor){
+  const box = document.getElementById('mrEtapas');
+  const opts = MR_ETAPAS_SUGERIDAS.slice();
+  const ehOutra = nome && !opts.includes(nome);
+  const div = document.createElement('div');
+  div.className = 'mr-etapa';
+  div.innerHTML = `<span class="mr-seta">=</span>
+    <input type="number" class="mr-valor" min="0" step="any" placeholder="a coletar" value="${valor != null && valor !== '' ? ADM_esc(valor) : ''}">
+    <select class="mr-nome">${opts.map(o => `<option${o === nome ? ' selected' : ''}>${o}</option>`).join('')}<option value="__outra"${ehOutra ? ' selected' : ''}>Outra…</option></select>
+    <input type="text" class="mr-nome-livre" maxlength="30" placeholder="Nome da etapa" style="display:${ehOutra ? '' : 'none'}" value="${ehOutra ? ADM_esc(nome) : ''}">
+    <button type="button" class="mr-x" title="Remover etapa">×</button>`;
+  box.appendChild(div);
+}
+function MR_resetEtapas(etapas){
+  document.getElementById('mrEtapas').innerHTML = '';
+  (etapas && etapas.length ? etapas : MR_ETAPAS_PADRAO.map(n => ({ nome: n, qtd: null }))).forEach(e => MR_addEtapa(e.nome, e.qtd));
+}
+function MR_lerEtapas(){
+  return [...document.querySelectorAll('#mrEtapas .mr-etapa')].map(div => {
+    const s = div.querySelector('.mr-nome').value;
+    const nome = s === '__outra' ? div.querySelector('.mr-nome-livre').value.trim() : s;
+    const v = div.querySelector('.mr-valor').value;
+    return { nome, qtd: v === '' ? null : Number(v) };
+  }).filter(e => e.nome);
+}
+function MR_cadeiaHtml(etapas){
+  let h = '<span class="mr-chip base">1 Massa</span>';
+  etapas.forEach(e => {
+    h += '<span>=</span>' + (e.qtd == null
+      ? `<span class="mr-chip vazio">a coletar · ${ADM_esc(e.nome)}</span>`
+      : `<span class="mr-chip">${MR_fmt(e.qtd)} ${ADM_esc(e.nome)}</span>`);
+  });
+  return h;
+}
+function MR_render(){
+  const mapeados = MR_PRODUTOS.filter(p => MR_MAPA[p.codigo]).length;
+  document.getElementById('mrK1').textContent = MR_PRODUTOS.length;
+  document.getElementById('mrK2').textContent = mapeados;
+  document.getElementById('mrK3').textContent = MR_PRODUTOS.length - mapeados;
+  const q = document.getElementById('mrBusca').value.trim().toUpperCase();
+  const f = document.getElementById('mrFiltro').value;
+  const pode = MR_podeEditar();
+  const lista = MR_PRODUTOS.filter(p => {
+    if(q && !(p.descricao || '').toUpperCase().includes(q) && !(p.codigo || '').toUpperCase().includes(q)) return false;
+    if(f === 'coletado') return !!MR_MAPA[p.codigo];
+    if(f === 'pendente') return !MR_MAPA[p.codigo];
+    return true;
+  });
+  const tb = document.getElementById('mrTbody');
+  if(!lista.length){ tb.innerHTML = '<tr><td colspan="5" class="mr-vazio">Nenhum produto encontrado.</td></tr>'; return; }
+  tb.innerHTML = lista.map(p => {
+    const m = MR_MAPA[p.codigo];
+    const cod = ADM_esc(p.codigo);
+    const acoes = !pode ? '' : m
+      ? `<div class="mr-acoes"><button class="mr-btn-sec" data-mr="editar" data-cod="${cod}">Editar</button><button class="mr-btn-sec" data-mr="excluir" data-cod="${cod}">Excluir</button></div>`
+      : `<button class="mr-btn-sec" data-mr="editar" data-cod="${cod}">Registrar</button>`;
+    return `<tr><td>${ADM_esc(p.descricao)}${m && m.observacao ? `<span class="mr-obs">${ADM_esc(m.observacao)}</span>` : ''}</td>
+      <td>${ADM_esc(p.setor || '–')}</td>
+      <td>${m ? `<div class="mr-cadeia">${MR_cadeiaHtml(m.etapas || [])}</div>` : '<span class="mr-pend">Ainda não coletado</span>'}</td>
+      <td>${m ? MR_br(m.data_coleta) : '–'}</td><td>${acoes}</td></tr>`;
+  }).join('');
+}
+function MR_editar(cod){
+  const m = MR_MAPA[cod];
+  MR_EDITANDO = m ? m.id : null;
+  document.getElementById('mrFormTitulo').textContent = m ? 'Editar rendimento' : 'Registrar rendimento';
+  MR_fillProdutos(cod);
+  document.getElementById('mrProduto').disabled = !!m;
+  document.getElementById('mrData').value = m && m.data_coleta ? m.data_coleta : '';
+  document.getElementById('mrObs').value = m && m.observacao ? m.observacao : '';
+  MR_resetEtapas(m ? m.etapas : null);
+  document.getElementById('mrCancelar').style.display = '';
+  document.getElementById('mrFormPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function MR_limparForm(){
+  MR_EDITANDO = null;
+  document.getElementById('mrFormTitulo').textContent = 'Registrar rendimento';
+  document.getElementById('mrProduto').disabled = false;
+  document.getElementById('mrProduto').value = '';
+  document.getElementById('mrData').value = '';
+  document.getElementById('mrObs').value = '';
+  MR_resetEtapas();
+  document.getElementById('mrCancelar').style.display = 'none';
+}
+async function MR_salvar(ev){
+  ev.preventDefault();
+  const fb = document.getElementById('mrFeedback'), btn = document.getElementById('mrSalvar');
+  const cod = document.getElementById('mrProduto').value;
+  const prod = MR_PRODUTOS.find(p => p.codigo === cod);
+  const etapas = MR_lerEtapas();
+  if(!prod){ fb.textContent = 'Escolha o produto.'; fb.className = 'mr-feedback err'; return; }
+  if(!etapas.length){ fb.textContent = 'Adicione ao menos uma etapa.'; fb.className = 'mr-feedback err'; return; }
+  const dados = {
+    codigo: prod.codigo, produto: prod.descricao, etapas,
+    data_coleta: document.getElementById('mrData').value || null,
+    observacao: document.getElementById('mrObs').value.trim() || null,
+    updated_at: new Date().toISOString()
+  };
+  btn.disabled = true; fb.textContent = 'Salvando…'; fb.className = 'mr-feedback';
+  try{
+    const client = getSupabaseClient();
+    const r = MR_EDITANDO
+      ? await client.from('mapa_rendimentos').update(dados).eq('id', MR_EDITANDO)
+      : await client.from('mapa_rendimentos').insert([dados]);
+    if(r.error) throw r.error;
+    fb.textContent = '✓ Rendimento salvo.'; fb.className = 'mr-feedback ok';
+    MR_limparForm();
+    await MR_load();
+  }catch(err){
+    fb.textContent = '⚠ Erro ao salvar: ' + (err.message || err); fb.className = 'mr-feedback err';
+  }finally{
+    btn.disabled = false;
+  }
+}
+async function MR_excluir(cod){
+  const m = MR_MAPA[cod]; if(!m) return;
+  if(!confirm('Excluir o rendimento de "' + m.produto + '"?')) return;
+  const r = await getSupabaseClient().from('mapa_rendimentos').delete().eq('id', m.id);
+  if(r.error){ alert('Erro ao excluir: ' + r.error.message); return; }
+  await MR_load();
+}
+document.addEventListener('click', e => {
+  const t = e.target;
+  if(t.id === 'mrAddEtapa') MR_addEtapa('Blocos', null);
+  else if(t.id === 'mrCancelar') MR_limparForm();
+  else if(t.classList && t.classList.contains('mr-x')) t.closest('.mr-etapa').remove();
+  else if(t.dataset && t.dataset.mr === 'editar') MR_editar(t.dataset.cod);
+  else if(t.dataset && t.dataset.mr === 'excluir') MR_excluir(t.dataset.cod);
+});
+document.addEventListener('change', e => {
+  if(e.target.classList && e.target.classList.contains('mr-nome')){
+    const livre = e.target.parentNode.querySelector('.mr-nome-livre');
+    livre.style.display = e.target.value === '__outra' ? '' : 'none';
+  }
+  if(e.target.id === 'mrFiltro') MR_render();
+});
+document.addEventListener('input', e => { if(e.target.id === 'mrBusca') MR_render(); });
+document.addEventListener('submit', e => { if(e.target.id === 'mrForm') MR_salvar(e); });
 
 // ─────────────────────────────────────────────
 // MÓDULO CONTROLE DE ABSENTEÍSMO
