@@ -5655,6 +5655,8 @@ body{background:#fff;color:#000}
         <div class="kpi-card warn"><div class="label">Faltam coletar</div><div class="value" id="mrK3">–</div></div>
       </div>
 
+      <div id="mrNovoWrap" style="display:none; margin-bottom:16px;"><button type="button" class="mr-btn" id="mrNovo">+ REGISTRAR NOVO RENDIMENTO</button></div>
+
       <div class="panel" id="mrFormPanel" style="display:none;">
         <h2 class="panel-title" id="mrFormTitulo">Registrar rendimento</h2>
         <form id="mrForm" autocomplete="off">
@@ -5677,7 +5679,7 @@ body{background:#fff;color:#000}
           </div>
           <div class="mr-actions">
             <button type="submit" class="mr-btn" id="mrSalvar">Salvar rendimento</button>
-            <button type="button" class="mr-btn-sec" id="mrCancelar" style="display:none;">Cancelar edição</button>
+            <button type="button" class="mr-btn-sec" id="mrCancelar">Cancelar</button>
             <span id="mrFeedback" class="mr-feedback"></span>
           </div>
         </form>
@@ -24125,6 +24127,12 @@ const MR_ETAPAS_PADRAO = ['Blocos', 'Telas', 'Carrinho', 'Unidades', 'Pacotes'];
 let MR_PRODUTOS = [];
 let MR_MAPA = {};
 let MR_EDITANDO = null;
+let MR_FORM_ABERTO = false;
+function MR_abrirForm(abrir){
+  MR_FORM_ABERTO = abrir;
+  document.getElementById('mrFormPanel').style.display = abrir ? '' : 'none';
+  document.getElementById('mrNovoWrap').style.display = !abrir && MR_podeEditar() ? '' : 'none';
+}
 function MR_fmt(v){ return Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 }); }
 function MR_br(iso){ return iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4) : '–'; }
 function MR_podeEditar(){ return BK_podeGravar('insert', 'mapa_rendimentos'); }
@@ -24140,7 +24148,7 @@ async function MR_load(){
     MR_PRODUTOS = prod.data || [];
     MR_MAPA = {};
     (mapa.data || []).forEach(r => { MR_MAPA[r.codigo] = r; });
-    document.getElementById('mrFormPanel').style.display = MR_podeEditar() ? '' : 'none';
+    document.getElementById('mrNovoWrap').style.display = MR_podeEditar() && !MR_FORM_ABERTO ? '' : 'none';
     MR_fillProdutos();
     if(!document.querySelector('#mrEtapas .mr-etapa')) MR_resetEtapas();
     MR_render();
@@ -24203,14 +24211,14 @@ function MR_render(){
     if(f === 'pendente') return !MR_MAPA[p.codigo];
     return true;
   });
+  lista.sort((a, b) => (MR_MAPA[b.codigo] ? 1 : 0) - (MR_MAPA[a.codigo] ? 1 : 0) || a.descricao.localeCompare(b.descricao));
   const tb = document.getElementById('mrTbody');
   if(!lista.length){ tb.innerHTML = '<tr><td colspan="5" class="mr-vazio">Nenhum produto encontrado.</td></tr>'; return; }
   tb.innerHTML = lista.map(p => {
     const m = MR_MAPA[p.codigo];
     const cod = ADM_esc(p.codigo);
-    const acoes = !pode ? '' : m
-      ? `<div class="mr-acoes"><button class="mr-btn-sec" data-mr="editar" data-cod="${cod}">Editar</button><button class="mr-btn-sec" data-mr="excluir" data-cod="${cod}">Excluir</button></div>`
-      : `<button class="mr-btn-sec" data-mr="editar" data-cod="${cod}">Registrar</button>`;
+    const acoes = !pode || !m ? ''
+      : `<div class="mr-acoes"><button class="mr-btn-sec" data-mr="editar" data-cod="${cod}">Editar</button><button class="mr-btn-sec" data-mr="excluir" data-cod="${cod}">Excluir</button></div>`;
     return `<tr><td>${ADM_esc(p.descricao)}${m && m.observacao ? `<span class="mr-obs">${ADM_esc(m.observacao)}</span>` : ''}</td>
       <td>${ADM_esc(p.setor || '–')}</td>
       <td>${m ? `<div class="mr-cadeia">${MR_cadeiaHtml(m.etapas || [])}</div>` : '<span class="mr-pend">Ainda não coletado</span>'}</td>
@@ -24226,7 +24234,7 @@ function MR_editar(cod){
   document.getElementById('mrData').value = m && m.data_coleta ? m.data_coleta : '';
   document.getElementById('mrObs').value = m && m.observacao ? m.observacao : '';
   MR_resetEtapas(m ? m.etapas : null);
-  document.getElementById('mrCancelar').style.display = '';
+  MR_abrirForm(true);
   document.getElementById('mrFormPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 function MR_limparForm(){
@@ -24237,7 +24245,7 @@ function MR_limparForm(){
   document.getElementById('mrData').value = '';
   document.getElementById('mrObs').value = '';
   MR_resetEtapas();
-  document.getElementById('mrCancelar').style.display = 'none';
+  MR_abrirForm(false);
 }
 async function MR_salvar(ev){
   ev.preventDefault();
@@ -24278,7 +24286,8 @@ async function MR_excluir(cod){
 }
 document.addEventListener('click', e => {
   const t = e.target;
-  if(t.id === 'mrAddEtapa') MR_addEtapa('Blocos', null);
+  if(t.id === 'mrNovo'){ MR_limparForm(); MR_abrirForm(true); document.getElementById('mrFormPanel').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  else if(t.id === 'mrAddEtapa') MR_addEtapa('Blocos', null);
   else if(t.id === 'mrCancelar') MR_limparForm();
   else if(t.classList && t.classList.contains('mr-x')) t.closest('.mr-etapa').remove();
   else if(t.dataset && t.dataset.mr === 'editar') MR_editar(t.dataset.cod);
