@@ -114,6 +114,18 @@
   .adm-row-btn:hover{ background:#faf4ea; }
   .adm-row-btn:disabled{ opacity:.45; cursor:not-allowed; }
   @media (max-width:900px){ .adm-form{ grid-template-columns:1fr; } }
+  /* ============ CONTROLE DE ABSENTEÍSMO ============ */
+  #page-absenteismo .abs-sub{ font-size:12px; color:var(--ink-soft); margin-top:6px; font-weight:600; }
+  #page-absenteismo .abs-chart-box{ position:relative; height:300px; }
+  #page-absenteismo .abs-table-wrap{ max-height:460px; overflow-y:auto; }
+  #page-absenteismo table.abs-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  #page-absenteismo .abs-table th{ position:sticky; top:0; background:var(--paper); text-align:left; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); padding:10px 12px; border-bottom:2px solid var(--line); }
+  #page-absenteismo .abs-table td{ padding:10px 12px; border-bottom:1px solid var(--line); }
+  #page-absenteismo .abs-table tr:nth-child(even) td{ background:var(--cream); }
+  #page-absenteismo .abs-tipo{ display:inline-block; padding:2px 10px; border-radius:10px; font-size:11.5px; font-weight:700; }
+  #page-absenteismo .abs-tipo.falta{ background:#f3e1e1; color:var(--red); }
+  #page-absenteismo .abs-tipo.atestado{ background:#fff1de; color:var(--gold); }
+  #page-absenteismo .abs-vazio{ color:var(--ink-soft); text-align:center; padding:24px 0; }
   .nav-item{
     display:flex; align-items:center; gap:10px; text-align:left;
     background:none; border:none; color:#ffe6c9; font-family:inherit;
@@ -3068,6 +3080,10 @@ body{background:#fff;color:#000}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         Rastreamento
       </button>
+      <button class="nav-item" data-page="absenteismo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+        Controle de Absenteísmo
+      </button>
       <button class="nav-item" data-page="usuarios-admin" id="navUsuariosAdmin" style="display:none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Usuário Admin
@@ -5501,6 +5517,39 @@ body{background:#fff;color:#000}
 
 
 
+  <div id="page-absenteismo" class="report-page" style="display:none;">
+    <div class="topbar">
+      <div class="brand">
+        <div class="text-block">
+          <div class="eyebrow">Bread King · Pessoas</div>
+          <h1>Controle de Absenteísmo</h1>
+          <div class="subtitle">Faltas e atestados apurados no ponto</div>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div class="kpi-grid" id="absKpis">
+        <div class="kpi-card"><div class="label">Faltas do dia anterior</div><div class="value" id="absK1">–</div><div class="abs-sub" id="absK1s"></div></div>
+        <div class="kpi-card"><div class="label">Faltas na semana</div><div class="value" id="absK2">–</div><div class="abs-sub" id="absK2s"></div></div>
+        <div class="kpi-card"><div class="label">Faltas no mês</div><div class="value" id="absK3">–</div><div class="abs-sub" id="absK3s"></div></div>
+        <div class="kpi-card warn"><div class="label">Atestados no mês</div><div class="value" id="absK4">–</div><div class="abs-sub" id="absK4s"></div></div>
+      </div>
+      <div class="panel">
+        <h2 class="panel-title">Histórico de faltas por dia</h2>
+        <div class="abs-chart-box"><canvas id="absChart"></canvas></div>
+      </div>
+      <div class="panel">
+        <h2 class="panel-title">Registro de Ausências</h2>
+        <div class="abs-table-wrap">
+          <table class="abs-table">
+            <thead><tr><th>Nome</th><th>Dia</th><th>Falta ou atestado</th></tr></thead>
+            <tbody id="absTbody"><tr><td colspan="3" class="abs-vazio">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="page-usuarios-admin" class="report-page" style="display:none;">
     <div class="topbar">
       <div class="brand">
@@ -5530,9 +5579,9 @@ body{background:#fff;color:#000}
         <h2>Usuários cadastrados</h2>
         <div style="overflow-x:auto;">
           <table class="adm-table">
-            <colgroup><col style="width:30%"><col style="width:20%"><col style="width:13%"><col style="width:16%"><col style="width:21%"></colgroup>
-            <thead><tr><th>Usuário</th><th>Perfil</th><th>Status</th><th>Último acesso</th><th>Ações</th></tr></thead>
-            <tbody id="admTbody"><tr><td colspan="5">Carregando…</td></tr></tbody>
+            <colgroup><col style="width:25%"><col style="width:18%"><col style="width:13%"><col style="width:13%"><col style="width:12%"><col style="width:19%"></colgroup>
+            <thead><tr><th>Usuário</th><th>Perfil</th><th>Status</th><th>Último acesso</th><th>Absenteísmo</th><th>Ações</th></tr></thead>
+            <tbody id="admTbody"><tr><td colspan="6">Carregando…</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -5878,16 +5927,18 @@ body{background:#fff;color:#000}
 const BK_PERFIS = {
   alpha:      { rotulo:'Alpha',                 modulos:'*',                 editar:true,                      excluir:true,  admin:true,
                 resumo:'Acesso total: edita, exclui e gerencia usuários.' },
-  gestao:     { rotulo:'Gerência / Diretoria',  modulos:'*',                 editar:false,                     excluir:false, admin:false,
-                resumo:'Visualiza todos os módulos, sem editar nada. Não vê o Usuário Admin.' },
+  gestao:     { rotulo:'Gerência / Diretoria',  modulos:'*', exceto:['absenteismo'], editar:false,                     excluir:false, admin:false,
+                resumo:'Visualiza todos os módulos, sem editar nada. Não vê o Usuário Admin nem o Controle de Absenteísmo (este só com liberação individual).' },
   conferente: { rotulo:'Conferente',            modulos:['rastreamento'],    editar:['rastreamento_carrinhos'], excluir:false, admin:false,
                 resumo:'Só o módulo Rastreamento: lança e edita, não exclui.' }
 };
-const BK_AUTH = { user:null, nivel:null };
+const BK_AUTH = { user:null, nivel:null, extras:[] };
 function BK_perfil(){ return BK_PERFIS[BK_AUTH.nivel] || null; }
 function BK_podeVer(pagina){
   const p = BK_perfil(); if(!p) return false;
   if(pagina === 'usuarios-admin') return p.admin === true;
+  // 'exceto' = módulos que o perfil não vê, a menos que o Alpha tenha liberado para o usuário (app_metadata.extras)
+  if(p.exceto && p.exceto.includes(pagina)) return BK_AUTH.extras.includes(pagina);
   return p.modulos === '*' || p.modulos.includes(pagina);
 }
 function BK_podeGravar(metodo, tabela){
@@ -6000,6 +6051,8 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     document.getElementById('page-lancamento').style.display = target === 'lancamento' ? 'block' : 'none';
     document.getElementById('page-expedicao').style.display = target === 'expedicao' ? 'block' : 'none';
     document.getElementById('page-rastreamento').style.display = target === 'rastreamento' ? 'block' : 'none';
+    document.getElementById('page-absenteismo').style.display = target === 'absenteismo' ? 'block' : 'none';
+    if(target === 'absenteismo' && typeof ABS_load === 'function') ABS_load();
     document.getElementById('page-usuarios-admin').style.display = target === 'usuarios-admin' ? 'block' : 'none';
     if(target === 'usuarios-admin' && typeof ADM_load === 'function') ADM_load();
     if(target === 'lancamento' && typeof LANC_populateDropdowns === 'function'){
@@ -23737,6 +23790,91 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // ─────────────────────────────────────────────
+// MÓDULO CONTROLE DE ABSENTEÍSMO
+// ─────────────────────────────────────────────
+// Fonte: tabela ausencias (uma linha por colaborador/dia, tipo Falta ou Atestado).
+// Os cards e o gráfico contam só tipo 'Falta'; atestados têm card próprio.
+let ABS_DATA = [];
+let ABS_chart = null;
+function ABS_iso(d){ return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function ABS_br(iso){ const [y, m, d] = iso.split('-'); return d + '/' + m + '/' + y; }
+function ABS_somaDias(d, n){ const x = new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); return x; }
+function ABS_inicioSemana(d){ const dow = (d.getDay() + 6) % 7; return ABS_somaDias(d, -dow); } // segunda-feira
+function ABS_render(){
+  const hoje = new Date();
+  const ontem = ABS_somaDias(hoje, -1);
+  const isoOntem = ABS_iso(ontem);
+  const isoSem = ABS_iso(ABS_inicioSemana(hoje));
+  const isoHoje = ABS_iso(hoje);
+  const prefMes = isoHoje.slice(0, 7);
+  const faltas = ABS_DATA.filter(r => r.tipo === 'Falta');
+  const ultimoLancado = ABS_DATA.reduce((m, r) => r.data > m ? r.data : m, '');
+
+  const k1 = faltas.filter(r => r.data === isoOntem).length;
+  const k2 = faltas.filter(r => r.data >= isoSem && r.data <= isoHoje).length;
+  const k3 = faltas.filter(r => r.data.slice(0, 7) === prefMes).length;
+  const k4 = ABS_DATA.filter(r => r.tipo === 'Atestado' && r.data.slice(0, 7) === prefMes).length;
+  document.getElementById('absK1').textContent = k1;
+  document.getElementById('absK2').textContent = k2;
+  document.getElementById('absK3').textContent = k3;
+  document.getElementById('absK4').textContent = k4;
+  document.getElementById('absK1s').textContent = ABS_br(isoOntem) + (ultimoLancado && ultimoLancado < isoOntem ? ' · sem lançamento ainda' : '');
+  document.getElementById('absK2s').textContent = ABS_br(isoSem) + ' a ' + ABS_br(isoHoje);
+  document.getElementById('absK3s').textContent = hoje.toLocaleDateString('pt-BR', { month:'long', year:'numeric' });
+  document.getElementById('absK4s').textContent = hoje.toLocaleDateString('pt-BR', { month:'long', year:'numeric' });
+
+  // Gráfico: últimos 30 dias (dias sem registro aparecem como 0)
+  const dias = [];
+  for(let i = 29; i >= 0; i--) dias.push(ABS_iso(ABS_somaDias(hoje, -i)));
+  const porDia = {};
+  faltas.forEach(r => { porDia[r.data] = (porDia[r.data] || 0) + 1; });
+  const valores = dias.map(d => porDia[d] || 0);
+  const ctx = document.getElementById('absChart');
+  if(ABS_chart) ABS_chart.destroy();
+  if(typeof Chart !== 'undefined'){
+    ABS_chart = new Chart(ctx, {
+      type: 'line',
+      plugins: window.ChartDataLabels ? [window.ChartDataLabels] : [],
+      data: {
+        labels: dias.map(d => d.slice(8) + '/' + d.slice(5, 7)),
+        datasets: [{
+          label: 'Faltas', data: valores,
+          borderColor: '#A10101', backgroundColor: 'rgba(161,1,1,0.10)', fill: true,
+          borderWidth: 2.5, tension: 0, pointRadius: 3.5, pointBackgroundColor: '#A10101', pointBorderColor: '#fff', pointBorderWidth: 1.5
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        layout: { padding: { top: 18 } },
+        scales: {
+          y: { beginAtZero: true, grace: '20%', ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.06)' } },
+          x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 15 } }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: c => c.parsed.y + (c.parsed.y === 1 ? ' falta' : ' faltas') } },
+          datalabels: { display: c => c.dataset.data[c.dataIndex] > 0, align: 'top', anchor: 'end', color: '#6e0000', font: { weight: 'bold', size: 11 } }
+        }
+      }
+    });
+  }
+
+  // Tabela: mais recentes primeiro, depois por nome
+  const linhas = [...ABS_DATA].sort((a, b) => b.data.localeCompare(a.data) || a.nome.localeCompare(b.nome));
+  document.getElementById('absTbody').innerHTML = linhas.length
+    ? linhas.map(r => `<tr><td>${ADM_esc(r.nome)}</td><td>${ABS_br(r.data)}</td><td><span class="abs-tipo ${r.tipo === 'Atestado' ? 'atestado' : 'falta'}">${ADM_esc(r.tipo)}</span></td></tr>`).join('')
+    : '<tr><td colspan="3" class="abs-vazio">Nenhuma ausência registrada.</td></tr>';
+}
+async function ABS_load(){
+  try{
+    ABS_DATA = await sbFetchAll('ausencias', 'data');
+    ABS_render();
+  }catch(e){
+    document.getElementById('absTbody').innerHTML = '<tr><td colspan="3" class="abs-vazio">Não foi possível carregar os registros.</td></tr>';
+  }
+}
+
+// ─────────────────────────────────────────────
 // LOGIN — Supabase Auth (e-mail + senha)
 // ─────────────────────────────────────────────
 // O nível de acesso (alpha | gestao | conferente) vem de app_metadata.nivel, que só o servidor altera.
@@ -23747,6 +23885,7 @@ function BK_authApply(session){
   const u = session && session.user ? session.user : null;
   BK_AUTH.user = u;
   BK_AUTH.nivel = u ? ((u.app_metadata && u.app_metadata.nivel) || null) : null;
+  BK_AUTH.extras = (u && u.app_metadata && Array.isArray(u.app_metadata.extras)) ? u.app_metadata.extras : [];
   const perfil = BK_perfil();
   if(u && !perfil){
     BK_semPerfil = true;
@@ -23858,7 +23997,7 @@ function ADM_fmtData(iso){
 let ADM_users = [];
 function ADM_render(){
   const tb = document.getElementById('admTbody');
-  if(!ADM_users.length){ tb.innerHTML = '<tr><td colspan="5">Nenhum usuário cadastrado.</td></tr>'; return; }
+  if(!ADM_users.length){ tb.innerHTML = '<tr><td colspan="6">Nenhum usuário cadastrado.</td></tr>'; return; }
   const meuId = BK_AUTH.user && BK_AUTH.user.id;
   tb.innerHTML = ADM_users.map(u => {
     const eu = u.id === meuId;
@@ -23867,6 +24006,7 @@ function ADM_render(){
       <td><select class="adm-perfil-sel" data-acao="perfil"${eu ? ' disabled' : ''}>${ADM_opcoesPerfil(u.nivel)}</select></td>
       <td><span class="adm-pill ${u.ativo ? 'on' : 'off'}">${u.ativo ? 'Ativo' : 'Desativado'}</span>${u.trocar_senha ? '<br><span class="adm-pill pend">Senha provisória</span>' : ''}</td>
       <td>${ADM_esc(ADM_fmtData(u.ultimo_acesso))}</td>
+      <td>${u.nivel === 'alpha' ? '<span class="adm-user-mail">sempre</span>' : `<label><input type="checkbox" data-acao="extra" data-modulo="absenteismo"${(u.extras || []).includes('absenteismo') ? ' checked' : ''}> Pode ver</label>`}</td>
       <td><button type="button" class="adm-row-btn" data-acao="reset">Redefinir senha</button><button type="button" class="adm-row-btn" data-acao="ativo"${eu ? ' disabled' : ''}>${u.ativo ? 'Desativar' : 'Ativar'}</button></td>
     </tr>`;
   }).join('');
@@ -23878,7 +24018,7 @@ async function ADM_load(){
     ADM_users = (await ADM_call({ action:'list' })).users;
     ADM_render();
   }catch(e){
-    document.getElementById('admTbody').innerHTML = `<tr><td colspan="5">${ADM_esc(e.message)}</td></tr>`;
+    document.getElementById('admTbody').innerHTML = `<tr><td colspan="6">${ADM_esc(e.message)}</td></tr>`;
   }
 }
 let ADM_resetId = null;
@@ -23910,6 +24050,17 @@ document.addEventListener('DOMContentLoaded', ()=>{
     if(!sel) return;
     const id = sel.closest('tr').dataset.id;
     try{ await ADM_call({ action:'update', id, nivel: sel.value }); ADM_msg('Perfil atualizado. Vale no próximo acesso do usuário.', 'ok'); }
+    catch(e){ ADM_msg(e.message, 'err'); }
+    await ADM_load();
+  });
+  tb.addEventListener('change', async ev=>{
+    const cb = ev.target.closest('input[data-acao="extra"]');
+    if(!cb) return;
+    const id = cb.closest('tr').dataset.id;
+    const u = ADM_users.find(x => x.id === id);
+    const extras = new Set(u.extras || []);
+    if(cb.checked) extras.add(cb.dataset.modulo); else extras.delete(cb.dataset.modulo);
+    try{ await ADM_call({ action:'update', id, extras:[...extras] }); ADM_msg('Acesso atualizado. Vale no próximo acesso do usuário.', 'ok'); }
     catch(e){ ADM_msg(e.message, 'err'); }
     await ADM_load();
   });
