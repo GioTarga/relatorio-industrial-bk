@@ -686,8 +686,25 @@
   .comparativo-row{ display:flex; gap:16px; align-items:stretch; }
   .comparativo-row .panel{ margin:0; }
   @media (max-width: 900px){ .comparativo-row{ flex-direction:column; } #podioPanel{ flex-basis:auto !important; } }
-  #lpHistTable td, #lpHistTable th, #mqTable td, #mqTable th{ white-space:nowrap; }
-  #lpHistTable td.lanc-hist-wrap, #mqTable td.lanc-hist-wrap{ white-space:normal; max-width:180px; }
+  #mqTable td, #mqTable th{ white-space:nowrap; }
+  #mqTable td.lanc-hist-wrap{ white-space:normal; max-width:180px; }
+  /* Histórico de lançamentos: colunas agrupadas, tudo visível sem rolagem lateral; ~10 linhas + rolagem vertical */
+  #lpViewHistorico .table-wrap{ max-height:660px; overflow-y:auto; overflow-x:hidden; }
+  #lpHistTable{ table-layout:fixed; width:100%; }
+  #lpHistTable thead th{ padding:9px 8px; }
+  #lpHistTable tbody td{ padding:6px 8px; line-height:1.35; vertical-align:middle; white-space:normal; word-break:break-word; }
+  #lpHistTable tbody tr.lp-h-row{ height:62px; }
+  #lpHistTable .lp-h-clamp{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:12px; line-height:1.35; }
+  #lpHistTable .lp-h-line{ display:block; font-size:11px; color:var(--ink-soft); }
+  #lpHistTable .lp-h-strong{ display:block; font-weight:700; font-size:13px; color:var(--ink); }
+  #lpHistTable .lp-h-dim{ color:var(--ink-muted); }
+  #lpHistTable .lanc-hist-btn{ white-space:nowrap; }
+  #lpHistTable .lp-h-actions{ display:flex; flex-direction:column; align-items:center; gap:2px; }
+  #lpHistTable td.lp-h-edit{ padding:12px 14px; background:var(--cream); }
+  #lpHistTable .lp-h-edit-grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px 14px; }
+  #lpHistTable .lp-h-edit-grid label{ display:block; font-size:10.5px; font-weight:700; letter-spacing:.3px; text-transform:uppercase; color:var(--ink-soft); margin-bottom:3px; }
+  #lpHistTable .lp-h-edit-grid .span-2{ grid-column:span 2; }
+  #lpHistTable .lp-h-edit-actions{ grid-column:1 / -1; display:flex; gap:10px; justify-content:flex-end; }
   #lpHistTable input, #lpHistTable select, #mqTable input, #mqTable select{
     width:100%; min-width:70px; border:1px solid #e8d3a3; border-radius:6px; padding:4px 6px;
     font-size:11.5px; font-family:inherit; background:var(--cream);
@@ -4607,12 +4624,14 @@ body{background:#fff;color:#000}
             <span class="lanc-feedback" id="lpHistFeedback"></span>
             <div class="table-wrap" style="margin-top:12px;">
               <table class="detail" id="lpHistTable">
+                <colgroup>
+                  <col style="width:9%"><col style="width:19%"><col style="width:10%"><col style="width:11%">
+                  <col style="width:10%"><col style="width:15%"><col style="width:11%"><col style="width:6%"><col style="width:9%">
+                </colgroup>
                 <thead>
                   <tr>
-                    <th>Data</th><th>Setor</th><th>Produto</th><th>Máquina</th>
-                    <th class="center">Equipe</th><th class="center">Planejada</th><th class="center">Real</th>
-                    <th>Unidade</th><th class="center">Início</th><th class="center">Fim</th>
-                    <th class="center">Duração</th><th>Desvios</th><th>Observação</th><th class="center">Recheio (cx)</th><th class="center">Apontamento Completo?</th><th class="center">Ações</th>
+                    <th>Data / Setor</th><th>Produto</th><th>Máquina / Equipe</th><th>Produção</th>
+                    <th>Horário</th><th>Desvios</th><th>Observação</th><th class="center">Apont.?</th><th class="center">Ações</th>
                   </tr>
                 </thead>
                 <tbody id="lpHistTbody"></tbody>
@@ -11906,7 +11925,7 @@ function LP_fmtTime(t){
 function LP_renderHistTable(){
   const tbody = document.getElementById('lpHistTbody');
   if(LP_HIST_DATA.length === 0){
-    tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum lançamento encontrado nesse filtro.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--ink-soft);padding:16px;">Nenhum lançamento encontrado nesse filtro.</td></tr>';
     return;
   }
   tbody.innerHTML = LP_HIST_DATA.map(row => LP_buildHistRowHtml(row)).join('');
@@ -11917,64 +11936,75 @@ function LP_renderHistTable(){
   });
 }
 
+// Escapa texto de usuário antes de ir pro HTML (atributos title e conteúdo)
+function LP_escHtml(v){
+  return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 function LP_buildHistRowHtml(row){
+  const dash = '<span class="lp-h-dim">—</span>';
+  const real = row.producao_real != null ? Number(row.producao_real).toLocaleString('pt-BR') : '—';
+  const plan = row.producao_planejada ? LP_escHtml(row.producao_planejada) : '—';
+  const ini = LP_fmtTime(row.inicio_producao), fim = LP_fmtTime(row.fim_producao);
+  const horario = (ini==='—' && fim==='—') ? dash : `${ini} – ${fim}`;
+  const parada = LP_fmtTime(row.duracao_parada);
+  const desvios = row.paradas_desvios ? LP_escHtml(row.paradas_desvios).replace(/ \| /g,' · ').replace(/\//g,'/\u200b') : '';
+  const obs = row.observacao ? LP_escHtml(row.observacao) : '';
+  const recheio = row.recheio_consumido_caixas != null ? Number(row.recheio_consumido_caixas).toLocaleString('pt-BR') : null;
+  const apont = row.apontamento_completo===true ? '✓ Sim' : row.apontamento_completo===false ? '✗ Não' : '—';
   return `
-    <tr data-id="${row.id}">
-      <td>${LP_fmtDataBR(row.data)}</td>
-      <td>${row.setor||'—'}</td>
-      <td class="lanc-hist-wrap">${row.produto||'—'}</td>
-      <td>${row.maquina||'—'}</td>
-      <td class="center">${row.equipe ?? '—'}</td>
-      <td class="center">${row.producao_planejada||'—'}</td>
-      <td class="center">${row.producao_real ?? '—'}</td>
-      <td>${row.unidade||'—'}</td>
-      <td class="center">${LP_fmtTime(row.inicio_producao)}</td>
-      <td class="center">${LP_fmtTime(row.fim_producao)}</td>
-      <td class="center">${LP_fmtTime(row.duracao_parada)}</td>
-      <td class="lanc-hist-wrap">${row.paradas_desvios||'—'}</td>
-      <td class="lanc-hist-wrap">${row.observacao||'—'}</td>
-      <td class="center">${row.recheio_consumido_caixas != null ? Number(row.recheio_consumido_caixas).toLocaleString('pt-BR') : '—'}</td>
-      <td class="center">${row.apontamento_completo===true?'✓ Sim':row.apontamento_completo===false?'✗ Não':'—'}</td>
-      <td class="center">
+    <tr class="lp-h-row" data-id="${row.id}">
+      <td><span class="lp-h-strong" style="font-size:12px;">${LP_fmtDataBR(row.data)}</span><span class="lp-h-line">${LP_escHtml(row.setor||'—')}</span></td>
+      <td><span class="lp-h-clamp" title="${LP_escHtml(row.produto||'')}">${LP_escHtml(row.produto||'—')}</span></td>
+      <td><span class="lp-h-line" style="color:var(--ink);font-size:12px;">${LP_escHtml(row.maquina||'—')}</span><span class="lp-h-line">Equipe: ${row.equipe ?? '—'}</span></td>
+      <td><span class="lp-h-strong">${real} ${LP_escHtml(row.unidade||'')}</span><span class="lp-h-line lp-h-clamp" title="${plan}">Plan.: ${plan}</span></td>
+      <td><span class="lp-h-line" style="color:var(--ink);font-size:12px;">${horario}</span><span class="lp-h-line">Parada: ${parada==='—' ? '—' : parada}</span></td>
+      <td>${desvios ? `<span class="lp-h-clamp" title="${desvios}">${desvios}</span>` : dash}</td>
+      <td>${obs ? `<span class="lp-h-clamp" title="${obs}">${obs}</span>` : dash}${recheio!=null ? `<span class="lp-h-line">Recheio: ${recheio} cx</span>` : ''}</td>
+      <td class="center">${apont}</td>
+      <td class="center"><div class="lp-h-actions">
         <button type="button" class="lanc-hist-btn edit">Editar</button>
         <button type="button" class="lanc-hist-btn delete">Excluir</button>
-      </td>
+      </div></td>
     </tr>`;
 }
 
 function LP_buildHistEditRowHtml(row){
+  const q = v => LP_escHtml(v);
+  const t = x => { const f = LP_fmtTime(x); return f==='—' ? '' : f; };
   return `
     <tr data-id="${row.id}">
-      <td><input type="date" class="eh-data" value="${row.data||''}"></td>
-      <td>${mkSetorSelect('eh-setor', row.setor||'', 'width:100%')}</td>
-      <td><input type="text" class="eh-produto" list="lpProdutoList" value="${(row.produto||'').replace(/"/g,'&quot;')}"></td>
-      <td><input type="text" class="eh-maquina" list="lpMaquinaList" value="${(row.maquina||'').replace(/"/g,'&quot;')}"></td>
-      <td><input type="number" class="eh-equipe" value="${row.equipe ?? ''}"></td>
-      <td><input type="text" class="eh-planejada" list="ehPlanejadaCanonica" value="${(row.producao_planejada||'').replace(/"/g,'&quot;')}">
-        <datalist id="ehPlanejadaCanonica">
-          <option value="Sem Quantidade Planejada">
-          <option value="Fora do plano de produção">
-          <option value="Produção Não Apontada">
-          <option value="Desvio Não Justificado">
-        </datalist>
-      </td>
-      <td><input type="number" step="0.01" class="eh-real" value="${row.producao_real ?? ''}"></td>
-      <td><input type="text" class="eh-unidade" value="${(row.unidade||'').replace(/"/g,'&quot;')}"></td>
-      <td><input type="time" class="eh-inicio" value="${LP_fmtTime(row.inicio_producao)==='—'?'':LP_fmtTime(row.inicio_producao)}"></td>
-      <td><input type="time" class="eh-fim" value="${LP_fmtTime(row.fim_producao)==='—'?'':LP_fmtTime(row.fim_producao)}"></td>
-      <td><input type="time" step="1" class="eh-duracao" value="${row.duracao_parada||''}"></td>
-      <td><input type="text" class="eh-paradas" value="${(row.paradas_desvios||'').replace(/"/g,'&quot;')}"></td>
-      <td><input type="text" class="eh-observacao" value="${(row.observacao||'').replace(/"/g,'&quot;')}"></td>
-      <td><input type="number" step="0.01" class="eh-recheio" value="${row.recheio_consumido_caixas ?? ''}"></td>
-      <td><select class="eh-apontamento-completo">
-        <option value="" ${row.apontamento_completo==null?'selected':''}>—</option>
-        <option value="true" ${row.apontamento_completo===true?'selected':''}>Sim</option>
-        <option value="false" ${row.apontamento_completo===false?'selected':''}>Não</option>
-      </select></td>
-      <td class="center">
-        <button type="button" class="lanc-hist-btn save">Salvar</button>
-        <button type="button" class="lanc-hist-btn cancel">Cancelar</button>
-      </td>
+      <td colspan="9" class="lp-h-edit"><div class="lp-h-edit-grid">
+        <div><label>Data</label><input type="date" class="eh-data" value="${row.data||''}"></div>
+        <div><label>Setor</label>${mkSetorSelect('eh-setor', row.setor||'', 'width:100%')}</div>
+        <div class="span-2"><label>Produto</label><input type="text" class="eh-produto" list="lpProdutoList" value="${q(row.produto)}"></div>
+        <div><label>Máquina</label><input type="text" class="eh-maquina" list="lpMaquinaList" value="${q(row.maquina)}"></div>
+        <div><label>Equipe</label><input type="number" class="eh-equipe" value="${row.equipe ?? ''}"></div>
+        <div><label>Planejada</label><input type="text" class="eh-planejada" list="ehPlanejadaCanonica" value="${q(row.producao_planejada)}">
+          <datalist id="ehPlanejadaCanonica">
+            <option value="Sem Quantidade Planejada">
+            <option value="Fora do plano de produção">
+            <option value="Produção Não Apontada">
+            <option value="Desvio Não Justificado">
+          </datalist></div>
+        <div><label>Real</label><input type="number" step="0.01" class="eh-real" value="${row.producao_real ?? ''}"></div>
+        <div><label>Unidade</label><input type="text" class="eh-unidade" value="${q(row.unidade)}"></div>
+        <div><label>Início</label><input type="time" class="eh-inicio" value="${t(row.inicio_producao)}"></div>
+        <div><label>Fim</label><input type="time" class="eh-fim" value="${t(row.fim_producao)}"></div>
+        <div><label>Duração da parada</label><input type="time" step="1" class="eh-duracao" value="${row.duracao_parada||''}"></div>
+        <div><label>Recheio (cx)</label><input type="number" step="0.01" class="eh-recheio" value="${row.recheio_consumido_caixas ?? ''}"></div>
+        <div class="span-2"><label>Desvios</label><input type="text" class="eh-paradas" value="${q(row.paradas_desvios)}"></div>
+        <div class="span-2"><label>Observação</label><input type="text" class="eh-observacao" value="${q(row.observacao)}"></div>
+        <div><label>Apontamento completo?</label><select class="eh-apontamento-completo">
+          <option value="" ${row.apontamento_completo==null?'selected':''}>—</option>
+          <option value="true" ${row.apontamento_completo===true?'selected':''}>Sim</option>
+          <option value="false" ${row.apontamento_completo===false?'selected':''}>Não</option>
+        </select></div>
+        <div class="lp-h-edit-actions">
+          <button type="button" class="lanc-hist-btn save">Salvar</button>
+          <button type="button" class="lanc-hist-btn cancel">Cancelar</button>
+        </div>
+      </div></td>
     </tr>`;
 }
 
