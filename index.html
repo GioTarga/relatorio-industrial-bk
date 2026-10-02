@@ -6885,8 +6885,8 @@ function categorizeSegment(seg){
   if(t.includes('recheio')) return 'Falta de recheio';
   if(t.includes('insumo') || t.includes('canela') || t.includes('cravo') || t.includes('ovos') || t.includes('linguiça')) return 'Falta de recheio';
   if(t.includes('massa')) return 'Falta de massa';
-  if(t.includes('caixa')) return 'Falta de caixas';
-  if(t.includes('carrinho')) return 'Falta de carrinhos';
+  if(t.includes('matéria prima') || t.includes('materia prima')) return 'Falta de matéria-prima';
+  if(t.includes('telas') || t.includes('caixa') || t.includes('carrinho')) return 'Falta de telas / caixas / carrinhos';
   if((t.includes('falta') || t.includes('retirada') || t.includes('ausência') || t.includes('ausencia')) && t.includes('colab')) return 'Falta de colaborador';
   if(t.includes('mecânica') || t.includes('mangueira') || t.includes('máquina') || t.includes('defeito')) return 'Falha mecânica / máquina';
   if(t.includes('troca de produ') || t.includes('trocada')) return 'Troca de produção';
@@ -11019,6 +11019,24 @@ function lpUpdateProdutoMaquinaList(){
 let LP_ITEM_UID = 0;
 let LP_LAST_SETOR = ''; // lembra o último setor escolhido, pra sugerir no próximo cartão
 
+// Motivos de parada — lista única do lançamento (o apontamento não aceita mais texto livre)
+const LP_MOTIVOS_PARADA = [
+  'Falta de Massa',
+  'Falta de Recheio',
+  'Falha Mecânica',
+  'Falta de Colaborador',
+  'Falta de Telas/Caixas/Carrinhos',
+  'Falta de Matéria Prima'
+];
+
+function LP_motivoParadaOptions(valorAtual){
+  const lista = (valorAtual && !LP_MOTIVOS_PARADA.includes(valorAtual))
+    ? [...LP_MOTIVOS_PARADA, valorAtual]   // rascunho antigo com texto livre: preserva o valor
+    : LP_MOTIVOS_PARADA;
+  return '<option value="">Selecione o motivo…</option>' +
+    lista.map(m => `<option value="${m.replace(/"/g,'&quot;')}">${m}</option>`).join('');
+}
+
 /* Cria uma linha de parada (motivo + duração) dentro do cartão de produto
    informado — cada produto pode ter quantas paradas precisar, cada uma com
    seu próprio motivo e duração (mesmos dois campos de sempre). */
@@ -11034,7 +11052,7 @@ function LP_addParadaRow(itemRow){
     <div class="lanc-item-grid">
       <div class="lanc-field span-2">
         <label>Motivo</label>
-        <input type="text" class="lp-parada-motivo" placeholder="Ex: Falta de recheio">
+        <select class="lp-parada-motivo">${LP_motivoParadaOptions()}</select>
       </div>
       <div class="lanc-field">
         <label>Duração</label>
@@ -11320,7 +11338,11 @@ function lpCreateItemRow(initial){
   if(Array.isArray(initial.paradas)){
     initial.paradas.forEach(p => {
       const paradaRow = LP_addParadaRow(row);
-      if(p.motivo) paradaRow.querySelector('.lp-parada-motivo').value = p.motivo;
+      if(p.motivo){
+        const sel = paradaRow.querySelector('.lp-parada-motivo');
+        sel.innerHTML = LP_motivoParadaOptions(p.motivo);
+        sel.value = p.motivo;
+      }
       if(p.duracao) paradaRow.querySelector('.lp-parada-duracao').value = p.duracao;
     });
   }
