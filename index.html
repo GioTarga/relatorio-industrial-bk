@@ -58,6 +58,62 @@
   }
   .sidebar-brand-text{ font-weight:600; font-size:16px; letter-spacing:0.2px; font-family:var(--font-display); }
   .sidebar-nav{ display:flex; flex-direction:column; padding:14px 10px; gap:4px; }
+
+  /* ============ LOGIN (Supabase Auth) ============ */
+  body.bk-locked .app-shell{ visibility:hidden; }
+  .bk-login{ position:fixed; inset:0; z-index:99999; display:none; align-items:center; justify-content:center; background:var(--red-dark); padding:16px; }
+  body.bk-locked .bk-login{ display:flex; }
+  .bk-login-card{ width:100%; max-width:360px; background:#fff; border-radius:var(--radius-sm); padding:28px 26px 24px; box-shadow:0 12px 40px rgba(0,0,0,0.35); }
+  .bk-login-brand{ display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+  .bk-login-brand .sidebar-brand-text{ color:var(--red-dark); font-size:20px; }
+  .bk-login-card label{ display:block; font-size:11px; font-weight:700; letter-spacing:0.6px; text-transform:uppercase; color:#6b6b6b; margin:12px 0 4px; }
+  .bk-login-card input{ width:100%; box-sizing:border-box; padding:10px 12px; border:1px solid #d8cfc4; border-radius:var(--radius-sm); font-size:14px; background:#fffdf9; }
+  .bk-login-card input:focus{ outline:2px solid var(--gold); outline-offset:0; }
+  .bk-login-btn{ width:100%; margin-top:18px; padding:11px; border:none; border-radius:var(--radius-sm); background:var(--red); color:#fff; font-weight:700; font-size:14px; cursor:pointer; }
+  .bk-login-btn:hover{ background:var(--red-dark); }
+  .bk-login-btn:disabled{ opacity:0.6; cursor:wait; }
+  .bk-login-err{ min-height:18px; margin-top:12px; font-size:12.5px; color:var(--red); }
+  .sidebar-user{ margin-top:auto; padding:12px 14px; border-top:1px solid rgba(255,255,255,0.12); font-size:11.5px; line-height:1.35; }
+  .sidebar-user-mail{ word-break:break-all; opacity:0.85; }
+  .sidebar-user-nivel{ display:inline-block; margin-top:4px; padding:1px 7px; border-radius:10px; background:var(--gold); color:#fff; font-size:10px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; }
+  .sidebar-logout{ display:block; width:100%; margin-top:8px; padding:6px; border:1px solid rgba(255,255,255,0.3); background:transparent; color:#fff; border-radius:var(--radius-sm); font-size:12px; cursor:pointer; }
+  .sidebar-logout:hover{ background:rgba(255,255,255,0.12); }
+  @media (max-width:900px){ .sidebar-user{ display:none; } }
+
+  /* ============ USUÁRIO ADMIN + AVISOS DE PERMISSÃO ============ */
+  body.bk-locked .app-shell, body.bk-trocar .app-shell{ visibility:hidden; }
+  body.bk-trocar .bk-troca{ display:flex; }
+  .bk-troca{ position:fixed; inset:0; z-index:99999; display:none; align-items:center; justify-content:center; background:var(--red-dark); padding:16px; }
+  .bk-login-card h2{ margin:0 0 4px; font-size:16px; color:var(--red-dark); }
+  .bk-login-card p.bk-login-sub{ margin:0 0 6px; font-size:12.5px; color:#6b6b6b; line-height:1.4; }
+  .bk-aviso{ position:fixed; left:50%; bottom:28px; transform:translate(-50%,20px); z-index:100000; background:#2b2b2b; color:#fff; padding:10px 18px; border-radius:var(--radius-sm); font-size:13px; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; }
+  .bk-aviso.show{ opacity:1; transform:translate(-50%,0); }
+  body.bk-nodel .lanc-hist-btn.delete, body.bk-nodel [title^="Excluir"], body.bk-nodel .st-btn-del, body.bk-nodel .mc-card-delete-btn, body.bk-nodel #mcModalDeleteBtn{ display:none !important; }
+  body.bk-ro .sidebar-user-nivel::after{ content:" · leitura"; }
+  .adm-wrap{ padding:0 4px 40px; }
+  .adm-card{ background:#fff; border:1px solid #e6ddd0; border-radius:var(--radius-sm); padding:18px 20px; margin-bottom:18px; }
+  .adm-card h2{ margin:0 0 12px; font-size:14px; letter-spacing:0.6px; text-transform:uppercase; color:var(--red-dark); }
+  .adm-form{ display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; align-items:end; }
+  .adm-form label{ display:block; font-size:11px; font-weight:700; letter-spacing:0.6px; text-transform:uppercase; color:#6b6b6b; margin-bottom:4px; }
+  .adm-form input, .adm-form select, .adm-perfil-sel{ width:100%; box-sizing:border-box; padding:9px 10px; border:1px solid #d8cfc4; border-radius:var(--radius-sm); font-size:13.5px; background:#fffdf9; }
+  .adm-hint{ grid-column:1 / -1; font-size:12.5px; color:#5a5a5a; background:#faf4ea; border:1px solid #eadcc4; border-radius:var(--radius-sm); padding:8px 12px; }
+  .adm-actions{ grid-column:1 / -1; display:flex; align-items:center; gap:14px; }
+  .adm-msg{ font-size:12.5px; }
+  .adm-msg.err{ color:var(--red); }
+  .adm-msg.ok{ color:#1f7a3d; }
+  .adm-table{ width:100%; border-collapse:collapse; table-layout:fixed; font-size:13px; }
+  .adm-table th{ text-align:left; font-size:11px; letter-spacing:0.6px; text-transform:uppercase; color:#6b6b6b; padding:8px 10px; border-bottom:2px solid #e6ddd0; }
+  .adm-table td{ padding:10px; border-bottom:1px solid #f0e8dc; vertical-align:middle; overflow-wrap:anywhere; }
+  .adm-user-nome{ font-weight:600; }
+  .adm-user-mail{ color:#6b6b6b; font-size:12px; }
+  .adm-pill{ display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; font-weight:700; }
+  .adm-pill.on{ background:#e3f4e8; color:#1f7a3d; }
+  .adm-pill.off{ background:#f3e1e1; color:var(--red); }
+  .adm-pill.pend{ background:#fff1de; color:var(--gold); margin-top:4px; }
+  .adm-row-btn{ border:1px solid #d8cfc4; background:#fff; border-radius:var(--radius-sm); padding:5px 10px; font-size:12px; cursor:pointer; margin:0 6px 4px 0; }
+  .adm-row-btn:hover{ background:#faf4ea; }
+  .adm-row-btn:disabled{ opacity:.45; cursor:not-allowed; }
+  @media (max-width:900px){ .adm-form{ grid-template-columns:1fr; } }
   .nav-item{
     display:flex; align-items:center; gap:10px; text-align:left;
     background:none; border:none; color:#ffe6c9; font-family:inherit;
@@ -2938,7 +2994,32 @@ body{background:#fff;color:#000}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body>
+<body class="bk-locked">
+
+<div class="bk-login" id="bkLogin">
+  <form class="bk-login-card" id="bkLoginForm" autocomplete="on">
+    <div class="bk-login-brand"><span class="sidebar-mark">B</span><div class="sidebar-brand-text">BK360</div></div>
+    <label for="bkLoginEmail">E-mail</label>
+    <input type="email" id="bkLoginEmail" name="email" autocomplete="username" required>
+    <label for="bkLoginSenha">Senha</label>
+    <input type="password" id="bkLoginSenha" name="password" autocomplete="current-password" required>
+    <button type="submit" class="bk-login-btn" id="bkLoginBtn">Entrar</button>
+    <div class="bk-login-err" id="bkLoginErr" role="alert"></div>
+  </form>
+</div>
+
+<div class="bk-troca" id="bkTroca">
+  <form class="bk-login-card" id="bkTrocaForm">
+    <h2>Defina sua nova senha</h2>
+    <p class="bk-login-sub">Esta é sua primeira entrada (ou a senha foi redefinida). Escolha uma senha pessoal para continuar.</p>
+    <label for="bkTrocaNova">Nova senha</label>
+    <input type="password" id="bkTrocaNova" autocomplete="new-password" minlength="8" required>
+    <label for="bkTrocaConf">Confirmar senha</label>
+    <input type="password" id="bkTrocaConf" autocomplete="new-password" minlength="8" required>
+    <button type="submit" class="bk-login-btn" id="bkTrocaBtn">Salvar e entrar</button>
+    <div class="bk-login-err" id="bkTrocaErr" role="alert"></div>
+  </form>
+</div>
 
 <div class="app-shell">
   <aside class="sidebar">
@@ -2987,7 +3068,16 @@ body{background:#fff;color:#000}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         Rastreamento
       </button>
+      <button class="nav-item" data-page="usuarios-admin" id="navUsuariosAdmin" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Usuário Admin
+      </button>
     </nav>
+    <div class="sidebar-user">
+      <div class="sidebar-user-mail" id="bkUserMail"></div>
+      <span class="sidebar-user-nivel" id="bkUserNivel"></span>
+      <button type="button" class="sidebar-logout" id="bkLogout">Sair</button>
+    </div>
   </aside>
 
   <div class="main-content">
@@ -5411,6 +5501,55 @@ body{background:#fff;color:#000}
 
 
 
+  <div id="page-usuarios-admin" class="report-page" style="display:none;">
+    <div class="topbar">
+      <div class="brand">
+        <div class="text-block">
+          <div class="eyebrow">Bread King · Acesso</div>
+          <h1>Usuário Admin</h1>
+          <div class="subtitle">Cadastre usuários e defina o que cada perfil pode ver e fazer</div>
+        </div>
+      </div>
+    </div>
+    <div class="adm-wrap">
+      <div class="adm-card">
+        <h2>Novo usuário</h2>
+        <form class="adm-form" id="admForm" autocomplete="off">
+          <div><label for="admNome">Nome (opcional)</label><input type="text" id="admNome" maxlength="80"></div>
+          <div><label for="admEmail">E-mail de login</label><input type="email" id="admEmail" required></div>
+          <div><label for="admSenha">Senha provisória</label><input type="text" id="admSenha" minlength="8" autocomplete="off" required placeholder="mín. 8 caracteres"></div>
+          <div><label for="admPerfil">Perfil</label><select id="admPerfil"></select></div>
+          <div class="adm-hint" id="admHint"></div>
+          <div class="adm-actions">
+            <button type="submit" class="btn-refresh" id="admBtn">Cadastrar usuário</button>
+            <span class="adm-msg" id="admMsg" role="status"></span>
+          </div>
+        </form>
+      </div>
+      <div class="adm-card">
+        <h2>Usuários cadastrados</h2>
+        <div style="overflow-x:auto;">
+          <table class="adm-table">
+            <colgroup><col style="width:30%"><col style="width:20%"><col style="width:13%"><col style="width:16%"><col style="width:21%"></colgroup>
+            <thead><tr><th>Usuário</th><th>Perfil</th><th>Status</th><th>Último acesso</th><th>Ações</th></tr></thead>
+            <tbody id="admTbody"><tr><td colspan="5">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="bk-troca" id="admResetModal" style="z-index:9000;">
+      <form class="bk-login-card" id="admResetForm">
+        <h2>Redefinir senha</h2>
+        <p class="bk-login-sub" id="admResetQuem"></p>
+        <label for="admResetSenha">Nova senha provisória</label>
+        <input type="text" id="admResetSenha" minlength="8" autocomplete="off" required placeholder="mín. 8 caracteres">
+        <button type="submit" class="bk-login-btn">Redefinir</button>
+        <button type="button" class="adm-row-btn" id="admResetCancel" style="width:100%;margin:8px 0 0;">Cancelar</button>
+        <div class="bk-login-err" id="admResetErr" role="alert"></div>
+      </form>
+    </div>
+  </div>
+
   <div id="page-rastreamento" class="report-page" style="display:none;">
 
   <!-- Topbar -->
@@ -5731,6 +5870,86 @@ body{background:#fff;color:#000}
    quanto pela gravação (aba Lançamento). anon/publishable key —
    segura de expor no client-side, a escrita é protegida por RLS
    + PIN da interface (ver seção "PÁGINA LANÇAMENTO" mais abaixo). */
+// ─────────────────────────────────────────────
+// PERFIS E PERMISSÕES
+// ─────────────────────────────────────────────
+// O perfil vem de app_metadata.nivel (só o servidor altera). editar: true = grava em tudo;
+// lista = grava só nessas tabelas; false = somente leitura. excluir controla DELETE.
+const BK_PERFIS = {
+  alpha:      { rotulo:'Alpha',                 modulos:'*',                 editar:true,                      excluir:true,  admin:true,
+                resumo:'Acesso total: edita, exclui e gerencia usuários.' },
+  gestao:     { rotulo:'Gerência / Diretoria',  modulos:'*',                 editar:false,                     excluir:false, admin:false,
+                resumo:'Visualiza todos os módulos, sem editar nada. Não vê o Usuário Admin.' },
+  conferente: { rotulo:'Conferente',            modulos:['rastreamento'],    editar:['rastreamento_carrinhos'], excluir:false, admin:false,
+                resumo:'Só o módulo Rastreamento: lança e edita, não exclui.' }
+};
+const BK_AUTH = { user:null, nivel:null };
+function BK_perfil(){ return BK_PERFIS[BK_AUTH.nivel] || null; }
+function BK_podeVer(pagina){
+  const p = BK_perfil(); if(!p) return false;
+  if(pagina === 'usuarios-admin') return p.admin === true;
+  return p.modulos === '*' || p.modulos.includes(pagina);
+}
+function BK_podeGravar(metodo, tabela){
+  const p = BK_perfil(); if(!p) return false;
+  if(metodo === 'delete') return p.excluir === true;
+  return p.editar === true || (Array.isArray(p.editar) && p.editar.includes(tabela));
+}
+let BK_avisoTimer = null;
+function BK_avisoSemPermissao(){
+  let el = document.getElementById('bkAviso');
+  if(!el){ el = document.createElement('div'); el.id = 'bkAviso'; el.className = 'bk-aviso'; document.body.appendChild(el); }
+  el.textContent = 'Seu perfil não tem permissão para essa ação.';
+  el.classList.add('show');
+  clearTimeout(BK_avisoTimer);
+  BK_avisoTimer = setTimeout(()=> el.classList.remove('show'), 3500);
+}
+// Resposta no formato do supabase-js que aceita qualquer encadeamento (.eq().select()…)
+function BK_escritaBloqueada(){
+  BK_avisoSemPermissao();
+  const erro = { data:null, error:{ message:'Sem permissão para essa ação.', code:'BK_FORBIDDEN' } };
+  const prox = new Proxy(function(){}, {
+    get:(_t,k)=> k === 'then' ? (ok)=> Promise.resolve(erro).then(ok) : prox,
+    apply:()=> prox
+  });
+  return prox;
+}
+// Trava de gravação no cliente: não substitui a trava no banco, mas vale para todos os módulos.
+function BK_protegerCliente(client){
+  const fromOrig = client.from.bind(client);
+  client.from = function(tabela){
+    const qb = fromOrig(tabela);
+    return new Proxy(qb, { get(alvo, k){
+      const v = alvo[k];
+      if(typeof v !== 'function') return v;
+      if(['insert','update','upsert','delete'].includes(k)){
+        const metodo = k === 'delete' ? 'delete' : 'write';
+        return (...args)=> BK_podeGravar(metodo, tabela) ? v.apply(alvo, args) : BK_escritaBloqueada();
+      }
+      return v.bind(alvo);
+    }});
+  };
+  return client;
+}
+// Mesma trava para as chamadas diretas à API REST (fetch) que alguns módulos usam.
+(function BK_protegerFetch(){
+  const original = window.fetch.bind(window);
+  const base = 'https://yymdbciabdmkvaydxzrj.supabase.co/rest/v1/';
+  window.fetch = function(url, opts){
+    try{
+      const u = typeof url === 'string' ? url : (url && url.url) || '';
+      const metodo = ((opts && opts.method) || (url && url.method) || 'GET').toUpperCase();
+      if(u.startsWith(base) && !['GET','HEAD','OPTIONS'].includes(metodo)){
+        const tabela = u.slice(base.length).split('?')[0];
+        if(!BK_podeGravar(metodo === 'DELETE' ? 'delete' : 'write', tabela)){
+          BK_avisoSemPermissao();
+          return Promise.resolve(new Response(JSON.stringify({ message:'Sem permissão para essa ação.' }), { status:403, headers:{'Content-Type':'application/json'} }));
+        }
+      }
+    }catch(_e){}
+    return original(url, opts);
+  };
+})();
 const SUPABASE_URL = "https://yymdbciabdmkvaydxzrj.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_w5FwCArgR8jr0mbN7teYlQ_59my67Tl";
 let SB_CLIENT = null;
@@ -5739,7 +5958,7 @@ function getSupabaseClient(){
     if(typeof supabase === 'undefined' || !supabase.createClient){
       throw new Error('SDK do Supabase não carregou. Verifique a conexão com a internet.');
     }
-    SB_CLIENT = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    SB_CLIENT = BK_protegerCliente(supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY));
   }
   return SB_CLIENT;
 }
@@ -5770,6 +5989,7 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     const target = btn.dataset.page;
+    if(!BK_podeVer(target)) return;
     document.getElementById('page-industrial').style.display = target === 'industrial' ? 'block' : 'none';
     document.getElementById('page-produtividade-processos').style.display = target === 'produtividade-processos' ? 'block' : 'none';
     document.getElementById('page-rascunho').style.display = target === 'rascunho' ? 'block' : 'none';
@@ -5780,6 +6000,8 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     document.getElementById('page-lancamento').style.display = target === 'lancamento' ? 'block' : 'none';
     document.getElementById('page-expedicao').style.display = target === 'expedicao' ? 'block' : 'none';
     document.getElementById('page-rastreamento').style.display = target === 'rastreamento' ? 'block' : 'none';
+    document.getElementById('page-usuarios-admin').style.display = target === 'usuarios-admin' ? 'block' : 'none';
+    if(target === 'usuarios-admin' && typeof ADM_load === 'function') ADM_load();
     if(target === 'lancamento' && typeof LANC_populateDropdowns === 'function'){
       LANC_populateDropdowns();
     }
@@ -23512,6 +23734,214 @@ document.addEventListener('DOMContentLoaded', () => {
 
 })();
 /* ══ FIM MÓDULO REGISTRO DE PERDAS ══ */
+
+
+// ─────────────────────────────────────────────
+// LOGIN — Supabase Auth (e-mail + senha)
+// ─────────────────────────────────────────────
+// O nível de acesso (alpha | gestao | conferente) vem de app_metadata.nivel, que só o servidor altera.
+// As regras de cada perfil ficam em BK_PERFIS (início do script).
+let BK_jaLogou = false;
+let BK_semPerfil = false;
+function BK_authApply(session){
+  const u = session && session.user ? session.user : null;
+  BK_AUTH.user = u;
+  BK_AUTH.nivel = u ? ((u.app_metadata && u.app_metadata.nivel) || null) : null;
+  const perfil = BK_perfil();
+  if(u && !perfil){
+    BK_semPerfil = true;
+    getSupabaseClient().auth.signOut();
+    document.getElementById('bkLoginErr').textContent = 'Seu usuário ainda não tem um perfil de acesso. Fale com o administrador.';
+    return;
+  }
+  const trocar = !!(u && u.user_metadata && u.user_metadata.trocar_senha === true);
+  document.body.classList.toggle('bk-locked', !u);
+  document.body.classList.toggle('bk-trocar', !!u && trocar);
+  document.body.classList.toggle('bk-nodel', !!perfil && !perfil.excluir);
+  document.body.classList.toggle('bk-ro', !!perfil && perfil.editar === false);
+  const mail = document.getElementById('bkUserMail');
+  const niv = document.getElementById('bkUserNivel');
+  if(mail) mail.textContent = u ? u.email : '';
+  if(niv) niv.textContent = perfil ? perfil.rotulo : '';
+  if(!u) return;
+  BK_jaLogou = true;
+  const navs = [...document.querySelectorAll('.sidebar-nav .nav-item')];
+  navs.forEach(b => { b.style.display = BK_podeVer(b.dataset.page) ? '' : 'none'; });
+  const ativo = document.querySelector('.sidebar-nav .nav-item.active');
+  if(!ativo || ativo.style.display === 'none'){
+    const primeiro = navs.find(b => b.style.display !== 'none');
+    if(primeiro) primeiro.click();
+  }
+}
+async function BK_authInit(){
+  const form = document.getElementById('bkLoginForm');
+  const errEl = document.getElementById('bkLoginErr');
+  const btn = document.getElementById('bkLoginBtn');
+  let auth;
+  try{ auth = getSupabaseClient().auth; }
+  catch(e){ errEl.textContent = 'Não foi possível carregar o login. Verifique a conexão.'; return; }
+  form.addEventListener('submit', async ev=>{
+    ev.preventDefault();
+    errEl.textContent = '';
+    btn.disabled = true; btn.textContent = 'Entrando…';
+    const { error } = await auth.signInWithPassword({
+      email: document.getElementById('bkLoginEmail').value.trim(),
+      password: document.getElementById('bkLoginSenha').value
+    });
+    btn.disabled = false; btn.textContent = 'Entrar';
+    if(error){ errEl.textContent = 'E-mail ou senha incorretos.'; return; }
+    document.getElementById('bkLoginSenha').value = '';
+  });
+  document.getElementById('bkLogout').addEventListener('click', ()=> auth.signOut());
+
+  // Troca obrigatória da senha provisória no primeiro acesso
+  document.getElementById('bkTrocaForm').addEventListener('submit', async ev=>{
+    ev.preventDefault();
+    const err = document.getElementById('bkTrocaErr');
+    const nova = document.getElementById('bkTrocaNova').value;
+    const conf = document.getElementById('bkTrocaConf').value;
+    err.textContent = '';
+    if(nova.length < 8){ err.textContent = 'A senha precisa ter ao menos 8 caracteres.'; return; }
+    if(nova !== conf){ err.textContent = 'As senhas não conferem.'; return; }
+    const { data, error } = await auth.updateUser({ password: nova, data: { trocar_senha: false } });
+    if(error){ err.textContent = 'Não foi possível salvar a senha. Tente uma senha diferente.'; return; }
+    document.getElementById('bkTrocaNova').value = '';
+    document.getElementById('bkTrocaConf').value = '';
+    BK_authApply({ user: data.user });
+  });
+
+  auth.onAuthStateChange((evento, session)=>{
+    // Ao sair, recarrega para não deixar na tela dados carregados pela sessão anterior
+    if(evento === 'SIGNED_OUT' && BK_jaLogou && !BK_semPerfil){ location.reload(); return; }
+    BK_authApply(session);
+  });
+  const { data } = await auth.getSession();
+  BK_authApply(data && data.session);
+}
+document.addEventListener('DOMContentLoaded', BK_authInit);
+
+// ─────────────────────────────────────────────
+// MÓDULO USUÁRIO ADMIN (só perfil Alpha)
+// ─────────────────────────────────────────────
+// Todas as operações passam pela Edge Function "admin-usuarios", que confere no servidor se quem chama é Alpha.
+function ADM_esc(v){
+  return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+async function ADM_call(body){
+  const { data, error } = await getSupabaseClient().functions.invoke('admin-usuarios', { body });
+  if(error){
+    let msg = 'Falha ao falar com o servidor.';
+    try{ const j = await error.context.json(); if(j && j.error) msg = j.error; }catch(_e){}
+    throw new Error(msg);
+  }
+  if(data && data.error) throw new Error(data.error);
+  return data;
+}
+function ADM_msg(texto, tipo){
+  const el = document.getElementById('admMsg');
+  el.textContent = texto || '';
+  el.className = 'adm-msg' + (tipo ? ' ' + tipo : '');
+}
+function ADM_opcoesPerfil(sel){
+  return Object.keys(BK_PERFIS).map(k => `<option value="${k}"${k === sel ? ' selected' : ''}>${ADM_esc(BK_PERFIS[k].rotulo)}</option>`).join('');
+}
+function ADM_hint(){
+  const k = document.getElementById('admPerfil').value;
+  const p = BK_PERFIS[k];
+  document.getElementById('admHint').textContent = p ? p.resumo : '';
+}
+function ADM_fmtData(iso){
+  if(!iso) return 'Nunca acessou';
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+}
+let ADM_users = [];
+function ADM_render(){
+  const tb = document.getElementById('admTbody');
+  if(!ADM_users.length){ tb.innerHTML = '<tr><td colspan="5">Nenhum usuário cadastrado.</td></tr>'; return; }
+  const meuId = BK_AUTH.user && BK_AUTH.user.id;
+  tb.innerHTML = ADM_users.map(u => {
+    const eu = u.id === meuId;
+    return `<tr data-id="${ADM_esc(u.id)}">
+      <td><div class="adm-user-nome">${ADM_esc(u.nome || u.email)}${eu ? ' (você)' : ''}</div>${u.nome ? `<div class="adm-user-mail">${ADM_esc(u.email)}</div>` : ''}</td>
+      <td><select class="adm-perfil-sel" data-acao="perfil"${eu ? ' disabled' : ''}>${ADM_opcoesPerfil(u.nivel)}</select></td>
+      <td><span class="adm-pill ${u.ativo ? 'on' : 'off'}">${u.ativo ? 'Ativo' : 'Desativado'}</span>${u.trocar_senha ? '<br><span class="adm-pill pend">Senha provisória</span>' : ''}</td>
+      <td>${ADM_esc(ADM_fmtData(u.ultimo_acesso))}</td>
+      <td><button type="button" class="adm-row-btn" data-acao="reset">Redefinir senha</button><button type="button" class="adm-row-btn" data-acao="ativo"${eu ? ' disabled' : ''}>${u.ativo ? 'Desativar' : 'Ativar'}</button></td>
+    </tr>`;
+  }).join('');
+}
+async function ADM_load(){
+  const sel = document.getElementById('admPerfil');
+  if(!sel.options.length){ sel.innerHTML = ADM_opcoesPerfil('gestao'); ADM_hint(); }
+  try{
+    ADM_users = (await ADM_call({ action:'list' })).users;
+    ADM_render();
+  }catch(e){
+    document.getElementById('admTbody').innerHTML = `<tr><td colspan="5">${ADM_esc(e.message)}</td></tr>`;
+  }
+}
+let ADM_resetId = null;
+document.addEventListener('DOMContentLoaded', ()=>{
+  const form = document.getElementById('admForm');
+  if(!form) return;
+  document.getElementById('admPerfil').addEventListener('change', ADM_hint);
+  form.addEventListener('submit', async ev=>{
+    ev.preventDefault();
+    const btn = document.getElementById('admBtn');
+    btn.disabled = true; ADM_msg('Cadastrando…');
+    try{
+      const r = await ADM_call({
+        action:'create',
+        nome: document.getElementById('admNome').value,
+        email: document.getElementById('admEmail').value,
+        password: document.getElementById('admSenha').value,
+        nivel: document.getElementById('admPerfil').value
+      });
+      ADM_msg('Usuário ' + r.user.email + ' cadastrado. Ele define a senha pessoal no primeiro acesso.', 'ok');
+      form.reset(); ADM_hint();
+      await ADM_load();
+    }catch(e){ ADM_msg(e.message, 'err'); }
+    btn.disabled = false;
+  });
+  const tb = document.getElementById('admTbody');
+  tb.addEventListener('change', async ev=>{
+    const sel = ev.target.closest('select[data-acao="perfil"]');
+    if(!sel) return;
+    const id = sel.closest('tr').dataset.id;
+    try{ await ADM_call({ action:'update', id, nivel: sel.value }); ADM_msg('Perfil atualizado. Vale no próximo acesso do usuário.', 'ok'); }
+    catch(e){ ADM_msg(e.message, 'err'); }
+    await ADM_load();
+  });
+  tb.addEventListener('click', async ev=>{
+    const btn = ev.target.closest('button[data-acao]');
+    if(!btn) return;
+    const id = btn.closest('tr').dataset.id;
+    const u = ADM_users.find(x => x.id === id);
+    if(btn.dataset.acao === 'reset'){
+      ADM_resetId = id;
+      document.getElementById('admResetQuem').textContent = u.email;
+      document.getElementById('admResetSenha').value = '';
+      document.getElementById('admResetErr').textContent = '';
+      document.getElementById('admResetModal').style.display = 'flex';
+    }else if(btn.dataset.acao === 'ativo'){
+      if(u.ativo && !confirm('Desativar o acesso de ' + u.email + '? Ele não conseguirá mais entrar.')) return;
+      try{ await ADM_call({ action:'update', id, ativo: !u.ativo }); ADM_msg(u.ativo ? 'Usuário desativado.' : 'Usuário reativado.', 'ok'); }
+      catch(e){ ADM_msg(e.message, 'err'); }
+      await ADM_load();
+    }
+  });
+  document.getElementById('admResetCancel').addEventListener('click', ()=>{ document.getElementById('admResetModal').style.display = 'none'; });
+  document.getElementById('admResetForm').addEventListener('submit', async ev=>{
+    ev.preventDefault();
+    try{
+      await ADM_call({ action:'reset', id: ADM_resetId, password: document.getElementById('admResetSenha').value });
+      document.getElementById('admResetModal').style.display = 'none';
+      ADM_msg('Senha redefinida. O usuário troca por uma pessoal no próximo acesso.', 'ok');
+      await ADM_load();
+    }catch(e){ document.getElementById('admResetErr').textContent = e.message; }
+  });
+});
 
 </script>
 </body>
