@@ -22413,13 +22413,54 @@ document.addEventListener('DOMContentLoaded', () => {
 (function(){
 
   // ── Constantes de meta ──
-  const PT_META_DIARIA = 1000;
+  const PT_META_DIARIA = 1000; // padrão quando o mês não tem meta mensal cadastrada
   const PT_META_MENSAL = {
     '2026-09': 21000,
-    '2026-10': 15000,
+    '2026-10': 22100,
     '2026-11': 14000,
     '2026-12': 28500
   };
+
+  // Metas fixas (inteiras) por mês: valem para todo dia útil e toda semana, sem rateio por feriado
+  const PT_METAS_FIXAS = {
+    '2026-10': { dia: 1005, sem: 5025 }  // 22.100 ÷ 22 dias úteis (12/10 trabalhado), arredondado
+  };
+
+  // Feriados nacionais que não contam como dia útil na meta
+  const PT_FERIADOS = ['2026-09-07','2026-11-02','2026-11-20','2026-12-25'];
+
+  function ptEhDiaUtil(dataIso){
+    const dw = new Date(dataIso + 'T00:00:00').getDay();
+    return dw !== 0 && dw !== 6 && !PT_FERIADOS.includes(dataIso);
+  }
+
+  // Meta diária do mês = meta mensal ÷ dias úteis do mês (sem meta mensal → padrão de 1.000)
+  function ptMetaDia(dataIso){
+    const mes = dataIso.slice(0,7);
+    if(PT_METAS_FIXAS[mes]) return PT_METAS_FIXAS[mes].dia;
+    const metaMes = PT_META_MENSAL[mes];
+    if(!metaMes) return PT_META_DIARIA;
+    const [y, m] = mes.split('-').map(Number);
+    const ultimo = new Date(y, m, 0).getDate();
+    let uteis = 0;
+    for(let d = 1; d <= ultimo; d++){
+      if(ptEhDiaUtil(mes + '-' + String(d).padStart(2,'0'))) uteis++;
+    }
+    return uteis ? metaMes / uteis : PT_META_DIARIA;
+  }
+
+  // Meta de um intervalo = soma da meta de cada dia útil (a semana pode cruzar dois meses)
+  function ptMetaPeriodo(ini, fim){
+    const fixa = PT_METAS_FIXAS[fim.slice(0,7)];
+    if(fixa) return fixa.sem;
+    let t = 0;
+    const d1 = new Date(fim + 'T00:00:00');
+    for(let d = new Date(ini + 'T00:00:00'); d <= d1; d.setDate(d.getDate()+1)){
+      const iso = d.toISOString().slice(0,10);
+      if(ptEhDiaUtil(iso)) t += ptMetaDia(iso);
+    }
+    return t;
+  }
 
   // ── Estado ──
   let PT_dados          = [];   // todos os registros brutos da query (período selecionado)
@@ -22589,8 +22630,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const regDia = PT_dados.filter(r => r.data === dataRef);
     const totalDia = regDia.reduce((s,r) => s + (ptParseVal(r.entrada_estoque)||0), 0);
     const planDia  = regDia.reduce((s,r) => s + (ptParseVal(r.producao_planejada)||0), 0);
-    const pctDia = totalDia / PT_META_DIARIA * 100;
-    const difDia = totalDia - PT_META_DIARIA;
+    const metaDia = ptMetaDia(dataRef);
+    const pctDia = totalDia / metaDia * 100;
+    const difDia = totalDia - metaDia;
 
     // SEMANA ATUAL e ANTERIOR — sempre Seg–Sex, independente do filtro global
     // Aplica o filtro de tamanho (dropdown) nos dados das semanas para coerência com os demais cards
@@ -22605,10 +22647,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const dadosSemAnt   = ptFiltrarSemPorTamanho(PT_dados_sem_ant);
     const totalSem      = dadosSemAtual.reduce((s,r) => s + (ptParseVal(r.entrada_estoque)||0), 0);
     const totalSemAnt   = dadosSemAnt.reduce((s,r) => s + (ptParseVal(r.entrada_estoque)||0), 0);
-    const diasSem       = ptDiasUteis(semAtual.ini, semAtual.fim);
-    const diasSemAnt    = ptDiasUteis(semAnt.ini, semAnt.fim);
-    const metaSem       = diasSem * PT_META_DIARIA;
-    const metaSemAnt    = diasSemAnt * PT_META_DIARIA;
+    const metaSem       = ptMetaPeriodo(semAtual.ini, semAtual.fim);
+    const metaSemAnt    = ptMetaPeriodo(semAnt.ini, semAnt.fim);
     const pctSem        = metaSem > 0 ? totalSem / metaSem * 100 : null;
     const pctSemAnt     = metaSemAnt > 0 ? totalSemAnt / metaSemAnt * 100 : null;
 
@@ -22668,8 +22708,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="label">DIA — ${ptFmtData(dataRef)}</div>
         <div class="value" style="font-size:2.4rem;font-weight:800;letter-spacing:-1px;line-height:1.1;">${ptFmtNum(totalDia)}</div>
         <div style="margin-top:8px;display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--ink-soft);">
-          <span>Meta <strong style="color:var(--ink);font-size:13px;">${ptFmtNum(PT_META_DIARIA)}</strong></span>
-          <span>Atingido ${difPctBadge(totalDia, PT_META_DIARIA)}</span>
+          <span>Meta <strong style="color:var(--ink);font-size:13px;">${ptFmtNum(Math.round(metaDia))}</strong></span>
+          <span>Atingido ${difPctBadge(totalDia, metaDia)}</span>
         </div>
       </div>
       <div class="kpi-card ${semClass(pctSem)}">
@@ -22782,7 +22822,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const datas = Object.keys(mapData).sort();
     const reais = datas.map(d => mapData[d]);
-    const metas = datas.map(() => PT_META_DIARIA);
+    const metas = datas.map(d => Math.round(ptMetaDia(d)));
     const labels = datas.map(ptFmtData);
 
     if(PT_chartLinha) PT_chartLinha.destroy();
@@ -22824,11 +22864,12 @@ document.addEventListener('DOMContentLoaded', () => {
               label(ctx){
                 const d = datas[ctx.dataIndex];
                 const real = mapData[d] || 0;
-                const dif  = real - PT_META_DIARIA;
+                const metaD = Math.round(ptMetaDia(d));
+                const dif  = real - metaD;
                 if(ctx.datasetIndex === 0){
                   return [
                     `  Entrada Estoque: ${real.toLocaleString('pt-BR')}`,
-                    `  Meta: ${PT_META_DIARIA.toLocaleString('pt-BR')}`,
+                    `  Meta: ${metaD.toLocaleString('pt-BR')}`,
                     `  Diferença: ${dif >= 0 ? '+' : ''}${dif.toLocaleString('pt-BR')}`
                   ];
                 }
