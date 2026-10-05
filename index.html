@@ -117,6 +117,7 @@
   /* ============ CONTROLE DE ABSENTEÍSMO ============ */
   #page-absenteismo .abs-sub{ font-size:12px; color:var(--ink-soft); margin-top:6px; font-weight:600; }
   #page-absenteismo .abs-chart-box{ position:relative; height:300px; }
+  #page-absenteismo .abs-chart-box.alto{ height:420px; }
   #page-absenteismo .abs-table-wrap{ max-height:460px; overflow-y:auto; }
   #page-absenteismo table.abs-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
   #page-absenteismo .abs-table th{ position:sticky; top:0; background:var(--paper); text-align:left; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); padding:10px 12px; border-bottom:2px solid var(--line); }
@@ -126,11 +127,6 @@
   #page-absenteismo .abs-tipo.falta{ background:#f3e1e1; color:var(--red); }
   #page-absenteismo .abs-tipo.atestado{ background:#fff1de; color:var(--gold); }
   #page-absenteismo .abs-c{ text-align:center; width:84px; }
-  #page-absenteismo .abs-rk-col{ width:32%; }
-  #page-absenteismo .abs-rk-bar{ height:10px; border-radius:5px; background:var(--line); display:flex; overflow:hidden; }
-  #page-absenteismo .abs-rk-bar i{ display:block; height:100%; }
-  #page-absenteismo .abs-rk-bar .f{ background:#A10101; }
-  #page-absenteismo .abs-rk-bar .a{ background:#d97706; }
   #page-absenteismo .abs-rk-pos{ font-weight:700; color:var(--ink-soft); text-align:center; }
   #page-absenteismo .abs-rk-wrap{ max-height:480px; overflow-y:auto; }
   #page-absenteismo .abs-vazio{ color:var(--ink-soft); text-align:center; padding:24px 0; }
@@ -5751,15 +5747,15 @@ body{background:#fff;color:#000}
         <div class="abs-chart-box"><canvas id="absChart"></canvas></div>
       </div>
       <div class="panel">
-        <h2 class="panel-title">Faltas por setor</h2>
-        <div class="abs-chart-box"><canvas id="absChartSetor"></canvas></div>
+        <h2 class="panel-title">Faltas por setor — Pareto 80/20</h2>
+        <div class="abs-chart-box alto"><canvas id="absChartSetor"></canvas></div>
       </div>
       <div class="panel">
         <h2 class="panel-title">Ranking de ausências por pessoa</h2>
         <div class="abs-table-wrap abs-rk-wrap">
           <table class="abs-table">
-            <thead><tr><th class="abs-c">#</th><th>Nome</th><th>Setor</th><th class="abs-c">Faltas</th><th class="abs-c">Atestados</th><th class="abs-c">Total</th><th class="abs-rk-col"></th></tr></thead>
-            <tbody id="absRank"><tr><td colspan="7" class="abs-vazio">Carregando…</td></tr></tbody>
+            <thead><tr><th class="abs-c">#</th><th>Nome</th><th>Setor</th><th class="abs-c">Faltas</th><th class="abs-c">Atestados</th><th class="abs-c">Total</th></tr></thead>
+            <tbody id="absRank"><tr><td colspan="6" class="abs-vazio">Carregando…</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -24953,22 +24949,38 @@ function ABS_renderSetor(noPeriodo){
   });
   const setores = Object.keys(m).sort((x, y) => (m[y].f + m[y].a) - (m[x].f + m[x].a) || x.localeCompare(y));
   if(ABS_chartSetor) ABS_chartSetor.destroy();
+  // Pareto 80/20: % acumulado do total de ausências, com linha de referência em 80%
+  const totais = setores.map(k => m[k].f + m[k].a);
+  const soma = totais.reduce((x, y) => x + y, 0) || 1;
+  let acc = 0;
+  const acum = totais.map(t => Math.round((acc += t) / soma * 1000) / 10);
   ABS_chartSetor = new Chart(ctx, {
     type: 'bar',
     plugins: window.ChartDataLabels ? [window.ChartDataLabels] : [],
     data: { labels: setores, datasets: [
-      { label: 'Faltas', data: setores.map(k => m[k].f), backgroundColor: '#A10101', borderRadius: 3 },
-      { label: 'Atestados', data: setores.map(k => m[k].a), backgroundColor: '#d97706', borderRadius: 3 }
+      { label: 'Faltas', data: setores.map(k => m[k].f), backgroundColor: '#A10101', borderRadius: 3, stack: 'b', yAxisID: 'y', order: 2,
+        datalabels: { display: c => c.dataset.data[c.dataIndex] > 0, anchor: 'start', align: 'end', offset: 6, color: '#fff', font: { weight: 'bold', size: 16 } } },
+      { label: 'Atestados', data: setores.map(k => m[k].a), backgroundColor: '#d97706', borderRadius: 3, stack: 'b', yAxisID: 'y', order: 2,
+        datalabels: { display: c => c.dataset.data[c.dataIndex] > 0, anchor: 'start', align: 'end', offset: 6, color: '#fff', font: { weight: 'bold', size: 16 } } },
+      { type: 'line', label: '% acumulado', data: acum, borderColor: '#1f2937', backgroundColor: '#1f2937', borderWidth: 2.5,
+        pointRadius: 5, pointBackgroundColor: '#1f2937', tension: 0, yAxisID: 'y2', order: 1,
+        datalabels: { display: true, align: 'top', anchor: 'end', offset: 8, color: '#1f2937', backgroundColor: '#fff', borderColor: '#1f2937', borderWidth: 1.5, borderRadius: 4, padding: { top: 3, bottom: 3, left: 6, right: 6 }, font: { weight: 'bold', size: 14 }, formatter: v => String(v).replace('.', ',') + '%' } },
+      { type: 'line', label: 'Linha 80/20', data: setores.map(() => 80), borderColor: '#2563eb', borderWidth: 2.5, borderDash: [8, 6],
+        pointRadius: 0, fill: false, yAxisID: 'y2', order: 0, datalabels: { display: false } }
     ] },
     options: {
       responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: 36 } },
       scales: {
-        x: { stacked: true, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false, font: { size: 11 } } },
-        y: { stacked: true, beginAtZero: true, grace: '10%', ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.06)' } }
+        x: { stacked: true, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false, font: { size: 14, weight: '600' }, color: '#1f2937' } },
+        y: { stacked: true, beginAtZero: true, grace: '10%', ticks: { precision: 0, font: { size: 13 }, color: '#1f2937' }, grid: { color: 'rgba(0,0,0,0.08)' },
+             title: { display: true, text: 'Ausências', font: { size: 13, weight: '600' } } },
+        y2: { position: 'right', min: 0, max: 100, grid: { display: false }, ticks: { callback: v => v + '%', stepSize: 20, font: { size: 13 }, color: '#1f2937' },
+              title: { display: true, text: '% acumulado', font: { size: 13, weight: '600' } } }
       },
       plugins: {
-        legend: { position: 'top' },
-        datalabels: { display: c => c.dataset.data[c.dataIndex] > 0, color: '#fff', font: { weight: 'bold', size: 11 } }
+        legend: { position: 'top', labels: { font: { size: 15, weight: '600' }, color: '#1f2937', boxWidth: 22, boxHeight: 14, padding: 18 } },
+        tooltip: { bodyFont: { size: 14 }, titleFont: { size: 14 } }
       }
     }
   });
@@ -24983,12 +24995,10 @@ function ABS_renderRank(noPeriodo){
     if(r.tipo === 'Atestado') m[k].a++; else m[k].f++;
   });
   const lista = Object.values(m).sort((x, y) => (y.f + y.a) - (x.f + x.a) || y.f - x.f || x.nome.localeCompare(y.nome));
-  const max = lista.length ? lista[0].f + lista[0].a : 1;
   document.getElementById('absRank').innerHTML = lista.length
     ? lista.map((p, i) => `<tr><td class="abs-rk-pos">${i + 1}</td><td>${ADM_esc(p.nome)}</td><td>${ADM_esc(ABS_setor(p.setor))}</td>
-        <td class="abs-c">${p.f}</td><td class="abs-c">${p.a}</td><td class="abs-c"><strong>${p.f + p.a}</strong></td>
-        <td><div class="abs-rk-bar"><i class="f" style="width:${p.f / max * 100}%"></i><i class="a" style="width:${p.a / max * 100}%"></i></div></td></tr>`).join('')
-    : '<tr><td colspan="7" class="abs-vazio">Nenhuma ausência registrada no período.</td></tr>';
+        <td class="abs-c">${p.f}</td><td class="abs-c">${p.a}</td><td class="abs-c"><strong>${p.f + p.a}</strong></td></tr>`).join('')
+    : '<tr><td colspan="6" class="abs-vazio">Nenhuma ausência registrada no período.</td></tr>';
 }
 let ABS_pickerOk = false;
 function ABS_initPeriodo(){
