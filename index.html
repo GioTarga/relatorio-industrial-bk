@@ -23696,6 +23696,17 @@ document.addEventListener('DOMContentLoaded', () => {
 // ─────────────────────────────────────────────
 (function(){
   const DC_BANDEJAS_POR_CX = 18;
+  const DC_META_CX_DIA = 50;                                   // meta diária: 50 caixas
+  const DC_META_DIA = DC_META_CX_DIA * DC_BANDEJAS_POR_CX;     // = 900 bandejas/dia
+  const DC_FERIADOS = ['2026-11-02','2026-11-20','2026-12-25']; // não contam como dia útil
+  const diaUtil = iso => { const w = new Date(iso + 'T00:00:00').getDay(); return w !== 0 && w !== 6 && !DC_FERIADOS.includes(iso); };
+  function metaPeriodo(ini, fim){
+    let t = 0;
+    for(let d = new Date(ini + 'T00:00:00'), f = new Date(fim + 'T00:00:00'); d <= f; d.setDate(d.getDate() + 1)){
+      if(diaUtil(d.toISOString().slice(0,10))) t += DC_META_DIA;
+    }
+    return t;
+  }
   let DC_dados = [], DC_filtrados = [], DC_chart = null, DC_ini = false;
   let DC_periodo = { ini:'', fim:'' }, DC_sortCol = 'data', DC_sortAsc = false;
 
@@ -23778,14 +23789,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const mesRef = fim.slice(0,7);
     const totMes = soma(base.filter(r => (r.data||'').startsWith(mesRef)));
     const totPer = soma(base);
-    const card = (label, v, sub) => `<div class="kpi-card"><div class="label">${label}</div>
-      <div class="value" style="font-size:2.4rem;font-weight:800;letter-spacing:-1px;line-height:1.1;">${fmt(v)}</div>
-      <div style="margin-top:8px;font-size:12px;color:var(--ink-soft);">${sub}</div></div>`;
+    const [my, mm] = mesRef.split('-').map(Number);
+    const metaDia = diaUtil(diaRef) ? DC_META_DIA : 0;
+    const metaSem = metaPeriodo(sem.ini, sem.fim);
+    const metaMes = metaPeriodo(mesRef + '-01', mesRef + '-' + String(new Date(my, mm, 0).getDate()).padStart(2,'0'));
+    const cor = pct => pct >= 90 ? 'var(--good)' : pct >= 70 ? '#d97706' : 'var(--red)';
+    const cls = pct => pct >= 90 ? 'sem-good' : pct >= 70 ? 'sem-warn' : 'sem-bad';
+    const card = (label, v, meta) => {
+      const pct = meta > 0 ? v / meta * 100 : null;
+      return `<div class="kpi-card ${pct == null ? '' : cls(pct)}"><div class="label">${label}</div>
+        <div class="value" style="font-size:2.4rem;font-weight:800;letter-spacing:-1px;line-height:1.1;">${fmt(v)}</div>
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--ink-soft);">
+          <span>${fmt(Math.round(v / DC_BANDEJAS_POR_CX * 10) / 10)} caixas</span>
+          <span>Meta <strong style="color:var(--ink);font-size:13px;">${fmt(meta)}</strong> (${fmt(meta / DC_BANDEJAS_POR_CX)} cx)</span>
+          <span>Atingido ${pct == null ? '—' : `<strong style="font-size:13px;color:${cor(pct)};">${pct.toFixed(1).replace('.',',')}%</strong>`}</span>
+        </div></div>`;
+    };
     document.getElementById('dc-kpi-grid').innerHTML =
-      card('DIA — ' + fmtData(diaRef), totDia, fmt(Math.round(totDia / DC_BANDEJAS_POR_CX * 10) / 10) + ' caixas · bandejas') +
-      card('SEMANA ATUAL — ' + fmtData(sem.ini) + ' a ' + fmtData(sem.fim), totSem, fmt(Math.round(totSem / DC_BANDEJAS_POR_CX * 10) / 10) + ' caixas · bandejas') +
-      card('MÊS — ' + mesRef.replace('-','/'), totMes, fmt(Math.round(totMes / DC_BANDEJAS_POR_CX * 10) / 10) + ' caixas · bandejas') +
-      card('PERÍODO SELECIONADO', totPer, datas.length + ' dias com produção · bandejas');
+      card('DIA — ' + fmtData(diaRef), totDia, metaDia) +
+      card('SEMANA ATUAL — ' + fmtData(sem.ini) + ' a ' + fmtData(sem.fim), totSem, metaSem) +
+      card('MÊS — ' + mesRef.replace('-','/'), totMes, metaMes) +
+      `<div class="kpi-card"><div class="label">PERÍODO SELECIONADO</div>
+        <div class="value" style="font-size:2.4rem;font-weight:800;letter-spacing:-1px;line-height:1.1;">${fmt(totPer)}</div>
+        <div style="margin-top:8px;font-size:12px;color:var(--ink-soft);">${fmt(Math.round(totPer / DC_BANDEJAS_POR_CX * 10) / 10)} caixas · ${datas.length} dias com produção</div></div>`;
   }
 
   function grafico(){
@@ -23796,12 +23822,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const datas = Object.keys(map).sort();
     if(DC_chart) DC_chart.destroy();
     DC_chart = new Chart(ctx, {
-      type: 'bar',
+      type: 'line',
       data: { labels: datas.map(fmtData), datasets: [{ label: 'Bandejas', data: datas.map(d => map[d]),
-        backgroundColor: 'rgba(183,121,31,0.70)', borderColor: '#b7791f', borderWidth: 1.5, borderRadius: 4 }] },
+        borderColor: '#b7791f', backgroundColor: 'rgba(183,121,31,0.10)', borderWidth: 2,
+        pointRadius: 4, pointHoverRadius: 6, fill: true, tension: 0.3 },
+        { label: 'Meta (' + fmt(DC_META_DIA) + '/dia)', data: datas.map(() => DC_META_DIA), borderColor: '#888',
+          borderWidth: 1.5, borderDash: [6,4], pointRadius: 0, fill: false }] },
       options: { responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false }, datalabels: { display: false },
-          tooltip: { callbacks: { label: c => `  ${fmt(c.parsed.y)} bandejas (${fmt(Math.round(c.parsed.y / DC_BANDEJAS_POR_CX * 10) / 10)} cx)` } } },
+        plugins: { legend: { position: 'top' }, datalabels: { display: false },
+          tooltip: { callbacks: { label: c => c.datasetIndex === 0 ? `  ${fmt(c.parsed.y)} bandejas (${fmt(Math.round(c.parsed.y / DC_BANDEJAS_POR_CX * 10) / 10)} cx)` : null } } },
         scales: { x: { ticks: { font: { size: 11 }, maxRotation: 45 } },
           y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('pt-BR') } } } }
     });
