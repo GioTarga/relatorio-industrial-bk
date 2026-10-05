@@ -3210,6 +3210,7 @@ body{background:#fff;color:#000}
     <button type="button" class="ri-subtab-btn active" data-ritab="geral">Geral</button>
     <button type="button" class="ri-subtab-btn" data-ritab="producao">Produção</button>
     <button type="button" class="ri-subtab-btn" data-ritab="tortas">Produção Tortas</button>
+    <button type="button" class="ri-subtab-btn" data-ritab="docinho">Produção Docinho</button>
     <button type="button" class="ri-subtab-btn" data-ritab="perdas">Registro de Perdas</button>
   </div>
 
@@ -3493,6 +3494,51 @@ body{background:#fff;color:#000}
     </div>
 
   </div><!-- /riTortasContent -->
+
+  <div id="riDocinhoContent" style="display:none;">
+    <div class="panel" style="margin-bottom:16px;">
+      <div class="panel-title" style="color:#b7791f;">Filtros — Produção Docinho</div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <label style="font-size:11px;color:var(--ink-soft);font-weight:600;">PRODUTO</label>
+          <select id="dc-produto" class="filter-select" style="min-width:260px;"><option value="">Todos</option></select>
+        </div>
+        <div style="align-self:flex-end;font-size:11px;color:var(--ink-soft);padding-bottom:6px;">
+          📅 Período: filtro global do topo da página · Unidade: bandejas (1 caixa = 18 bandejas)
+        </div>
+      </div>
+    </div>
+    <div class="kpi-grid" id="dc-kpi-grid" style="margin-bottom:20px;"></div>
+    <div style="margin-bottom:20px;">
+      <div class="panel" style="width:100%;box-sizing:border-box;">
+        <div class="panel-title" style="color:#b7791f;">Histórico Diário (bandejas)</div>
+        <div style="position:relative;height:280px;"><canvas id="dc-chart-linha"></canvas></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div class="panel-title" style="color:#b7791f;margin-bottom:0;">Registros de Produção</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" id="dc-busca" placeholder="Buscar produto…" class="filter-select" style="width:180px;">
+          <span id="dc-count" style="font-size:12px;color:var(--ink-soft);"></span>
+        </div>
+      </div>
+      <div style="overflow-x:auto;max-height:500px;overflow-y:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed;">
+          <colgroup><col style="width:110px;"><col style="width:90px;"><col><col style="width:110px;"><col style="width:110px;"></colgroup>
+          <thead><tr style="border-bottom:2px solid var(--line);">
+            <th class="dc-th" data-col="data" style="text-align:left;padding:8px 10px;cursor:pointer;background:var(--paper);position:sticky;top:0;z-index:2;">Data ↕</th>
+            <th style="text-align:center;padding:8px 10px;background:var(--paper);position:sticky;top:0;z-index:2;">Código</th>
+            <th class="dc-th" data-col="produto" style="text-align:left;padding:8px 10px;cursor:pointer;background:var(--paper);position:sticky;top:0;z-index:2;">Produto ↕</th>
+            <th class="dc-th" data-col="caixas" style="text-align:center;padding:8px 10px;cursor:pointer;background:var(--paper);position:sticky;top:0;z-index:2;">Caixas ↕</th>
+            <th class="dc-th" data-col="band" style="text-align:center;padding:8px 10px;cursor:pointer;background:var(--paper);position:sticky;top:0;z-index:2;">Bandejas ↕</th>
+          </tr></thead>
+          <tbody id="dc-tbody"></tbody>
+          <tfoot id="dc-tfoot" style="position:sticky;bottom:0;z-index:2;"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div><!-- /riDocinhoContent -->
 
   <!-- ═══════════════════════════════════════════════════════ -->
   <!-- ABA: REGISTRO DE PERDAS                                  -->
@@ -19084,6 +19130,14 @@ let riActiveTab = 'geral';
 // "Produção Tortas" só existe dentro do setor CONFEITARIA; nos demais setores (e na GERAL) a sub-aba some.
 function RI_syncTortasTab(){
   try{
+    const btnDc = document.querySelector('.ri-subtab-btn[data-ritab="docinho"]');
+    if(btnDc){
+      btnDc.style.display = selectedSector === 'CONFEITARIA' ? '' : 'none';
+      if(selectedSector !== 'CONFEITARIA' && riActiveTab === 'docinho'){
+        const g = document.querySelector('.ri-subtab-btn[data-ritab="geral"]');
+        if(g) g.click();
+      }
+    }
     const btn = document.querySelector('.ri-subtab-btn[data-ritab="tortas"]');
     if(!btn) return;
     const ehConfeitaria = selectedSector === 'CONFEITARIA';
@@ -19105,7 +19159,9 @@ document.querySelectorAll('.ri-subtab-btn').forEach(btn => {
     document.getElementById('riGeralContent').style.display    = tab === 'geral'     ? '' : 'none';
     document.getElementById('riProdContent').style.display     = tab === 'producao'  ? '' : 'none';
     document.getElementById('riTortasContent').style.display   = tab === 'tortas'    ? '' : 'none';
+    document.getElementById('riDocinhoContent').style.display  = tab === 'docinho'   ? '' : 'none';
     document.getElementById('riPerdasContent').style.display   = tab === 'perdas'    ? '' : 'none';
+    if(tab === 'docinho' && window.DC_init) DC_init();
     if(tab === 'producao'){
       const filteredDates = getFilteredDates();
       renderVolumePorProduto(filteredDates);
@@ -23632,6 +23688,186 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 
 /* ══ FIM MÓDULO PRODUÇÃO TORTAS ══ */
+
+// ─────────────────────────────────────────────
+// MÓDULO PRODUÇÃO DOCINHO (DC_)
+// Docinhos = produtos com "210G" no nome. Contagem em BANDEJAS (1 caixa = 18 bandejas).
+// entrada_estoque já é gravada em bandejas; registros antigos só têm producao_real em caixas.
+// ─────────────────────────────────────────────
+(function(){
+  const DC_BANDEJAS_POR_CX = 18;
+  let DC_dados = [], DC_filtrados = [], DC_chart = null, DC_ini = false;
+  let DC_periodo = { ini:'', fim:'' }, DC_sortCol = 'data', DC_sortAsc = false;
+
+  const fmt = n => (n == null || isNaN(n)) ? '—' : Number(n).toLocaleString('pt-BR');
+  const fmtData = iso => iso ? iso.split('-').reverse().join('/') : '';
+  const num = v => { if(v == null || v === '') return null; const x = parseFloat(String(v).replace(',','.')); return isNaN(x) ? null : x; };
+
+  // bandejas de uma linha: entrada_estoque (já em bandejas) ou, no legado, caixas × 18
+  function bandejas(r){
+    const e = num(r.entrada_estoque);
+    if(e != null && e > 0) return e;
+    const c = num(r.producao_real);
+    return c ? c * DC_BANDEJAS_POR_CX : 0;
+  }
+  function caixas(r){ return bandejas(r) / DC_BANDEJAS_POR_CX; }
+
+  function range(){
+    return { ini: dateStartInput.value || '2026-01-01', fim: dateEndInput.value || new Date().toISOString().slice(0,10) };
+  }
+
+  async function fetchDados(ini, fim){
+    const sb = getSupabaseClient();
+    let all = [], from = 0;
+    while(true){
+      const { data, error } = await sb.from('producao_diaria')
+        .select('data,codigo_produto,produto,producao_real,entrada_estoque')
+        .ilike('setor','confeitaria').gte('data', ini).lte('data', fim)
+        .order('data',{ascending:false}).range(from, from+999);
+      if(error){ console.error('DC_ fetch', error); break; }
+      if(!data || !data.length) break;
+      all = all.concat(data);
+      if(data.length < 1000) break;
+      from += 1000;
+    }
+    return all.filter(r => (r.produto || '').toUpperCase().includes('210G'));
+  }
+
+  function semanaRange(){
+    const d = new Date(), dw = d.getDay();
+    const seg = new Date(d); seg.setDate(d.getDate() + (dw === 0 ? -6 : 1 - dw));
+    const sex = new Date(seg); sex.setDate(seg.getDate() + 4);
+    return { ini: seg.toISOString().slice(0,10), fim: sex.toISOString().slice(0,10) };
+  }
+
+  function filtrar(){
+    const prod = document.getElementById('dc-produto').value;
+    const busca = (document.getElementById('dc-busca').value || '').trim().toUpperCase();
+    DC_filtrados = DC_dados.filter(r => {
+      const p = (r.produto || '').toUpperCase();
+      return (!prod || r.produto === prod) && (!busca || p.includes(busca));
+    });
+    DC_filtrados.sort((a,b) => {
+      let va, vb;
+      if(DC_sortCol === 'produto'){ va = (a.produto||'').toUpperCase(); vb = (b.produto||'').toUpperCase(); }
+      else if(DC_sortCol === 'caixas'){ va = caixas(a); vb = caixas(b); }
+      else if(DC_sortCol === 'band'){ va = bandejas(a); vb = bandejas(b); }
+      else { va = a.data || ''; vb = b.data || ''; }
+      return va < vb ? (DC_sortAsc ? -1 : 1) : va > vb ? (DC_sortAsc ? 1 : -1) : 0;
+    });
+  }
+
+  function kpis(){
+    const { fim } = range();
+    const soma = arr => arr.reduce((s,r) => s + bandejas(r), 0);
+    const base = DC_dados.filter(r => !document.getElementById('dc-produto').value || r.produto === document.getElementById('dc-produto').value);
+    // Dia: último dia do período; se não houve produção nele, o último dia com produção
+    const datas = [...new Set(base.map(r => r.data))].sort();
+    const diaRef = datas.includes(fim) ? fim : (datas[datas.length-1] || fim);
+    const totDia = soma(base.filter(r => r.data === diaRef));
+    const sem = semanaRange();
+    const totSem = soma(base.filter(r => r.data >= sem.ini && r.data <= sem.fim));
+    const mesRef = fim.slice(0,7);
+    const totMes = soma(base.filter(r => (r.data||'').startsWith(mesRef)));
+    const totPer = soma(base);
+    const card = (label, v, sub) => `<div class="kpi-card"><div class="label">${label}</div>
+      <div class="value" style="font-size:2.4rem;font-weight:800;letter-spacing:-1px;line-height:1.1;">${fmt(v)}</div>
+      <div style="margin-top:8px;font-size:12px;color:var(--ink-soft);">${sub}</div></div>`;
+    document.getElementById('dc-kpi-grid').innerHTML =
+      card('DIA — ' + fmtData(diaRef), totDia, fmt(Math.round(totDia / DC_BANDEJAS_POR_CX * 10) / 10) + ' caixas · bandejas') +
+      card('SEMANA ATUAL — ' + fmtData(sem.ini) + ' a ' + fmtData(sem.fim), totSem, fmt(Math.round(totSem / DC_BANDEJAS_POR_CX * 10) / 10) + ' caixas · bandejas') +
+      card('MÊS — ' + mesRef.replace('-','/'), totMes, fmt(Math.round(totMes / DC_BANDEJAS_POR_CX * 10) / 10) + ' caixas · bandejas') +
+      card('PERÍODO SELECIONADO', totPer, datas.length + ' dias com produção · bandejas');
+  }
+
+  function grafico(){
+    const ctx = document.getElementById('dc-chart-linha');
+    if(!ctx) return;
+    const map = {};
+    DC_filtrados.forEach(r => { if(r.data) map[r.data] = (map[r.data] || 0) + bandejas(r); });
+    const datas = Object.keys(map).sort();
+    if(DC_chart) DC_chart.destroy();
+    DC_chart = new Chart(ctx, {
+      type: 'bar',
+      data: { labels: datas.map(fmtData), datasets: [{ label: 'Bandejas', data: datas.map(d => map[d]),
+        backgroundColor: 'rgba(183,121,31,0.70)', borderColor: '#b7791f', borderWidth: 1.5, borderRadius: 4 }] },
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, datalabels: { display: false },
+          tooltip: { callbacks: { label: c => `  ${fmt(c.parsed.y)} bandejas (${fmt(Math.round(c.parsed.y / DC_BANDEJAS_POR_CX * 10) / 10)} cx)` } } },
+        scales: { x: { ticks: { font: { size: 11 }, maxRotation: 45 } },
+          y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('pt-BR') } } } }
+    });
+  }
+
+  function tabela(){
+    document.getElementById('dc-count').textContent = DC_filtrados.length + ' registros';
+    let tc = 0, tb = 0;
+    document.getElementById('dc-tbody').innerHTML = DC_filtrados.map(r => {
+      const b = bandejas(r), c = caixas(r); tb += b; tc += c;
+      return `<tr style="border-bottom:1px solid var(--line);">
+        <td style="padding:7px 10px;white-space:nowrap;">${fmtData(r.data)}</td>
+        <td style="padding:7px 10px;text-align:center;color:var(--ink-soft);font-size:12px;">${ADM_esc(r.codigo_produto || '—')}</td>
+        <td style="padding:7px 10px;">${ADM_esc(r.produto || '')}</td>
+        <td style="padding:7px 10px;text-align:center;">${fmt(Math.round(c * 10) / 10)}</td>
+        <td style="padding:7px 10px;text-align:center;font-weight:600;">${fmt(b)}</td></tr>`;
+    }).join('');
+    const st = 'background:var(--chip-bg);padding:8px 10px;font-weight:700;';
+    document.getElementById('dc-tfoot').innerHTML = `<tr style="border-top:2px solid var(--line);">
+      <td colspan="3" style="${st}">TOTAL</td>
+      <td style="${st}text-align:center;">${fmt(Math.round(tc * 10) / 10)}</td>
+      <td style="${st}text-align:center;">${fmt(tb)}</td></tr>`;
+  }
+
+  function popularProdutos(){
+    const sel = document.getElementById('dc-produto'), atual = sel.value;
+    const prods = [...new Set(DC_dados.map(r => r.produto).filter(Boolean))].sort();
+    sel.innerHTML = '<option value="">Todos</option>' + prods.map(p => `<option value="${ADM_esc(p)}">${ADM_esc(p)}</option>`).join('');
+    if(prods.includes(atual)) sel.value = atual;
+  }
+
+  function render(){ filtrar(); kpis(); grafico(); tabela(); }
+
+  async function carregar(){
+    document.getElementById('dc-kpi-grid').innerHTML = '<div style="color:var(--ink-soft);padding:12px;">Carregando dados…</div>';
+    const { ini, fim } = range();
+    DC_periodo = { ini, fim };
+    DC_dados = await fetchDados(ini, fim);
+    popularProdutos();
+    render();
+  }
+
+  window.DC_init = async function(){
+    const { ini, fim } = range();
+    if(!DC_ini || ini !== DC_periodo.ini || fim !== DC_periodo.fim){
+      const primeira = !DC_ini;
+      DC_ini = true;
+      try{ await carregar(); }
+      catch(e){ document.getElementById('dc-kpi-grid').innerHTML = `<div style="color:var(--red);padding:12px;">Erro ao carregar: ${ADM_esc(e.message)}</div>`; }
+      if(primeira){
+        document.getElementById('dc-produto').addEventListener('change', render);
+        document.getElementById('dc-busca').addEventListener('input', render);
+        document.querySelectorAll('.dc-th').forEach(th => th.addEventListener('click', () => {
+          const col = th.dataset.col;
+          if(DC_sortCol === col) DC_sortAsc = !DC_sortAsc; else { DC_sortCol = col; DC_sortAsc = col !== 'data'; }
+          filtrar(); tabela();
+        }));
+      }
+    } else render();
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const recarrega = () => {
+      if(document.getElementById('riDocinhoContent').style.display !== 'none') carregar().catch(() => {});
+      else DC_periodo = { ini:'', fim:'' };
+    };
+    dateStartInput.addEventListener('change', recarrega);
+    dateEndInput.addEventListener('change', recarrega);
+    const b = document.getElementById('btnRefreshData');
+    if(b) b.addEventListener('click', () => { DC_periodo = { ini:'', fim:'' }; if(document.getElementById('riDocinhoContent').style.display !== 'none') carregar().catch(() => {}); });
+  });
+})();
+/* ══ FIM MÓDULO PRODUÇÃO DOCINHO ══ */
+
 
 // ─────────────────────────────────────────────
 // MÓDULO REGISTRO DE PERDAS
