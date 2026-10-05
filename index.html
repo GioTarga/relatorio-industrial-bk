@@ -1557,6 +1557,17 @@ body{background:#fff;color:#000}
   #page-mapa-rendimentos .mr-vazio{ color:var(--ink-soft); text-align:center; padding:24px 0; }
   #page-mapa-rendimentos .mr-acoes{ display:flex; gap:6px; white-space:nowrap; }
   #page-mapa-rendimentos .mr-obs{ display:block; font-size:11.5px; color:var(--ink-soft); margin-top:3px; }
+  .abl-envio{ display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+  .abl-btn-file, .abl-btn{ background:var(--red); color:#fff; border:0; border-radius:8px; padding:9px 18px; font-weight:700; cursor:pointer; font-size:13px; display:inline-block; }
+  .abl-btn:disabled{ opacity:.5; cursor:default; }
+  .abl-btn-sec{ background:#fff; color:var(--red); border:1px solid var(--red); border-radius:8px; padding:8px 16px; font-weight:700; cursor:pointer; font-size:12.5px; }
+  .abl-arq{ display:flex; align-items:center; gap:10px; margin-bottom:6px; font-size:13px; flex-wrap:wrap; }
+  .abl-arq select{ padding:5px 8px; border:1px solid var(--line); border-radius:6px; }
+  .abl-resumo{ display:flex; gap:10px; flex-wrap:wrap; margin:12px 0; }
+  .abl-chip{ background:#f3e1e1; color:var(--red); border-radius:10px; padding:4px 12px; font-weight:700; font-size:12.5px; }
+  .abl-chip.at{ background:#fff1de; color:var(--gold); }
+  .abl-aviso{ background:#fff7e0; border:1px solid #e8cf86; border-radius:8px; padding:8px 12px; font-size:12.5px; margin-bottom:10px; }
+  .abl-acoes{ display:flex; gap:10px; margin-top:14px; }
 </style>
 
 </style>
@@ -4730,6 +4741,7 @@ body{background:#fff;color:#000}
           <button type="button" class="lanc-tab-btn" data-lanctab="manutencao">Manutenção</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="estoque">Estoque</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="refeitorio">Refeitório</button>
+          <button type="button" class="lanc-tab-btn" data-lanctab="absenteismo" id="lancTabAbsenteismo">Absenteísmo</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="prodproc">Produtividade & Processos</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="maquinas">Máquinas</button>
           <button type="button" class="lanc-tab-btn" data-lanctab="produtos">Produtos</button>
@@ -5277,6 +5289,31 @@ body{background:#fff;color:#000}
 
         <!-- ── ABA SETORES ─────────────────────────────────────── -->
         <!-- Refeitório: retirada de insumos do estoque para o refeitório (gravada em estoque_requisicoes com setor REFEITÓRIO) -->
+        <!-- Absenteísmo: upload dos PDFs de Faltas (apuração do ponto) → pré-visualização → grava em ausencias -->
+        <div id="lancPanelAbsenteismo" class="panel" style="display:none;">
+          <div class="panel-title">Absenteísmo · Lançar apuração do ponto</div>
+          <div class="trend-foot" style="margin-bottom:12px;">Envie os PDFs de Faltas do ponto (1º e 2º turno, pode mandar os dois juntos). O sistema lê os nomes, setores e tipo (falta ou atestado), mostra o que encontrou e só grava depois da sua confirmação.</div>
+          <div class="abl-envio">
+            <label class="abl-btn-file">Selecionar PDF(s)<input type="file" id="ablFile" accept="application/pdf,.pdf" multiple hidden></label>
+            <span class="lanc-feedback" id="ablFeedback"></span>
+          </div>
+          <div id="ablArquivos"></div>
+          <div id="ablPrev" style="display:none;">
+            <div class="abl-resumo" id="ablResumo"></div>
+            <div class="abl-aviso" id="ablAviso" style="display:none;"></div>
+            <div class="table-wrap" style="max-height:420px;">
+              <table class="detail">
+                <thead><tr><th class="center">Lançar</th><th>Matrícula</th><th>Nome</th><th>Setor</th><th class="center">Turno</th><th>Dia</th><th>Tipo</th><th>Obs. do ponto</th></tr></thead>
+                <tbody id="ablTbody"></tbody>
+              </table>
+            </div>
+            <div class="abl-acoes">
+              <button type="button" class="abl-btn" id="ablSalvar">Lançar absenteísmo</button>
+              <button type="button" class="abl-btn-sec" id="ablLimpar">Limpar</button>
+            </div>
+          </div>
+        </div>
+
         <div id="lancPanelRefeitorio" class="panel" style="display:none;">
           <div class="panel-title">Refeitório · Retirada de Insumos</div>
           <form id="rfForm" class="lanc-form">
@@ -5623,6 +5660,31 @@ body{background:#fff;color:#000}
         </div>
       </div>
     </div>
+    <div class="period-bar">
+      <label>Período</label>
+      <div class="dr-wrap" id="drWrap_abs">
+        <button type="button" class="dr-btn" id="drBtn_abs"></button>
+        <div class="dr-panel" id="drPanel_abs">
+          <div class="dr-header">
+            <button type="button" class="dr-nav" id="drPrev_abs">‹</button>
+            <div class="dr-month-label" id="drLabel_abs"></div>
+            <button type="button" class="dr-nav" id="drNext_abs">›</button>
+          </div>
+          <div class="dr-weekdays"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+          <div class="dr-grid" id="drGrid_abs"></div>
+          <div class="dr-hint" id="drHint_abs">Clique numa data para começar, e em outra pra fechar o intervalo</div>
+          <div class="dr-footer">
+            <button type="button" id="drClear_abs">Limpar</button>
+            <button type="button" id="drToday_abs">Hoje</button>
+          </div>
+        </div>
+      </div>
+      <input type="date" id="absDataIni" style="display:none;">
+      <input type="date" id="absDataFim" style="display:none;">
+      <button class="btn-refresh" id="absBtnRefresh">⟳ Atualizar</button>
+      <span class="period-info" id="absPeriodInfo"></span>
+    </div>
+
     <div class="container">
       <div class="kpi-grid" id="absKpis">
         <div class="kpi-card"><div class="label">Faltas do dia anterior</div><div class="value" id="absK1">–</div><div class="abs-sub" id="absK1s"></div></div>
@@ -8856,6 +8918,7 @@ function renderMainSetorTabs(){
     });
     mainSetorTabsEl.appendChild(btn);
   });
+  if(typeof RI_syncTortasTab === 'function') RI_syncTortasTab();
 }
 
 /* ---------- Botão "Atualizar": busca a planilha publicada novamente e
@@ -11283,6 +11346,8 @@ document.querySelectorAll('.lanc-tab-btn').forEach(btn=>{
     document.getElementById('lancPanelProdutos').style.display = tab === 'produtos' ? 'block' : 'none';
     document.getElementById('lancPanelSetores').style.display = tab === 'setores' ? 'block' : 'none';
     document.getElementById('lancPanelRefeitorio').style.display = tab === 'refeitorio' ? 'block' : 'none';
+    document.getElementById('lancPanelAbsenteismo').style.display = tab === 'absenteismo' ? 'block' : 'none';
+    if(tab === 'absenteismo') ABL_init();
     if(tab === 'refeitorio') RF_init();
     if(tab === 'estoque') EQ_populateDropdowns();
     if(tab === 'producao') LANC_populateDropdowns();
@@ -19016,6 +19081,20 @@ buildAlertaSetorDropdown();
 // ─────────────────────────────────────────────
 let riActiveTab = 'geral';
 
+// "Produção Tortas" só existe dentro do setor CONFEITARIA; nos demais setores (e na GERAL) a sub-aba some.
+function RI_syncTortasTab(){
+  try{
+    const btn = document.querySelector('.ri-subtab-btn[data-ritab="tortas"]');
+    if(!btn) return;
+    const ehConfeitaria = selectedSector === 'CONFEITARIA';
+    btn.style.display = ehConfeitaria ? '' : 'none';
+    if(!ehConfeitaria && riActiveTab === 'tortas'){
+      const geral = document.querySelector('.ri-subtab-btn[data-ritab="geral"]');
+      if(geral) geral.click();
+    }
+  }catch(e){ /* ainda inicializando: a próxima renderização das abas sincroniza */ }
+}
+
 document.querySelectorAll('.ri-subtab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const tab = btn.dataset.ritab;
@@ -24318,6 +24397,168 @@ document.addEventListener('input', e => { if(e.target.id === 'mrBusca') MR_rende
 document.addEventListener('submit', e => { if(e.target.id === 'mrForm') MR_salvar(e); });
 
 // ─────────────────────────────────────────────
+// LANÇAMENTO · ABSENTEÍSMO (upload dos PDFs de Faltas do ponto)
+// ─────────────────────────────────────────────
+// Lê o relatório "Apuração Colaborador" (HRAP001) no navegador com pdf.js, mostra o que encontrou
+// e grava em ausencias (upsert por matrícula + dia). Atestado = observação "Atestado"; o resto é Falta.
+let ABL_ARQS = [];   // [{ nome, turno, linhas:[{matricula,nome,setor,data,tipo,obs}], ignoradas }]
+let ABL_LINHAS = []; // linhas consolidadas da pré-visualização (com .incluir e .turno)
+let ABL_PDFJS = null;
+function ABL_carregarPdfJs(){
+  if(ABL_PDFJS) return ABL_PDFJS;
+  ABL_PDFJS = new Promise((ok, erro) => {
+    if(window.pdfjsLib){ ok(window.pdfjsLib); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; ok(window.pdfjsLib); };
+    s.onerror = () => { ABL_PDFJS = null; erro(new Error('Não foi possível carregar o leitor de PDF (verifique a internet).')); };
+    document.head.appendChild(s);
+  });
+  return ABL_PDFJS;
+}
+function ABL_semAcento(s){ return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim(); }
+async function ABL_lerPdf(file){
+  const pdfjs = await ABL_carregarPdfJs();
+  const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+  const linhasTxt = [];
+  for(let p = 1; p <= pdf.numPages; p++){
+    const content = await (await pdf.getPage(p)).getTextContent();
+    const porY = [];
+    content.items.forEach(it => {
+      if(!it.str || !it.str.trim()) return;
+      const y = it.transform[5], x = it.transform[4];
+      let g = porY.find(l => Math.abs(l.y - y) < 2.5);
+      if(!g){ g = { y, itens: [] }; porY.push(g); }
+      g.itens.push({ x, t: it.str });
+    });
+    porY.sort((a, b) => b.y - a.y).forEach(l => linhasTxt.push(l.itens.sort((a, b) => a.x - b.x).map(i => i.t).join(' ').replace(/\s+/g, ' ').trim()));
+  }
+  let ano = null, setor = null, mat = null, nome = null, ignoradas = 0;
+  const linhas = [];
+  linhasTxt.forEach(ln => {
+    let m = ln.match(/Per[ií]odo:\s*\d{2}\/\d{2}\/(\d{4})/i);
+    if(m){ ano = m[1]; return; }
+    m = ln.match(/^\d\.\d\d\.\d\d\s*,.*,\s*([^,]+)$/);
+    if(m){ setor = ABL_semAcento(m[1]); return; }
+    m = ln.match(/^(\d{2})\/(\d{2})\s+[A-Za-zÀ-ú]{3}\s+\d+\s+(.+)$/);
+    if(m){
+      const resto = m[3];
+      if(!/falta/i.test(resto)){ ignoradas++; return; }
+      const obs = resto.replace(/^Faltas?\s*/i, '').trim();
+      if(mat && ano) linhas.push({ matricula: mat, nome, setor, data: ano + '-' + m[2] + '-' + m[1], tipo: /atestado/i.test(obs) ? 'Atestado' : 'Falta', obs });
+      return;
+    }
+    m = ln.match(/^(\d{3,6})\s+(.+)$/);
+    if(m && !/BREAD KING ALIMENTOS|HRAP|Pag\./i.test(ln)){ mat = m[1]; nome = m[2].trim(); }
+  });
+  return { linhas, ignoradas };
+}
+function ABL_turnoDoNome(nome){
+  const m = String(nome).match(/0?([12])[\s_\-]*[º°]?[\s_\-]*turno/i);
+  return m ? Number(m[1]) : 1;
+}
+function ABL_br(iso){ return iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4); }
+function ABL_fb(msg, cls){ const f = document.getElementById('ablFeedback'); f.textContent = msg; f.className = 'lanc-feedback' + (cls ? ' ' + cls : ''); }
+function ABL_init(){ /* painel começa vazio; nada a carregar */ }
+async function ABL_arquivos(files){
+  ABL_arq_novo: for(const f of files){
+    if(ABL_ARQS.some(a => a.nome === f.name)) continue ABL_arq_novo;
+    ABL_fb('Lendo ' + f.name + '…');
+    try{
+      const r = await ABL_lerPdf(f);
+      ABL_ARQS.push({ nome: f.name, turno: ABL_turnoDoNome(f.name), linhas: r.linhas, ignoradas: r.ignoradas });
+    }catch(e){
+      ABL_fb('⚠ Não consegui ler ' + f.name + ': ' + (e.message || e), 'err');
+      return;
+    }
+  }
+  ABL_fb('');
+  ABL_montar();
+}
+async function ABL_montar(){
+  const box = document.getElementById('ablArquivos');
+  box.innerHTML = ABL_ARQS.map((a, i) => `<div class="abl-arq"><b>${ADM_esc(a.nome)}</b> · ${a.linhas.length} registro(s)
+    <label>Turno <select data-abl-turno="${i}"><option value="1"${a.turno === 1 ? ' selected' : ''}>1º turno</option><option value="2"${a.turno === 2 ? ' selected' : ''}>2º turno</option></select></label>
+    <button type="button" class="abl-btn-sec" data-abl-rm="${i}">Remover</button></div>`).join('');
+  const antigos = {};
+  ABL_LINHAS.forEach(l => { antigos[l.matricula + '|' + l.data] = l; });
+  const vistos = new Set(), todas = [];
+  let duplicadas = 0, semLinhas = 0;
+  ABL_ARQS.forEach(a => {
+    if(!a.linhas.length) semLinhas++;
+    a.linhas.forEach(l => {
+      const k = l.matricula + '|' + l.data;
+      if(vistos.has(k)){ duplicadas++; return; }
+      vistos.add(k);
+      const ant = antigos[k];
+      todas.push({ ...l, turno: a.turno, incluir: ant ? ant.incluir : true, tipo: ant ? ant.tipo : l.tipo });
+    });
+  });
+  ABL_LINHAS = todas;
+  document.getElementById('ablPrev').style.display = ABL_ARQS.length ? '' : 'none';
+  let aviso = '';
+  if(duplicadas) aviso += `${duplicadas} registro(s) repetido(s) entre os arquivos foram ignorados. `;
+  if(semLinhas) aviso += 'Algum arquivo não trouxe nenhuma falta — confira se é o relatório certo. ';
+  const datas = [...new Set(todas.map(l => l.data))];
+  if(datas.length){
+    try{
+      const r = await LANC_getClient().from('ausencias').select('matricula,data').in('data', datas);
+      const ja = (r.data || []).length;
+      if(ja) aviso += `Já existem ${ja} registro(s) lançados nessas datas; os repetidos serão atualizados, não duplicados.`;
+    }catch(e){ /* sem a checagem o lançamento continua válido */ }
+  }
+  const av = document.getElementById('ablAviso');
+  av.textContent = aviso; av.style.display = aviso ? '' : 'none';
+  ABL_render();
+}
+function ABL_render(){
+  const inc = ABL_LINHAS.filter(l => l.incluir);
+  const faltas = inc.filter(l => l.tipo === 'Falta').length, atest = inc.filter(l => l.tipo === 'Atestado').length;
+  const dias = [...new Set(inc.map(l => ABL_br(l.data)))].join(', ');
+  document.getElementById('ablResumo').innerHTML = `<span class="abl-chip">${faltas} falta(s)</span><span class="abl-chip at">${atest} atestado(s)</span><span class="abl-chip">${inc.length} no total</span>${dias ? `<span class="abl-chip">Dia: ${ADM_esc(dias)}</span>` : ''}`;
+  document.getElementById('ablTbody').innerHTML = ABL_LINHAS.map((l, i) => `<tr>
+    <td class="center"><input type="checkbox" data-abl-inc="${i}"${l.incluir ? ' checked' : ''}></td>
+    <td>${ADM_esc(l.matricula)}</td><td>${ADM_esc(l.nome)}</td><td>${ADM_esc(l.setor || '–')}</td><td class="center">${l.turno}º</td><td>${ABL_br(l.data)}</td>
+    <td><select data-abl-tipo="${i}"><option${l.tipo === 'Falta' ? ' selected' : ''}>Falta</option><option${l.tipo === 'Atestado' ? ' selected' : ''}>Atestado</option></select></td>
+    <td>${ADM_esc(l.obs || '')}</td></tr>`).join('');
+  document.getElementById('ablSalvar').disabled = !inc.length;
+}
+async function ABL_salvar(){
+  const inc = ABL_LINHAS.filter(l => l.incluir);
+  if(!inc.length) return;
+  const btn = document.getElementById('ablSalvar');
+  btn.disabled = true; ABL_fb('Gravando…');
+  try{
+    const dados = inc.map(l => ({ matricula: l.matricula, nome: l.nome, data: l.data, tipo: l.tipo, setor: l.setor, turno: l.turno }));
+    const client = LANC_getClient();
+    const r = await client.from('ausencias').upsert(dados, { onConflict: 'matricula,data' });
+    if(r.error) throw r.error;
+    ABL_fb('✓ ' + dados.length + ' registro(s) lançados no Controle de Absenteísmo.', 'ok');
+    ABL_ARQS = []; ABL_LINHAS = [];
+    document.getElementById('ablArquivos').innerHTML = '';
+    document.getElementById('ablPrev').style.display = 'none';
+    document.getElementById('ablFile').value = '';
+    if(typeof ABS_load === 'function') ABS_load();
+  }catch(e){
+    ABL_fb('⚠ Erro ao gravar: ' + (e.message || e), 'err');
+    btn.disabled = false;
+  }
+}
+document.addEventListener('change', e => {
+  const t = e.target;
+  if(t.id === 'ablFile'){ ABL_arquivos([...t.files]); return; }
+  if(t.dataset && t.dataset.ablTurno != null){ ABL_ARQS[Number(t.dataset.ablTurno)].turno = Number(t.value); ABL_montar(); }
+  else if(t.dataset && t.dataset.ablInc != null){ ABL_LINHAS[Number(t.dataset.ablInc)].incluir = t.checked; ABL_render(); }
+  else if(t.dataset && t.dataset.ablTipo != null){ ABL_LINHAS[Number(t.dataset.ablTipo)].tipo = t.value; ABL_render(); }
+});
+document.addEventListener('click', e => {
+  const t = e.target;
+  if(t.id === 'ablSalvar') ABL_salvar();
+  else if(t.id === 'ablLimpar'){ ABL_ARQS = []; ABL_LINHAS = []; document.getElementById('ablFile').value = ''; document.getElementById('ablArquivos').innerHTML = ''; document.getElementById('ablPrev').style.display = 'none'; ABL_fb(''); }
+  else if(t.dataset && t.dataset.ablRm != null){ ABL_ARQS.splice(Number(t.dataset.ablRm), 1); document.getElementById('ablFile').value = ''; ABL_montar(); }
+});
+
+// ─────────────────────────────────────────────
 // MÓDULO CONTROLE DE ABSENTEÍSMO
 // ─────────────────────────────────────────────
 // Fonte: tabela ausencias (uma linha por colaborador/dia, tipo Falta ou Atestado).
@@ -24357,9 +24598,12 @@ function ABS_render(){
   document.getElementById('absK3s').textContent = hoje.toLocaleDateString('pt-BR', { month:'long', year:'numeric' });
   document.getElementById('absK4s').textContent = hoje.toLocaleDateString('pt-BR', { month:'long', year:'numeric' });
 
-  // Gráfico: últimos 30 dias (dias sem registro aparecem como 0)
+  // Gráfico: período selecionado (dias sem registro aparecem como 0)
+  const ini = document.getElementById('absDataIni').value, fim = document.getElementById('absDataFim').value;
   const dias = [];
-  for(let i = 29; i >= 0; i--) dias.push(ABS_iso(ABS_somaDias(hoje, -i)));
+  for(let d = new Date(ini + 'T12:00:00'), f = new Date(fim + 'T12:00:00'); d <= f; d.setDate(d.getDate() + 1)) dias.push(ABS_iso(d));
+  const noPeriodo = ABS_DATA.filter(r => r.data >= ini && r.data <= fim);
+  document.getElementById('absPeriodInfo').textContent = dias.length + ' dias no período · ' + noPeriodo.filter(r => r.tipo === 'Falta').length + ' falta(s) · ' + noPeriodo.filter(r => r.tipo === 'Atestado').length + ' atestado(s)';
   const porDia = {};
   faltas.forEach(r => { porDia[r.data] = (porDia[r.data] || 0) + 1; });
   const valores = dias.map(d => porDia[d] || 0);
@@ -24394,12 +24638,23 @@ function ABS_render(){
   }
 
   // Tabela: mais recentes primeiro, depois por nome
-  const linhas = [...ABS_DATA].sort((a, b) => b.data.localeCompare(a.data) || a.nome.localeCompare(b.nome));
+  const linhas = [...noPeriodo].sort((a, b) => b.data.localeCompare(a.data) || a.nome.localeCompare(b.nome));
   document.getElementById('absTbody').innerHTML = linhas.length
     ? linhas.map(r => `<tr><td>${ADM_esc(r.nome)}</td><td>${ADM_esc(ABS_setor(r.setor))}</td><td>${r.turno ? r.turno + 'º' : '–'}</td><td>${ABS_br(r.data)}</td><td><span class="abs-tipo ${r.tipo === 'Atestado' ? 'atestado' : 'falta'}">${ADM_esc(r.tipo)}</span></td></tr>`).join('')
-    : '<tr><td colspan="5" class="abs-vazio">Nenhuma ausência registrada.</td></tr>';
+    : '<tr><td colspan="5" class="abs-vazio">Nenhuma ausência registrada no período.</td></tr>';
+}
+let ABS_pickerOk = false;
+function ABS_initPeriodo(){
+  if(ABS_pickerOk) return;
+  ABS_pickerOk = true;
+  const ini = document.getElementById('absDataIni'), fim = document.getElementById('absDataFim');
+  if(!fim.value) fim.value = ABS_iso(new Date());
+  if(!ini.value) ini.value = ABS_iso(ABS_somaDias(new Date(), -29));
+  initDateRangePicker('abs', ini, fim, ABS_render);
+  document.getElementById('absBtnRefresh').addEventListener('click', ABS_load);
 }
 async function ABS_load(){
+  ABS_initPeriodo();
   try{
     ABS_DATA = await sbFetchAll('ausencias', 'data');
     ABS_render();
@@ -24440,6 +24695,8 @@ function BK_authApply(session){
   BK_jaLogou = true;
   const navs = [...document.querySelectorAll('.sidebar-nav .nav-item')];
   navs.forEach(b => { b.style.display = BK_podeVer(b.dataset.page) ? '' : 'none'; });
+  const tabAbs = document.getElementById('lancTabAbsenteismo');
+  if(tabAbs) tabAbs.style.display = BK_podeVer('absenteismo') ? '' : 'none';
   const ativo = document.querySelector('.sidebar-nav .nav-item.active');
   if(!ativo || ativo.style.display === 'none'){
     const primeiro = navs.find(b => b.style.display !== 'none');
