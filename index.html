@@ -23712,8 +23712,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   function caixas(r){ return bandejas(r) / DC_BANDEJAS_POR_CX; }
 
+  // Docinho = 210G no nome ou Brigadeiro Gourmet 240g (ainda fora do catálogo)
+  function ehDocinho(r){
+    const p = (r.produto || '').toUpperCase();
+    return p.includes('210G') || (p.includes('GOURMET') && p.includes('BRIGADEIRO'));
+  }
+  // Docinho só passou a ser apontado em 02/10/2026; registros anteriores são ignorados
+  const DC_INICIO = '2026-10-02';
+
   function range(){
-    return { ini: dateStartInput.value || '2026-01-01', fim: dateEndInput.value || new Date().toISOString().slice(0,10) };
+    return { ini: (dateStartInput.value && dateStartInput.value > DC_INICIO) ? dateStartInput.value : DC_INICIO, fim: dateEndInput.value || new Date().toISOString().slice(0,10) };
   }
 
   async function fetchDados(ini, fim){
@@ -23730,7 +23738,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if(data.length < 1000) break;
       from += 1000;
     }
-    return all.filter(r => (r.produto || '').toUpperCase().includes('210G'));
+    return all.filter(ehDocinho);
   }
 
   function semanaRange(){
