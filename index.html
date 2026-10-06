@@ -24730,11 +24730,12 @@ async function ABL_lerPdf(file){
     if(m){ ano = m[1]; return; }
     m = ln.match(/^\d\.\d\d\.\d\d\s*,.*,\s*([^,]+)$/);
     if(m){ setor = ABL_semAcento(m[1]); return; }
-    m = ln.match(/^(\d{2})\/(\d{2})\s+[A-Za-zÀ-ú]{3}\s+\d+\s+(.+)$/);
+    // Código da situação (ex.: 015) é opcional: nos domingos o ponto traz só "Ausência"
+    m = ln.match(/^(\d{2})\/(\d{2})\s+[A-Za-zÀ-ú]{3}\s+(?:\d+\s+)?(.+)$/);
     if(m){
       const resto = m[3];
-      if(!/falta/i.test(resto)){ ignoradas++; return; }
-      const obs = resto.replace(/^Faltas?\s*/i, '').trim();
+      if(!/falta|aus[eê]ncia/i.test(resto)){ ignoradas++; return; }
+      const obs = resto.replace(/^(Faltas?|Aus[eê]ncias?)\s*/i, '').trim();
       if(mat && ano) linhas.push({ matricula: mat, nome, setor, data: ano + '-' + m[2] + '-' + m[1], tipo: /atestado/i.test(obs) ? 'Atestado' : 'Falta', obs });
       return;
     }
@@ -24745,7 +24746,8 @@ async function ABL_lerPdf(file){
 }
 function ABL_turnoDoNome(nome){
   const m = String(nome).match(/0?([12])[\s_\-]*[º°]?[\s_\-]*turno/i);
-  return m ? Number(m[1]) : 1;
+  if(m) return Number(m[1]);
+  return /noite|noturno/i.test(String(nome)) ? 2 : 1; // arquivos nomeados "..._DIA" / "..._NOITE"
 }
 function ABL_br(iso){ return iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4); }
 function ABL_fb(msg, cls){ const f = document.getElementById('ablFeedback'); f.textContent = msg; f.className = 'lanc-feedback' + (cls ? ' ' + cls : ''); }
