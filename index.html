@@ -23745,8 +23745,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const p = (r.produto || '').toUpperCase();
     return p.includes('210G') || (p.includes('GOURMET') && p.includes('BRIGADEIRO'));
   }
-  // Docinho só passou a ser apontado em 02/10/2026; registros anteriores são ignorados
-  const DC_INICIO = '2026-10-02';
+  // Docinho só passou a ser apontado em 01/10/2026; registros anteriores são ignorados
+  const DC_INICIO = '2026-10-01';
 
   function range(){
     return { ini: (dateStartInput.value && dateStartInput.value > DC_INICIO) ? dateStartInput.value : DC_INICIO, fim: dateEndInput.value || new Date().toISOString().slice(0,10) };
