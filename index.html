@@ -24940,6 +24940,25 @@ function ABS_render(){
 }
 // Gráfico de barras: faltas (e atestados) por setor no período selecionado
 let ABS_chartSetor = null;
+// Quebra o nome do setor em linhas curtas para o rótulo do eixo não colidir com o vizinho
+function ABS_quebraRotulo(nome){
+  const palavras = String(nome).split(/\s+/), linhas = [];
+  let atual = '';
+  palavras.forEach(p => {
+    if(atual && p.length > 2 && (atual + ' ' + p).length > 10){ linhas.push(atual); atual = p; }
+    else atual = atual ? atual + ' ' + p : p;
+  });
+  if(atual) linhas.push(atual);
+  return linhas;
+}
+// O número dentro do segmento só aparece se couber (≥ 24px de altura); senão vai no total acima da barra
+function ABS_segAlto(c){
+  const v = c.dataset.data[c.dataIndex];
+  if(!(v > 0)) return false;
+  const y = c.chart.scales.y;
+  if(!y) return true;
+  return Math.abs(y.getPixelForValue(0) - y.getPixelForValue(v)) >= 24;
+}
 function ABS_renderSetor(noPeriodo){
   const ctx = document.getElementById('absChartSetor');
   if(!ctx || typeof Chart === 'undefined') return;
@@ -24954,23 +24973,28 @@ function ABS_renderSetor(noPeriodo){
   ABS_chartSetor = new Chart(ctx, {
     type: 'bar',
     plugins: window.ChartDataLabels ? [window.ChartDataLabels] : [],
-    data: { labels: setores, datasets: [
+    data: { labels: setores.map(ABS_quebraRotulo), datasets: [
       { label: 'Faltas', data: setores.map(k => m[k].f), backgroundColor: '#A10101', borderRadius: 3, stack: 'b', yAxisID: 'y', order: 2,
-        datalabels: { display: c => c.dataset.data[c.dataIndex] > 0, anchor: 'start', align: 'end', offset: 6, color: '#fff', font: { weight: 'bold', size: 16 } } },
+        datalabels: { display: c => ABS_segAlto(c), anchor: 'center', align: 'center', offset: 0, color: '#fff', font: { weight: 'bold', size: 16 } } },
       { label: 'Atestados', data: setores.map(k => m[k].a), backgroundColor: '#d97706', borderRadius: 3, stack: 'b', yAxisID: 'y', order: 2,
-        datalabels: { display: c => c.dataset.data[c.dataIndex] > 0, anchor: 'start', align: 'end', offset: 6, color: '#fff', font: { weight: 'bold', size: 16 } } }
+        datalabels: { display: c => ABS_segAlto(c), anchor: 'center', align: 'center', offset: 0, color: '#fff', font: { weight: 'bold', size: 16 } } },
+      { type: 'line', label: 'Total', data: setores.map(k => m[k].f + m[k].a), showLine: false, pointRadius: 0, pointHoverRadius: 0, yAxisID: 'y', order: 0,
+        datalabels: { display: c => { const i = c.dataIndex, ch = c.chart; return [0, 1].some(d => ch.data.datasets[d].data[i] > 0 && !ABS_segAlto({ chart: ch, datasetIndex: d, dataIndex: i, dataset: ch.data.datasets[d] })); },
+          anchor: 'end', align: 'top', offset: 4, color: '#1f2937', textAlign: 'center', font: { weight: 'bold', size: 15 },
+          formatter: (v, c) => { const i = c.dataIndex, f = c.chart.data.datasets[0].data[i], a = c.chart.data.datasets[1].data[i];
+            return (f && a) ? v + '\n' + f + 'F + ' + a + 'A' : String(v); } } }
     ] },
     options: {
       responsive: true, maintainAspectRatio: false,
-      layout: { padding: { top: 36 } },
+      layout: { padding: { top: 24 } },
       scales: {
-        x: { stacked: true, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false, font: { size: 14, weight: '600' }, color: '#1f2937' } },
-        y: { stacked: true, beginAtZero: true, grace: '10%', ticks: { precision: 0, font: { size: 13 }, color: '#1f2937' }, grid: { color: 'rgba(0,0,0,0.08)' },
+        x: { stacked: true, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false, padding: 6, font: { size: 12, weight: '700' }, color: '#1f2937' } },
+        y: { stacked: true, beginAtZero: true, grace: '15%', ticks: { precision: 0, font: { size: 13 }, color: '#1f2937' }, grid: { color: 'rgba(0,0,0,0.08)' },
              title: { display: true, text: 'Ausências', font: { size: 13, weight: '600' } } }
       },
       plugins: {
-        legend: { position: 'top', labels: { font: { size: 15, weight: '600' }, color: '#1f2937', boxWidth: 22, boxHeight: 14, padding: 18 } },
-        tooltip: { bodyFont: { size: 14 }, titleFont: { size: 14 } }
+        legend: { position: 'top', labels: { filter: it => it.text !== 'Total', font: { size: 15, weight: '600' }, color: '#1f2937', boxWidth: 22, boxHeight: 14, padding: 18 } },
+        tooltip: { filter: it => it.dataset.label !== 'Total', bodyFont: { size: 14 }, titleFont: { size: 14 } }
       }
     }
   });
