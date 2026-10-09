@@ -1150,17 +1150,20 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 
 #page-pcp-estoque .table-wrap{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 290px);box-shadow:0 2px 10px rgba(161,1,1,.04)}
 
-#page-pcp-estoque .table-header{display:grid;grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 56px;gap:0;min-width:1062px;background:var(--red-dark);padding:7px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;color:rgba(255,255,255,.9);font-weight:700;border-bottom:1px solid var(--line);position:sticky;top:26px;z-index:5}
+#page-pcp-estoque .table-header{display:grid;grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 72px 70px 92px 86px 80px 56px;gap:0;min-width:1482px;background:var(--red-dark);padding:7px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;color:rgba(255,255,255,.9);font-weight:700;border-bottom:1px solid var(--line);position:sticky;top:26px;z-index:5}
 /* Linha de grupo FÁBRICA / LOJA acima do cabeçalho de colunas */
-#page-pcp-estoque .table-group-header{display:grid;grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 56px;gap:0;min-width:1062px;position:sticky;top:0;z-index:6}
+#page-pcp-estoque .table-group-header{display:grid;grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 72px 70px 92px 86px 80px 56px;gap:0;min-width:1482px;position:sticky;top:0;z-index:6}
 #page-pcp-estoque .tgh-empty{background:var(--red-dark);}
 #page-pcp-estoque .tgh-fab{grid-column:2/7;background:var(--gold);color:#fff;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;text-align:center;padding:4px 0;border-right:2px solid rgba(255,255,255,.3);}
+#page-pcp-estoque .tgh-cafe{grid-column:12/17;background:#5b3a1e;color:#fff;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;text-align:center;padding:4px 0;border-right:2px solid rgba(255,255,255,.3);}
 #page-pcp-estoque .tgh-loja{grid-column:7/12;background:#8B0000;color:#fff;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;text-align:center;padding:4px 0;border-right:2px solid rgba(255,255,255,.3);}
 #page-pcp-estoque .tgh-dias{background:var(--red-dark);}
 /* Linha vertical divisória Fábrica | Loja — pseudo-elemento contínuo */
 /* left = padding-left(10px) + colunas 1-6 (200+72+70+92+86+80=600px) = 610px */
 #page-pcp-estoque .table-header::after,
 #page-pcp-estoque .table-row::after{content:'';position:absolute;left:610px;top:0;bottom:-1px;width:2px;background:#8B0000;pointer-events:none;z-index:2;}
+#page-pcp-estoque .table-header::before,
+#page-pcp-estoque .table-row::before{content:'';position:absolute;left:1016px;top:0;bottom:-1px;width:2px;background:#5b3a1e;pointer-events:none;z-index:2;}
 /* respiro em volta da linha divisória */
 #page-pcp-estoque .table-header > div:nth-child(6),
 #page-pcp-estoque .table-row > div:nth-child(6){padding-right:8px;}
@@ -1168,9 +1171,11 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .table-row > div:nth-child(7){padding-left:8px;}
 /* Venda.Loja — forçar alinhamento à direita */
 #page-pcp-estoque .table-header > div:nth-child(11),
-#page-pcp-estoque .table-row > div:nth-child(11){text-align:right;}
+#page-pcp-estoque .table-row > div:nth-child(11){text-align:right;padding-right:8px;}
+#page-pcp-estoque .table-header > div:nth-child(12),
+#page-pcp-estoque .table-row > div:nth-child(12){padding-left:8px;}
 
-#page-pcp-estoque .table-row{display:grid;grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 56px;gap:0;min-width:1062px;padding:9px 10px;min-height:48px;border-bottom:1px solid var(--line);transition:background .1s;align-items:center;position:relative;}
+#page-pcp-estoque .table-row{display:grid;grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 72px 70px 92px 86px 80px 56px;gap:0;min-width:1482px;padding:9px 10px;min-height:48px;border-bottom:1px solid var(--line);transition:background .1s;align-items:center;position:relative;}
 
 
 #page-pcp-estoque .table-row:hover{background:#fffaf0}
@@ -1190,6 +1195,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .cell-loc{font-size:9px;font-weight:700;margin-top:2px}
 #page-pcp-estoque .loc-fab{color:var(--red-dark)}
 #page-pcp-estoque .loc-loja{color:#1a56a0}
+#page-pcp-estoque .loc-cafe{color:#5b3a1e}
 
 #page-pcp-estoque .cell-num{text-align:right}
 
@@ -4360,6 +4366,7 @@ body{background:#fff;color:#000}
       <div class="chip active" onclick="setLoc(this,'ALL')">Todos</div>
       <div class="chip" onclick="setLoc(this,'FABRICA')">Fábrica</div>
       <div class="chip" onclick="setLoc(this,'LOJA')">Loja</div>
+      <div class="chip" onclick="setLoc(this,'CAFE')">BK Café</div>
     </div>
     <span class="filter-vsep"></span>
     <!-- Setor multi-select dropdown -->
@@ -4468,6 +4475,7 @@ body{background:#fff;color:#000}
         <div class="tgh-empty"></div>
         <div class="tgh-fab">Fábrica</div>
         <div class="tgh-loja">Loja</div>
+        <div class="tgh-cafe">BK Café</div>
         <div class="tgh-dias"></div>
       </div>
       <div class="table-header">
@@ -4478,6 +4486,9 @@ body{background:#fff;color:#000}
         <div class="cell-num th-loja">Est.Loja</div><div class="cell-num th-loja">Res.Loja</div>
         <div class="cell-num th-loja">Agrup.Loja</div><div class="cell-num th-saldo th-loja">Saldo Loja</div>
         <div class="cell-num th-loja">Venda.Loja</div>
+        <div class="cell-num th-cafe">Est.Café</div><div class="cell-num th-cafe">Res.Café</div>
+        <div class="cell-num th-cafe">Agrup.Café</div><div class="cell-num th-saldo th-cafe">Saldo Café</div>
+        <div class="cell-num th-cafe">Venda.Café</div>
         <div class="cell-num">Dias</div>
       </div>
       <div id="alertTable"></div>
@@ -4496,6 +4507,7 @@ body{background:#fff;color:#000}
         <div class="tgh-empty"></div>
         <div class="tgh-fab">Fábrica</div>
         <div class="tgh-loja">Loja</div>
+        <div class="tgh-cafe">BK Café</div>
         <div class="tgh-dias"></div>
       </div>
       <div class="table-header">
@@ -4506,6 +4518,9 @@ body{background:#fff;color:#000}
         <div class="cell-num th-loja">Est.Loja</div><div class="cell-num th-loja">Res.Loja</div>
         <div class="cell-num th-loja">Agrup.Loja</div><div class="cell-num th-saldo th-loja">Saldo Loja</div>
         <div class="cell-num th-loja">Venda.Loja</div>
+        <div class="cell-num th-cafe">Est.Café</div><div class="cell-num th-cafe">Res.Café</div>
+        <div class="cell-num th-cafe">Agrup.Café</div><div class="cell-num th-saldo th-cafe">Saldo Café</div>
+        <div class="cell-num th-cafe">Venda.Café</div>
         <div class="cell-num">Dias</div>
       </div>
       <div id="fabTable"></div>
@@ -4524,6 +4539,7 @@ body{background:#fff;color:#000}
         <div class="tgh-empty"></div>
         <div class="tgh-fab">Fábrica</div>
         <div class="tgh-loja">Loja</div>
+        <div class="tgh-cafe">BK Café</div>
         <div class="tgh-dias"></div>
       </div>
       <div class="table-header">
@@ -4534,6 +4550,9 @@ body{background:#fff;color:#000}
         <div class="cell-num th-loja">Est.Loja</div><div class="cell-num th-loja">Res.Loja</div>
         <div class="cell-num th-loja">Agrup.Loja</div><div class="cell-num th-saldo th-loja">Saldo Loja</div>
         <div class="cell-num th-loja">Venda.Loja</div>
+        <div class="cell-num th-cafe">Est.Café</div><div class="cell-num th-cafe">Res.Café</div>
+        <div class="cell-num th-cafe">Agrup.Café</div><div class="cell-num th-saldo th-cafe">Saldo Café</div>
+        <div class="cell-num th-cafe">Venda.Café</div>
         <div class="cell-num">Dias</div>
       </div>
       <div id="lojaTable"></div>
@@ -17742,7 +17761,7 @@ async function sbRestoreCache(){
     if(!data||!data.length)return false;
     data.forEach(row=>{
       if(row.tipo==='FABRICA')currentFab=row.dados;
-      else if(row.tipo==='LOJA')currentLoja=row.dados;
+      else if(row.tipo==='LOJA')currentLoja=tagCafe(row.dados);
       else if(row.tipo==='VENDA_FAB')vendaFabMap=row.dados||{};
       else if(row.tipo==='VENDA_LOJA')vendaLojaMap=row.dados||{};
       else if(row.tipo==='META'){const m=row.dados||{};importMetadata={...m,ts:m.ts?new Date(m.ts):null};}
@@ -17792,7 +17811,7 @@ function lsRestore(){
     const vl=localStorage.getItem(LS_KEYS.vendaLoja);
     const meta=localStorage.getItem(LS_KEYS.meta);
     if(fab)currentFab=JSON.parse(fab);
-    if(loja)currentLoja=JSON.parse(loja);
+    if(loja)currentLoja=tagCafe(JSON.parse(loja));
     if(vf)vendaFabMap=JSON.parse(vf);
     if(vl)vendaLojaMap=JSON.parse(vl);
     if(meta){const m=JSON.parse(meta);importMetadata={...m,ts:m.ts?new Date(m.ts):null};}
@@ -17826,9 +17845,15 @@ function renderDataInfo(){
   el.innerHTML=`<span>📦 ${periodoStr}</span><span>🕐 Última atualização: <strong>${tsStr}</strong></span>`;
 }
 
-function allItems(){return[...(currentFab||RAW.fabrica),...(currentLoja||RAW.loja)];}
+// Itens do grupo "BK CAFE" vêm no arquivo da Loja mas têm bloco próprio (tipo 'CAFE')
+function tagCafe(arr){
+  if(arr)arr.forEach(i=>{if(i.tipo==='LOJA'&&normFamilia(i.familia)==='BK CAFE')i.tipo='CAFE';});
+  return arr;
+}
+tagCafe(RAW.loja);
+function allItems(){return[...(currentFab||RAW.fabrica),...tagCafe(currentLoja||RAW.loja)];}
 function fabItems(){return currentFab||RAW.fabrica;}
-function lojaItems(){return currentLoja||RAW.loja;}
+function lojaItems(){return tagCafe(currentLoja||RAW.loja);}
 
 // ─── FUNÇÕES CENTRAIS DE NEGÓCIO ────────────────────────────────────────────
 // REGRA: availableStock = estoque - reserva  (seguranca NÃO é usado)
@@ -17987,8 +18012,8 @@ document.addEventListener('keydown',function(e){
 function renderTableRow(item){
   const saldo=calculateAvailableStock(item);
   const st=getStockStatus(item);
-  const locCls=item.tipo==='FABRICA'?'loc-fab':'loc-loja';
-  const locLabel=item.tipo==='FABRICA'?'FÁBRICA':'LOJA';
+  const locCls=item.tipo==='FABRICA'?'loc-fab':item.tipo==='CAFE'?'loc-cafe':'loc-loja';
+  const locLabel=item.tipo==='FABRICA'?'FÁBRICA':item.tipo==='CAFE'?'BK CAFÉ':'LOJA';
   const sk=safeId(item);
   const itemEnc=encodeURIComponent(JSON.stringify({
     codigo:item.codigo,descricao:item.descricao,tipo:item.tipo,
@@ -18001,6 +18026,7 @@ function renderTableRow(item){
   // Dados por canal — cada item é FABRICA ou LOJA
   const isFab=item.tipo==='FABRICA';
   const isLoja=item.tipo==='LOJA';
+  const isCafe=item.tipo==='CAFE';
   // Est / Res / Saldo Fábrica
   const estFabVal=isFab?(item.estoque??0):null;
   const resFabVal=isFab?(item.reserva??0):null;
@@ -18018,11 +18044,20 @@ function renderTableRow(item){
   const resLoja=resLojaVal!==null?(n(resLojaVal)+estUn):'—';
   const saldoLoja=saldoLojaVal!==null?(n(saldoLojaVal)+estUn):'—';
   const saldoLojaCls=saldoLojaVal===null?'':saldoLojaVal<0?'saldo-neg':saldoLojaVal===0?'saldo-zero':'saldo-pos';
+  // Est / Res / Saldo BK Café
+  const estCafeVal=isCafe?(item.estoque??0):null;
+  const resCafeVal=isCafe?(item.reserva??0):null;
+  const saldoCafeVal=isCafe?(estCafeVal-resCafeVal):null;
+  const estCafe=estCafeVal!==null?(n(estCafeVal)+estUn):'—';
+  const resCafe=resCafeVal!==null?(n(resCafeVal)+estUn):'—';
+  const saldoCafe=saldoCafeVal!==null?(n(saldoCafeVal)+estUn):'—';
+  const saldoCafeCls=saldoCafeVal===null?'':saldoCafeVal<0?'saldo-neg':saldoCafeVal===0?'saldo-zero':'saldo-pos';
   // Agrupado (caixas/fardos)
   const _agrupUn=item.agrupado_un||'';
   const _agrupStr=item.agrupado!=null?(n(item.agrupado)+(_agrupUn?' '+_agrupUn:'')):'—';
   const agrupFab=isFab?_agrupStr:'—';
   const agrupLoja=isLoja?_agrupStr:'—';
+  const agrupCafe=isCafe?_agrupStr:'—';
   // Dias de cobertura
   const cob=calculateCoverage(item);
   const cobVal=cob===null?'—':cob<=0?'0d':cob>99?'+99d':(Math.round(cob*10)/10)+'d';
@@ -18032,8 +18067,9 @@ function renderTableRow(item){
   const vFab=vendaFabMap[cod];
   const vLoja=vendaLojaMap[cod];
   const vendaFabVal=vFab!=null?n(vFab):'—';
-  const vendaLojaVal=vLoja!=null?n(vLoja):'—';
-  const rowTypeCls=isFab?'row-is-fab':'row-is-loja';
+  const vendaLojaVal=(vLoja!=null&&!isCafe)?n(vLoja):'—';
+  const vendaCafeVal=isCafe&&vLoja!=null?n(vLoja):'—';
+  const rowTypeCls=isFab?'row-is-fab':isCafe?'row-is-cafe':'row-is-loja';
   return`<div class="table-row ${st.stripe} ${rowTypeCls}">
     <div class="cell cell-produto">
       <div class="cell-desc" title="${item.descricao}">${shortDesc(item.descricao)}</div>
@@ -18049,6 +18085,11 @@ function renderTableRow(item){
     <div class="cell cell-num cell-loja" style="color:#5a7a3a;font-size:10.5px">${agrupLoja}</div>
     <div class="cell cell-num cell-saldo cell-loja ${saldoLojaCls}">${saldoLoja}</div>
     <div class="cell cell-num cell-loja" style="color:#5a6a8a">${vendaLojaVal}</div>
+    <div class="cell cell-num cell-cafe" style="color:#3a3a3a">${estCafe}</div>
+    <div class="cell cell-num cell-cafe" style="color:#888">${resCafe}</div>
+    <div class="cell cell-num cell-cafe" style="color:#5a7a3a;font-size:10.5px">${agrupCafe}</div>
+    <div class="cell cell-num cell-saldo cell-cafe ${saldoCafeCls}">${saldoCafe}</div>
+    <div class="cell cell-num cell-cafe" style="color:#5b3a1e">${vendaCafeVal}</div>
     <div class="cell cell-num cell-dias ${cobCls}">${cobVal}</div>
   </div>`;
 }
@@ -18470,8 +18511,8 @@ function syncField(setor,id,field,val){
 }
 
 function renderOrdemRow(setor,row,seq){
-  const locCls=row.loc==='FABRICA'?'loc-fab':'loc-loja';
-  const locLabel=row.loc==='FABRICA'?'FAB':'LOJA';
+  const locCls=row.loc==='FABRICA'?'loc-fab':row.loc==='CAFE'?'loc-cafe':'loc-loja';
+  const locLabel=row.loc==='FABRICA'?'FAB':row.loc==='CAFE'?'CAFÉ':'LOJA';
   const saldoClass=row.saldo<0?'num-red':row.saldo===0?'num-yellow':'num-green';
   const pr=row.saldo<0?'P1':row.saldo===0?'P2':'—';
   const priorLabel=row.saldo<0?'<span style="color:var(--red);font-size:9px;font-weight:700">P1 URGENTE</span>':
@@ -18842,7 +18883,7 @@ function processFile(file,tipo){
       if(confirm(msg)){
         // Aplica dados
         if(tipo==='FABRICA')currentFab=items;
-        else currentLoja=items;
+        else currentLoja=tagCafe(items);
         // Registra metadados da importação
         const now=new Date();
         importMetadata={ts:now,periodo:{inicio:periodoInicio,fim:periodoFim}};
@@ -18934,7 +18975,7 @@ async function salvarOPSupabase(){
   const itens=[];
   SD.setores.forEach(setor=>{
     (ordemState[setor]||[]).forEach((row,idx)=>{
-      itens.push({codigo:row.code,descricao:row.desc,setor,local:row.loc,
+      itens.push({codigo:row.code,descricao:row.desc,setor,local:row.loc==='CAFE'?'LOJA':row.loc,
         estoque:row.estoque||0,reserva:row.reserva||0,saldo:row.saldo||0,
         necessidade:row.need||0,qtd_programada:row.qtd,
         unidade_medida:row.unidadeMedida||'Unid',
@@ -19019,7 +19060,7 @@ function printOrdem(){
     if(!rows.length)return;
     const sc=SETOR_COLORS[setor]||{cls:'',emoji:'📦'};
     const rowsHtml=rows.map((row,i)=>{
-      const locLabel=row.loc==='FABRICA'?'FAB':'LOJA';
+      const locLabel=row.loc==='FABRICA'?'FAB':row.loc==='CAFE'?'CAFÉ':'LOJA';
       const locStyle=row.loc==='FABRICA'?'background:#ebf8ff;color:#2c5282':'background:#f0fff4;color:#276749';
       const saldoStyle=row.saldo<0?'color:#c53030;font-weight:700':row.saldo===0?'color:#b7791f;font-weight:700':'color:#276749;font-weight:700';
       const desc=row.desc?shortDesc(row.desc):'';
