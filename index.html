@@ -17760,7 +17760,7 @@ async function sbRestoreCache(){
     const data=await res.json();
     if(!data||!data.length)return false;
     data.forEach(row=>{
-      if(row.tipo==='FABRICA')currentFab=row.dados;
+      if(row.tipo==='FABRICA')currentFab=tagCafe(row.dados);
       else if(row.tipo==='LOJA')currentLoja=tagCafe(row.dados);
       else if(row.tipo==='VENDA_FAB')vendaFabMap=row.dados||{};
       else if(row.tipo==='VENDA_LOJA')vendaLojaMap=row.dados||{};
@@ -17810,7 +17810,7 @@ function lsRestore(){
     const vf=localStorage.getItem(LS_KEYS.vendaFab);
     const vl=localStorage.getItem(LS_KEYS.vendaLoja);
     const meta=localStorage.getItem(LS_KEYS.meta);
-    if(fab)currentFab=JSON.parse(fab);
+    if(fab)currentFab=tagCafe(JSON.parse(fab));
     if(loja)currentLoja=tagCafe(JSON.parse(loja));
     if(vf)vendaFabMap=JSON.parse(vf);
     if(vl)vendaLojaMap=JSON.parse(vl);
@@ -17846,13 +17846,16 @@ function renderDataInfo(){
 }
 
 // Itens do grupo "BK CAFE" vêm no arquivo da Loja mas têm bloco próprio (tipo 'CAFE')
+function isCafeItem(i){
+  return normFamilia(i.familia)==='BK CAFE'||/\bCAF[EÉ]\b/i.test(i.descricao||'');
+}
 function tagCafe(arr){
-  if(arr)arr.forEach(i=>{if(i.tipo==='LOJA'&&normFamilia(i.familia)==='BK CAFE')i.tipo='CAFE';});
+  if(arr)arr.forEach(i=>{if(i.tipo!=='CAFE'&&isCafeItem(i))i.tipo='CAFE';});
   return arr;
 }
-tagCafe(RAW.loja);
-function allItems(){return[...(currentFab||RAW.fabrica),...tagCafe(currentLoja||RAW.loja)];}
-function fabItems(){return currentFab||RAW.fabrica;}
+tagCafe(RAW.fabrica);tagCafe(RAW.loja);
+function allItems(){return[...tagCafe(currentFab||RAW.fabrica),...tagCafe(currentLoja||RAW.loja)];}
+function fabItems(){return tagCafe(currentFab||RAW.fabrica);}
 function lojaItems(){return tagCafe(currentLoja||RAW.loja);}
 
 // ─── FUNÇÕES CENTRAIS DE NEGÓCIO ────────────────────────────────────────────
@@ -18882,7 +18885,7 @@ function processFile(file,tipo){
         `\nPeríodo: ${periodoInicio===periodoFim?periodoInicio:periodoInicio+' a '+periodoFim}`;
       if(confirm(msg)){
         // Aplica dados
-        if(tipo==='FABRICA')currentFab=items;
+        if(tipo==='FABRICA')currentFab=tagCafe(items);
         else currentLoja=tagCafe(items);
         // Registra metadados da importação
         const now=new Date();
