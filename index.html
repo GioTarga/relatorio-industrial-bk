@@ -1150,12 +1150,12 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 
 #page-pcp-estoque .table-wrap{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 290px);box-shadow:0 2px 10px rgba(161,1,1,.04)}
 
-#page-pcp-estoque .table-header{display:grid;grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 72px 70px 92px 86px 80px 56px;gap:0;min-width:1482px;background:var(--red-dark);padding:7px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;color:rgba(255,255,255,.9);font-weight:700;border-bottom:1px solid var(--line);position:sticky;top:26px;z-index:5}
+#page-pcp-estoque .table-header{display:grid;grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 72px 70px 92px 86px 56px;gap:0;min-width:1402px;background:var(--red-dark);padding:7px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;color:rgba(255,255,255,.9);font-weight:700;border-bottom:1px solid var(--line);position:sticky;top:26px;z-index:5}
 /* Linha de grupo FÁBRICA / LOJA acima do cabeçalho de colunas */
-#page-pcp-estoque .table-group-header{display:grid;grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 72px 70px 92px 86px 80px 56px;gap:0;min-width:1482px;position:sticky;top:0;z-index:6}
+#page-pcp-estoque .table-group-header{display:grid;grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 72px 70px 92px 86px 56px;gap:0;min-width:1402px;position:sticky;top:0;z-index:6}
 #page-pcp-estoque .tgh-empty{background:var(--red-dark);}
 #page-pcp-estoque .tgh-fab{grid-column:2/7;background:var(--gold);color:#fff;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;text-align:center;padding:4px 0;border-right:2px solid rgba(255,255,255,.3);}
-#page-pcp-estoque .tgh-cafe{grid-column:12/17;background:#5b3a1e;color:#fff;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;text-align:center;padding:4px 0;border-right:2px solid rgba(255,255,255,.3);}
+#page-pcp-estoque .tgh-cafe{grid-column:12/16;background:#5b3a1e;color:#fff;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;text-align:center;padding:4px 0;border-right:2px solid rgba(255,255,255,.3);}
 #page-pcp-estoque .tgh-loja{grid-column:7/12;background:#8B0000;color:#fff;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;text-align:center;padding:4px 0;border-right:2px solid rgba(255,255,255,.3);}
 #page-pcp-estoque .tgh-dias{background:var(--red-dark);}
 /* Linha vertical divisória Fábrica | Loja — pseudo-elemento contínuo */
@@ -1164,6 +1164,13 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .table-row::after{content:'';position:absolute;left:610px;top:0;bottom:-1px;width:2px;background:#8B0000;pointer-events:none;z-index:2;}
 #page-pcp-estoque .table-header::before,
 #page-pcp-estoque .table-row::before{content:'';position:absolute;left:1016px;top:0;bottom:-1px;width:2px;background:#5b3a1e;pointer-events:none;z-index:2;}
+/* Filtro BK Café: sem coluna Dias */
+#page-pcp-estoque .table-wrap.hide-dias .table-header,
+#page-pcp-estoque .table-wrap.hide-dias .table-row,
+#page-pcp-estoque .table-wrap.hide-dias .table-group-header{grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 72px 70px 92px 86px;min-width:1346px}
+#page-pcp-estoque .table-wrap.hide-dias .table-header > div:last-child,
+#page-pcp-estoque .table-wrap.hide-dias .table-row > div:last-child,
+#page-pcp-estoque .table-wrap.hide-dias .tgh-dias{display:none}
 /* respiro em volta da linha divisória */
 #page-pcp-estoque .table-header > div:nth-child(6),
 #page-pcp-estoque .table-row > div:nth-child(6){padding-right:8px;}
@@ -1175,7 +1182,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .table-header > div:nth-child(12),
 #page-pcp-estoque .table-row > div:nth-child(12){padding-left:8px;}
 
-#page-pcp-estoque .table-row{display:grid;grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 72px 70px 92px 86px 80px 56px;gap:0;min-width:1482px;padding:9px 10px;min-height:48px;border-bottom:1px solid var(--line);transition:background .1s;align-items:center;position:relative;}
+#page-pcp-estoque .table-row{display:grid;grid-template-columns:200px 72px 70px 92px 86px 80px 74px 70px 96px 86px 80px 72px 70px 92px 86px 56px;gap:0;min-width:1402px;padding:9px 10px;min-height:48px;border-bottom:1px solid var(--line);transition:background .1s;align-items:center;position:relative;}
 
 
 #page-pcp-estoque .table-row:hover{background:#fffaf0}
@@ -4488,7 +4495,6 @@ body{background:#fff;color:#000}
         <div class="cell-num th-loja">Venda.Loja</div>
         <div class="cell-num th-cafe">Est.Café</div><div class="cell-num th-cafe">Res.Café</div>
         <div class="cell-num th-cafe">Agrup.Café</div><div class="cell-num th-saldo th-cafe">Saldo Café</div>
-        <div class="cell-num th-cafe">Venda.Café</div>
         <div class="cell-num">Dias</div>
       </div>
       <div id="alertTable"></div>
@@ -4520,7 +4526,6 @@ body{background:#fff;color:#000}
         <div class="cell-num th-loja">Venda.Loja</div>
         <div class="cell-num th-cafe">Est.Café</div><div class="cell-num th-cafe">Res.Café</div>
         <div class="cell-num th-cafe">Agrup.Café</div><div class="cell-num th-saldo th-cafe">Saldo Café</div>
-        <div class="cell-num th-cafe">Venda.Café</div>
         <div class="cell-num">Dias</div>
       </div>
       <div id="fabTable"></div>
@@ -4552,7 +4557,6 @@ body{background:#fff;color:#000}
         <div class="cell-num th-loja">Venda.Loja</div>
         <div class="cell-num th-cafe">Est.Café</div><div class="cell-num th-cafe">Res.Café</div>
         <div class="cell-num th-cafe">Agrup.Café</div><div class="cell-num th-saldo th-cafe">Saldo Café</div>
-        <div class="cell-num th-cafe">Venda.Café</div>
         <div class="cell-num">Dias</div>
       </div>
       <div id="lojaTable"></div>
@@ -18071,7 +18075,6 @@ function renderTableRow(item){
   const vLoja=vendaLojaMap[cod];
   const vendaFabVal=vFab!=null?n(vFab):'—';
   const vendaLojaVal=(vLoja!=null&&!isCafe)?n(vLoja):'—';
-  const vendaCafeVal=isCafe&&vLoja!=null?n(vLoja):'—';
   const rowTypeCls=isFab?'row-is-fab':isCafe?'row-is-cafe':'row-is-loja';
   return`<div class="table-row ${st.stripe} ${rowTypeCls}">
     <div class="cell cell-produto">
@@ -18092,8 +18095,7 @@ function renderTableRow(item){
     <div class="cell cell-num cell-cafe" style="color:#888">${resCafe}</div>
     <div class="cell cell-num cell-cafe" style="color:#5a7a3a;font-size:10.5px">${agrupCafe}</div>
     <div class="cell cell-num cell-saldo cell-cafe ${saldoCafeCls}">${saldoCafe}</div>
-    <div class="cell cell-num cell-cafe" style="color:#5b3a1e">${vendaCafeVal}</div>
-    <div class="cell cell-num cell-dias ${cobCls}">${cobVal}</div>
+    <div class="cell cell-num cell-dias ${isCafe?'':cobCls}">${isCafe?'':cobVal}</div>
   </div>`;
 }
 function should_enter_op_check(item){return shouldEnterProductionOrder(item);}
@@ -18320,6 +18322,7 @@ function renderAlerts(){
       return;
     }
     const q=(searchEl?searchEl.value||'':'').toLowerCase();
+    const _wrap=tableEl.closest('.table-wrap');if(_wrap)_wrap.classList.toggle('hide-dias',locFilter==='CAFE');
     let items=[...allItems()];
     if(locFilter!=='ALL')items=items.filter(i=>i.tipo===locFilter);
     if(alertaSetores.size){items=items.filter(i=>alertaSetores.has(i.setor||'SEM SETOR'));}
