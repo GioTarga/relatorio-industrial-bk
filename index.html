@@ -18300,6 +18300,12 @@ function filterByStatus(items,filter){
 }
 
 // Comparador de cobertura: menor cobertura primeiro; sem dados de venda → final da lista
+// Ordena pelo saldo disponível (menor/negativo primeiro); empate desempata por cobertura
+function sortBySaldo(a,b){
+  const sa=Number(calculateAvailableStock(a)),sb=Number(calculateAvailableStock(b));
+  const d=(isNaN(sa)?Infinity:sa)-(isNaN(sb)?Infinity:sb);
+  return d!==0&&!isNaN(d)?d:sortByCoverage(a,b);
+}
 function sortByCoverage(a,b){
   const ca=calculateCoverage(a), cb=calculateCoverage(b);
   return (ca===null?Infinity:ca)-(cb===null?Infinity:cb);
@@ -18323,7 +18329,7 @@ function renderAlerts(){
     items=filterByStatus(items,statusFilter);
     if(q)items=items.filter(i=>(i.descricao||'').toLowerCase().includes(q)||(i.familia||'').toLowerCase().includes(q));
     // Ordenar por cobertura ascendente: menor cobertura = mais crítico. Sem dados de venda → final da lista.
-    items.sort(sortByCoverage);
+    items.sort(sortBySaldo);
     // Contagem de déficits para o badge — apenas produtos de FABRICAÇÃO
     const deficitCount=allItems().filter(i=>calculateAvailableStock(i)<0).length;
     const _ac=document.getElementById('alertCount');if(_ac)_ac.textContent=deficitCount;
@@ -18345,7 +18351,7 @@ function renderFab(){
   let items=[...fabItems()];
   if(fabFam!=='ALL')items=items.filter(i=>i.familia===fabFam);
   if(q)items=items.filter(i=>i.descricao.toLowerCase().includes(q));
-  items.sort(sortByCoverage);
+  items.sort(sortBySaldo);
   tableEl.innerHTML=items.map(renderTableRow).join('');
 }
 function renderLoja(){
@@ -18355,7 +18361,7 @@ function renderLoja(){
   let items=[...lojaItems()];
   if(lojaFam!=='ALL')items=items.filter(i=>i.familia===lojaFam);
   if(q)items=items.filter(i=>i.descricao.toLowerCase().includes(q));
-  items.sort(sortByCoverage);
+  items.sort(sortBySaldo);
   tableEl.innerHTML=items.map(renderTableRow).join('');
 }
 
