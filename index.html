@@ -18366,6 +18366,17 @@ function sortByCoverage(a,b){
   return (ca===null?Infinity:ca)-(cb===null?Infinity:cb);
 }
 
+// ─── PRODUTOS EQUIVALENTES (Fábrica ↔ Loja) ──────────────────────────────────
+// Mesmo produto cadastrado com nomes/códigos diferentes. Na busca, achar um traz o outro.
+// Para vincular mais produtos, adicione um grupo [códigoFábrica, códigoLoja].
+const EQUIV_GRUPOS=[
+  ['8019','7192'],    // Mini Pastel Forno Carne      ↔ Mini Pastel Nata Carne
+  ['8018','7194'],    // Mini Pastel Forno Frango     ↔ Mini Pastel Nata Frango
+  ['8020','7191'],    // Mini Pastel Forno Calabresa  ↔ Mini Pastel Nata Calabresa
+  ['2209207','7193'], // Mini Pastel Forno Chocolate  ↔ Mini Pastel Nata Chocolate
+  ['8021','7195']     // Mini Pastel Forno Requeijão  ↔ Mini Pastel Nata Catupiry
+];
+const EQUIV_GRUPO={};EQUIV_GRUPOS.forEach((g,ix)=>g.forEach(c=>{EQUIV_GRUPO[c]=ix+1;}));
 // ─── KANBAN (Estoque) ────────────────────────────────────────────────────────
 let estView='kanban';
 try{estView=localStorage.getItem('bk360_est_view')||'kanban';}catch(e){}
@@ -18453,7 +18464,11 @@ function renderAlerts(){
     if(locFilter!=='ALL')items=items.filter(i=>i.tipo===locFilter);
     if(alertaSetores.size&&!_setorTodosMarcados()){items=items.filter(i=>alertaSetores.has(setorDoItem(i)));}
     items=filterByStatus(items,statusFilter);
-    if(q){const _n=t=>(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();const qq=_n(q);items=items.filter(i=>_n(i.descricao).startsWith(qq)||_n(i.familia).includes(qq));} // busca: nome começa com o texto digitado
+    if(q){const _n=t=>(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();const qq=_n(q);
+      const hit=items.filter(i=>_n(i.descricao).startsWith(qq)||_n(i.familia).includes(qq));
+      // Produtos equivalentes (mesmo produto com nome diferente na Fábrica e na Loja) aparecem juntos
+      const gs=new Set(hit.map(i=>EQUIV_GRUPO[normCod(i.codigo)||i.codigo]).filter(Boolean));
+      items=gs.size?items.filter(i=>hit.includes(i)||gs.has(EQUIV_GRUPO[normCod(i.codigo)||i.codigo])):hit;} // busca: nome começa com o texto digitado
     // Ordenar por cobertura ascendente: menor cobertura = mais crítico. Sem dados de venda → final da lista.
     items.sort(sortByCoverage);
     // Contagem de déficits para o badge — apenas produtos de FABRICAÇÃO
