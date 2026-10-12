@@ -1179,6 +1179,49 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .table-row{display:grid;grid-template-columns:minmax(190px,1fr) 62px 56px 58px 74px 54px 62px 56px 58px 74px 54px 62px 56px 58px 74px 44px;gap:0;min-width:1100px;padding:9px 10px;min-height:48px;border-bottom:1px solid var(--line);transition:background .1s;align-items:center;position:relative;}
 
 
+
+/* ── KANBAN (Estoque) ───────────────────────────── */
+#page-pcp-estoque .view-toggle{display:flex;align-items:center;gap:10px;margin:0 0 8px}
+#page-pcp-estoque .vt-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink-soft)}
+#page-pcp-estoque .vt-hint{font-size:10.5px;color:var(--ink-soft);margin-left:auto}
+#page-pcp-estoque .kb-board{display:grid;gap:12px;align-items:start}
+#page-pcp-estoque .kb-col{background:var(--cream);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+#page-pcp-estoque .kb-col-head{display:flex;align-items:center;gap:8px;padding:9px 12px;color:#fff;font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+#page-pcp-estoque .kb-col-head .kb-count{margin-left:auto;font-size:10.5px;font-weight:700;letter-spacing:.3px;background:rgba(255,255,255,.18);border-radius:10px;padding:1px 8px}
+#page-pcp-estoque .kb-col-head .kb-def{font-size:10.5px;font-weight:700;letter-spacing:.3px;background:#fff;color:#c0392b;border-radius:10px;padding:1px 8px}
+#page-pcp-estoque .kb-col.fab .kb-col-head{background:var(--gold)}
+#page-pcp-estoque .kb-col.loja .kb-col-head{background:#8B0000}
+#page-pcp-estoque .kb-col.cafe .kb-col-head{background:#5b3a1e}
+#page-pcp-estoque .kb-col-body{display:flex;flex-direction:column;gap:8px;padding:8px;overflow-y:auto;max-height:calc(100vh - 300px);min-height:200px}
+#page-pcp-estoque .kb-card{background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--line);border-radius:8px;padding:9px 10px 8px;display:flex;flex-direction:column;gap:7px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+#page-pcp-estoque .kb-card.red{border-left-color:#c0392b;background:#fdf3f2}
+#page-pcp-estoque .kb-card.orange{border-left-color:#e67e22}
+#page-pcp-estoque .kb-card.yellow{border-left-color:#d4a017}
+#page-pcp-estoque .kb-card.green{border-left-color:#2e7d32}
+#page-pcp-estoque .kb-top{display:flex;align-items:flex-start;gap:8px}
+#page-pcp-estoque .kb-title{flex:1;min-width:0;font-size:12px;font-weight:700;line-height:1.25;color:var(--ink);overflow-wrap:anywhere}
+#page-pcp-estoque .kb-dias{flex:none;min-width:50px;text-align:center;border-radius:8px;padding:3px 6px;line-height:1.05;background:#eee;color:#666}
+#page-pcp-estoque .kb-dias b{display:block;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums}
+#page-pcp-estoque .kb-dias small{display:block;font-size:8px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;opacity:.85}
+#page-pcp-estoque .kb-dias.red{background:#c0392b;color:#fff}
+#page-pcp-estoque .kb-dias.orange{background:#e67e22;color:#fff}
+#page-pcp-estoque .kb-dias.yellow{background:#f3d36b;color:#5a4300}
+#page-pcp-estoque .kb-dias.green{background:#d9efdb;color:#1f6b24}
+#page-pcp-estoque .kb-dias.none b{font-size:13px}
+#page-pcp-estoque .kb-sub{display:flex;flex-wrap:wrap;gap:4px;font-size:9.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--ink-soft)}
+#page-pcp-estoque .kb-sub span{background:#f1e8d8;border-radius:4px;padding:1px 6px}
+#page-pcp-estoque .kb-metrics{display:grid;grid-template-columns:repeat(var(--kbn,5),minmax(0,1fr));gap:4px;border-top:1px dashed var(--line);padding-top:6px}
+#page-pcp-estoque .kb-m{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}
+#page-pcp-estoque .kb-m small{font-size:8.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-soft)}
+#page-pcp-estoque .kb-m span{font-size:12px;font-weight:600;color:#3a3a3a;font-variant-numeric:tabular-nums;white-space:nowrap}
+#page-pcp-estoque .kb-m.res span{color:#888}
+#page-pcp-estoque .kb-m.agr span{color:#5a7a3a}
+#page-pcp-estoque .kb-m.ven span{color:#7a5a5a}
+#page-pcp-estoque .kb-m.saldo span{font-size:13px;font-weight:800}
+#page-pcp-estoque .kb-m.saldo.neg span{color:var(--red)}
+#page-pcp-estoque .kb-m.saldo.zero span{color:var(--warn)}
+#page-pcp-estoque .kb-m.saldo.pos span{color:var(--good)}
+#page-pcp-estoque .kb-empty{padding:18px 8px;text-align:center;font-size:11px;color:var(--ink-soft)}
 #page-pcp-estoque .table-row:hover{background:#fffaf0}
 
 #page-pcp-estoque .table-row:last-child{border-bottom:none}
@@ -4471,7 +4514,16 @@ body{background:#fff;color:#000}
   <div id="tab-alertas">
     <!-- Informativo de atualização — preenchido por renderDataInfo() -->
     <div id="importDataInfo" style="display:none;margin-bottom:8px;padding:7px 12px;background:var(--paper);border:1px solid var(--line);border-radius:8px;font-size:10.5px;color:var(--ink-soft);display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px"></div>
-    <div class="table-wrap">
+    <div class="view-toggle no-print">
+      <span class="vt-label">Visualização</span>
+      <div class="chips" id="viewChips">
+        <div class="chip active" data-view="kanban" onclick="setEstView('kanban')">Kanban</div>
+        <div class="chip" data-view="tabela" onclick="setEstView('tabela')">Tabela</div>
+      </div>
+      <span class="vt-hint">Cards ordenados por menos dias de estoque</span>
+    </div>
+    <div id="alertKanban" class="kb-board"></div>
+    <div class="table-wrap" id="alertTableWrap">
       <div class="table-group-header">
         <div class="tgh-empty"></div>
         <div class="tgh-fab">Fábrica</div>
@@ -18252,7 +18304,7 @@ document.addEventListener('click',function(e){
 function _updateSetorLabel(){
   const btn=document.getElementById('setorDropdownLabel');
   if(!btn)return;
-  if(!alertaSetores.size){btn.textContent='Todos os setores';return;}
+  if(!alertaSetores.size||_setorTodosMarcados()){btn.textContent='Todos os setores';return;}
   if(alertaSetores.size===1){btn.textContent=[...alertaSetores][0];return;}
   btn.textContent=alertaSetores.size+' setores';
 }
@@ -18261,14 +18313,18 @@ function toggleSetorFiltro(s,cb){
   else alertaSetores.delete(s);
   _updateSetorLabel();renderAlerts();
 }
+function _setorTotal(){return document.querySelectorAll('#setorCheckList input[type=checkbox]').length;}
+// Todos marcados = sem filtro (inclui itens sem setor); evita esconder "SEM SETOR"
+function _setorTodosMarcados(){const t=_setorTotal();return t>0&&alertaSetores.size>=t;}
 function setorSelectAll(){
   alertaSetores.clear();
-  document.querySelectorAll('#setorCheckList input[type=checkbox]').forEach(c=>c.checked=false);
+  document.querySelectorAll('#setorCheckList input[type=checkbox]').forEach(c=>{c.checked=true;alertaSetores.add(c.value);});
   _updateSetorLabel();renderAlerts();
 }
 function setorClearAll(){
-  // "Limpar" = mantém seleção vazia (= todos) mas serve p/ reset visual
-  setorSelectAll();
+  alertaSetores.clear();
+  document.querySelectorAll('#setorCheckList input[type=checkbox]').forEach(c=>c.checked=false);
+  _updateSetorLabel();renderAlerts();
 }
 function buildAlertaSetorDropdown(){
   const list_el=document.getElementById('setorCheckList');
@@ -18305,13 +18361,84 @@ function sortByCoverage(a,b){
   return (ca===null?Infinity:ca)-(cb===null?Infinity:cb);
 }
 
+// ─── KANBAN (Estoque) ────────────────────────────────────────────────────────
+let estView='kanban';
+try{estView=localStorage.getItem('bk360_est_view')||'kanban';}catch(e){}
+function setEstView(v){
+  estView=v;
+  try{localStorage.setItem('bk360_est_view',v);}catch(e){}
+  renderAlerts();
+}
+// Menos dias de estoque primeiro; sem venda (dias indisponível) vai depois, ordenado por saldo
+function sortKanban(a,b){
+  const ca=calculateCoverage(a), cb=calculateCoverage(b);
+  if(ca===null&&cb!==null)return 1;
+  if(cb===null&&ca!==null)return -1;
+  if(ca!==null&&cb!==null&&ca!==cb)return ca-cb;
+  return calculateAvailableStock(a)-calculateAvailableStock(b);
+}
+function renderKanbanCard(item){
+  const st=getStockStatus(item);
+  const isCafe=item.tipo==='CAFE';
+  const isFab=item.tipo==='FABRICA';
+  const un=item.estoque_un?(' '+item.estoque_un):'';
+  const saldo=calculateAvailableStock(item);
+  const cob=isCafe?null:calculateCoverage(item);
+  const cod=normCod(item.codigo)||item.codigo;
+  const venda=isCafe?null:(isFab?vendaFabMap[cod]:vendaLojaMap[cod]);
+  const agr=item.agrupado!=null?(n(item.agrupado)+(item.agrupado_un?' '+item.agrupado_un:'')):'—';
+  const saldoCls=saldo<0?'neg':saldo===0?'zero':'pos';
+  let dias='';
+  if(!isCafe){
+    const v=cob===null?'—':cob<=0?'0':cob>99?'+99':String(Math.round(cob*10)/10).replace('.',',');
+    dias=`<div class="kb-dias ${cob===null?'none':st.cls}"><b>${v}</b><small>${cob===null?'s/ venda':'dias'}</small></div>`;
+  }
+  const setor=getSetor(item.codigo);
+  const metrics=[
+    `<div class="kb-m"><small>Estoque</small><span>${n(item.estoque??0)}${un}</span></div>`,
+    `<div class="kb-m res"><small>Reserva</small><span>${n(item.reserva??0)}${un}</span></div>`,
+    `<div class="kb-m agr"><small>Agrupado</small><span>${agr}</span></div>`,
+    `<div class="kb-m saldo ${saldoCls}"><small>Saldo</small><span>${n(saldo)}${un}</span></div>`
+  ];
+  if(!isCafe)metrics.push(`<div class="kb-m ven"><small>Venda/sem</small><span>${venda!=null?n(venda):'—'}</span></div>`);
+  const sub=[item.familia,setor&&setor!=='—'&&setor!=='SEM SETOR'?setor:''].filter(Boolean).map(t=>`<span>${t}</span>`).join('');
+  return `<div class="kb-card ${st.cls}">
+    <div class="kb-top"><div class="kb-title" title="${(item.descricao||'').replace(/"/g,'&quot;')}">${shortDesc(item.descricao||'')}</div>${dias}</div>
+    ${sub?`<div class="kb-sub">${sub}</div>`:''}
+    <div class="kb-metrics" style="--kbn:${metrics.length}">${metrics.join('')}</div>
+  </div>`;
+}
+function renderKanban(items){
+  const el=document.getElementById('alertKanban');if(!el)return;
+  const cols=[['FABRICA','fab','Fábrica'],['LOJA','loja','Loja'],['CAFE','cafe','BK Café']]
+    .filter(c=>locFilter==='ALL'||locFilter===c[0]);
+  el.style.gridTemplateColumns=`repeat(${cols.length},minmax(0,1fr))`;
+  el.innerHTML=cols.map(([tipo,cls,label])=>{
+    const list=items.filter(i=>i.tipo===tipo).sort(sortKanban);
+    const defs=list.filter(i=>calculateAvailableStock(i)<0).length;
+    return `<div class="kb-col ${cls}">
+      <div class="kb-col-head">${label}${defs?`<span class="kb-def">${defs} em déficit</span>`:''}<span class="kb-count">${list.length}</span></div>
+      <div class="kb-col-body">${list.length?list.map(renderKanbanCard).join(''):'<div class="kb-empty">Nenhum produto</div>'}</div>
+    </div>`;
+  }).join('');
+}
+function _applyEstView(){
+  const kb=estView==='kanban';
+  const k=document.getElementById('alertKanban'),t=document.getElementById('alertTableWrap');
+  if(k)k.style.display=kb?'grid':'none';
+  if(t)t.style.display=kb?'none':'';
+  document.querySelectorAll('#viewChips .chip').forEach(c=>c.classList.toggle('active',c.dataset.view===estView));
+}
+
 function renderAlerts(){
   try{
     const searchEl=document.getElementById('searchAlert');
     const tableEl=document.getElementById('alertTable');
     if(!tableEl)return;
+    _applyEstView();
     if(!currentFab&&!currentLoja){
       tableEl.innerHTML='<div class="empty-state"><div class="empty-icon">📂</div>Importe os dados do CIGAM para visualizar o estoque.</div>';
+      const _k0=document.getElementById('alertKanban');if(_k0)_k0.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📂</div>Importe os dados do CIGAM para visualizar o estoque.</div>';
       const _ac=document.getElementById('alertCount');if(_ac)_ac.textContent='0';
       return;
     }
@@ -18319,7 +18446,7 @@ function renderAlerts(){
     const _wrap=tableEl.closest('.table-wrap');if(_wrap)_wrap.classList.toggle('hide-dias',locFilter==='CAFE');
     let items=[...allItems()];
     if(locFilter!=='ALL')items=items.filter(i=>i.tipo===locFilter);
-    if(alertaSetores.size){items=items.filter(i=>alertaSetores.has(i.setor||'SEM SETOR'));}
+    if(alertaSetores.size&&!_setorTodosMarcados()){items=items.filter(i=>alertaSetores.has(i.setor||'SEM SETOR'));}
     items=filterByStatus(items,statusFilter);
     if(q)items=items.filter(i=>(i.descricao||'').toLowerCase().includes(q)||(i.familia||'').toLowerCase().includes(q));
     // Ordenar por cobertura ascendente: menor cobertura = mais crítico. Sem dados de venda → final da lista.
@@ -18327,6 +18454,7 @@ function renderAlerts(){
     // Contagem de déficits para o badge — apenas produtos de FABRICAÇÃO
     const deficitCount=allItems().filter(i=>calculateAvailableStock(i)<0).length;
     const _ac=document.getElementById('alertCount');if(_ac)_ac.textContent=deficitCount;
+    if(estView==='kanban'){renderKanban(items);return;}
     if(!items.length){
       tableEl.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div>Nenhum produto nesta categoria.</div>';
       return;
