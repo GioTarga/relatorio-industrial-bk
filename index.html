@@ -18956,6 +18956,7 @@ function processFile(file,tipo){
         if(!row||row.every(c=>c==null||c===''))continue;
         const rawCod=(row[iCod]||'').toString().trim();
         if(!rawCod){semCodigo++;continue;}
+        if(rawCod.toLowerCase()==='material')continue; // cabeçalho repetido no meio do arquivo — não é produto
         // Pular linhas de grupo/seção CIGAM (ex: '51 - LINHA PAES') onde estoque não é número
         const rawEstCheck=row[iEst];
         const estoqueCheck=parseNumOrNull(rawEstCheck);
