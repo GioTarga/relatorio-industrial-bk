@@ -18465,7 +18465,13 @@ function renderAlerts(){
     if(alertaSetores.size&&!_setorTodosMarcados()){items=items.filter(i=>alertaSetores.has(setorDoItem(i)));}
     items=filterByStatus(items,statusFilter);
     if(q){const _n=t=>(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();const qq=_n(q);
-      const hit=items.filter(i=>_n(i.descricao).startsWith(qq)||_n(i.familia).includes(qq));
+      const _esc=qq.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      const _wb=new RegExp('(^|[^a-z0-9])'+_esc); // início de qualquer palavra do nome
+      const _fam=i=>_n(i.familia).includes(qq);
+      // Uma palavra (ex.: "bilha"): acha no início de qualquer palavra. Mais de uma palavra: nome começa com a frase;
+      // se nada começar assim, aceita a frase em qualquer ponto do nome.
+      let hit=qq.includes(' ')?items.filter(i=>_n(i.descricao).startsWith(qq)||_fam(i)):items.filter(i=>_wb.test(_n(i.descricao))||_fam(i));
+      if(!hit.length&&qq.includes(' '))hit=items.filter(i=>_wb.test(_n(i.descricao)));
       // Produtos equivalentes (mesmo produto com nome diferente na Fábrica e na Loja) aparecem juntos
       const gs=new Set(hit.map(i=>EQUIV_GRUPO[normCod(i.codigo)||i.codigo]).filter(Boolean));
       items=gs.size?items.filter(i=>hit.includes(i)||gs.has(EQUIV_GRUPO[normCod(i.codigo)||i.codigo])):hit;} // busca: nome começa com o texto digitado
