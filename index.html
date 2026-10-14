@@ -4458,6 +4458,16 @@ body{background:#fff;color:#000}
         <div id="periodoStatus" style="font-size:11px;color:var(--ink-soft);align-self:flex-end;padding-bottom:2px"></div>
       </div>
     </div>
+    <div style="max-width:760px;margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#4a5568;margin-bottom:8px">Estoque único — Fábrica + Loja <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink-soft)">(1 arquivo; o sistema separa pelo grupo)</span></div>
+      <div class="upload-card" id="cardUnico" ondragover="event.preventDefault()" ondrop="handleDrop(event,'UNICO')">
+        <div class="upload-icon">📦</div>
+        <div class="upload-title" id="unicoFileName">Posicao_EstoquePC1_Geral.xlsx</div>
+        <div class="upload-sub" id="unicoStatus">Grupo: LINHA PAES até LOJA DE FABRICA · exportado do CIGAM 11</div>
+        <input type="file" id="inputUnico" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this,'UNICO')">
+        <button class="upload-btn" onclick="document.getElementById('inputUnico').click()">📂 Selecionar arquivo</button>
+      </div>
+    </div>
     <div class="upload-grid">
       <div>
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#4a5568;margin-bottom:8px">Estoque Fábrica</div>
@@ -18909,9 +18919,10 @@ function processFile(file,tipo){
     reader.readAsArrayBuffer(file);
     return;
   }
-  const statusEl=document.getElementById(tipo==='FABRICA'?'fabStatus':'lojaStatus');
-  const nameEl=document.getElementById(tipo==='FABRICA'?'fabFileName':'lojaFileName');
-  const cardEl=document.getElementById(tipo==='FABRICA'?'cardFab':'cardLoja');
+  const _pre=tipo==='FABRICA'?'fab':tipo==='UNICO'?'unico':'loja';
+  const statusEl=document.getElementById(_pre+'Status');
+  const nameEl=document.getElementById(_pre+'FileName');
+  const cardEl=document.getElementById(tipo==='FABRICA'?'cardFab':tipo==='UNICO'?'cardUnico':'cardLoja');
   statusEl.textContent='⏳ Lendo arquivo...';
   nameEl.textContent=file.name;
   const reader=new FileReader();
@@ -18957,6 +18968,9 @@ function processFile(file,tipo){
       const items=[];let semCodigo=0,estoqueInvalido=0,reservaInvalida=0,duplicados=0;
       const codigosVistos=new Set();
       let currentFamilia=''; // família atual capturada dos cabeçalhos de seção CIGAM
+      let currentTop='';  // grupo grande (51 - LINHA PAES … 60 - LOJA DE FABRICA) — define Fábrica x Loja no arquivo único
+      let semGrupo=0;
+      const TOP_RE=/^\d+\s*-\s*(LINHA|LOJA)\b/i;
       for(let i=headerIdx+1;i<rows.length;i++){
         const row=rows[i];
         if(!row||row.every(c=>c==null||c===''))continue;
@@ -18966,13 +18980,19 @@ function processFile(file,tipo){
         // Pular linhas de grupo/seção CIGAM (ex: '51 - LINHA PAES') onde estoque não é número
         const rawEstCheck=row[iEst];
         const estoqueCheck=parseNumOrNull(rawEstCheck);
-        if(isNaN(estoqueCheck)){
+        if(isNaN(estoqueCheck)||(estoqueCheck===null&&!(row[iDesc]||'').toString().trim())){
           // Linha de cabeçalho de família CIGAM — captura para usar nos produtos seguintes
           const iDescH=findCol(header,['descrição produto','descricao produto','descrição','descricao','desc']);
           const candidate=rawCod||((iDescH>=0?(row[iDescH]||''):'').toString().trim());
-          if(candidate&&!candidate.match(/^\d+[\.,]?\d*$/)) currentFamilia=candidate;
+          if(candidate&&!candidate.match(/^\d+[\.,]?\d*$/)){
+            if(TOP_RE.test(candidate))currentTop=candidate;
+            else currentFamilia=candidate;
+          }
           continue;
         }
+        // Arquivo único: grupo grande LOJA* = Loja; LINHA* = Fábrica
+        if(tipo==='UNICO'&&!currentTop){semGrupo++;continue;}
+        const tipoItem=tipo==='UNICO'?(/LOJA/i.test(currentTop)?'LOJA':'FABRICA'):tipo;
         const codigo=normCod(rawCod)||rawCod;
         if(codigosVistos.has(codigo)){duplicados++;continue;}
         codigosVistos.add(codigo);
@@ -18989,7 +19009,7 @@ function processFile(file,tipo){
         const familia=(famColIdx>=0&&row[famColIdx]!=null&&row[famColIdx]!=='')?row[famColIdx].toString().trim():currentFamilia;
         const famUpper=familia.toString().toUpperCase().trim();
         const classif=FAB_FAMILIAS.has(normFamilia(famUpper))?'FABRICACAO':
-                       (tipo==='LOJA'&&LOJA_REVENDA_FAM.has(normFamilia(famUpper)))?'REVENDA':'REVENDA';
+                       (tipoItem==='LOJA'&&LOJA_REVENDA_FAM.has(normFamilia(famUpper)))?'REVENDA':'REVENDA';
         // Capturar campo Agrupado (col 6 = unidade comercial: PCT, CX, etc.)
         const descricao=(row[iDesc]||'').toString().trim();
         if(!descricao){semCodigo++;continue;} // linha sem descrição — descarta
@@ -19003,7 +19023,7 @@ function processFile(file,tipo){
         const rawEstoqueUn=iEst>0?(row[iEst-1]||null):null;
         const estoque_un=(rawEstoqueUn!=null&&rawEstoqueUn!==''&&typeof rawEstoqueUn==='string')?rawEstoqueUn.toString().trim():null;
         items.push({
-          tipo,codigo,
+          tipo:tipoItem,codigo,
           descricao,
           estoque,reserva,
           familia:famUpper,
@@ -19027,7 +19047,10 @@ function processFile(file,tipo){
       }
       const periodoFim=document.getElementById('periodoFim')?.value||periodoInicio;
       // ────────────────────────────────────────────────────────────────────
-      const msg=`Importar ${items.length} produtos (${tipo})?\n\n`+
+      const _nFab=items.filter(i=>i.tipo==='FABRICA').length,_nLoja=items.length-_nFab;
+      const msg=`Importar ${items.length} produtos (${tipo==='UNICO'?'Fábrica + Loja':tipo})?\n\n`+
+        (tipo==='UNICO'?`🏭 Fábrica: ${_nFab}\n🏪 Loja: ${_nLoja}\n`:'')+
+        (semGrupo?`⚠ Sem grupo identificado (ignorados): ${semGrupo}\n`:'')+
         `✅ Válidos: ${items.length}\n`+
         (semCodigo?`⚠ Sem código: ${semCodigo}\n`:'')+
         (estoqueInvalido?`⚠ Estoque inválido: ${estoqueInvalido}\n`:'')+
@@ -19037,7 +19060,10 @@ function processFile(file,tipo){
         `\nPeríodo: ${periodoInicio===periodoFim?periodoInicio:periodoInicio+' a '+periodoFim}`;
       if(confirm(msg)){
         // Aplica dados
-        if(tipo==='FABRICA')currentFab=tagCafe(items);
+        if(tipo==='UNICO'){
+          currentFab=tagCafe(items.filter(i=>i.tipo==='FABRICA'));
+          currentLoja=tagCafe(items.filter(i=>i.tipo==='LOJA'));
+        }else if(tipo==='FABRICA')currentFab=tagCafe(items);
         else currentLoja=tagCafe(items);
         // Registra metadados da importação
         const now=new Date();
@@ -19111,7 +19137,7 @@ function renderUploadHistory(){
   if(!uploadHistory.length){el.innerHTML='<div class="history-row" style="color:#a0a0a0;font-style:italic">Nenhum arquivo importado ainda.</div>';return;}
   el.innerHTML=uploadHistory.map(h=>{
     const cor=h.tipo==='FABRICA'?'#6B1111':h.tipo==='LOJA'?'#2b6cb0':h.tipo==='VENDA_FAB'||h.tipo==='VENDA_LOJA'?'#4b6b2d':'#666';
-    const label=h.tipo==='VENDA_FAB'?'VENDA FAB':h.tipo==='VENDA_LOJA'?'VENDA LOJA':h.tipo;
+    const label=h.tipo==='VENDA_FAB'?'VENDA FAB':h.tipo==='VENDA_LOJA'?'VENDA LOJA':h.tipo==='UNICO'?'FÁBRICA + LOJA':h.tipo;
     return `<div class="history-row">
       <span style="color:${cor};font-weight:700;font-size:10px">${label}</span>
       ${h.ts} · ${h.total} produtos
