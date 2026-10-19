@@ -25411,8 +25411,10 @@ async function ABL_lerPdf(file){
   const pdfjs = await ABL_carregarPdfJs();
   const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
   const linhasTxt = [];
+  const paginas = [];  // itens com posição (x, y, largura) para os relatórios em colunas
   for(let p = 1; p <= pdf.numPages; p++){
     const content = await (await pdf.getPage(p)).getTextContent();
+    paginas.push(content.items.filter(it => it.str && it.str.trim()).map(it => ({ x: it.transform[4], y: it.transform[5], w: it.width, t: it.str.trim() })));
     const porY = [];
     content.items.forEach(it => {
       if(!it.str || !it.str.trim()) return;
@@ -25425,6 +25427,9 @@ async function ABL_lerPdf(file){
   }
   const topo = linhasTxt.slice(0, 6).join(' ');
   if(/HORAS EXTRAS/i.test(topo)) throw new Error('este é o relatório de horas extras, não de faltas. Use o Relatório de Faltas/Ausências ou o espelho de ponto.');
+  // Relatórios em colunas: "Relatório de Ausências - Dia/Noite" (com matrícula e escala) e "Relatório de Faltas - Dia" (sem matrícula)
+  if(/RELAT[ÓO]RIO DE AUS[ÊE]NCIAS/i.test(topo) && /Matr[ií]cula/i.test(topo) && /Escala/i.test(topo)) return ABL_lerPorColunas(paginas, linhasTxt, true);
+  if(/Relat[óo]rio de Faltas/i.test(topo) && !/Matr[ií]cula/i.test(topo)) return ABL_lerPorColunas(paginas, linhasTxt, false);
   if(/Relat[óo]rio de (Faltas|Aus[êe]ncias)/i.test(topo)) return ABL_lerRelatorioAusencias(linhasTxt);
   let ano = null, setor = null, mat = null, nome = null, ignoradas = 0;
   const linhas = [];
@@ -25478,6 +25483,72 @@ function ABL_lerRelatorioAusencias(linhasTxt){
   if(!data) throw new Error('não encontrei a data no título do relatório.');
   return { linhas, ignoradas: 0, suspensas: ignoradas };
 }
+// Nome do setor como o BK360 já guarda (o ponto escreve "Limpeza e Conservação" de formas diferentes)
+function ABL_setorCanon(v){
+  const n = ABL_semAcento(v).replace(/\s+/g, ' ');
+  return /^LIMPEZA/.test(n) ? 'LIMPEZA E CONSERVACAO-FACILITES' : n;
+}
+const ABL_RE_SIT = /^(Aus[êe]ncia integral|Falta integral|Falta parcial|Atestado|Suspens[ãa]o|Falta)$/i;
+// Lê relatórios em colunas pelo posicionamento do texto. Cada linha é ancorada na matrícula (ou, sem matrícula,
+// na situação); o texto que quebra em duas linhas (nomes e setores longos) é juntado pela proximidade vertical.
+function ABL_lerPorColunas(paginas, linhasTxt, comMatricula){
+  const topo = linhasTxt.slice(0, 8).join(' ');
+  const md = topo.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if(!md) throw new Error('não encontrei a data no título do relatório.');
+  const data = md[3] + '-' + md[2] + '-' + md[1];
+  const turno = /NOITE/i.test(linhasTxt.slice(0, 3).join(' ')) ? 2 : (/\bDIA\b/i.test(linhasTxt.slice(0, 3).join(' ')) ? 1 : null);
+  const linhas = []; let suspensas = 0, hdr = null;
+  const cel = (its, x0, x1) => its.filter(i => i.x >= x0 && i.x < x1).sort((a, b) => b.y - a.y || a.x - b.x).map(i => i.t).join(' ').replace(/\s+/g, ' ').trim();
+  paginas.forEach(its => {
+    const h = n => its.find(i => n.test(i.t));
+    const novo = comMatricula
+      ? { mat: h(/^Matr[ií]cula$/i), esc: h(/^Escala$/i) }
+      : { colab: h(/^Colaborador$/i), sit: h(/^Situa[cç][aã]o$/i) };
+    if(Object.values(novo).every(Boolean)) hdr = novo;
+    if(!hdr) return;
+    const yHdr = (comMatricula ? hdr.mat : hdr.sit).y;
+    let ancoras;
+    if(comMatricula){
+      ancoras = its.filter(i => /^\d{3,6}$/.test(i.t) && i.y < yHdr - 3 && i.x >= hdr.mat.x - 20 && i.x <= hdr.mat.x + 40);
+    }else{
+      ancoras = its.filter(i => ABL_RE_SIT.test(i.t) && i.y < yHdr - 3 && Math.abs(i.x - hdr.sit.x) < 25);
+    }
+    ancoras.sort((a, b) => b.y - a.y);
+    ancoras.forEach(a => {
+      const banda = its.filter(i => Math.abs(i.y - a.y) <= (comMatricula ? 8 : 3) && i.y < yHdr - 3);
+      let mat = '', nome, setor, sit;
+      if(comMatricula){
+        mat = a.t;
+        setor = cel(banda, 0, a.x - 5);
+        nome = cel(banda, a.x + a.w + 5, hdr.esc.x - 8);
+        const sits = banda.filter(i => ABL_RE_SIT.test(i.t)).sort((p, q) => p.x - q.x);
+        sit = sits.length ? sits[0].t : '';
+      }else{
+        setor = cel(banda, 0, hdr.colab.x - 5);
+        nome = cel(banda, hdr.colab.x - 5, hdr.sit.x - 5);
+        sit = a.t;
+      }
+      if(!nome || !sit) return;
+      if(/suspens/i.test(sit)){ suspensas++; return; }
+      const parcial = /parcial/i.test(sit);
+      linhas.push({ matricula: mat, nome: nome.toUpperCase(), setor: ABL_setorCanon(setor), data,
+        tipo: /atestado/i.test(sit) ? 'Atestado' : 'Falta', obs: parcial ? 'Falta parcial' : /integral/i.test(sit) ? 'Falta integral' : '', incluir: !parcial });
+    });
+  });
+  if(!linhas.length && !suspensas) throw new Error('não consegui identificar as linhas do relatório (layout diferente do esperado).');
+  return { linhas, ignoradas: 0, suspensas, turno };
+}
+// Relatório sem matrícula: busca a matrícula pelo nome em quem já tem ausência lançada
+async function ABL_resolverMatriculas(linhas){
+  const faltam = linhas.filter(l => !l.matricula);
+  if(!faltam.length) return;
+  try{
+    const r = await LANC_getClient().from('ausencias').select('matricula,nome').limit(5000);
+    const mapa = {};
+    (r.data || []).forEach(x => { mapa[ABL_semAcento(x.nome)] = x.matricula; });
+    faltam.forEach(l => { l.matricula = mapa[ABL_semAcento(l.nome)] || ''; });
+  }catch(e){ /* sem a consulta, a matrícula é digitada na prévia */ }
+}
 function ABL_turnoDoNome(nome){
   const m = String(nome).match(/0?([12])[\s_\-]*[º°]?[\s_\-]*turno/i);
   if(m) return Number(m[1]);
@@ -25492,7 +25563,8 @@ async function ABL_arquivos(files){
     ABL_fb('Lendo ' + f.name + '…');
     try{
       const r = await ABL_lerPdf(f);
-      ABL_ARQS.push({ nome: f.name, turno: ABL_turnoDoNome(f.name), linhas: r.linhas, ignoradas: r.ignoradas, suspensas: r.suspensas || 0 });
+      await ABL_resolverMatriculas(r.linhas);
+      ABL_ARQS.push({ nome: f.name, turno: r.turno || ABL_turnoDoNome(f.name), linhas: r.linhas, ignoradas: r.ignoradas, suspensas: r.suspensas || 0 });
     }catch(e){
       ABL_fb('⚠ Não consegui ler ' + f.name + ': ' + (e.message || e), 'err');
       return;
@@ -25507,17 +25579,17 @@ async function ABL_montar(){
     <label>Turno <select data-abl-turno="${i}"><option value="1"${a.turno === 1 ? ' selected' : ''}>1º turno</option><option value="2"${a.turno === 2 ? ' selected' : ''}>2º turno</option></select></label>
     <button type="button" class="abl-btn-sec" data-abl-rm="${i}">Remover</button></div>`).join('');
   const antigos = {};
-  ABL_LINHAS.forEach(l => { antigos[l.matricula + '|' + l.data] = l; });
+  ABL_LINHAS.forEach(l => { antigos[(l.matricula || l.nome) + '|' + l.data] = l; });
   const vistos = new Set(), todas = [];
   let duplicadas = 0, semLinhas = 0;
   ABL_ARQS.forEach(a => {
     if(!a.linhas.length) semLinhas++;
     a.linhas.forEach(l => {
-      const k = l.matricula + '|' + l.data;
+      const k = (l.matricula || l.nome) + '|' + l.data;
       if(vistos.has(k)){ duplicadas++; return; }
       vistos.add(k);
       const ant = antigos[k];
-      todas.push({ ...l, turno: a.turno, incluir: ant ? ant.incluir : l.incluir !== false, tipo: ant ? ant.tipo : l.tipo });
+      todas.push({ ...l, turno: a.turno, incluir: ant ? ant.incluir : (l.incluir !== false && !!l.matricula), tipo: ant ? ant.tipo : l.tipo, matricula: ant && ant.matricula ? ant.matricula : l.matricula });
     });
   });
   ABL_LINHAS = todas;
@@ -25526,6 +25598,8 @@ async function ABL_montar(){
   if(duplicadas) aviso += `${duplicadas} registro(s) repetido(s) entre os arquivos foram ignorados. `;
   const susp = ABL_ARQS.reduce((t, a) => t + a.suspensas, 0);
   if(susp) aviso += `${susp} suspensão(ões) não foram lidas (a tabela só aceita Falta e Atestado). `;
+  const semMat = todas.filter(l => !l.matricula).length;
+  if(semMat) aviso += `${semMat} colaborador(es) sem matrícula neste relatório: digite a matrícula na linha para poder lançar. `;
   const parc = todas.filter(l => l.obs === 'Falta parcial').length;
   if(parc) aviso += `${parc} falta(s) parcial(is) vieram desmarcadas; marque se quiser contá-las. `;
   if(semLinhas) aviso += 'Algum arquivo não trouxe nenhuma falta — confira se é o relatório certo. ';
@@ -25542,19 +25616,19 @@ async function ABL_montar(){
   ABL_render();
 }
 function ABL_render(){
-  const inc = ABL_LINHAS.filter(l => l.incluir);
+  const inc = ABL_LINHAS.filter(l => l.incluir && l.matricula);
   const faltas = inc.filter(l => l.tipo === 'Falta').length, atest = inc.filter(l => l.tipo === 'Atestado').length;
   const dias = [...new Set(inc.map(l => ABL_br(l.data)))].join(', ');
   document.getElementById('ablResumo').innerHTML = `<span class="abl-chip">${faltas} falta(s)</span><span class="abl-chip at">${atest} atestado(s)</span><span class="abl-chip">${inc.length} no total</span>${dias ? `<span class="abl-chip">Dia: ${ADM_esc(dias)}</span>` : ''}`;
   document.getElementById('ablTbody').innerHTML = ABL_LINHAS.map((l, i) => `<tr>
     <td class="center"><input type="checkbox" data-abl-inc="${i}"${l.incluir ? ' checked' : ''}></td>
-    <td>${ADM_esc(l.matricula)}</td><td>${ADM_esc(l.nome)}</td><td>${ADM_esc(l.setor || '–')}</td><td class="center">${l.turno}º</td><td>${ABL_br(l.data)}</td>
+    <td>${l.matricula ? ADM_esc(l.matricula) : `<input type="text" class="abl-mat" data-abl-mat="${i}" inputmode="numeric" maxlength="6" placeholder="Matrícula" size="7">`}</td><td>${ADM_esc(l.nome)}</td><td>${ADM_esc(l.setor || '–')}</td><td class="center">${l.turno}º</td><td>${ABL_br(l.data)}</td>
     <td><select data-abl-tipo="${i}"><option${l.tipo === 'Falta' ? ' selected' : ''}>Falta</option><option${l.tipo === 'Atestado' ? ' selected' : ''}>Atestado</option></select></td>
     <td>${ADM_esc(l.obs || '')}</td></tr>`).join('');
   document.getElementById('ablSalvar').disabled = !inc.length;
 }
 async function ABL_salvar(){
-  const inc = ABL_LINHAS.filter(l => l.incluir);
+  const inc = ABL_LINHAS.filter(l => l.incluir && l.matricula);
   if(!inc.length) return;
   const btn = document.getElementById('ablSalvar');
   btn.disabled = true; ABL_fb('Gravando…');
@@ -25577,6 +25651,11 @@ async function ABL_salvar(){
 document.addEventListener('change', e => {
   const t = e.target;
   if(t.id === 'ablFile'){ ABL_arquivos([...t.files]); return; }
+  if(t.dataset && t.dataset.ablMat != null){
+    const l = ABL_LINHAS[Number(t.dataset.ablMat)], v = t.value.replace(/\D/g, '');
+    l.matricula = v; l.incluir = v.length >= 3;
+    ABL_render(); return;
+  }
   if(t.dataset && t.dataset.ablTurno != null){ ABL_ARQS[Number(t.dataset.ablTurno)].turno = Number(t.value); ABL_montar(); }
   else if(t.dataset && t.dataset.ablInc != null){ ABL_LINHAS[Number(t.dataset.ablInc)].incluir = t.checked; ABL_render(); }
   else if(t.dataset && t.dataset.ablTipo != null){ ABL_LINHAS[Number(t.dataset.ablTipo)].tipo = t.value; ABL_render(); }
