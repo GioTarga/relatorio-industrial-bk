@@ -4077,8 +4077,7 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
         <div><label for="acLider">Líder</label><input id="acLider" type="text" maxlength="80" autocomplete="name" required></div>
         <div>
           <label for="acEquip">Equipamento com problema</label>
-          <select id="acEquip" required><option value="">Escolha o setor primeiro</option></select>
-          <input id="acEquipOutro" type="text" maxlength="120" placeholder="Digite o nome do equipamento" style="display:none;margin-top:10px;">
+          <input id="acEquip" type="text" maxlength="120" autocomplete="off" placeholder="Digite o nome do equipamento" required>
         </div>
         <div><label for="acDesc">O que está acontecendo?</label><textarea id="acDesc" maxlength="1000" placeholder="Descreva o problema com suas palavras" required></textarea></div>
         <p class="ac-hint">A data e a hora do chamado são registradas automaticamente no momento do envio.</p>
@@ -10794,48 +10793,24 @@ async function CH_finalizar(){
 // Data e hora do chamado: gravadas pelo banco no instante do envio.
 // ─────────────────────────────────────────────
 let AC_inited = false;
-const AC_OUTRO = '__outro__';
-let AC_MAQ = [];
-function AC_norm(v){ return (v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim(); }
 function AC_msg(t, tipo){ const m = document.getElementById('acMsg'); m.textContent = t || ''; m.className = 'ac-msg' + (t ? ' ' + tipo : ''); }
 
 async function AC_init(){
   if(!AC_inited){
     AC_inited = true;
     document.getElementById('acForm').addEventListener('submit', AC_enviar);
-    document.getElementById('acSetor').addEventListener('change', AC_aoMudarSetor);
-    document.getElementById('acEquip').addEventListener('change', () => {
-      const outro = document.getElementById('acEquip').value === AC_OUTRO;
-      document.getElementById('acEquipOutro').style.display = outro ? '' : 'none';
-      if(outro) document.getElementById('acEquipOutro').focus();
-    });
     const lider = document.getElementById('acLider');
     lider.value = CH_usuario().nome;
     await ST_populateSelect(document.getElementById('acSetor'), '', 'Selecione o setor…');
-    try{ AC_MAQ = await MQ_fetchAllLP(); }catch(e){ AC_MAQ = []; }
   }
   AC_carregarMeus();
-}
-
-function AC_aoMudarSetor(){
-  const nome = document.getElementById('acSetor').value;
-  const sel = document.getElementById('acEquip');
-  if(!nome){ sel.innerHTML = '<option value="">Escolha o setor primeiro</option>'; }
-  else{
-    const lista = AC_MAQ.filter(x => AC_norm(x.setor) === AC_norm(nome));
-    sel.innerHTML = '<option value="">Selecione o equipamento…</option>' +
-      lista.map(x => `<option value="${CH_esc(x.identificacao)}">${CH_esc(x.identificacao)}</option>`).join('') +
-      `<option value="${AC_OUTRO}">Outro / não está na lista</option>`;
-  }
-  document.getElementById('acEquipOutro').style.display = 'none';
-  document.getElementById('acEquipOutro').value = '';
 }
 
 async function AC_enviar(ev){
   ev.preventDefault(); AC_msg('');
   const setor = document.getElementById('acSetor').value;
   const lider = document.getElementById('acLider').value.trim();
-  const equipamento = (document.getElementById('acEquip').value === AC_OUTRO ? document.getElementById('acEquipOutro').value : document.getElementById('acEquip').value).trim();
+  const equipamento = document.getElementById('acEquip').value.trim();
   const descricao = document.getElementById('acDesc').value.trim();
   if(!setor) return AC_msg('Escolha o setor.', 'err');
   if(!lider) return AC_msg('Informe o nome do líder.', 'err');
@@ -10848,7 +10823,6 @@ async function AC_enviar(ev){
     if(error) throw error;
     document.getElementById('acDesc').value = '';
     document.getElementById('acEquip').value = '';
-    document.getElementById('acEquipOutro').value = ''; document.getElementById('acEquipOutro').style.display = 'none';
     AC_msg('Chamado enviado! Os mecânicos já podem ver na fila.', 'ok');
     AC_carregarMeus();
   }catch(e){
