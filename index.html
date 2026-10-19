@@ -3110,37 +3110,6 @@ body{background:#fff;color:#000}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style id="ac-chamado-css">
-/* ─────────────────────────────────────────────
-   ABRIR CHAMADO (líder, pelo celular) — #page-abrir-chamado
-   ───────────────────────────────────────────── */
-#page-abrir-chamado .ac-wrap{ max-width:560px; margin:0 auto; padding:16px; }
-#page-abrir-chamado form{ display:flex; flex-direction:column; gap:16px; }
-#page-abrir-chamado label{ display:block; font-size:12px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--ink-soft); margin-bottom:6px; }
-#page-abrir-chamado input, #page-abrir-chamado select, #page-abrir-chamado textarea{
-  width:100%; font:inherit; font-size:16px; color:var(--ink); background:#fff; border:1.5px solid var(--line);
-  border-radius:10px; padding:12px; min-height:48px;
-}
-#page-abrir-chamado textarea{ min-height:120px; resize:vertical; }
-#page-abrir-chamado input:focus, #page-abrir-chamado select:focus, #page-abrir-chamado textarea:focus{ outline:3px solid rgba(161,1,1,.25); border-color:var(--red); }
-#page-abrir-chamado .ac-hint{ font-size:12px; color:var(--ink-soft); margin:0; }
-#page-abrir-chamado .ac-send{ width:100%; min-height:54px; border:none; border-radius:12px; background:var(--red); color:#fff; font:inherit; font-size:17px; font-weight:700; cursor:pointer; }
-#page-abrir-chamado .ac-send:active{ background:var(--red-dark); }
-#page-abrir-chamado .ac-send[disabled]{ opacity:.6; }
-#page-abrir-chamado .ac-msg{ display:none; border-radius:10px; padding:12px 14px; font-size:14px; font-weight:600; }
-#page-abrir-chamado .ac-msg.err{ display:block; background:var(--bad-bg); color:var(--red-dark); }
-#page-abrir-chamado .ac-msg.ok{ display:block; background:var(--good-bg); color:var(--good); }
-#page-abrir-chamado .ac-sub{ font-family:var(--font-display); font-size:18px; font-weight:600; margin:28px 0 10px; }
-#page-abrir-chamado .ac-item{ background:#fff; border:1px solid var(--line); border-radius:var(--radius-md); padding:12px 14px; margin-bottom:8px; }
-#page-abrir-chamado .ac-item-top{ display:flex; justify-content:space-between; gap:8px; align-items:flex-start; }
-#page-abrir-chamado .ac-item-eq{ font-weight:700; font-size:14px; }
-#page-abrir-chamado .ac-badge{ font-size:11px; font-weight:700; border-radius:999px; padding:3px 10px; white-space:nowrap; }
-#page-abrir-chamado .ac-b-aberto{ background:var(--bad-bg); color:var(--red-dark); }
-#page-abrir-chamado .ac-b-exec{ background:#fff3cd; color:#856404; }
-#page-abrir-chamado .ac-b-ok{ background:#d1e7dd; color:#0a5435; }
-#page-abrir-chamado .ac-item-meta{ font-size:12px; color:var(--ink-soft); margin-top:4px; line-height:1.5; }
-#page-abrir-chamado .ac-vazio{ text-align:center; color:var(--ink-soft); font-size:13px; padding:16px; }
-</style>
 <style id="mn-chamados-css">
 /* ─────────────────────────────────────────────
    MANUTENÇÕES — FILA DE CHAMADOS (#mn-tab-chamados)
@@ -3303,10 +3272,6 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
       <button class="nav-item" data-page="rascunho">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
         Máquinas
-      </button>
-      <button class="nav-item" data-page="abrir-chamado">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-        Abrir chamado
       </button>
       <button class="nav-item" data-page="manutencao">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
@@ -4060,35 +4025,6 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
   </div> <!-- /page-rascunho -->
 
   <!-- ============================================================ PÁGINA MANUTENÇÕES ============================================================ -->
-  <!-- ═══ PÁGINA: ABRIR CHAMADO (líder) ═══ -->
-  <div id="page-abrir-chamado" class="report-page" style="display:none;">
-    <div class="topbar">
-      <div class="brand">
-        <div class="text-block">
-          <div class="eyebrow">Bread King · Manutenção</div>
-          <h1>Abrir chamado</h1>
-          <div class="subtitle">Informe o equipamento e o problema; os mecânicos recebem na fila</div>
-        </div>
-      </div>
-    </div>
-    <div class="ac-wrap">
-      <form id="acForm" novalidate>
-        <div><label for="acSetor">Setor</label><select id="acSetor" required><option value="">Carregando…</option></select></div>
-        <div><label for="acLider">Líder</label><input id="acLider" type="text" maxlength="80" autocomplete="name" required></div>
-        <div>
-          <label for="acEquip">Equipamento com problema</label>
-          <input id="acEquip" type="text" maxlength="120" autocomplete="off" placeholder="Digite o nome do equipamento" required>
-        </div>
-        <div><label for="acDesc">O que está acontecendo?</label><textarea id="acDesc" maxlength="1000" placeholder="Descreva o problema com suas palavras" required></textarea></div>
-        <p class="ac-hint">A data e a hora do chamado são registradas automaticamente no momento do envio.</p>
-        <div class="ac-msg" id="acMsg" role="alert"></div>
-        <button type="submit" class="ac-send" id="acEnviar">Enviar chamado</button>
-      </form>
-      <div class="ac-sub">Meus chamados</div>
-      <div id="acLista"></div>
-    </div>
-  </div>
-
   <div id="page-manutencao" class="report-page" style="display:none;">
 
     <div class="topbar">
@@ -6492,8 +6428,8 @@ const BK_PERFIS = {
                 resumo:'Acesso total: edita, exclui e gerencia usuários.' },
   gestao:     { rotulo:'Gerência / Diretoria',  modulos:'*', exceto:['absenteismo'], editar:false,                     excluir:false, admin:false,
                 resumo:'Visualiza todos os módulos, sem editar nada. Não vê o Usuário Admin nem o Controle de Absenteísmo (este só com liberação individual).' },
-  lider:      { rotulo:'Líder',                 modulos:['abrir-chamado'],   editar:['chamados_manutencao'],    excluir:false, admin:false,
-                resumo:'Só a página Abrir chamado: abre chamados de manutenção pelo celular e acompanha os seus.' },
+  lider:      { rotulo:'Líder',                 modulos:[],                 editar:['chamados_manutencao'],    excluir:false, admin:false,
+                resumo:'Usa só o app de chamados no celular (abre chamados e acompanha os seus). Não acessa o BK360.' },
   mecanico:   { rotulo:'Mecânico',              modulos:['manutencao'],      editar:['chamados_manutencao'],    excluir:false, admin:false,
                 resumo:'Só o módulo Manutenções: atende a fila de chamados (inicia e finaliza), não exclui.' },
   conferente: { rotulo:'Conferente',            modulos:['rastreamento'],    editar:['rastreamento_carrinhos'], excluir:false, admin:false,
@@ -6612,8 +6548,6 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     document.getElementById('page-produtividade-processos').style.display = target === 'produtividade-processos' ? 'block' : 'none';
     document.getElementById('page-rascunho').style.display = target === 'rascunho' ? 'block' : 'none';
     document.getElementById('page-manutencao').style.display = target === 'manutencao' ? 'block' : 'none';
-    document.getElementById('page-abrir-chamado').style.display = target === 'abrir-chamado' ? 'block' : 'none';
-    if(target === 'abrir-chamado') AC_init();
     document.getElementById('page-estoque').style.display = target === 'estoque' ? 'block' : 'none';
     document.getElementById('page-pcp-estoque').style.display = target === 'pcp-estoque' ? 'block' : 'none';
     document.getElementById('page-melhoria').style.display = target === 'melhoria' ? 'block' : 'none';
@@ -10786,72 +10720,6 @@ async function CH_finalizar(){
     await CH_load();
   }catch(e){ console.warn('CH_finalizar error:', e); err('Erro ao salvar. Tente novamente.'); }
   finally{ btn.disabled = false; }
-}
-
-// ─────────────────────────────────────────────
-// ABRIR CHAMADO (líder logado) — alimenta a fila de CH_*
-// Data e hora do chamado: gravadas pelo banco no instante do envio.
-// ─────────────────────────────────────────────
-let AC_inited = false;
-function AC_msg(t, tipo){ const m = document.getElementById('acMsg'); m.textContent = t || ''; m.className = 'ac-msg' + (t ? ' ' + tipo : ''); }
-
-async function AC_init(){
-  if(!AC_inited){
-    AC_inited = true;
-    document.getElementById('acForm').addEventListener('submit', AC_enviar);
-    const lider = document.getElementById('acLider');
-    lider.value = CH_usuario().nome;
-    await ST_populateSelect(document.getElementById('acSetor'), '', 'Selecione o setor…');
-  }
-  AC_carregarMeus();
-}
-
-async function AC_enviar(ev){
-  ev.preventDefault(); AC_msg('');
-  const setor = document.getElementById('acSetor').value;
-  const lider = document.getElementById('acLider').value.trim();
-  const equipamento = document.getElementById('acEquip').value.trim();
-  const descricao = document.getElementById('acDesc').value.trim();
-  if(!setor) return AC_msg('Escolha o setor.', 'err');
-  if(!lider) return AC_msg('Informe o nome do líder.', 'err');
-  if(!equipamento) return AC_msg('Informe o equipamento com problema.', 'err');
-  if(descricao.length < 3) return AC_msg('Descreva o problema.', 'err');
-  const btn = document.getElementById('acEnviar'); btn.disabled = true; btn.textContent = 'Enviando…';
-  try{
-    const client = getSupabaseClient();
-    const { error } = await client.from('chamados_manutencao').insert({ setor, lider, equipamento, descricao });
-    if(error) throw error;
-    document.getElementById('acDesc').value = '';
-    document.getElementById('acEquip').value = '';
-    AC_msg('Chamado enviado! Os mecânicos já podem ver na fila.', 'ok');
-    AC_carregarMeus();
-  }catch(e){
-    console.warn('AC_enviar error:', e);
-    AC_msg('Não foi possível enviar. Tente de novo em instantes.', 'err');
-  }
-  finally{ btn.disabled = false; btn.textContent = 'Enviar chamado'; }
-}
-
-async function AC_carregarMeus(){
-  const el = document.getElementById('acLista');
-  try{
-    const client = getSupabaseClient();
-    const corte = new Date(Date.now() - 14*86400000).toISOString();
-    const { data, error } = await client.from('chamados_manutencao').select('*').gte('created_at', corte).order('created_at', { ascending:false }).limit(40);
-    if(error) throw error;
-    const uid = (typeof BK_AUTH !== 'undefined' && BK_AUTH.user) ? BK_AUTH.user.id : null;
-    const meus = (data || []).filter(r => r.criado_por === uid);  // o banco já limita o líder aos próprios chamados; aqui vale também para Alpha/Mecânico
-    if(!meus.length){ el.innerHTML = '<div class="ac-vazio">Você ainda não abriu chamados nos últimos 14 dias.</div>'; return; }
-    el.innerHTML = meus.map(r => {
-      const st = r.status === 'concluido' ? ['ac-b-ok', 'Concluído'] : r.status === 'em_atendimento' ? ['ac-b-exec', 'Em atendimento'] : ['ac-b-aberto', 'Aguardando'];
-      const quando = CH_fmtDataHora(CH_tChamado(r));
-      let linha2 = r.status === 'aberto' ? `Aguardando há ${CH_fmtDur(CH_espera(r))}` :
-        r.status === 'em_atendimento' ? `${CH_esc(r.mecanico_nome || 'Mecânico')} está atendendo` :
-        `Atendido por ${CH_esc(r.mecanico_nome || '—')} · execução ${CH_fmtDur(CH_exec(r))}`;
-      return `<div class="ac-item"><div class="ac-item-top"><span class="ac-item-eq">${CH_esc(r.equipamento)}</span><span class="ac-badge ${st[0]}">${st[1]}</span></div>
-        <div class="ac-item-meta">${CH_esc(r.setor)} · aberto em ${quando}<br>${linha2}</div></div>`;
-    }).join('');
-  }catch(e){ console.warn('AC_carregarMeus error:', e); el.innerHTML = '<div class="ac-vazio">Não foi possível carregar seus chamados.</div>'; }
 }
 
 // ─────────────────────────────────────────────
@@ -25486,6 +25354,9 @@ async function ABL_lerPdf(file){
     });
     porY.sort((a, b) => b.y - a.y).forEach(l => linhasTxt.push(l.itens.sort((a, b) => a.x - b.x).map(i => i.t).join(' ').replace(/\s+/g, ' ').trim()));
   }
+  const topo = linhasTxt.slice(0, 6).join(' ');
+  if(/HORAS EXTRAS/i.test(topo)) throw new Error('este é o relatório de horas extras, não de faltas. Use o Relatório de Faltas/Ausências ou o espelho de ponto.');
+  if(/Relat[óo]rio de (Faltas|Aus[êe]ncias)/i.test(topo)) return ABL_lerRelatorioAusencias(linhasTxt);
   let ano = null, setor = null, mat = null, nome = null, ignoradas = 0;
   const linhas = [];
   linhasTxt.forEach(ln => {
@@ -25505,7 +25376,38 @@ async function ABL_lerPdf(file){
     m = ln.match(/^(\d{3,6})\s+(.+)$/);
     if(m && !/BREAD KING ALIMENTOS|HRAP|Pag\./i.test(ln)){ mat = m[1]; nome = m[2].trim(); }
   });
+  if(!linhas.length && !ano) throw new Error('layout do PDF não reconhecido (esperado: espelho de ponto, Relatório de Faltas ou Relatório de Ausências).');
   return { linhas, ignoradas };
+}
+// Relatórios "Relatório de Faltas - Dia" e "Relatório de Ausências - Noite": uma linha por colaborador, data no título.
+// Dia:   Setor Matrícula NOME Situação Marcações Horas   ·   Noite: Matrícula NOME Setor Marcações Situação
+function ABL_lerRelatorioAusencias(linhasTxt){
+  let data = null, ignoradas = 0;
+  const linhas = [];
+  const SIT = '(Falta integral|Falta parcial|Falta|Atestado|Suspens[ãa]o)';
+  const reDia = new RegExp('^(.+?)\\s+(\\d{3,6})\\s+([A-ZÀ-Ú\'. ]+?)\\s+' + SIT + '\\b');
+  const reNoite = new RegExp('^(\\d{3,6})\\s+([A-ZÀ-Ú\'. ]+?)\\s+([A-ZÀ-Ú][a-zà-ú][^\\d]*?)\\s+(?:-|\\d{2}:\\d{2}.*?)\\s+' + SIT + '$');
+  linhasTxt.forEach(ln => {
+    let m = ln.match(/Relat[óo]rio de .*?(\d{2})\/(\d{2})\/(\d{4})/i);
+    if(m){ data = m[3] + '-' + m[2] + '-' + m[1]; return; }
+    let mat, nome, setor, sit;
+    m = ln.match(reNoite);
+    if(m){ mat = m[1]; nome = m[2]; setor = m[3]; sit = m[4]; }
+    else{
+      m = ln.match(reDia);
+      if(!m) return;
+      setor = m[1]; mat = m[2]; nome = m[3]; sit = m[4];
+    }
+    if(!data) return;
+    const parcial = /parcial/i.test(sit);
+    // Suspensão não é falta nem atestado (a tabela só aceita esses dois tipos): fica de fora
+    if(/suspens/i.test(sit)){ ignoradas++; return; }
+    linhas.push({ matricula: mat, nome: nome.trim(), setor: ABL_semAcento(setor), data,
+      tipo: /atestado/i.test(sit) ? 'Atestado' : 'Falta', obs: /integral/i.test(sit) ? 'Falta integral' : parcial ? 'Falta parcial' : '',
+      incluir: !parcial });  // falta parcial vem desmarcada: o colaborador esteve presente parte do turno
+  });
+  if(!data) throw new Error('não encontrei a data no título do relatório.');
+  return { linhas, ignoradas: 0, suspensas: ignoradas };
 }
 function ABL_turnoDoNome(nome){
   const m = String(nome).match(/0?([12])[\s_\-]*[º°]?[\s_\-]*turno/i);
@@ -25521,7 +25423,7 @@ async function ABL_arquivos(files){
     ABL_fb('Lendo ' + f.name + '…');
     try{
       const r = await ABL_lerPdf(f);
-      ABL_ARQS.push({ nome: f.name, turno: ABL_turnoDoNome(f.name), linhas: r.linhas, ignoradas: r.ignoradas });
+      ABL_ARQS.push({ nome: f.name, turno: ABL_turnoDoNome(f.name), linhas: r.linhas, ignoradas: r.ignoradas, suspensas: r.suspensas || 0 });
     }catch(e){
       ABL_fb('⚠ Não consegui ler ' + f.name + ': ' + (e.message || e), 'err');
       return;
@@ -25546,13 +25448,17 @@ async function ABL_montar(){
       if(vistos.has(k)){ duplicadas++; return; }
       vistos.add(k);
       const ant = antigos[k];
-      todas.push({ ...l, turno: a.turno, incluir: ant ? ant.incluir : true, tipo: ant ? ant.tipo : l.tipo });
+      todas.push({ ...l, turno: a.turno, incluir: ant ? ant.incluir : l.incluir !== false, tipo: ant ? ant.tipo : l.tipo });
     });
   });
   ABL_LINHAS = todas;
   document.getElementById('ablPrev').style.display = ABL_ARQS.length ? '' : 'none';
   let aviso = '';
   if(duplicadas) aviso += `${duplicadas} registro(s) repetido(s) entre os arquivos foram ignorados. `;
+  const susp = ABL_ARQS.reduce((t, a) => t + a.suspensas, 0);
+  if(susp) aviso += `${susp} suspensão(ões) não foram lidas (a tabela só aceita Falta e Atestado). `;
+  const parc = todas.filter(l => l.obs === 'Falta parcial').length;
+  if(parc) aviso += `${parc} falta(s) parcial(is) vieram desmarcadas; marque se quiser contá-las. `;
   if(semLinhas) aviso += 'Algum arquivo não trouxe nenhuma falta — confira se é o relatório certo. ';
   const datas = [...new Set(todas.map(l => l.data))];
   if(datas.length){
@@ -25814,6 +25720,12 @@ function BK_authApply(session){
     BK_semPerfil = true;
     getSupabaseClient().auth.signOut();
     document.getElementById('bkLoginErr').textContent = 'Seu usuário ainda não tem um perfil de acesso. Fale com o administrador.';
+    return;
+  }
+  if(u && Array.isArray(perfil.modulos) && !perfil.modulos.length){
+    BK_semPerfil = true;
+    getSupabaseClient().auth.signOut();
+    document.getElementById('bkLoginErr').textContent = 'Seu perfil usa apenas o app de chamados no celular, não o BK360.';
     return;
   }
   const trocar = !!(u && u.user_metadata && u.user_metadata.trocar_senha === true);
