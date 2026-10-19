@@ -3103,6 +3103,67 @@ body{background:#fff;color:#000}
   #page-rastreamento .rast-container { padding: 16px 16px; }
   #page-rastreamento .rast-period-bar { padding: 10px 16px; }
 }
+
+/* ─── Rastreamento no celular/tablet ─── */
+@media (max-width: 900px){
+  body.bk-resp .sidebar-user{ display:flex; align-items:center; margin:0 0 0 auto; padding:6px 12px; border-top:none; }
+  body.bk-resp .sidebar-user-mail, body.bk-resp .sidebar-user-nivel{ display:none; }
+  body.bk-resp .sidebar-logout{ width:auto; margin:0; padding:10px 16px; min-height:44px; font-size:13px; }
+  body.bk-resp .nav-item{ min-height:44px; }
+}
+@media (max-width: 720px){
+  #page-rastreamento .rast-topbar{ padding:16px 16px 14px; }
+  #page-rastreamento .rast-topbar-inner{ flex-direction:column; align-items:flex-start; gap:6px; }
+  #page-rastreamento .rast-topbar h1{ font-size:19px; }
+  #page-rastreamento .rast-topbar-date{ text-align:left; }
+  #page-rastreamento .rast-period-bar{ justify-content:space-between; gap:10px; }
+  #page-rastreamento .rast-btn-refresh, #page-rastreamento .dr-btn{ min-height:44px; }
+  #page-rastreamento .dr-panel{ position:fixed; left:12px; right:12px; top:76px; width:auto; max-width:none; transform:none; }
+  #page-rastreamento .dr-grid span, #page-rastreamento .dr-grid button{ min-height:42px; }
+  #page-rastreamento .rast-kpi-grid{ gap:10px; }
+  #page-rastreamento .rast-filter-bar{ padding:12px 0 0; }
+  #page-rastreamento .rast-filter-group{ width:100%; }
+  #page-rastreamento .rast-tab-bar{ display:grid; grid-template-columns:repeat(3, 1fr); gap:4px; }
+  #page-rastreamento .rast-tab-btn{ padding:12px 4px; font-size:11.5px; min-height:48px; }
+  /* campos: 16px evita o zoom automático do iPhone e facilita o toque */
+  #page-rastreamento input[type="text"], #page-rastreamento input[type="number"],
+  #page-rastreamento input[type="date"], #page-rastreamento select{ font-size:16px; min-height:46px; }
+  #page-rastreamento .rast-form-row{ align-items:stretch; gap:12px; }
+  #page-rastreamento .rast-form-group{ max-width:none !important; width:100%; flex:none !important; }
+  #page-rastreamento .rast-massa-row{ flex-wrap:nowrap; }
+  #page-rastreamento .rast-massa-row .rast-m-qtd{ min-width:96px; }
+  #page-rastreamento .rast-form-group > .rast-btn{ align-self:stretch !important; width:100%; }
+  #page-rastreamento .rast-form-group label{ font-size:12px; }
+  #page-rastreamento .rast-btn, #page-rastreamento .rast-kcard-btn, #page-rastreamento .rast-unit-btn{ min-height:46px; font-size:14px; }
+  #page-rastreamento .rast-row-end{ flex-direction:column-reverse; }
+  #page-rastreamento .rast-row-end .rast-btn{ width:100%; }
+  #page-rastreamento .rast-massa-del{ width:46px; height:46px; flex-shrink:0; }
+  #page-rastreamento .rast-card{ padding-left:14px; padding-right:14px; }
+  #page-rastreamento .rast-kanban-col{ min-height:0; }
+  #page-rastreamento .rast-kanban-body{ max-height:65vh; -webkit-overflow-scrolling:touch; }
+  #page-rastreamento .rast-ac-item{ padding:13px 14px; }
+  /* Histórico: cada lançamento vira um cartão, em vez de tabela espremida */
+  #page-rastreamento #rast-tab-historico .rast-tbl-wrap{ overflow:visible; max-height:none; }
+  #page-rastreamento #rast-tab-historico table, #page-rastreamento #rast-tab-historico tbody, #page-rastreamento #rast-tab-historico tr, #page-rastreamento #rast-tab-historico tbody td{ display:block; width:100%; }
+  #page-rastreamento #rast-tab-historico colgroup, #page-rastreamento #rast-tab-historico thead{ display:none; }
+  #page-rastreamento #rast-tab-historico tbody tr{ height:auto; padding:12px 14px; border-bottom:1px solid var(--line); position:relative; }
+  #page-rastreamento #rast-tab-historico tbody td{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:5px 0; border:none; text-align:right; }
+  #page-rastreamento #rast-tab-historico tbody td::before{ flex-shrink:0; font-size:11px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:var(--ink-soft); text-align:left; }
+  #page-rastreamento #rast-tab-historico tbody td:nth-child(1){ display:block; text-align:left; padding-right:44px; font-weight:700; }
+  #page-rastreamento #rast-tab-historico tbody td:nth-child(2)::before{ content:'Carrinho'; }
+  #page-rastreamento #rast-tab-historico tbody td:nth-child(3)::before{ content:'N° da massa'; }
+  #page-rastreamento #rast-tab-historico tbody td:nth-child(4)::before{ content:'Produção'; }
+  #page-rastreamento #rast-tab-historico tbody td:nth-child(5)::before{ content:'Responsáveis'; }
+  #page-rastreamento #rast-tab-historico tbody td:nth-child(6)::before{ content:'Status'; }
+  #page-rastreamento #rast-tab-historico tbody td:nth-child(7)::before{ content:'Embalagem'; }
+  #page-rastreamento #rast-tab-historico tbody td:nth-child(8){ position:absolute; top:8px; right:10px; width:auto; padding:0; }
+  #page-rastreamento #rast-tab-historico tbody td:nth-child(8)::before{ content:none; }
+  #page-rastreamento #rast-tab-historico tbody td:nth-child(8) button{ min-width:44px; min-height:44px; }
+  #page-rastreamento #rast-tab-historico tbody td[colspan]{ display:block; text-align:center; }
+  #page-rastreamento #rast-tab-historico tbody td[colspan]::before{ content:none; }
+  #page-rastreamento #rast-tab-historico .rast-h-prod{ display:block; -webkit-line-clamp:unset; overflow:visible; font-size:13.5px; }
+  #page-rastreamento #rast-tab-historico .rast-h-badges{ justify-content:flex-end; }
+}
 </style>
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -6437,6 +6498,13 @@ const BK_PERFIS = {
 };
 const BK_AUTH = { user:null, nivel:null, extras:[] };
 function BK_perfil(){ return BK_PERFIS[BK_AUTH.nivel] || null; }
+// Telas já adaptadas ao celular ativam o viewport responsivo; as demais seguem com o layout de computador (zoom-out)
+function BK_modoCelular(ativo){
+  let m = document.querySelector('meta[name="viewport"]');
+  if(ativo && !m){ m = document.createElement('meta'); m.name = 'viewport'; m.content = 'width=device-width, initial-scale=1, viewport-fit=cover'; document.head.appendChild(m); }
+  if(!ativo && m) m.remove();
+  document.body.classList.toggle('bk-resp', !!ativo);
+}
 function BK_podeVer(pagina){
   const p = BK_perfil(); if(!p) return false;
   if(pagina === 'usuarios-admin') return p.admin === true;
@@ -6554,6 +6622,7 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     document.getElementById('page-lancamento').style.display = target === 'lancamento' ? 'block' : 'none';
     document.getElementById('page-expedicao').style.display = target === 'expedicao' ? 'block' : 'none';
     document.getElementById('page-rastreamento').style.display = target === 'rastreamento' ? 'block' : 'none';
+    BK_modoCelular(target === 'rastreamento');
     document.getElementById('page-mapa-rendimentos').style.display = target === 'mapa-rendimentos' ? 'block' : 'none';
     if(target === 'mapa-rendimentos' && typeof MR_load === 'function') MR_load();
     document.getElementById('page-absenteismo').style.display = target === 'absenteismo' ? 'block' : 'none';
