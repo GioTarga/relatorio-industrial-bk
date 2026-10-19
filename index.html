@@ -3110,6 +3110,113 @@ body{background:#fff;color:#000}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style id="ac-chamado-css">
+/* ─────────────────────────────────────────────
+   ABRIR CHAMADO (líder, pelo celular) — #page-abrir-chamado
+   ───────────────────────────────────────────── */
+#page-abrir-chamado .ac-wrap{ max-width:560px; margin:0 auto; padding:16px; }
+#page-abrir-chamado form{ display:flex; flex-direction:column; gap:16px; }
+#page-abrir-chamado label{ display:block; font-size:12px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--ink-soft); margin-bottom:6px; }
+#page-abrir-chamado input, #page-abrir-chamado select, #page-abrir-chamado textarea{
+  width:100%; font:inherit; font-size:16px; color:var(--ink); background:#fff; border:1.5px solid var(--line);
+  border-radius:10px; padding:12px; min-height:48px;
+}
+#page-abrir-chamado textarea{ min-height:120px; resize:vertical; }
+#page-abrir-chamado input:focus, #page-abrir-chamado select:focus, #page-abrir-chamado textarea:focus{ outline:3px solid rgba(161,1,1,.25); border-color:var(--red); }
+#page-abrir-chamado .ac-hint{ font-size:12px; color:var(--ink-soft); margin:0; }
+#page-abrir-chamado .ac-send{ width:100%; min-height:54px; border:none; border-radius:12px; background:var(--red); color:#fff; font:inherit; font-size:17px; font-weight:700; cursor:pointer; }
+#page-abrir-chamado .ac-send:active{ background:var(--red-dark); }
+#page-abrir-chamado .ac-send[disabled]{ opacity:.6; }
+#page-abrir-chamado .ac-msg{ display:none; border-radius:10px; padding:12px 14px; font-size:14px; font-weight:600; }
+#page-abrir-chamado .ac-msg.err{ display:block; background:var(--bad-bg); color:var(--red-dark); }
+#page-abrir-chamado .ac-msg.ok{ display:block; background:var(--good-bg); color:var(--good); }
+#page-abrir-chamado .ac-sub{ font-family:var(--font-display); font-size:18px; font-weight:600; margin:28px 0 10px; }
+#page-abrir-chamado .ac-item{ background:#fff; border:1px solid var(--line); border-radius:var(--radius-md); padding:12px 14px; margin-bottom:8px; }
+#page-abrir-chamado .ac-item-top{ display:flex; justify-content:space-between; gap:8px; align-items:flex-start; }
+#page-abrir-chamado .ac-item-eq{ font-weight:700; font-size:14px; }
+#page-abrir-chamado .ac-badge{ font-size:11px; font-weight:700; border-radius:999px; padding:3px 10px; white-space:nowrap; }
+#page-abrir-chamado .ac-b-aberto{ background:var(--bad-bg); color:var(--red-dark); }
+#page-abrir-chamado .ac-b-exec{ background:#fff3cd; color:#856404; }
+#page-abrir-chamado .ac-b-ok{ background:#d1e7dd; color:#0a5435; }
+#page-abrir-chamado .ac-item-meta{ font-size:12px; color:var(--ink-soft); margin-top:4px; line-height:1.5; }
+#page-abrir-chamado .ac-vazio{ text-align:center; color:var(--ink-soft); font-size:13px; padding:16px; }
+</style>
+<style id="mn-chamados-css">
+/* ─────────────────────────────────────────────
+   MANUTENÇÕES — FILA DE CHAMADOS (#mn-tab-chamados)
+   ───────────────────────────────────────────── */
+#mn-tab-chamados .ch-head{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:18px 0 12px; }
+#mn-tab-chamados .ch-title{ font-family:var(--font-display); font-size:20px; font-weight:600; margin-right:auto; }
+#mn-tab-chamados .ch-btn{
+  border:1px solid var(--line); background:#fff; color:var(--ink); border-radius:var(--radius-sm);
+  padding:7px 12px; font-size:12.5px; font-weight:600; cursor:pointer; font-family:inherit;
+}
+#mn-tab-chamados .ch-btn:hover{ background:var(--cream); }
+#mn-tab-chamados .ch-btn.on{ background:var(--red); border-color:var(--red); color:#fff; }
+#mn-tab-chamados .ch-kpis{ display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:14px; }
+#mn-tab-chamados .ch-kpi{ background:#fff; border:1px solid var(--line); border-radius:var(--radius-md); padding:10px 14px; }
+#mn-tab-chamados .ch-kpi-l{ font-size:11px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:var(--ink-soft); }
+#mn-tab-chamados .ch-kpi-v{ font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; margin-top:2px; }
+#mn-tab-chamados .ch-kpi-v.red{ color:var(--red); }
+#mn-tab-chamados .ch-kpi-s{ font-size:11px; color:var(--ink-soft); }
+#mn-tab-chamados .ch-board{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+#mn-tab-chamados .ch-col{ display:flex; flex-direction:column; min-height:240px; }
+#mn-tab-chamados .ch-col-h{
+  display:flex; justify-content:space-between; align-items:center; padding:10px 16px;
+  border-radius:var(--radius-sm) var(--radius-sm) 0 0; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;
+}
+#mn-tab-chamados .ch-h-aberto{ background:var(--bad-bg); color:var(--red-dark); }
+#mn-tab-chamados .ch-h-exec{ background:#fff3cd; color:#856404; }
+#mn-tab-chamados .ch-h-ok{ background:#d1e7dd; color:#0a5435; }
+#mn-tab-chamados .ch-count{ background:rgba(0,0,0,.12); border-radius:999px; padding:1px 8px; font-size:11px; font-weight:800; }
+#mn-tab-chamados .ch-col-b{
+  flex:1; background:var(--cream); border:1px solid var(--line); border-top:none;
+  border-radius:0 0 var(--radius-sm) var(--radius-sm); padding:10px; display:flex; flex-direction:column; gap:8px;
+  max-height:640px; overflow-y:auto;
+}
+#mn-tab-chamados .ch-card{ background:#fff; border:1px solid var(--line); border-radius:var(--radius-sm); padding:12px 14px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+#mn-tab-chamados .ch-card.late{ border-left:4px solid var(--red); }
+#mn-tab-chamados .ch-top{ display:flex; justify-content:space-between; gap:8px; margin-bottom:4px; }
+#mn-tab-chamados .ch-equip{ font-weight:700; font-size:13px; line-height:1.3; }
+#mn-tab-chamados .ch-num{ font-size:11px; font-weight:700; color:var(--ink-soft); white-space:nowrap; }
+#mn-tab-chamados .ch-meta{ font-size:11.5px; color:var(--ink-soft); line-height:1.6; }
+#mn-tab-chamados .ch-desc{ font-size:12.5px; margin:6px 0; line-height:1.4; white-space:pre-wrap; word-break:break-word; }
+#mn-tab-chamados .ch-timer{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; border-radius:var(--radius-pill); padding:3px 10px; }
+#mn-tab-chamados .ch-timer.wait{ background:var(--bad-bg); color:var(--red-dark); }
+#mn-tab-chamados .ch-timer.run{ background:#fff3cd; color:#856404; }
+#mn-tab-chamados .ch-timer.done{ background:#d1e7dd; color:#0a5435; }
+#mn-tab-chamados .ch-times{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+#mn-tab-chamados .ch-act{ margin-top:10px; width:100%; padding:8px 0; background:var(--red); color:#fff; border:none; border-radius:var(--radius-sm); font-size:12.5px; font-weight:700; cursor:pointer; font-family:inherit; }
+#mn-tab-chamados .ch-act:hover{ background:var(--red-dark); }
+#mn-tab-chamados .ch-act.ok{ background:var(--good); }
+#mn-tab-chamados .ch-empty{ text-align:center; font-size:12px; color:var(--ink-soft); padding:20px 8px; }
+#mn-tab-chamados .ch-pecas{ font-size:11.5px; margin-top:4px; }
+#ch-modal-overlay{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9000; align-items:center; justify-content:center; padding:16px; }
+#ch-modal-overlay.open{ display:flex; }
+#ch-modal{ background:#fff; border-radius:var(--radius-md); width:100%; max-width:480px; max-height:92vh; overflow-y:auto; padding:22px 24px; box-shadow:0 8px 40px rgba(0,0,0,.3); }
+#ch-modal h3{ margin:0 0 4px; font-family:var(--font-display); font-size:20px; }
+#ch-modal .ch-sub{ font-size:12px; color:var(--ink-soft); margin-bottom:14px; }
+#ch-modal label{ display:block; font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--ink-soft); margin:12px 0 5px; }
+#ch-modal input[type=text], #ch-modal input[type=time], #ch-modal input[type=number], #ch-modal textarea{
+  width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:var(--radius-sm); font:inherit; font-size:13.5px; background:var(--cream);
+}
+#ch-modal .ch-2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+#ch-modal .ch-radios{ display:flex; gap:10px; }
+#ch-modal .ch-radios label{ display:flex; align-items:center; gap:6px; margin:0; text-transform:none; font-size:13.5px; color:var(--ink); letter-spacing:0; font-weight:600; }
+#ch-modal .ch-peca-row{ display:grid; grid-template-columns:1fr 84px 34px; gap:8px; margin-bottom:8px; }
+#ch-modal .ch-rm{ border:1px solid var(--line); background:#fff; border-radius:var(--radius-sm); cursor:pointer; font-size:16px; }
+#ch-modal .ch-err{ color:var(--red); font-size:12.5px; font-weight:600; min-height:18px; margin-top:10px; }
+#ch-modal .ch-foot{ display:flex; gap:10px; justify-content:flex-end; margin-top:14px; }
+#ch-aviso-overlay{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9100; align-items:center; justify-content:center; padding:16px; }
+#ch-aviso-overlay.open{ display:flex; }
+#ch-aviso{ background:#fff; border-radius:var(--radius-md); max-width:380px; width:100%; padding:24px; text-align:center; box-shadow:0 8px 40px rgba(0,0,0,.35); }
+#ch-aviso .ch-aviso-ico{ width:54px; height:54px; margin:0 auto 10px; border-radius:50%; background:#fff3cd; color:#856404; font-size:28px; display:flex; align-items:center; justify-content:center; }
+#ch-aviso p{ margin:0 0 18px; font-size:14.5px; line-height:1.45; font-weight:600; }
+@media (max-width:1000px){
+  #mn-tab-chamados .ch-board{ grid-template-columns:1fr; }
+  #mn-tab-chamados .ch-kpis{ grid-template-columns:repeat(2,1fr); }
+}
+</style>
 <style id="bk-extracted-styles">
 /* ─────────────────────────────────────────────
    ESTILOS EXTRAÍDOS DO JS (Wave 3) — antes inline com cor hardcoded
@@ -3196,6 +3303,10 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
       <button class="nav-item" data-page="rascunho">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
         Máquinas
+      </button>
+      <button class="nav-item" data-page="abrir-chamado">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Abrir chamado
       </button>
       <button class="nav-item" data-page="manutencao">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
@@ -3949,6 +4060,36 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
   </div> <!-- /page-rascunho -->
 
   <!-- ============================================================ PÁGINA MANUTENÇÕES ============================================================ -->
+  <!-- ═══ PÁGINA: ABRIR CHAMADO (líder) ═══ -->
+  <div id="page-abrir-chamado" class="report-page" style="display:none;">
+    <div class="topbar">
+      <div class="brand">
+        <div class="text-block">
+          <div class="eyebrow">Bread King · Manutenção</div>
+          <h1>Abrir chamado</h1>
+          <div class="subtitle">Informe o equipamento e o problema; os mecânicos recebem na fila</div>
+        </div>
+      </div>
+    </div>
+    <div class="ac-wrap">
+      <form id="acForm" novalidate>
+        <div><label for="acSetor">Setor</label><select id="acSetor" required><option value="">Carregando…</option></select></div>
+        <div><label for="acLider">Líder</label><input id="acLider" type="text" maxlength="80" autocomplete="name" required></div>
+        <div>
+          <label for="acEquip">Equipamento com problema</label>
+          <select id="acEquip" required><option value="">Escolha o setor primeiro</option></select>
+          <input id="acEquipOutro" type="text" maxlength="120" placeholder="Digite o nome do equipamento" style="display:none;margin-top:10px;">
+        </div>
+        <div><label for="acDesc">O que está acontecendo?</label><textarea id="acDesc" maxlength="1000" placeholder="Descreva o problema com suas palavras" required></textarea></div>
+        <p class="ac-hint">A data e a hora do chamado são registradas automaticamente no momento do envio.</p>
+        <div class="ac-msg" id="acMsg" role="alert"></div>
+        <button type="submit" class="ac-send" id="acEnviar">Enviar chamado</button>
+      </form>
+      <div class="ac-sub">Meus chamados</div>
+      <div id="acLista"></div>
+    </div>
+  </div>
+
   <div id="page-manutencao" class="report-page" style="display:none;">
 
     <div class="topbar">
@@ -3965,6 +4106,7 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
     <div class="setor-tabs" style="border-bottom:2px solid var(--line);margin-bottom:0;">
       <button type="button" class="setor-tab-btn active" data-mntab="relatorio">Relatório</button>
       <button type="button" class="setor-tab-btn" data-mntab="os">Ordem de Serviço</button>
+      <button type="button" class="setor-tab-btn" data-mntab="chamados">Chamados</button>
     </div>
 
     <!-- ── ABA: RELATÓRIO ── -->
@@ -4045,6 +4187,57 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
     </div><!-- /mn-tab-relatorio -->
 
     <!-- ── ABA: ORDEM DE SERVIÇO ── -->
+    <!-- ── ABA: CHAMADOS (fila aberta pelos líderes no celular) ── -->
+    <div id="mn-tab-chamados" style="display:none;">
+      <div class="ch-head">
+        <span class="ch-title">Fila de chamados</span>
+        <button type="button" class="ch-btn" id="chBtnMeus" onclick="CH_toggleMeus()">Só meus chamados</button>
+        <button type="button" class="ch-btn" onclick="CH_load()">↻ Atualizar</button>
+      </div>
+      <div class="ch-kpis" id="chKpis"></div>
+      <div class="ch-board">
+        <div class="ch-col"><div class="ch-col-h ch-h-aberto"><span>Abertos · aguardando</span><span class="ch-count" id="chCntAberto">0</span></div><div class="ch-col-b" id="chColAberto"></div></div>
+        <div class="ch-col"><div class="ch-col-h ch-h-exec"><span>Em execução</span><span class="ch-count" id="chCntExec">0</span></div><div class="ch-col-b" id="chColExec"></div></div>
+        <div class="ch-col"><div class="ch-col-h ch-h-ok"><span>Concluídos · 30 dias</span><span class="ch-count" id="chCntOk">0</span></div><div class="ch-col-b" id="chColOk"></div></div>
+      </div>
+
+      <div id="ch-aviso-overlay" role="alertdialog" aria-modal="true" aria-labelledby="chAvisoTxt">
+        <div id="ch-aviso">
+          <div class="ch-aviso-ico" aria-hidden="true">⚠</div>
+          <p id="chAvisoTxt"></p>
+          <button type="button" class="ch-btn on" id="chAvisoOk" onclick="CH_fecharAviso()">Entendi</button>
+        </div>
+      </div>
+      <div id="ch-modal-overlay" onclick="if(event.target===this)CH_fecharModal()">
+        <div id="ch-modal" role="dialog" aria-modal="true" aria-labelledby="chModalTitulo">
+          <h3 id="chModalTitulo">Finalizar chamado</h3>
+          <div class="ch-sub" id="chModalSub"></div>
+          <label for="chMecanico">Mecânico</label>
+          <input type="text" id="chMecanico" maxlength="80" autocomplete="off">
+          <div class="ch-2">
+            <div><label for="chIni">Hora de início</label><input type="time" id="chIni"></div>
+            <div><label for="chFim">Hora de término</label><input type="time" id="chFim"></div>
+          </div>
+          <label>Alguma peça foi substituída?</label>
+          <div class="ch-radios">
+            <label><input type="radio" name="chPeca" value="nao" checked onchange="CH_pecasToggle()"> Não</label>
+            <label><input type="radio" name="chPeca" value="sim" onchange="CH_pecasToggle()"> Sim</label>
+          </div>
+          <div id="chPecasWrap" style="display:none;margin-top:10px;">
+            <div id="chPecasRows"></div>
+            <button type="button" class="ch-btn" onclick="CH_addPeca()">＋ Adicionar peça</button>
+          </div>
+          <label for="chObs">Observação (opcional)</label>
+          <textarea id="chObs" rows="2" maxlength="500" placeholder="O que foi feito"></textarea>
+          <div class="ch-err" id="chErr" role="alert"></div>
+          <div class="ch-foot">
+            <button type="button" class="ch-btn" onclick="CH_fecharModal()">Cancelar</button>
+            <button type="button" class="ch-btn on" id="chSalvar" onclick="CH_finalizar()">✓ Finalizar chamado</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="mn-tab-os" style="display:none;">
 
       <!-- Header -->
@@ -6300,6 +6493,10 @@ const BK_PERFIS = {
                 resumo:'Acesso total: edita, exclui e gerencia usuários.' },
   gestao:     { rotulo:'Gerência / Diretoria',  modulos:'*', exceto:['absenteismo'], editar:false,                     excluir:false, admin:false,
                 resumo:'Visualiza todos os módulos, sem editar nada. Não vê o Usuário Admin nem o Controle de Absenteísmo (este só com liberação individual).' },
+  lider:      { rotulo:'Líder',                 modulos:['abrir-chamado'],   editar:['chamados_manutencao'],    excluir:false, admin:false,
+                resumo:'Só a página Abrir chamado: abre chamados de manutenção pelo celular e acompanha os seus.' },
+  mecanico:   { rotulo:'Mecânico',              modulos:['manutencao'],      editar:['chamados_manutencao'],    excluir:false, admin:false,
+                resumo:'Só o módulo Manutenções: atende a fila de chamados (inicia e finaliza), não exclui.' },
   conferente: { rotulo:'Conferente',            modulos:['rastreamento'],    editar:['rastreamento_carrinhos'], excluir:false, admin:false,
                 resumo:'Só o módulo Rastreamento: lança e edita, não exclui.' }
 };
@@ -6416,6 +6613,8 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     document.getElementById('page-produtividade-processos').style.display = target === 'produtividade-processos' ? 'block' : 'none';
     document.getElementById('page-rascunho').style.display = target === 'rascunho' ? 'block' : 'none';
     document.getElementById('page-manutencao').style.display = target === 'manutencao' ? 'block' : 'none';
+    document.getElementById('page-abrir-chamado').style.display = target === 'abrir-chamado' ? 'block' : 'none';
+    if(target === 'abrir-chamado') AC_init();
     document.getElementById('page-estoque').style.display = target === 'estoque' ? 'block' : 'none';
     document.getElementById('page-pcp-estoque').style.display = target === 'pcp-estoque' ? 'block' : 'none';
     document.getElementById('page-melhoria').style.display = target === 'melhoria' ? 'block' : 'none';
@@ -10321,12 +10520,365 @@ document.querySelectorAll('[data-mntab]').forEach(btn => {
     this.classList.add('active');
     document.getElementById('mn-tab-relatorio').style.display = tab === 'relatorio' ? '' : 'none';
     document.getElementById('mn-tab-os').style.display       = tab === 'os'        ? '' : 'none';
+    document.getElementById('mn-tab-chamados').style.display = tab === 'chamados'  ? '' : 'none';
     const subtitle = document.getElementById('mnSubtitle');
     if(tab === 'relatorio') subtitle.textContent = 'Chamados, intervenções, tempo de reparo e recorrência por máquina e especialidade';
     if(tab === 'os')        subtitle.textContent = 'Gestão de ordens de serviço corretivas e preventivas';
+    if(tab === 'chamados')  subtitle.textContent = 'Fila de chamados abertos pelos líderes: tempo de espera e tempo de execução';
     if(tab === 'os')        OS_init();
+    if(tab === 'chamados')  CH_init();
   });
 });
+
+// ─────────────────────────────────────────────
+// CHAMADOS DE MANUTENÇÃO — fila (abertos → em execução → concluídos)
+// Os líderes abrem o chamado pelo celular (chamado.html). Aqui os mecânicos atendem.
+//   Tempo de espera   = abertura do chamado → mecânico iniciar o atendimento
+//   Tempo de execução = hora de início → hora de término informadas pelo mecânico
+// ─────────────────────────────────────────────
+let CH_ALL = [];
+let CH_loadedOnce = false;
+let CH_soMeus = false;
+let CH_finalizarId = null;
+let CH_timer = null;
+let CH_poll = null;
+
+function CH_esc(v){ return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function CH_pad(n){ return String(n).padStart(2,'0'); }
+function CH_ativa(){ const t = document.getElementById('mn-tab-chamados'); return !!t && t.style.display !== 'none'; }
+
+// Momento do envio do chamado, gravado pelo servidor (created_at) — o líder não digita data/hora
+function CH_tChamado(r){ return new Date(r.created_at); }
+function CH_fmtDur(ms){
+  if(ms == null || isNaN(ms)) return '—';
+  const min = Math.max(0, Math.round(ms / 60000));
+  if(min < 60) return `${min} min`;
+  const h = Math.floor(min / 60), m = min % 60;
+  if(h < 24) return `${h} h ${CH_pad(m)} min`;
+  return `${Math.floor(h/24)} d ${h%24} h`;
+}
+function CH_fmtHora(d){ return `${CH_pad(d.getHours())}:${CH_pad(d.getMinutes())}`; }
+function CH_fmtDataHora(d){ return `${CH_pad(d.getDate())}/${CH_pad(d.getMonth()+1)} ${CH_fmtHora(d)}`; }
+function CH_espera(r){
+  const ini = CH_tChamado(r);
+  const fim = r.assumido_em ? new Date(r.assumido_em) : new Date();
+  return fim - ini;
+}
+function CH_exec(r){
+  if(!r.inicio_manutencao) return null;
+  const fim = r.fim_manutencao ? new Date(r.fim_manutencao) : new Date();
+  return fim - new Date(r.inicio_manutencao);
+}
+
+function CH_usuario(){
+  const u = (typeof BK_AUTH !== 'undefined' && BK_AUTH.user) ? BK_AUTH.user : null;
+  const email = u ? (u.email || '') : '';
+  const meta = u && u.user_metadata ? u.user_metadata : {};
+  let nome = meta.nome || meta.full_name || meta.name || '';
+  if(!nome && email){
+    nome = email.split('@')[0].replace(/[._-]+/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+  return { email, nome };
+}
+
+async function CH_init(){
+  if(!CH_loadedOnce){ CH_loadedOnce = true; await CH_load(); }
+  else CH_render();
+  clearInterval(CH_timer); clearInterval(CH_poll);
+  CH_timer = setInterval(() => { if(CH_ativa()) CH_render(); }, 30000);   // cronômetros
+  CH_poll  = setInterval(() => { if(CH_ativa() && !document.getElementById('ch-modal-overlay').classList.contains('open')) CH_load(); }, 15000); // chamados novos / já assumidos por outro mecânico
+}
+
+async function CH_load(){
+  try{
+    const client = getSupabaseClient();
+    const corte = new Date(Date.now() - 30*86400000).toISOString();
+    const { data, error } = await client.from('chamados_manutencao')
+      .select('*')
+      .or(`status.neq.concluido,concluido_em.gte.${corte}`)
+      .order('created_at', { ascending:true })
+      .limit(600);
+    if(error) throw error;
+    CH_ALL = data || [];
+    CH_render();
+  }catch(e){
+    console.warn('CH_load error:', e);
+    ['chColAberto','chColExec','chColOk'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.innerHTML = '<div class="ch-empty">Não foi possível carregar os chamados. Tente atualizar.</div>';
+    });
+  }
+}
+
+function CH_toggleMeus(){
+  CH_soMeus = !CH_soMeus;
+  document.getElementById('chBtnMeus').classList.toggle('on', CH_soMeus);
+  CH_render();
+}
+
+function CH_render(){
+  const eu = CH_usuario().email;
+  const meu = r => r.mecanico_email && r.mecanico_email === eu;
+  const abertos = CH_ALL.filter(r => r.status === 'aberto');
+  let exec = CH_ALL.filter(r => r.status === 'em_atendimento');
+  let ok = CH_ALL.filter(r => r.status === 'concluido').sort((a,b) => new Date(b.concluido_em) - new Date(a.concluido_em));
+  if(CH_soMeus){ exec = exec.filter(meu); ok = ok.filter(meu); }
+
+  // KPIs
+  const esperasOk = CH_ALL.filter(r => r.assumido_em).map(r => CH_espera(r));
+  const execsOk = CH_ALL.filter(r => r.status === 'concluido').map(r => CH_exec(r)).filter(v => v != null && v >= 0);
+  const media = a => a.length ? a.reduce((s,v) => s + v, 0) / a.length : null;
+  const maisAntigo = abertos.length ? Math.max(...abertos.map(r => CH_espera(r))) : null;
+  document.getElementById('chKpis').innerHTML = [
+    ['Abertos agora', abertos.length, abertos.length ? 'red' : '', maisAntigo != null ? `mais antigo: ${CH_fmtDur(maisAntigo)}` : 'fila vazia'],
+    ['Em execução', CH_ALL.filter(r => r.status === 'em_atendimento').length, '', 'sendo atendidos'],
+    ['Concluídos (30 d)', CH_ALL.filter(r => r.status === 'concluido').length, '', 'no período'],
+    ['Espera média', CH_fmtDur(media(esperasOk)), '', 'abertura → início'],
+    ['Execução média', CH_fmtDur(media(execsOk)), '', 'início → término']
+  ].map(k => `<div class="ch-kpi"><div class="ch-kpi-l">${k[0]}</div><div class="ch-kpi-v ${k[2]}">${k[1]}</div><div class="ch-kpi-s">${k[3]}</div></div>`).join('');
+
+  document.getElementById('chCntAberto').textContent = abertos.length;
+  document.getElementById('chCntExec').textContent = exec.length;
+  document.getElementById('chCntOk').textContent = ok.length;
+  document.getElementById('chColAberto').innerHTML = abertos.length ? abertos.map(CH_cardAberto).join('') : '<div class="ch-empty">Nenhum chamado aguardando.</div>';
+  document.getElementById('chColExec').innerHTML = exec.length ? exec.map(CH_cardExec).join('') : '<div class="ch-empty">Nenhum chamado em execução.</div>';
+  document.getElementById('chColOk').innerHTML = ok.length ? ok.map(CH_cardOk).join('') : '<div class="ch-empty">Nenhum chamado concluído no período.</div>';
+}
+
+function CH_cardBase(r){
+  return `<div class="ch-top"><span class="ch-equip">${CH_esc(r.equipamento)}</span><span class="ch-num">#${String(r.numero).padStart(4,'0')}</span></div>
+    <div class="ch-meta">${CH_esc(r.setor)} · líder ${CH_esc(r.lider)}<br>Chamado em ${CH_fmtDataHora(CH_tChamado(r))}</div>
+    <div class="ch-desc">${CH_esc(r.descricao)}</div>`;
+}
+function CH_cardAberto(r){
+  const espera = CH_espera(r);
+  const atrasado = espera > 60*60000; // mais de 1 h esperando
+  return `<div class="ch-card${atrasado ? ' late' : ''}">${CH_cardBase(r)}
+    <div class="ch-times"><span class="ch-timer wait">⏱ Aguardando ${CH_fmtDur(espera)}</span></div>
+    <button type="button" class="ch-act" onclick="CH_iniciar('${r.id}')">▶ Iniciar atendimento</button></div>`;
+}
+function CH_cardExec(r){
+  const meu = r.mecanico_email && r.mecanico_email === CH_usuario().email;
+  const desde = r.assumido_em ? new Date(r.assumido_em) : null;
+  return `<div class="ch-card">${CH_cardBase(r)}
+    <div class="ch-meta">Mecânico: <b>${CH_esc(r.mecanico_nome || '—')}</b>${desde ? ` · iniciou às ${CH_fmtHora(desde)}` : ''}</div>
+    <div class="ch-times">
+      <span class="ch-timer done">Espera ${CH_fmtDur(CH_espera(r))}</span>
+      <span class="ch-timer run">🔧 Em execução ${CH_fmtDur(desde ? Date.now() - desde : null)}</span>
+    </div>
+    <button type="button" class="ch-act ok" onclick="CH_abrirFinalizar('${r.id}')">✓ Finalizar chamado</button></div>`;
+}
+function CH_cardOk(r){
+  const pecas = Array.isArray(r.pecas) ? r.pecas : [];
+  return `<div class="ch-card">${CH_cardBase(r)}
+    <div class="ch-meta">Mecânico: <b>${CH_esc(r.mecanico_nome || '—')}</b> · ${CH_fmtHora(new Date(r.inicio_manutencao))}–${CH_fmtHora(new Date(r.fim_manutencao))}</div>
+    <div class="ch-times"><span class="ch-timer wait">Espera ${CH_fmtDur(CH_espera(r))}</span><span class="ch-timer done">Execução ${CH_fmtDur(CH_exec(r))}</span></div>
+    <div class="ch-pecas">${r.peca_substituida ? '🔩 ' + pecas.map(p => `${CH_esc(p.peca)} (×${CH_esc(p.quantidade)})`).join(', ') : 'Sem troca de peça'}</div>
+    ${r.solucao ? `<div class="ch-meta">${CH_esc(r.solucao)}</div>` : ''}</div>`;
+}
+
+async function CH_iniciar(id){
+  const u = CH_usuario();
+  if(!u.email){ CH_aviso('Entre com seu login para iniciar um atendimento.'); return; }
+  try{
+    const client = getSupabaseClient();
+    // .eq('status','aberto') faz o servidor recusar se outro mecânico já iniciou: só um consegue assumir
+    const { data, error } = await client.from('chamados_manutencao')
+      .update({ status:'em_atendimento', mecanico_email:u.email, mecanico_nome:u.nome, assumido_em:new Date().toISOString() })
+      .eq('id', id).eq('status', 'aberto').select();
+    if(error) throw error;
+    await CH_load();
+    if(!data || !data.length) CH_aviso('Este chamado já foi iniciado por outro mecânico e saiu da fila de espera.');
+  }catch(e){
+    console.warn('CH_iniciar error:', e);
+    await CH_load();
+    CH_aviso('Não foi possível iniciar o chamado. Tente novamente.');
+  }
+}
+
+function CH_abrirFinalizar(id){
+  const r = CH_ALL.find(x => x.id === id); if(!r) return;
+  CH_finalizarId = id;
+  const u = CH_usuario();
+  const ini = r.assumido_em ? new Date(r.assumido_em) : new Date();
+  document.getElementById('chModalSub').textContent = `#${String(r.numero).padStart(4,'0')} · ${r.setor} · ${r.equipamento}`;
+  document.getElementById('chMecanico').value = r.mecanico_nome || u.nome;
+  document.getElementById('chIni').value = CH_fmtHora(ini);
+  document.getElementById('chFim').value = CH_fmtHora(new Date());
+  document.querySelector('input[name="chPeca"][value="nao"]').checked = true;
+  document.getElementById('chPecasRows').innerHTML = '';
+  document.getElementById('chPecasWrap').style.display = 'none';
+  document.getElementById('chObs').value = '';
+  document.getElementById('chErr').textContent = '';
+  document.getElementById('ch-modal-overlay').classList.add('open');
+}
+// Pop-up de aviso (não usa alert() do navegador)
+let CH_avisoFoco = null;
+function CH_aviso(msg, focoId){
+  document.getElementById('chAvisoTxt').textContent = msg;
+  CH_avisoFoco = focoId || null;
+  document.getElementById('ch-aviso-overlay').classList.add('open');
+  document.getElementById('chAvisoOk').focus();
+}
+function CH_fecharAviso(){
+  document.getElementById('ch-aviso-overlay').classList.remove('open');
+  if(CH_avisoFoco){ const el = document.getElementById(CH_avisoFoco); if(el) el.focus(); }
+}
+function CH_fecharModal(){ document.getElementById('ch-modal-overlay').classList.remove('open'); CH_finalizarId = null; }
+
+function CH_pecasToggle(){
+  const sim = document.querySelector('input[name="chPeca"]:checked').value === 'sim';
+  document.getElementById('chPecasWrap').style.display = sim ? '' : 'none';
+  if(sim && !document.querySelector('#chPecasRows .ch-peca-row')) CH_addPeca();
+}
+function CH_addPeca(){
+  const row = document.createElement('div');
+  row.className = 'ch-peca-row';
+  row.innerHTML = `<input type="text" class="ch-p-nome" placeholder="Peça" maxlength="120">
+    <input type="number" class="ch-p-qtd" placeholder="Qtd" min="1" step="1" value="1">
+    <button type="button" class="ch-rm" aria-label="Remover peça" onclick="this.parentNode.remove()">×</button>`;
+  document.getElementById('chPecasRows').appendChild(row);
+}
+
+async function CH_finalizar(){
+  const r = CH_ALL.find(x => x.id === CH_finalizarId); if(!r) return;
+  const err = t => { document.getElementById('chErr').textContent = t; };
+  const mecanico = document.getElementById('chMecanico').value.trim();
+  const ini = document.getElementById('chIni').value;
+  const fim = document.getElementById('chFim').value;
+  if(!mecanico) return err('Informe o nome do mecânico.');
+  if(!ini) return CH_aviso('Você precisa informar a hora de início antes de concluir o atendimento.', 'chIni');
+  if(!fim) return CH_aviso('Informe a hora de término para concluir o atendimento.', 'chFim');
+
+  // Início no dia em que o atendimento começou; término no dia de hoje (cobre o turno que virou a meia-noite).
+  const base = r.assumido_em ? new Date(r.assumido_em) : new Date();
+  const hoje = new Date();
+  const ymd = d => `${d.getFullYear()}-${CH_pad(d.getMonth()+1)}-${CH_pad(d.getDate())}`;
+  const dIni = new Date(`${ymd(base)}T${ini}`);
+  const dFim = new Date(`${ymd(hoje)}T${fim}`);
+  if(dFim < dIni) return CH_aviso('A hora de término não pode ser anterior à hora de início. Você precisa informar a hora de início antes de concluir o atendimento.', 'chIni');
+  if(dFim - dIni > 24*3600000) return err('O término não pode ser mais de 24 h depois do início.');
+
+  const trocou = document.querySelector('input[name="chPeca"]:checked').value === 'sim';
+  let pecas = [];
+  if(trocou){
+    for(const row of document.querySelectorAll('#chPecasRows .ch-peca-row')){
+      const nome = row.querySelector('.ch-p-nome').value.trim();
+      const qtd = Number(row.querySelector('.ch-p-qtd').value);
+      if(!nome && !row.querySelector('.ch-p-qtd').value) continue;
+      if(!nome) return err('Informe o nome de cada peça substituída.');
+      if(!(qtd > 0)) return err('A quantidade de cada peça deve ser maior que zero.');
+      pecas.push({ peca:nome, quantidade:qtd });
+    }
+    if(!pecas.length) return err('Informe a peça substituída e a quantidade.');
+  }
+
+  const btn = document.getElementById('chSalvar'); btn.disabled = true;
+  try{
+    const client = getSupabaseClient();
+    const { data, error } = await client.from('chamados_manutencao').update({
+      status:'concluido', mecanico_nome:mecanico,
+      inicio_manutencao:dIni.toISOString(), fim_manutencao:dFim.toISOString(), concluido_em:new Date().toISOString(),
+      peca_substituida:trocou, pecas, solucao:document.getElementById('chObs').value.trim() || null
+    }).eq('id', r.id).eq('status', 'em_atendimento').select();
+    if(error) throw error;
+    if(!data || !data.length) return err('Não foi possível finalizar: o chamado mudou de situação ou você não tem permissão.');
+    CH_fecharModal();
+    await CH_load();
+  }catch(e){ console.warn('CH_finalizar error:', e); err('Erro ao salvar. Tente novamente.'); }
+  finally{ btn.disabled = false; }
+}
+
+// ─────────────────────────────────────────────
+// ABRIR CHAMADO (líder logado) — alimenta a fila de CH_*
+// Data e hora do chamado: gravadas pelo banco no instante do envio.
+// ─────────────────────────────────────────────
+let AC_inited = false;
+const AC_OUTRO = '__outro__';
+let AC_MAQ = [];
+function AC_norm(v){ return (v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim(); }
+function AC_msg(t, tipo){ const m = document.getElementById('acMsg'); m.textContent = t || ''; m.className = 'ac-msg' + (t ? ' ' + tipo : ''); }
+
+async function AC_init(){
+  if(!AC_inited){
+    AC_inited = true;
+    document.getElementById('acForm').addEventListener('submit', AC_enviar);
+    document.getElementById('acSetor').addEventListener('change', AC_aoMudarSetor);
+    document.getElementById('acEquip').addEventListener('change', () => {
+      const outro = document.getElementById('acEquip').value === AC_OUTRO;
+      document.getElementById('acEquipOutro').style.display = outro ? '' : 'none';
+      if(outro) document.getElementById('acEquipOutro').focus();
+    });
+    const lider = document.getElementById('acLider');
+    lider.value = CH_usuario().nome;
+    await ST_populateSelect(document.getElementById('acSetor'), '', 'Selecione o setor…');
+    try{ AC_MAQ = await MQ_fetchAllLP(); }catch(e){ AC_MAQ = []; }
+  }
+  AC_carregarMeus();
+}
+
+function AC_aoMudarSetor(){
+  const nome = document.getElementById('acSetor').value;
+  const sel = document.getElementById('acEquip');
+  if(!nome){ sel.innerHTML = '<option value="">Escolha o setor primeiro</option>'; }
+  else{
+    const lista = AC_MAQ.filter(x => AC_norm(x.setor) === AC_norm(nome));
+    sel.innerHTML = '<option value="">Selecione o equipamento…</option>' +
+      lista.map(x => `<option value="${CH_esc(x.identificacao)}">${CH_esc(x.identificacao)}</option>`).join('') +
+      `<option value="${AC_OUTRO}">Outro / não está na lista</option>`;
+  }
+  document.getElementById('acEquipOutro').style.display = 'none';
+  document.getElementById('acEquipOutro').value = '';
+}
+
+async function AC_enviar(ev){
+  ev.preventDefault(); AC_msg('');
+  const setor = document.getElementById('acSetor').value;
+  const lider = document.getElementById('acLider').value.trim();
+  const equipamento = (document.getElementById('acEquip').value === AC_OUTRO ? document.getElementById('acEquipOutro').value : document.getElementById('acEquip').value).trim();
+  const descricao = document.getElementById('acDesc').value.trim();
+  if(!setor) return AC_msg('Escolha o setor.', 'err');
+  if(!lider) return AC_msg('Informe o nome do líder.', 'err');
+  if(!equipamento) return AC_msg('Informe o equipamento com problema.', 'err');
+  if(descricao.length < 3) return AC_msg('Descreva o problema.', 'err');
+  const btn = document.getElementById('acEnviar'); btn.disabled = true; btn.textContent = 'Enviando…';
+  try{
+    const client = getSupabaseClient();
+    const { error } = await client.from('chamados_manutencao').insert({ setor, lider, equipamento, descricao });
+    if(error) throw error;
+    document.getElementById('acDesc').value = '';
+    document.getElementById('acEquip').value = '';
+    document.getElementById('acEquipOutro').value = ''; document.getElementById('acEquipOutro').style.display = 'none';
+    AC_msg('Chamado enviado! Os mecânicos já podem ver na fila.', 'ok');
+    AC_carregarMeus();
+  }catch(e){
+    console.warn('AC_enviar error:', e);
+    AC_msg('Não foi possível enviar. Tente de novo em instantes.', 'err');
+  }
+  finally{ btn.disabled = false; btn.textContent = 'Enviar chamado'; }
+}
+
+async function AC_carregarMeus(){
+  const el = document.getElementById('acLista');
+  try{
+    const client = getSupabaseClient();
+    const corte = new Date(Date.now() - 14*86400000).toISOString();
+    const { data, error } = await client.from('chamados_manutencao').select('*').gte('created_at', corte).order('created_at', { ascending:false }).limit(40);
+    if(error) throw error;
+    const uid = (typeof BK_AUTH !== 'undefined' && BK_AUTH.user) ? BK_AUTH.user.id : null;
+    const meus = (data || []).filter(r => r.criado_por === uid);  // o banco já limita o líder aos próprios chamados; aqui vale também para Alpha/Mecânico
+    if(!meus.length){ el.innerHTML = '<div class="ac-vazio">Você ainda não abriu chamados nos últimos 14 dias.</div>'; return; }
+    el.innerHTML = meus.map(r => {
+      const st = r.status === 'concluido' ? ['ac-b-ok', 'Concluído'] : r.status === 'em_atendimento' ? ['ac-b-exec', 'Em atendimento'] : ['ac-b-aberto', 'Aguardando'];
+      const quando = CH_fmtDataHora(CH_tChamado(r));
+      let linha2 = r.status === 'aberto' ? `Aguardando há ${CH_fmtDur(CH_espera(r))}` :
+        r.status === 'em_atendimento' ? `${CH_esc(r.mecanico_nome || 'Mecânico')} está atendendo` :
+        `Atendido por ${CH_esc(r.mecanico_nome || '—')} · execução ${CH_fmtDur(CH_exec(r))}`;
+      return `<div class="ac-item"><div class="ac-item-top"><span class="ac-item-eq">${CH_esc(r.equipamento)}</span><span class="ac-badge ${st[0]}">${st[1]}</span></div>
+        <div class="ac-item-meta">${CH_esc(r.setor)} · aberto em ${quando}<br>${linha2}</div></div>`;
+    }).join('');
+  }catch(e){ console.warn('AC_carregarMeus error:', e); el.innerHTML = '<div class="ac-vazio">Não foi possível carregar seus chamados.</div>'; }
+}
 
 // ─────────────────────────────────────────────
 // ORDENS DE SERVIÇO (OS) — Kanban dentro de Manutenções
