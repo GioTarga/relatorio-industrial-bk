@@ -7706,7 +7706,10 @@ function renderKPIs(filteredDates){
     // referência de "hoje" é o dia mais recente carregado (não a data real
     // do dispositivo), pra não depender do relógio do navegador.
     const refDate = stdReferenceDate();
-    const diaAnterior = refDate ? isoAddDays(refDate, -1) : null;
+    // Dia anterior = último dia carregado, a menos que ele seja o próprio dia
+    // de hoje (ainda em andamento) — aí usa o dia anterior a ele.
+    const hojeISO = (function(){ const n = new Date(); return n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0') + '-' + String(n.getDate()).padStart(2,'0'); })();
+    const diaAnterior = refDate ? (refDate < hojeISO ? refDate : isoAddDays(refDate, -1)) : null;
     const pctDia = diaAnterior ? stdPctAtendimento([diaAnterior]) : null;
 
     const semana = refDate ? stdWeekRange(refDate) : null;
