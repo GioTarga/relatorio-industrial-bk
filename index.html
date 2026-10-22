@@ -1198,6 +1198,13 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .kb-card.orange{border-left-color:#e67e22}
 #page-pcp-estoque .kb-card.yellow{border-left-color:#d4a017}
 #page-pcp-estoque .kb-card.green{border-left-color:#2e7d32}
+/* Produto que está na Ordem de Produção: fundo azul + selo (a borda esquerda segue a cor de urgência do estoque) */
+#page-pcp-estoque .kb-card.emprod{background:#e8f1fb;border-color:#8fb4e3;box-shadow:0 0 0 1px #8fb4e3 inset}
+#page-pcp-estoque .kb-op-tag{display:flex;flex-wrap:wrap;align-items:center;gap:6px;background:#1f5fa8;color:#fff;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase}
+#page-pcp-estoque .kb-op-tag small{font-size:10px;font-weight:600;letter-spacing:.2px;text-transform:none;opacity:.92}
+#page-pcp-estoque .kb-col-head .kb-opc{font-size:10.5px;font-weight:700;letter-spacing:.3px;background:#1f5fa8;color:#fff;border-radius:10px;padding:1px 8px}
+#page-pcp-estoque .kb-op-legend{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;color:#1f5fa8}
+#page-pcp-estoque .kb-op-legend i{width:12px;height:12px;border-radius:3px;background:#e8f1fb;border:2px solid #1f5fa8;display:inline-block}
 #page-pcp-estoque .kb-top{display:flex;align-items:flex-start;gap:8px}
 #page-pcp-estoque .kb-title{flex:1;min-width:0;font-size:12px;font-weight:700;line-height:1.25;color:var(--ink);overflow-wrap:anywhere}
 #page-pcp-estoque .kb-dias{flex:none;min-width:50px;text-align:center;border-radius:8px;padding:3px 6px;line-height:1.05;background:#eee;color:#666}
@@ -4676,6 +4683,16 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
         <button class="upload-btn" onclick="document.getElementById('inputUnico').click()">📂 Selecionar arquivo</button>
       </div>
     </div>
+    <div style="max-width:760px;margin-bottom:14px">
+      <div class="bk-st-31">Ordem de Produção <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink-soft)">(FOR-PCP-029 · a OP nova substitui a anterior; os produtos dela ficam em azul no Kanban)</span></div>
+      <div class="upload-card" id="cardOP" ondragover="event.preventDefault()" ondrop="handleDrop(event,'OP')">
+        <div class="upload-icon">📋</div>
+        <div class="upload-title" id="opFileName">FOR-PCP-029 Ordem de Produção Embalagem.xlsx</div>
+        <div class="upload-sub" id="opStatus">Nenhuma OP importada</div>
+        <input type="file" id="inputOP" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this,'OP')">
+        <button class="upload-btn" onclick="document.getElementById('inputOP').click()">📂 Selecionar arquivo</button>
+      </div>
+    </div>
     <div class="upload-grid">
       <div>
         <div class="bk-st-31">Estoque Fábrica</div>
@@ -4739,6 +4756,7 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
         <div class="chip" data-view="tabela" onclick="setEstView('tabela')">Tabela</div>
       </div>
       <span class="vt-hint">Cards ordenados por menos dias de estoque</span>
+      <span class="kb-op-legend" id="opLegend" style="display:none"></span>
     </div>
     <div id="alertKanban" class="kb-board"></div>
     <div class="table-wrap" id="alertTableWrap">
@@ -18270,7 +18288,110 @@ let vendaLojaMap = {};  // normCod(codigo) → qtde vendida (VendasLoja)
 // ─── PERSISTÊNCIA LOCAL + SUPABASE ──────────────────────────────────────────
 // localStorage = cache rápido por navegador (fallback offline)
 // Supabase pcp_cache = fonte de verdade compartilhada entre todos os usuários
-const LS_KEYS={fab:'bk360_estoque_fab',loja:'bk360_estoque_loja',vendaFab:'bk360_venda_fab',vendaLoja:'bk360_venda_loja',meta:'bk360_import_meta'};
+const LS_KEYS={fab:'bk360_estoque_fab',loja:'bk360_estoque_loja',vendaFab:'bk360_venda_fab',vendaLoja:'bk360_venda_loja',meta:'bk360_import_meta',op:'bk360_op'};
+
+// ─── ORDEM DE PRODUÇÃO (FOR-PCP-029) → destaque no Kanban ───────────────────
+// Guardada em pcp_cache com tipo 'OP' (chave primária): cada importação substitui a anterior, sem acumular.
+let opData=null;   // {data:'YYYY-MM-DD', arquivo, ts, itens:[{cod,setor,desc,qtd,un,maq,destino}]}
+let opMapCod={}, opMapDesc={};
+function opNormDesc(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();}
+function opEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function opIndexar(){
+  opMapCod={};opMapDesc={};
+  if(!opData||!opData.itens)return;
+  opData.itens.forEach(it=>{
+    const c=normCod(String(it.cod||'').trim());
+    if(c&&!opMapCod[c])opMapCod[c]=it;
+    const d=opNormDesc(it.desc);
+    if(d&&!opMapDesc[d])opMapDesc[d]=it;
+  });
+  // Produtos equivalentes (ex.: Mini Pastel Forno ↔ Nata): a OP de um vale para o outro
+  EQUIV_GRUPOS.forEach(g=>{
+    const hit=g.map(c=>opMapCod[c]).find(Boolean);
+    if(hit)g.forEach(c=>{if(!opMapCod[c])opMapCod[c]=hit;});
+  });
+}
+// Item da OP que corresponde a um item do estoque (por código; sem código, pela descrição)
+function opDoItem(item){
+  if(!opData)return null;
+  const c=normCod(String(item.codigo||'').trim());
+  return (c&&opMapCod[c])||opMapDesc[opNormDesc(item.descricao)]||null;
+}
+function opParseXlsx(buf){
+  const wb=XLSX.read(buf,{type:'array',cellDates:true});
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null});
+  let data=null,hi=-1;
+  for(let i=0;i<Math.min(30,rows.length);i++){
+    const r=rows[i]||[];
+    const a=opNormDesc(r[0]);
+    if(a==='data'&&!data){
+      for(let j=1;j<r.length;j++){
+        const v=r[j];
+        if(v instanceof Date){data=new Date(v.getTime()+12*3600*1000).toISOString().slice(0,10);break;}
+        if(typeof v==='string'){const m=v.match(/(\d{2})\/(\d{2})\/(\d{4})/);if(m){data=m[3]+'-'+m[2]+'-'+m[1];break;}}
+      }
+    }
+    if(a.startsWith('codigo')&&hi<0)hi=i;
+  }
+  if(hi<0)throw new Error('não achei o cabeçalho CÓDIGO — é a planilha FOR-PCP-029?');
+  // O cabeçalho ocupa 2 linhas (a 2ª tem QUANTIDADE / UNIDADE / MÁQUINA / DESTINO)
+  let ini=hi+1;
+  if(opNormDesc((rows[ini]||[])[3]).startsWith('quan'))ini=hi+2;
+  const itens=[];
+  for(let i=ini;i<rows.length;i++){
+    const r=rows[i]||[];
+    const desc=(r[2]==null?'':String(r[2])).trim();
+    if(!desc)continue;
+    let qtd=null;
+    if(r[3]!=null){const m=String(r[3]).replace(',','.').match(/[\d.]+/);if(m)qtd=parseFloat(m[0]);}
+    itens.push({
+      cod:(r[0]==null?'':String(r[0])).trim(),
+      setor:(r[1]==null?'':String(r[1])).trim(),
+      desc,qtd,
+      un:(r[4]==null?'':String(r[4])).trim(),
+      maq:(r[5]==null?'':String(r[5])).trim(),
+      destino:(r[6]==null?'':String(r[6])).trim()
+    });
+  }
+  return {data,itens};
+}
+function opSalvar(){
+  try{localStorage.setItem(LS_KEYS.op,JSON.stringify(opData));}catch(e){}
+  sbSaveCache('OP',opData);
+}
+function opAtualizarStatus(){
+  const nameEl=document.getElementById('opFileName'),st=document.getElementById('opStatus');
+  if(!st)return;
+  st.style.color='';
+  if(!opData){st.textContent='Nenhuma OP importada';if(nameEl)nameEl.textContent='FOR-PCP-029 Ordem de Produção Embalagem.xlsx';return;}
+  if(nameEl)nameEl.textContent=opData.arquivo||'Ordem de Produção';
+  const todos=allItems();
+  const sem=opData.itens.filter(it=>!todos.some(i=>opDoItem(i)===it));
+  let t='✅ OP'+(opData.data?' de '+formatDateBR(opData.data):'')+' · '+opData.itens.length+' produtos';
+  if(todos.length){
+    t+=' · '+(opData.itens.length-sem.length)+' encontrados no estoque';
+    if(sem.length)t+=' · sem correspondência: '+sem.slice(0,4).map(i=>i.desc.split(' - ')[0].slice(0,32)).join('; ')+(sem.length>4?' (+'+(sem.length-4)+')':'');
+  }
+  st.textContent=t;
+}
+function opImportar(file){
+  const nameEl=document.getElementById('opFileName'),st=document.getElementById('opStatus');
+  if(nameEl)nameEl.textContent=file.name;
+  if(st){st.style.color='';st.textContent='⏳ Lendo arquivo...';}
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const r=opParseXlsx(ev.target.result);
+      if(!r.itens.length)throw new Error('nenhum produto encontrado na planilha');
+      opData={data:r.data,arquivo:file.name,ts:new Date().toISOString(),itens:r.itens};
+      opIndexar();opSalvar();opAtualizarStatus();renderAlerts();
+    }catch(err){
+      if(st){st.style.color='var(--red)';st.textContent='❌ '+err.message;}
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
 
 // ── Supabase helpers — usa fetch REST (mesmo padrão do restante do app) ──
 const SB_CACHE_HEADERS={'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY,'Content-Type':'application/json','Prefer':'return=minimal'};
@@ -18285,7 +18406,7 @@ async function sbSaveCache(tipo,dados){
 }
 async function sbClearCache(){
   try{
-    await fetch(SUPABASE_URL+'/rest/v1/pcp_cache?tipo=in.(FABRICA,LOJA,VENDA_FAB,VENDA_LOJA,META)',{
+    await fetch(SUPABASE_URL+'/rest/v1/pcp_cache?tipo=in.(FABRICA,LOJA,VENDA_FAB,VENDA_LOJA,META,OP)',{
       method:'DELETE',
       headers:SB_CACHE_HEADERS
     });
@@ -18305,6 +18426,7 @@ async function sbRestoreCache(){
       else if(row.tipo==='VENDA_FAB')vendaFabMap=row.dados||{};
       else if(row.tipo==='VENDA_LOJA')vendaLojaMap=row.dados||{};
       else if(row.tipo==='META'){const m=row.dados||{};importMetadata={...m,ts:m.ts?new Date(m.ts):null};}
+      else if(row.tipo==='OP'){opData=row.dados&&row.dados.itens?row.dados:null;opIndexar();}
     });
     // Atualiza localStorage com dado fresco do servidor (mantém fallback em dia)
     try{
@@ -18355,6 +18477,8 @@ function lsRestore(){
     if(vf)vendaFabMap=JSON.parse(vf);
     if(vl)vendaLojaMap=JSON.parse(vl);
     if(meta){const m=JSON.parse(meta);importMetadata={...m,ts:m.ts?new Date(m.ts):null};}
+    const op=localStorage.getItem(LS_KEYS.op);
+    if(op&&!opData){const o=JSON.parse(op);if(o&&o.itens){opData=o;opIndexar();}}
   }catch(e){}
 }
 
@@ -18908,7 +19032,10 @@ function renderKanbanCard(item){
   ];
   metrics.push(`<div class="kb-m ven"><small>Venda/sem</small><span>${venda!=null?n(venda):'—'}</span></div>`);
   const sub=[item.familia,setor&&setor!=='—'&&setor!=='SEM SETOR'?setor:''].filter(Boolean).map(t=>`<span>${t}</span>`).join('');
-  return `<div class="kb-card ${st.cls}">
+  const op=opDoItem(item);
+  const opTag=op?`<div class="kb-op-tag" title="${opEsc([op.maq,op.destino].filter(Boolean).join(' · '))}">Em produção<small>${op.qtd!=null?n(op.qtd)+' ':''}${opEsc(op.un)}${op.destino?' · '+opEsc(op.destino):''}</small></div>`:'';
+  return `<div class="kb-card ${st.cls}${op?' emprod':''}">
+    ${opTag}
     <div class="kb-top"><div class="kb-title" title="${(item.descricao||'').replace(/"/g,'&quot;')}">${shortDesc(item.descricao||'')}</div>${dias}</div>
     ${sub?`<div class="kb-sub">${sub}</div>`:''}
     <div class="kb-metrics" style="--kbn:${metrics.length}">${metrics.join('')}</div>
@@ -18919,11 +19046,15 @@ function renderKanban(items){
   const cols=[['FABRICA','fab','Fábrica'],['LOJA','loja','Loja'],['CAFE','cafe','BK Café']]
     .filter(c=>locFilter==='ALL'||locFilter===c[0]);
   el.style.gridTemplateColumns=`repeat(${cols.length},minmax(0,1fr))`;
+  const lg=document.getElementById('opLegend');
+  if(lg){if(opData){lg.style.display='';lg.innerHTML='<i></i> Na ordem de produção'+(opData.data?' de '+formatDateBR(opData.data):'');}else lg.style.display='none';}
   el.innerHTML=cols.map(([tipo,cls,label])=>{
     const list=items.filter(i=>i.tipo===tipo).sort(sortKanban);
     const defs=list.filter(i=>calculateAvailableStock(i)<0).length;
+    const defsSemOp=opData?list.filter(i=>calculateAvailableStock(i)<0&&!opDoItem(i)).length:0;
+    const nOp=opData?list.filter(i=>opDoItem(i)).length:0;
     return `<div class="kb-col ${cls}">
-      <div class="kb-col-head">${label}${defs?`<span class="kb-def">${defs} em déficit</span>`:''}<span class="kb-count">${list.length}</span></div>
+      <div class="kb-col-head">${label}${defs?`<span class="kb-def">${defs} em déficit${opData?' · '+defsSemOp+' sem OP':''}</span>`:''}${nOp?`<span class="kb-opc">${nOp} na OP</span>`:''}<span class="kb-count">${list.length}</span></div>
       <div class="kb-col-body">${list.length?list.map(renderKanbanCard).join(''):'<div class="kb-empty">Nenhum produto</div>'}</div>
     </div>`;
   }).join('');
@@ -19291,6 +19422,7 @@ function limparDadosImportados(){
   // Limpar tudo (memória + localStorage)
   currentFab=null;currentLoja=null;
   vendaFabMap={};vendaLojaMap={};
+  opData=null;opIndexar();opAtualizarStatus();
   lsClear();
   uploadHistory=[];
   importMetadata={ts:null,periodo:null};
@@ -19335,6 +19467,7 @@ function findCol(header,keywords){
 }
 
 function processFile(file,tipo){
+  if(tipo==='OP'){opImportar(file);return;}
   // Tipo VENDA_FAB ou VENDA_LOJA: parse das vendas por produto
   if(tipo==='VENDA_FAB'||tipo==='VENDA_LOJA'){
     const isFab=tipo==='VENDA_FAB';
@@ -19829,6 +19962,7 @@ async function PCP_init(){
     sbRestoreCache().then(ok=>{ if(!ok) lsRestore(); }).catch(()=>{ lsRestore(); })
   ]);
   ov.remove();
+  opIndexar();opAtualizarStatus();
   renderDataInfo();
   buildStats();
   buildChips('fabFamChips',fabItems(),'setFabFam');
