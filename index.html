@@ -19104,8 +19104,6 @@ async function histCarregarProdutos(){
 }
 async function histAbrir(){
   if(!histProdutos)await histCarregarProdutos();
-  const di=document.getElementById('histData');
-  if(di){di.min=histAddDias(histHoje(),-HIST_DIAS);di.max=histHoje();}
   histRender();
 }
 async function histBuscar(){
@@ -19168,6 +19166,9 @@ function histChartSvg(dias,mapa){
 }
 function histRender(){
   const corpo=document.getElementById('histCorpo');if(!corpo)return;
+  // O campo "Saldo em" acompanha o período escolhido; data fora dele é limpa
+  {const hj=histHoje(),pr=parseInt(document.getElementById('histPeriodo').value,10)||30,di=document.getElementById('histData'),ini=histAddDias(hj,-(pr-1));
+   di.min=ini;di.max=hj;if(di.value&&(di.value<ini||di.value>hj))di.value='';}
   if(!histSel){corpo.innerHTML='<div class="empty-state"><div class="empty-icon">🔎</div>Busque um produto para ver o histórico de saldo.</div>';return;}
   const hoje=histHoje(),per=parseInt(document.getElementById('histPeriodo').value,10)||30;
   const mapa={};histDados.forEach(r=>{mapa[r.data]=r;});
