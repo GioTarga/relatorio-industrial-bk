@@ -19111,10 +19111,11 @@ async function histBuscar(){
   if(!box||!inp)return;
   if(!histProdutos)await histCarregarProdutos();
   const q=histNorm(inp.value);
-  if(!q){box.style.display='none';return;}
   const qc=normCod(inp.value.trim());
   const wb=new RegExp('(^|[^a-z0-9])'+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
-  histRes=histProdutos.filter(p=>p.codigo.startsWith(qc)||wb.test(histNorm(p.descricao))).slice(0,40);
+  // Campo vazio lista todos os produtos do histórico (ordem alfabética)
+  histRes=(q?histProdutos.filter(p=>p.codigo.startsWith(qc)||wb.test(histNorm(p.descricao))):histProdutos.slice())
+    .sort((a,b)=>(a.descricao||'').localeCompare(b.descricao||'','pt-BR')).slice(0,q?40:500);
   box.innerHTML=histRes.length
     ?histRes.map((p,ix)=>`<div onclick="histEscolher(${ix})"><span>${opEsc(p.descricao||p.codigo)}</span><small>${HIST_TIPO_LABEL[p.tipo]||p.tipo} · ${opEsc(p.codigo)}</small></div>`).join('')
     :'<div>Nenhum produto no histórico</div>';
