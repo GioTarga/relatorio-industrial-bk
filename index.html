@@ -1225,6 +1225,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .hist-chart .gr{stroke:var(--line);stroke-width:1}
 #page-pcp-estoque .hist-chart .zr{stroke:var(--ink-soft);stroke-width:1;stroke-dasharray:4 3}
 #page-pcp-estoque .hist-chart text{font-size:10px;fill:var(--ink-soft)}
+#page-pcp-estoque .hist-filtro{width:100%;box-sizing:border-box;margin-bottom:8px;padding:5px 9px;border:1px solid var(--line);border-radius:6px;font-size:12px;font-family:inherit;background:var(--cream);color:var(--ink)}
 #page-pcp-estoque .hist-tab{width:100%;border-collapse:collapse;font-size:12px;background:var(--paper)}
 #page-pcp-estoque .hist-tab th{text-align:right;padding:6px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);border-bottom:2px solid var(--line)}
 #page-pcp-estoque .hist-tab td{text-align:right;padding:5px 10px;border-bottom:1px solid var(--line);color:var(--ink);font-variant-numeric:tabular-nums}
@@ -4800,8 +4801,11 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
             <option value="30" selected>Últimos 30 dias</option>
           </select>
         </label>
+        <label>Local
+          <select id="histLocal" onchange="histRender()"><option value="">Todos</option><option value="FABRICA">Fábrica</option><option value="LOJA">Loja</option></select>
+        </label>
         <label>Saldo em
-          <input type="date" id="histData" onchange="histConsultar()">
+          <input type="date" id="histData" onchange="histConsultar()" oninput="histConsultar()">
         </label>
       </div>
       <div class="hist-info" id="histInfo">Guarda o saldo da última atualização de cada dia, por 30 dias. Dias sem importação aparecem como “sem registro”.</div>
@@ -19105,6 +19109,7 @@ async function histCarregarProdutos(){
 }
 async function histAbrir(){
   if(!histProdutos)await histCarregarProdutos();
+  document.getElementById('histData').value='';
   histRender();
 }
 async function histBuscar(){
@@ -19141,7 +19146,13 @@ async function histCarregar(){
   }catch(e){histDados=[];}
   histRender();
 }
-function histConsultar(){histRender();}
+async function histConsultar(){
+  const dq=document.getElementById('histData').value;
+  if(!dq){histRender();return;}
+  histRender();
+  await histCarregarDia(dq);
+  histRender();
+}
 function histChartSvg(dias,mapa){
   const W=700,Ht=220,L=50,R=14,T=14,B=26,N=dias.length;
   const vals=dias.map(d=>mapa[d]?Number(mapa[d].saldo):null).filter(v=>v!==null);
@@ -19167,25 +19178,13 @@ function histChartSvg(dias,mapa){
     .map(i=>`<text x="${x(i)}" y="${Ht-8}" text-anchor="middle">${formatDateBR(dias[i]).slice(0,5)}</text>`).join('');
   return `<svg class="hist-chart" viewBox="0 0 ${W} ${Ht}" preserveAspectRatio="none">${grid}<path class="ln" d="${path}"/>${pts}${lab}</svg>`;
 }
-function histRender(){
-  const corpo=document.getElementById('histCorpo');if(!corpo)return;
-  // O campo "Saldo em" acompanha o período escolhido; data fora dele é limpa
-  {const hj=histHoje(),pr=parseInt(document.getElementById('histPeriodo').value,10)||30,di=document.getElementById('histData'),ini=histAddDias(hj,-(pr-1));
-   di.min=ini;di.max=hj;if(di.value&&(di.value<ini||di.value>hj))di.value='';}
-  if(!histSel){corpo.innerHTML='<div class="empty-state"><div class="empty-icon">🔎</div>Busque um produto para ver o histórico de saldo.</div>';return;}
+function histProdutoHtml(){
+  if(!histSel)return '';
   const hoje=histHoje(),per=parseInt(document.getElementById('histPeriodo').value,10)||30;
   const mapa={};histDados.forEach(r=>{mapa[r.data]=r;});
   const dias=[];for(let i=per-1;i>=0;i--)dias.push(histAddDias(hoje,-i));
   const un=(histDados.find(r=>r.un)||{}).un||'';
-  // Saldo em uma data específica
-  let cons='';
-  const dq=document.getElementById('histData').value;
-  if(dq){
-    const o=mapa[dq];
-    cons=o
-      ?`<div class="hist-cons">Saldo em <b>${formatDateBR(dq)}</b>: <b>${histFmt(o.saldo)} ${opEsc(un)}</b> <span>(estoque ${histFmt(o.estoque)} − reserva ${histFmt(o.reserva)})</span>${o.veio_import===false?'<span>· produto não veio na importação desse dia (zerado)</span>':''}</div>`
-      :`<div class="hist-cons">Em <b>${formatDateBR(dq)}</b>: sem registro (nenhuma importação nesse dia ou fora dos últimos 30 dias).</div>`;
-  }
+  const cons='';
   let prev=null;
   const linhas=dias.map(d=>{
     const o=mapa[d];
@@ -19198,10 +19197,59 @@ function histRender(){
     const o=l.o,dif=l.dif===null?'—':(l.dif>0?'+':'')+histFmt(l.dif);
     return `<tr><td>${formatDateBR(l.d)}</td><td>${histFmt(o.estoque)}</td><td>${histFmt(o.reserva)}</td><td class="${Number(o.saldo)<0?'neg':''}">${histFmt(o.saldo)}</td><td>${dif}</td></tr>`;
   }).join('');
-  corpo.innerHTML=`<div class="hist-prod">${opEsc(histSel.descricao||histSel.codigo)}</div>
+  return `<div class="hist-prod">${opEsc(histSel.descricao||histSel.codigo)}</div>
     <div class="hist-info">${HIST_TIPO_LABEL[histSel.tipo]||histSel.tipo} · código ${opEsc(histSel.codigo)}${un?' · '+opEsc(un):''}</div>
     ${cons}${histChartSvg(dias,mapa)}
     <table class="hist-tab"><thead><tr><th>Data</th><th>Estoque</th><th>Reserva</th><th>Saldo</th><th>Variação</th></tr></thead><tbody>${tabela}</tbody></table>`;
+}
+
+// Lista de todos os produtos gravados em um dia
+let histDia={data:'',rows:null},histFiltro='';
+async function histCarregarDia(data){
+  histDia={data,rows:null};histFiltro='';
+  try{
+    const rows=[];
+    for(let off=0;;off+=1000){
+      const r=await fetch(SUPABASE_URL+'/rest/v1/estoque_historico?select=tipo,codigo,descricao,familia,estoque,reserva,saldo,un,veio_import&data=eq.'+data+'&order=descricao.asc&limit=1000&offset='+off,{headers:histHeaders()});
+      if(!r.ok){histDia={data,rows:null,erro:'Erro '+r.status+' ao carregar o dia'};return;}
+      const part=await r.json();rows.push(...part);
+      if(part.length<1000)break;
+    }
+    histDia={data,rows};
+  }catch(e){histDia={data,rows:null,erro:'Sem conexão com o Supabase'};}
+}
+function histDiaHtml(){
+  const dq=document.getElementById('histData').value;
+  if(!dq)return '';
+  if(histDia.data!==dq)return '<div class="hist-info">Carregando…</div>';
+  if(!histDia.rows)return `<div class="hist-cons">${opEsc(histDia.erro||'Falha ao carregar')}</div>`;
+  const loc=document.getElementById('histLocal').value;
+  const txt=histNorm(histFiltro);
+  const rows=histDia.rows.filter(r=>(!loc||r.tipo===loc)&&(!txt||histNorm(r.descricao).includes(txt)||r.codigo.startsWith(normCod(txt))));
+  if(!histDia.rows.length)return `<div class="hist-cons">Em <b>${formatDateBR(dq)}</b>: sem registro (nenhuma importação nesse dia).</div>`;
+  const ausentes=histDia.rows.filter(r=>r.veio_import===false).length;
+  const linhas=rows.map(r=>{
+    const ix=histProdutos?histProdutos.findIndex(p=>p.tipo===r.tipo&&p.codigo===r.codigo):-1;
+    return `<tr class="${r.veio_import===false?'sem':''}" ${ix>=0?`onclick="histAbrirProduto(${ix})" style="cursor:pointer"`:''}><td>${opEsc(r.descricao||r.codigo)}</td><td>${HIST_TIPO_LABEL[r.tipo]||r.tipo}</td><td>${opEsc(r.codigo)}</td><td>${histFmt(r.estoque)}</td><td>${histFmt(r.reserva)}</td><td class="${Number(r.saldo)<0?'neg':''}">${histFmt(r.saldo)}</td><td class="nota">${opEsc(r.un||'')}${r.veio_import===false?' · ausente na importação':''}</td></tr>`;
+  }).join('');
+  return `<div class="hist-prod">Posição em ${formatDateBR(dq)}</div>
+    <div class="hist-info">${rows.length} de ${histDia.rows.length} produtos${ausentes?` · ${ausentes} ausentes na importação (zerados)`:''} · clique numa linha para ver o histórico do produto</div>
+    <input type="text" id="histFiltroDia" class="hist-filtro" placeholder="filtrar esta lista..." value="${opEsc(histFiltro)}" oninput="histFiltro=this.value;histRender(true)">
+    <table class="hist-tab"><thead><tr><th>Produto</th><th>Local</th><th>Código</th><th>Estoque</th><th>Reserva</th><th>Saldo</th><th></th></tr></thead><tbody>${linhas}</tbody></table>`;
+}
+function histAbrirProduto(ix){
+  const p=histProdutos&&histProdutos[ix];if(!p)return;
+  histSel=p;document.getElementById('histBusca').value=p.descricao||p.codigo;
+  histCarregar();
+}
+function histRender(manterFoco){
+  const corpo=document.getElementById('histCorpo');if(!corpo)return;
+  // O campo "Saldo em" acompanha o período escolhido; data fora dele é limpa
+  {const hj=histHoje(),pr=parseInt(document.getElementById('histPeriodo').value,10)||30,di=document.getElementById('histData'),ini=histAddDias(hj,-(pr-1));
+   di.min=ini;di.max=hj;if(di.value&&(di.value<ini||di.value>hj))di.value='';}
+  const dia=histDiaHtml(),prod=histProdutoHtml();
+  corpo.innerHTML=(dia||prod)?dia+prod:'<div class="empty-state"><div class="empty-icon">🔎</div>Busque um produto ou escolha uma data para ver o saldo.</div>';
+  if(manterFoco===true){const f=document.getElementById('histFiltroDia');if(f){f.focus();f.setSelectionRange(f.value.length,f.value.length);}}
 }
 document.addEventListener('click',e=>{
   const b=document.getElementById('histLista');
