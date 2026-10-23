@@ -1204,6 +1204,34 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .kb-op-tag small{font-size:10px;font-weight:600;letter-spacing:.2px;text-transform:none;opacity:.92}
 #page-pcp-estoque .kb-col-head .kb-opc{font-size:10.5px;font-weight:700;letter-spacing:.3px;background:#1f5fa8;color:#fff;border-radius:10px;padding:1px 8px}
 #page-pcp-estoque .kb-op-legend{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;color:#1f5fa8}
+/* Histórico de saldo */
+#page-pcp-estoque .hist-wrap{display:none;padding:4px 0 16px}
+#page-pcp-estoque .hist-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:10px}
+#page-pcp-estoque .hist-bar label{display:flex;flex-direction:column;gap:3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft)}
+#page-pcp-estoque .hist-bar input,#page-pcp-estoque .hist-bar select{padding:5px 9px;border:1px solid var(--line);border-radius:6px;font-size:12px;font-family:inherit;background:var(--cream);color:var(--ink)}
+#page-pcp-estoque .hist-busca{position:relative;flex:1;min-width:240px}
+#page-pcp-estoque .hist-busca input{width:100%;box-sizing:border-box}
+#page-pcp-estoque .hist-lista{position:absolute;z-index:20;left:0;right:0;top:100%;max-height:260px;overflow-y:auto;background:var(--paper);border:1px solid var(--line);border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.12);display:none}
+#page-pcp-estoque .hist-lista div{padding:6px 10px;font-size:12px;cursor:pointer;display:flex;gap:8px;justify-content:space-between;color:var(--ink)}
+#page-pcp-estoque .hist-lista div:hover{background:var(--cream)}
+#page-pcp-estoque .hist-lista small{color:var(--ink-soft);font-weight:700;white-space:nowrap}
+#page-pcp-estoque .hist-info{font-size:11px;color:var(--ink-soft);margin-bottom:8px}
+#page-pcp-estoque .hist-prod{font-size:14px;font-weight:800;color:var(--ink);margin-bottom:2px}
+#page-pcp-estoque .hist-cons{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:8px 12px;margin-bottom:10px;background:var(--paper);border:1px solid var(--line);border-radius:8px;font-size:12px;color:var(--ink)}
+#page-pcp-estoque .hist-cons b{font-size:15px}
+#page-pcp-estoque .hist-chart{width:100%;height:220px;margin-bottom:10px;background:var(--paper);border:1px solid var(--line);border-radius:8px}
+#page-pcp-estoque .hist-chart .ln{fill:none;stroke:var(--red-dark);stroke-width:2}
+#page-pcp-estoque .hist-chart .pt{fill:var(--red-dark)}
+#page-pcp-estoque .hist-chart .gr{stroke:var(--line);stroke-width:1}
+#page-pcp-estoque .hist-chart .zr{stroke:var(--ink-soft);stroke-width:1;stroke-dasharray:4 3}
+#page-pcp-estoque .hist-chart text{font-size:10px;fill:var(--ink-soft)}
+#page-pcp-estoque .hist-tab{width:100%;border-collapse:collapse;font-size:12px;background:var(--paper)}
+#page-pcp-estoque .hist-tab th{text-align:right;padding:6px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);border-bottom:2px solid var(--line)}
+#page-pcp-estoque .hist-tab td{text-align:right;padding:5px 10px;border-bottom:1px solid var(--line);color:var(--ink);font-variant-numeric:tabular-nums}
+#page-pcp-estoque .hist-tab th:first-child,#page-pcp-estoque .hist-tab td:first-child{text-align:left}
+#page-pcp-estoque .hist-tab tr.sem td{color:var(--ink-soft);font-style:italic}
+#page-pcp-estoque .hist-tab td.neg{color:var(--red);font-weight:700}
+#page-pcp-estoque .hist-tab td.nota{text-align:left;font-size:10.5px;color:var(--ink-soft)}
 #page-pcp-estoque .kb-op-legend i{width:12px;height:12px;border-radius:3px;background:#e8f1fb;border:2px solid #1f5fa8;display:inline-block}
 #page-pcp-estoque .kb-top{display:flex;align-items:flex-start;gap:8px}
 #page-pcp-estoque .kb-title{flex:1;min-width:0;font-size:12px;font-weight:700;line-height:1.25;color:var(--ink);overflow-wrap:anywhere}
@@ -4754,9 +4782,30 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
       <div class="chips" id="viewChips">
         <div class="chip active" data-view="kanban" onclick="setEstView('kanban')">Kanban</div>
         <div class="chip" data-view="tabela" onclick="setEstView('tabela')">Tabela</div>
+        <div class="chip" data-view="historico" onclick="setEstView('historico')">Histórico</div>
       </div>
       <span class="vt-hint">Cards ordenados por menos dias de estoque</span>
       <span class="kb-op-legend" id="opLegend" style="display:none"></span>
+    </div>
+    <div id="viewHistorico" class="hist-wrap">
+      <div class="hist-bar">
+        <label class="hist-busca">Produto (código ou nome)
+          <input type="text" id="histBusca" placeholder="digite para buscar..." autocomplete="off" oninput="histBuscar()" onfocus="histBuscar()">
+          <div class="hist-lista" id="histLista"></div>
+        </label>
+        <label>Período
+          <select id="histPeriodo" onchange="histCarregar()">
+            <option value="7">Últimos 7 dias</option>
+            <option value="15">Últimos 15 dias</option>
+            <option value="30" selected>Últimos 30 dias</option>
+          </select>
+        </label>
+        <label>Saldo em
+          <input type="date" id="histData" onchange="histConsultar()">
+        </label>
+      </div>
+      <div class="hist-info" id="histInfo">Guarda o saldo da última atualização de cada dia, por 30 dias. Dias sem importação aparecem como “sem registro”.</div>
+      <div id="histCorpo"></div>
     </div>
     <div id="alertKanban" class="kb-board"></div>
     <div class="table-wrap" id="alertTableWrap">
@@ -18991,13 +19040,179 @@ const EQUIV_GRUPOS=[
   ['8021','7195']     // Mini Pastel Forno Requeijão  ↔ Mini Pastel Nata Catupiry
 ];
 const EQUIV_GRUPO={};EQUIV_GRUPOS.forEach((g,ix)=>g.forEach(c=>{EQUIV_GRUPO[c]=ix+1;}));
+// ─────────────────────────────────────────────
+// HISTÓRICO DE SALDO (estoque_historico — últimos 30 dias)
+// ─────────────────────────────────────────────
+// Guarda 1 linha por produto/tipo/dia com o saldo (estoque − reserva) da ÚLTIMA importação do dia.
+// Produto que veio em importação nos últimos 30 dias e sumiu da atual entra zerado (veio_import=false).
+const HIST_DIAS=30;
+const HIST_TIPO_LABEL={FABRICA:'Fábrica',LOJA:'Loja'};
+function histHeaders(){return {'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY,'Content-Type':'application/json'};}
+function histHoje(){return new Date().toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'});}
+function histAddDias(iso,d){const t=new Date(iso+'T12:00:00Z');t.setUTCDate(t.getUTCDate()+d);return t.toISOString().slice(0,10);}
+function histR3(v){return Math.round((Number(v)||0)*1000)/1000;}
+function histFmt(v){return v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:3});}
+function histLinhas(arr,tipo,data){
+  const m=new Map();
+  (arr||[]).forEach(i=>{
+    const cod=normCod(i.codigo)||i.codigo;
+    if(!cod)return;
+    const est=histR3(i.estoque),res=histR3(i.reserva);
+    m.set(cod,{data,tipo,codigo:cod,descricao:i.descricao||null,familia:i.familia||null,estoque:est,reserva:res,saldo:histR3(est-res),un:i.estoque_un||null,veio_import:true});
+  });
+  return m;
+}
+async function histGravar(tipos){
+  try{
+    const hoje=histHoje(),desde=histAddDias(hoje,-HIST_DIAS),H=histHeaders();
+    const rows=[];
+    for(const tipo of ['FABRICA','LOJA']){
+      if(!tipos[tipo])continue;
+      const m=histLinhas(tipo==='FABRICA'?currentFab:currentLoja,tipo,hoje);
+      try{
+        const r=await fetch(SUPABASE_URL+'/rest/v1/rpc/hist_produtos',{method:'POST',headers:H,body:JSON.stringify({p_desde:desde,p_tipo:tipo,p_so_import:true})});
+        if(r.ok){
+          (await r.json()).forEach(p=>{
+            if(!m.has(p.codigo))m.set(p.codigo,{data:hoje,tipo,codigo:p.codigo,descricao:p.descricao,familia:p.familia,estoque:0,reserva:0,saldo:0,un:p.un,veio_import:false});
+          });
+        }
+      }catch(e){}
+      rows.push(...m.values());
+    }
+    if(!rows.length)return false;
+    const agora=new Date().toISOString();
+    rows.forEach(r=>{r.updated_at=agora;});
+    for(let i=0;i<rows.length;i+=500){
+      const res=await fetch(SUPABASE_URL+'/rest/v1/estoque_historico?on_conflict=data,tipo,codigo',{
+        method:'POST',headers:{...H,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(rows.slice(i,i+500))});
+      if(!res.ok)return false;
+    }
+    // Retenção: apaga o que passou de 30 dias
+    await fetch(SUPABASE_URL+'/rest/v1/estoque_historico?data=lt.'+desde,{method:'DELETE',headers:H});
+    histProdutos=null; // força recarregar a lista de produtos na próxima abertura
+    return true;
+  }catch(e){return false;}
+}
+
+let histProdutos=null,histSel=null,histDados=[],histRes=[];
+function histNorm(t){return (t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();}
+async function histCarregarProdutos(){
+  try{
+    const r=await fetch(SUPABASE_URL+'/rest/v1/rpc/hist_produtos',{method:'POST',headers:histHeaders(),body:JSON.stringify({p_desde:histAddDias(histHoje(),-HIST_DIAS)})});
+    histProdutos=r.ok?await r.json():[];
+  }catch(e){histProdutos=[];}
+}
+async function histAbrir(){
+  if(!histProdutos)await histCarregarProdutos();
+  const di=document.getElementById('histData');
+  if(di){di.min=histAddDias(histHoje(),-HIST_DIAS);di.max=histHoje();}
+  histRender();
+}
+async function histBuscar(){
+  const box=document.getElementById('histLista'),inp=document.getElementById('histBusca');
+  if(!box||!inp)return;
+  if(!histProdutos)await histCarregarProdutos();
+  const q=histNorm(inp.value);
+  if(!q){box.style.display='none';return;}
+  const qc=normCod(inp.value.trim());
+  const wb=new RegExp('(^|[^a-z0-9])'+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
+  histRes=histProdutos.filter(p=>p.codigo.startsWith(qc)||wb.test(histNorm(p.descricao))).slice(0,40);
+  box.innerHTML=histRes.length
+    ?histRes.map((p,ix)=>`<div onclick="histEscolher(${ix})"><span>${opEsc(p.descricao||p.codigo)}</span><small>${HIST_TIPO_LABEL[p.tipo]||p.tipo} · ${opEsc(p.codigo)}</small></div>`).join('')
+    :'<div>Nenhum produto no histórico</div>';
+  box.style.display='block';
+}
+function histEscolher(ix){
+  const p=histRes[ix];if(!p)return;
+  histSel=p;
+  document.getElementById('histBusca').value=p.descricao||p.codigo;
+  document.getElementById('histLista').style.display='none';
+  histCarregar();
+}
+async function histCarregar(){
+  if(!histSel){histRender();return;}
+  const corpo=document.getElementById('histCorpo');
+  if(corpo)corpo.innerHTML='<div class="hist-info">Carregando…</div>';
+  try{
+    const desde=histAddDias(histHoje(),-HIST_DIAS);
+    const r=await fetch(SUPABASE_URL+'/rest/v1/estoque_historico?select=data,estoque,reserva,saldo,un,veio_import&tipo=eq.'+histSel.tipo+'&codigo=eq.'+encodeURIComponent(histSel.codigo)+'&data=gte.'+desde+'&order=data.asc',{headers:histHeaders()});
+    histDados=r.ok?await r.json():[];
+  }catch(e){histDados=[];}
+  histRender();
+}
+function histConsultar(){histRender();}
+function histChartSvg(dias,mapa){
+  const W=700,Ht=220,L=50,R=14,T=14,B=26,N=dias.length;
+  const vals=dias.map(d=>mapa[d]?Number(mapa[d].saldo):null).filter(v=>v!==null);
+  if(!vals.length)return '';
+  let mn=Math.min(0,...vals),mx=Math.max(0,...vals);
+  if(mn===mx){mx=mn+1;}
+  const x=i=>L+(N>1?i*(W-L-R)/(N-1):(W-L-R)/2),y=v=>T+(mx-v)*(Ht-T-B)/(mx-mn);
+  let grid='';
+  for(let g=0;g<=4;g++){
+    const v=mn+(mx-mn)*g/4,yy=y(v);
+    grid+=`<line class="gr" x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}"/><text x="${L-6}" y="${yy+3}" text-anchor="end">${histFmt((mx-mn)>=10?Math.round(v):Math.round(v*10)/10)}</text>`;
+  }
+  if(mn<0&&mx>0)grid+=`<line class="zr" x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}"/>`;
+  let path='',pts='',pen=false;
+  dias.forEach((d,i)=>{
+    const o=mapa[d];
+    if(!o){pen=false;return;}
+    const px=x(i),py=y(Number(o.saldo));
+    path+=(pen?'L':'M')+px.toFixed(1)+' '+py.toFixed(1)+' ';pen=true;
+    pts+=`<circle class="pt" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3"><title>${formatDateBR(d)}: ${histFmt(o.saldo)}</title></circle>`;
+  });
+  const lab=[0,Math.floor((N-1)/2),N-1].filter((v,i,a)=>a.indexOf(v)===i)
+    .map(i=>`<text x="${x(i)}" y="${Ht-8}" text-anchor="middle">${formatDateBR(dias[i]).slice(0,5)}</text>`).join('');
+  return `<svg class="hist-chart" viewBox="0 0 ${W} ${Ht}" preserveAspectRatio="none">${grid}<path class="ln" d="${path}"/>${pts}${lab}</svg>`;
+}
+function histRender(){
+  const corpo=document.getElementById('histCorpo');if(!corpo)return;
+  if(!histSel){corpo.innerHTML='<div class="empty-state"><div class="empty-icon">🔎</div>Busque um produto para ver o histórico de saldo.</div>';return;}
+  const hoje=histHoje(),per=parseInt(document.getElementById('histPeriodo').value,10)||30;
+  const mapa={};histDados.forEach(r=>{mapa[r.data]=r;});
+  const dias=[];for(let i=per-1;i>=0;i--)dias.push(histAddDias(hoje,-i));
+  const un=(histDados.find(r=>r.un)||{}).un||'';
+  // Saldo em uma data específica
+  let cons='';
+  const dq=document.getElementById('histData').value;
+  if(dq){
+    const o=mapa[dq];
+    cons=o
+      ?`<div class="hist-cons">Saldo em <b>${formatDateBR(dq)}</b>: <b>${histFmt(o.saldo)} ${opEsc(un)}</b> <span>(estoque ${histFmt(o.estoque)} − reserva ${histFmt(o.reserva)})</span>${o.veio_import===false?'<span>· produto não veio na importação desse dia (zerado)</span>':''}</div>`
+      :`<div class="hist-cons">Em <b>${formatDateBR(dq)}</b>: sem registro (nenhuma importação nesse dia ou fora dos últimos 30 dias).</div>`;
+  }
+  let prev=null;
+  const linhas=dias.map(d=>{
+    const o=mapa[d];
+    if(!o)return {d,sem:true};
+    const v=Number(o.saldo),dif=prev===null?null:v-prev;prev=v;
+    return {d,o,dif};
+  });
+  const tabela=linhas.slice().reverse().map(l=>{
+    if(l.sem)return `<tr class="sem"><td>${formatDateBR(l.d)}</td><td colspan="4">sem registro</td></tr>`;
+    const o=l.o,dif=l.dif===null?'—':(l.dif>0?'+':'')+histFmt(l.dif);
+    return `<tr><td>${formatDateBR(l.d)}</td><td>${histFmt(o.estoque)}</td><td>${histFmt(o.reserva)}</td><td class="${Number(o.saldo)<0?'neg':''}">${histFmt(o.saldo)}</td><td>${dif}</td></tr>`;
+  }).join('');
+  corpo.innerHTML=`<div class="hist-prod">${opEsc(histSel.descricao||histSel.codigo)}</div>
+    <div class="hist-info">${HIST_TIPO_LABEL[histSel.tipo]||histSel.tipo} · código ${opEsc(histSel.codigo)}${un?' · '+opEsc(un):''}</div>
+    ${cons}${histChartSvg(dias,mapa)}
+    <table class="hist-tab"><thead><tr><th>Data</th><th>Estoque</th><th>Reserva</th><th>Saldo</th><th>Variação</th></tr></thead><tbody>${tabela}</tbody></table>`;
+}
+document.addEventListener('click',e=>{
+  const b=document.getElementById('histLista');
+  if(b&&!e.target.closest('.hist-busca'))b.style.display='none';
+});
+
 // ─── KANBAN (Estoque) ────────────────────────────────────────────────────────
 let estView='kanban';
 try{estView=localStorage.getItem('bk360_est_view')||'kanban';}catch(e){}
+if(estView==='historico')estView='kanban'; // histórico precisa ser aberto de propósito
 function setEstView(v){
   estView=v;
-  try{localStorage.setItem('bk360_est_view',v);}catch(e){}
+  try{if(v!=='historico')localStorage.setItem('bk360_est_view',v);}catch(e){}
   renderAlerts();
+  if(v==='historico')histAbrir();
 }
 // Menos dias de estoque primeiro; sem venda (dias indisponível) vai depois, ordenado por saldo
 function sortKanban(a,b){
@@ -19061,9 +19276,10 @@ function renderKanban(items){
 }
 function _applyEstView(){
   const kb=estView==='kanban';
-  const k=document.getElementById('alertKanban'),t=document.getElementById('alertTableWrap');
+  const k=document.getElementById('alertKanban'),t=document.getElementById('alertTableWrap'),h=document.getElementById('viewHistorico');
   if(k)k.style.display=kb?'grid':'none';
-  if(t)t.style.display=kb?'none':'';
+  if(t)t.style.display=estView==='tabela'?'':'none';
+  if(h)h.style.display=estView==='historico'?'block':'none';
   document.querySelectorAll('#viewChips .chip').forEach(c=>c.classList.toggle('active',c.dataset.view===estView));
 }
 
@@ -19101,6 +19317,7 @@ function renderAlerts(){
     // Contagem de déficits para o badge — apenas produtos de FABRICAÇÃO
     const deficitCount=allItems().filter(i=>calculateAvailableStock(i)<0).length;
     const _ac=document.getElementById('alertCount');if(_ac)_ac.textContent=deficitCount;
+    if(estView==='historico')return;
     if(estView==='kanban'){renderKanban(items);return;}
     if(!items.length){
       tableEl.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div>Nenhum produto nesta categoria.</div>';
@@ -19682,6 +19899,8 @@ function processFile(file,tipo){
         const now=new Date();
         importMetadata={ts:now,periodo:{inicio:periodoInicio,fim:periodoFim}};
         lsSaveEstoque(); // persiste no localStorage
+        // Histórico de saldo: grava o snapshot do dia só dos tipos importados
+        histGravar({FABRICA:tipo==='UNICO'||tipo==='FABRICA',LOJA:tipo==='UNICO'||tipo==='LOJA'});
         // Atualiza Supabase SD
         buildSD().then(()=>{
           buildStats();
