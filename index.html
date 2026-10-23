@@ -19094,13 +19094,14 @@ async function histGravar(tipos){
   }catch(e){return false;}
 }
 
-let histProdutos=null,histSel=null,histDados=[],histRes=[];
+let histErro='',histProdutos=null,histSel=null,histDados=[],histRes=[];
 function histNorm(t){return (t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();}
 async function histCarregarProdutos(){
   try{
     const r=await fetch(SUPABASE_URL+'/rest/v1/rpc/hist_produtos',{method:'POST',headers:histHeaders(),body:JSON.stringify({p_desde:histAddDias(histHoje(),-HIST_DIAS)})});
-    histProdutos=r.ok?await r.json():[];
-  }catch(e){histProdutos=[];}
+    if(r.ok){histProdutos=await r.json();histErro='';}
+    else{histProdutos=null;histErro='Erro '+r.status+' ao carregar o histórico';}
+  }catch(e){histProdutos=null;histErro='Sem conexão com o Supabase';}
 }
 async function histAbrir(){
   if(!histProdutos)await histCarregarProdutos();
@@ -19110,6 +19111,7 @@ async function histBuscar(){
   const box=document.getElementById('histLista'),inp=document.getElementById('histBusca');
   if(!box||!inp)return;
   if(!histProdutos)await histCarregarProdutos();
+  if(!histProdutos){box.innerHTML='<div>'+opEsc(histErro||'Histórico indisponível')+'</div>';box.style.display='block';return;}
   const q=histNorm(inp.value);
   const qc=normCod(inp.value.trim());
   const wb=new RegExp('(^|[^a-z0-9])'+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
