@@ -7628,6 +7628,15 @@ function stdPctClass(pct){
 function stdFmtPct(pct){
   return pct == null ? '—' : (pct.toFixed(1).replace('.', ',') + '%');
 }
+/* Variação em pontos percentuais entre dois % (seta = direção; cor = melhorou/piorou) */
+function stdDeltaPP(curr, prev, rotulo){
+  if(curr == null || prev == null) return '';
+  const d = curr - prev;
+  const txt = rotulo + ' (' + stdFmtPct(prev) + ')';
+  if(Math.abs(d) < 0.5) return `<div class="kpi-delta flat">• estável vs. ${txt}</div>`;
+  const sobe = d > 0;
+  return `<div class="kpi-delta ${sobe ? 'up' : 'down'}">${sobe ? '▲' : '▼'} ${Math.abs(d).toFixed(1).replace('.', ',')} p.p. vs. ${txt}</div>`;
+}
 function stdFmtDataBR(iso){
   if(!iso) return '—';
   return iso.split('-').reverse().join('/');
@@ -7793,22 +7802,47 @@ function renderKPIs(filteredDates){
 
     const acuracia = stdAcuracia(filteredDates);
 
+    // Comparações (só com o toggle "Comparar" ligado):
+    //  dia → último dia anterior com meta · semana → semana anterior · mês → mês anterior até o mesmo dia
+    //  acurácia → mesmo período de comparação dos gráficos
+    let dDia = '', dSem = '', dMes = '', dAcu = '';
+    if(comparisonEnabled){
+      if(diaAnterior){
+        const antes = allDates.filter(d => d < diaAnterior).reverse().find(d => stdPctAtendimento([d]) !== null);
+        if(antes) dDia = stdDeltaPP(pctDia, stdPctAtendimento([antes]), stdFmtDataBR(antes).slice(0,5));
+      }
+      if(semana){
+        const ini = isoAddDays(semana.ini, -7), fim = isoAddDays(semana.fim, -7);
+        dSem = stdDeltaPP(pctSemana, stdPctAtendimento(stdDatesInRange(ini, fim)), 'semana ant. ' + stdFmtDataBR(ini).slice(0,5) + '–' + stdFmtDataBR(fim).slice(0,5));
+      }
+      if(refDate){
+        const fimAnt = shiftMonthBack(refDate), iniAnt = fimAnt.slice(0,8) + '01';
+        dMes = stdDeltaPP(pctMes, stdPctAtendimento(allDates.filter(d => d >= iniAnt && d <= fimAnt)), 'mês ant. até ' + stdFmtDataBR(fimAnt).slice(0,5));
+      }
+      const cmpDatas = getComparisonDates(filteredDates);
+      if(cmpDatas.length) dAcu = stdDeltaPP(acuracia, stdAcuracia(cmpDatas), 'período anterior');
+    }
+
     document.getElementById('kpiGrid').innerHTML = `
       <div class="kpi-card ${stdPctClass(pctDia)}">
         <div class="label">% Atendimento — Dia Anterior${diaAnterior ? ' (' + stdFmtDataBR(diaAnterior) + ')' : ''}</div>
         <div class="value">${stdFmtPct(pctDia)}</div>
+        ${dDia}
       </div>
       <div class="kpi-card ${stdPctClass(pctSemana)}">
         <div class="label">% Atendimento — Semana${semana ? ' (' + stdFmtDataBR(semana.ini) + ' a ' + stdFmtDataBR(semana.fim) + ')' : ''}</div>
         <div class="value">${stdFmtPct(pctSemana)}</div>
+        ${dSem}
       </div>
       <div class="kpi-card ${stdPctClass(pctMes)}">
         <div class="label">% Atendimento — Mês${mesRef ? ' (' + mesRef.replace('-','/') + ')' : ''}</div>
         <div class="value">${stdFmtPct(pctMes)}</div>
+        ${dMes}
       </div>
       <div class="kpi-card ${stdPctClass(acuracia)}">
         <div class="label">Acurácia</div>
         <div class="value">${stdFmtPct(acuracia)}</div>
+        ${dAcu}
       </div>
     `;
   }
@@ -8251,12 +8285,16 @@ function renderAtendimentoTrend(filteredDates){
   const metaPath = `M ${padLeft} ${yMeta} L ${w-padRight} ${yMeta}`;
 
   // Linha do período atual
-  let realPath = '', realDots = '', started = false;
+  // Dias sem meta/lançamento não quebram a linha: o trecho que atravessa o vão sai tracejado
+  let realPath = '', realBridge = '', realDots = '', ultimo = null;
   points.forEach((p,i)=>{
-    if(p.realizado === null){ started = false; return; }
+    if(p.realizado === null) return;
     const x = xOf(i), y = yOf(p.realizado);
-    realPath += (!started ? 'M' : 'L') + x + ' ' + y + ' ';
-    started = true;
+    if(ultimo){
+      if(i - ultimo.i > 1) realBridge += `M${ultimo.x} ${ultimo.y} L${x} ${y} `;
+      else realPath += `M${ultimo.x} ${ultimo.y} L${x} ${y} `;
+    }
+    ultimo = { i, x, y };
     realDots += `<circle cx="${x}" cy="${y}" r="4" fill="${COR_REAL}"/>`;
     realDots += `<text x="${x}" y="${y-10}" font-size="10.5" font-weight="700" fill="${COR_REAL}" text-anchor="middle">${p.realizado.toFixed(0)}%</text>`;
   });
@@ -8264,12 +8302,15 @@ function renderAtendimentoTrend(filteredDates){
   // Linha do período de comparação — alinhada por índice de dia de produção:
   // prevPoints[0] = 1º dia de produção de julho → posição xOf(0) = 1º dia de agosto
   // Isso elimina gaps por fins de semana e compara "dia útil N" vs "dia útil N".
-  let prevPath = '', prevDots = '', prevStarted = false;
+  let prevPath = '', prevBridge = '', prevDots = '', prevUltimo = null;
   prevPoints.forEach((p, i) => {
-    if(p.realizado === null){ prevStarted = false; return; }
+    if(p.realizado === null) return;
     const x = xOf(i), y = yOf(p.realizado);
-    prevPath += (!prevStarted ? 'M' : 'L') + x + ' ' + y + ' ';
-    prevStarted = true;
+    if(prevUltimo){
+      if(i - prevUltimo.i > 1) prevBridge += `M${prevUltimo.x} ${prevUltimo.y} L${x} ${y} `;
+      else prevPath += `M${prevUltimo.x} ${prevUltimo.y} L${x} ${y} `;
+    }
+    prevUltimo = { i, x, y };
     prevDots += `<circle cx="${x}" cy="${y}" r="3.5" fill="${COR_PREV}" opacity=".85"/>`;
     prevDots += `<text x="${x}" y="${y+18}" font-size="10" font-weight="600" fill="${COR_PREV}" text-anchor="middle" opacity=".85">${p.realizado.toFixed(0)}%</text>`;
   });
@@ -8283,7 +8324,7 @@ function renderAtendimentoTrend(filteredDates){
     ? `<span><i class="dot" style="background:${COR_PREV};border:1px solid ${COR_PREV}"></i>Período anterior</span>`
     : '';
   const prevSvg = comparisonEnabled && prevPoints.length
-    ? `<path d="${prevPath}" fill="none" stroke="${COR_PREV}" stroke-width="2" stroke-dasharray="5 3" opacity=".85"/>${prevDots}`
+    ? `<path d="${prevBridge}" fill="none" stroke="${COR_PREV}" stroke-width="1.5" stroke-dasharray="2 4" opacity=".55"/><path d="${prevPath}" fill="none" stroke="${COR_PREV}" stroke-width="2" stroke-dasharray="5 3" opacity=".85"/>${prevDots}`
     : '';
 
   wrap.innerHTML = `
@@ -8296,6 +8337,7 @@ function renderAtendimentoTrend(filteredDates){
       <line x1="${padLeft}" y1="${h-padBottom}" x2="${w-padRight}" y2="${h-padBottom}" stroke="#f0ddc0" stroke-width="1"/>
       <path d="${metaPath}" fill="none" stroke="${COR_META}" stroke-width="2" stroke-dasharray="6 4"/>
       ${prevSvg}
+      <path d="${realBridge}" fill="none" stroke="${COR_REAL}" stroke-width="1.8" stroke-dasharray="2 4" opacity=".6"/>
       <path d="${realPath}" fill="none" stroke="${COR_REAL}" stroke-width="2.5"/>
       ${realDots}
       ${xLabels}
