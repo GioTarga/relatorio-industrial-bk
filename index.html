@@ -25814,6 +25814,8 @@ function ABL_carregarPdfJs(){
   });
   return ABL_PDFJS;
 }
+// Situação do ponto → tipo gravado em ausencias (Falta, Atestado ou Suspensão)
+function ABL_tipoDaSituacao(sit){ return /atestado/i.test(sit) ? 'Atestado' : /suspens/i.test(sit) ? 'Suspensão' : 'Falta'; }
 function ABL_semAcento(s){ return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim(); }
 async function ABL_lerPdf(file){
   const pdfjs = await ABL_carregarPdfJs();
@@ -25882,14 +25884,12 @@ function ABL_lerRelatorioAusencias(linhasTxt){
     }
     if(!data) return;
     const parcial = /parcial/i.test(sit);
-    // Suspensão não é falta nem atestado (a tabela só aceita esses dois tipos): fica de fora
-    if(/suspens/i.test(sit)){ ignoradas++; return; }
     linhas.push({ matricula: mat, nome: nome.trim(), setor: ABL_semAcento(setor), data,
-      tipo: /atestado/i.test(sit) ? 'Atestado' : 'Falta', obs: /integral/i.test(sit) ? 'Falta integral' : parcial ? 'Falta parcial' : '',
+      tipo: ABL_tipoDaSituacao(sit), obs: /integral/i.test(sit) ? 'Falta integral' : parcial ? 'Falta parcial' : '',
       incluir: !parcial });  // falta parcial vem desmarcada: o colaborador esteve presente parte do turno
   });
   if(!data) throw new Error('não encontrei a data no título do relatório.');
-  return { linhas, ignoradas: 0, suspensas: ignoradas };
+  return { linhas, ignoradas: 0 };
 }
 // Nome do setor como o BK360 já guarda (o ponto escreve "Limpeza e Conservação" de formas diferentes)
 function ABL_setorCanon(v){
@@ -25905,7 +25905,7 @@ function ABL_lerPorColunas(paginas, linhasTxt, comMatricula){
   if(!md) throw new Error('não encontrei a data no título do relatório.');
   const data = md[3] + '-' + md[2] + '-' + md[1];
   const turno = /NOITE/i.test(linhasTxt.slice(0, 3).join(' ')) ? 2 : (/\bDIA\b/i.test(linhasTxt.slice(0, 3).join(' ')) ? 1 : null);
-  const linhas = []; let suspensas = 0, hdr = null;
+  const linhas = []; let hdr = null;
   const cel = (its, x0, x1) => its.filter(i => i.x >= x0 && i.x < x1).sort((a, b) => b.y - a.y || a.x - b.x).map(i => i.t).join(' ').replace(/\s+/g, ' ').trim();
   paginas.forEach(its => {
     const h = n => its.find(i => n.test(i.t));
@@ -25937,14 +25937,13 @@ function ABL_lerPorColunas(paginas, linhasTxt, comMatricula){
         sit = a.t;
       }
       if(!nome || !sit) return;
-      if(/suspens/i.test(sit)){ suspensas++; return; }
       const parcial = /parcial/i.test(sit);
       linhas.push({ matricula: mat, nome: nome.toUpperCase(), setor: ABL_setorCanon(setor), data,
-        tipo: /atestado/i.test(sit) ? 'Atestado' : 'Falta', obs: parcial ? 'Falta parcial' : /integral/i.test(sit) ? 'Falta integral' : '', incluir: !parcial });
+        tipo: ABL_tipoDaSituacao(sit), obs: parcial ? 'Falta parcial' : /integral/i.test(sit) ? 'Falta integral' : '', incluir: !parcial });
     });
   });
-  if(!linhas.length && !suspensas) throw new Error('não consegui identificar as linhas do relatório (layout diferente do esperado).');
-  return { linhas, ignoradas: 0, suspensas, turno };
+  if(!linhas.length) throw new Error('não consegui identificar as linhas do relatório (layout diferente do esperado).');
+  return { linhas, ignoradas: 0, turno };
 }
 // Relatório sem matrícula: busca a matrícula pelo nome em quem já tem ausência lançada
 async function ABL_resolverMatriculas(linhas){
@@ -25972,7 +25971,7 @@ async function ABL_arquivos(files){
     try{
       const r = await ABL_lerPdf(f);
       await ABL_resolverMatriculas(r.linhas);
-      ABL_ARQS.push({ nome: f.name, turno: r.turno || ABL_turnoDoNome(f.name), linhas: r.linhas, ignoradas: r.ignoradas, suspensas: r.suspensas || 0 });
+      ABL_ARQS.push({ nome: f.name, turno: r.turno || ABL_turnoDoNome(f.name), linhas: r.linhas, ignoradas: r.ignoradas });
     }catch(e){
       ABL_fb('⚠ Não consegui ler ' + f.name + ': ' + (e.message || e), 'err');
       return;
@@ -26004,8 +26003,6 @@ async function ABL_montar(){
   document.getElementById('ablPrev').style.display = ABL_ARQS.length ? '' : 'none';
   let aviso = '';
   if(duplicadas) aviso += `${duplicadas} registro(s) repetido(s) entre os arquivos foram ignorados. `;
-  const susp = ABL_ARQS.reduce((t, a) => t + a.suspensas, 0);
-  if(susp) aviso += `${susp} suspensão(ões) não foram lidas (a tabela só aceita Falta e Atestado). `;
   const semMat = todas.filter(l => !l.matricula).length;
   if(semMat) aviso += `${semMat} colaborador(es) sem matrícula neste relatório: digite a matrícula na linha para poder lançar. `;
   const parc = todas.filter(l => l.obs === 'Falta parcial').length;
@@ -26031,7 +26028,7 @@ function ABL_render(){
   document.getElementById('ablTbody').innerHTML = ABL_LINHAS.map((l, i) => `<tr>
     <td class="center"><input type="checkbox" data-abl-inc="${i}"${l.incluir ? ' checked' : ''}></td>
     <td>${l.matricula ? ADM_esc(l.matricula) : `<input type="text" class="abl-mat" data-abl-mat="${i}" inputmode="numeric" maxlength="6" placeholder="Matrícula" size="7">`}</td><td>${ADM_esc(l.nome)}</td><td>${ADM_esc(l.setor || '–')}</td><td class="center">${l.turno}º</td><td>${ABL_br(l.data)}</td>
-    <td><select data-abl-tipo="${i}"><option${l.tipo === 'Falta' ? ' selected' : ''}>Falta</option><option${l.tipo === 'Atestado' ? ' selected' : ''}>Atestado</option></select></td>
+    <td><select data-abl-tipo="${i}"><option${l.tipo === 'Falta' ? ' selected' : ''}>Falta</option><option${l.tipo === 'Atestado' ? ' selected' : ''}>Atestado</option><option${l.tipo === 'Suspensão' ? ' selected' : ''}>Suspensão</option></select></td>
     <td>${ADM_esc(l.obs || '')}</td></tr>`).join('');
   document.getElementById('ablSalvar').disabled = !inc.length;
 }
@@ -26078,7 +26075,7 @@ document.addEventListener('click', e => {
 // ─────────────────────────────────────────────
 // MÓDULO CONTROLE DE ABSENTEÍSMO
 // ─────────────────────────────────────────────
-// Fonte: tabela ausencias (uma linha por colaborador/dia, tipo Falta ou Atestado).
+// Fonte: tabela ausencias (uma linha por colaborador/dia, tipo Falta, Atestado ou Suspensão).
 // Os cards e o gráfico contam só tipo 'Falta'; atestados têm card próprio.
 let ABS_DATA = [];
 let ABS_chart = null;
@@ -26160,7 +26157,7 @@ function ABS_render(){
   // Tabela: mais recentes primeiro, depois por nome
   const linhas = [...noPeriodo].sort((a, b) => b.data.localeCompare(a.data) || a.nome.localeCompare(b.nome));
   document.getElementById('absTbody').innerHTML = linhas.length
-    ? linhas.map(r => `<tr><td>${ADM_esc(r.nome)}</td><td>${ADM_esc(ABS_setor(r.setor))}</td><td>${r.turno ? r.turno + 'º' : '–'}</td><td>${ABS_br(r.data)}</td><td><span class="abs-tipo ${r.tipo === 'Atestado' ? 'atestado' : 'falta'}">${ADM_esc(r.tipo)}</span></td></tr>`).join('')
+    ? linhas.map(r => `<tr><td>${ADM_esc(r.nome)}</td><td>${ADM_esc(ABS_setor(r.setor))}</td><td>${r.turno ? r.turno + 'º' : '–'}</td><td>${ABS_br(r.data)}</td><td><span class="abs-tipo ${r.tipo === 'Atestado' ? 'atestado' : r.tipo === 'Suspensão' ? 'atestado' : 'falta'}">${ADM_esc(r.tipo)}</span></td></tr>`).join('')
     : '<tr><td colspan="5" class="abs-vazio">Nenhuma ausência registrada no período.</td></tr>';
 }
 // Gráfico de barras: faltas (e atestados) por setor no período selecionado
@@ -26191,7 +26188,7 @@ function ABS_renderSetor(noPeriodo){
   noPeriodo.forEach(r => {
     const k = ABS_setor(r.setor);
     if(!m[k]) m[k] = { f: 0, a: 0 };
-    if(r.tipo === 'Atestado') m[k].a++; else m[k].f++;
+    if(r.tipo === 'Atestado') m[k].a++; else if(r.tipo === 'Falta') m[k].f++;
   });
   const setores = Object.keys(m).sort((x, y) => (m[y].f + m[y].a) - (m[x].f + m[x].a) || x.localeCompare(y));
   if(ABS_chartSetor) ABS_chartSetor.destroy();
@@ -26231,7 +26228,7 @@ function ABS_renderRank(noPeriodo){
   noPeriodo.forEach(r => {
     const k = r.matricula || r.nome;
     if(!m[k]) m[k] = { nome: r.nome, setor: r.setor, f: 0, a: 0 };
-    if(r.tipo === 'Atestado') m[k].a++; else m[k].f++;
+    if(r.tipo === 'Atestado') m[k].a++; else if(r.tipo === 'Falta') m[k].f++;
   });
   const lista = Object.values(m).sort((x, y) => (y.f + y.a) - (x.f + x.a) || y.f - x.f || x.nome.localeCompare(y.nome));
   document.getElementById('absRank').innerHTML = lista.length
