@@ -10493,7 +10493,7 @@ async function CH_novaSalvar(){
   try{
     // data/hora: o servidor grava no instante do envio
     const { error } = await getSupabaseClient().from('chamados_manutencao')
-      .insert({ setor, lider, equipamento, descricao, criado_por: CH_usuario().email || null });
+      .insert({ setor, lider, equipamento, descricao });
     if(error) throw error;
     CH_novaFechar();
     await CH_load();
