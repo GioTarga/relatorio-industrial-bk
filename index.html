@@ -2151,294 +2151,6 @@ body{background:#fff;color:#000}
     #page-expedicao .cr-remover{ width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; padding:0; }
   }
 
-/* ═══════════════════════════════════════════════
-   MÓDULO ORDENS DE SERVIÇO — Kanban — #page-manutencao #mn-tab-os
-   ═══════════════════════════════════════════════ */
-
-/* ── Header ── */
-#mn-tab-os .os-kanban-header{
-  display:flex; align-items:center; justify-content:space-between;
-  padding:12px 20px; gap:12px; flex-wrap:wrap;
-  border-bottom:1px solid var(--line);
-}
-#mn-tab-os .os-kanban-title{
-  font-size:15px; font-weight:700; color:var(--ink); letter-spacing:.01em;
-}
-#mn-tab-os .os-new-btn{
-  background:var(--red-dark); color:#fff; border:none;
-  padding:9px 20px; border-radius:var(--radius-sm);
-  font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;
-  box-shadow:0 2px 6px rgba(192,57,43,.30);
-  letter-spacing:.02em;
-}
-#mn-tab-os .os-new-btn:hover{ opacity:.88; box-shadow:0 3px 10px rgba(192,57,43,.40); }
-
-/* ── Summary strip ── */
-#mn-tab-os .os-summary-strip{
-  display:flex; gap:10px; padding:10px 16px;
-  border-bottom:1px solid var(--line);
-  background:#FAF7F2; align-items:stretch;
-}
-#mn-tab-os .os-kpi{
-  flex:1 1 0; min-width:100px;
-  background:#fff; border:1px solid #E4E0D8;
-  border-radius:8px; padding:10px 14px;
-  display:flex; flex-direction:column; gap:4px;
-  box-shadow:0 1px 3px rgba(0,0,0,.06);
-}
-#mn-tab-os .os-kpi-header{
-  display:flex; align-items:center; gap:6px;
-}
-#mn-tab-os .os-kpi-dot{
-  width:8px; height:8px; border-radius:50%; flex-shrink:0;
-}
-#mn-tab-os .os-kpi-dot.red   { background:#C0392B; }
-#mn-tab-os .os-kpi-dot.orange{ background:#E67E22; }
-#mn-tab-os .os-kpi-dot.green { background:#27AE60; }
-#mn-tab-os .os-kpi-title{
-  font-size:10px; font-weight:700; color:var(--ink);
-  text-transform:uppercase; letter-spacing:.06em; white-space:nowrap;
-}
-#mn-tab-os .os-kpi-num{
-  font-size:26px; font-weight:700; color:var(--ink);
-  font-variant-numeric:tabular-nums; line-height:1.1;
-}
-#mn-tab-os .os-kpi-num.red   { color:#C0392B; }
-#mn-tab-os .os-kpi-num.orange{ color:#E67E22; }
-#mn-tab-os .os-kpi-num.green { color:#27AE60; }
-#mn-tab-os .os-kpi-sub{
-  font-size:11px; color:var(--ink-soft);
-}
-
-/* ── Filter bar ── */
-#mn-tab-os .os-filter-bar{
-  display:flex; gap:6px; flex-wrap:wrap; align-items:center;
-  padding:8px 20px; border-bottom:1px solid var(--line);
-  background:var(--paper);
-}
-/* Busca em destaque */
-#mn-tab-os .os-search-wrap{
-  position:relative; flex:1; min-width:180px; max-width:280px;
-}
-#mn-tab-os .os-search-icon{
-  position:absolute; left:8px; top:50%; transform:translateY(-50%);
-  font-size:12px; color:var(--ink-soft); pointer-events:none;
-}
-#mn-tab-os .os-search-input{
-  width:100%; padding:6px 10px 6px 28px; border:1.5px solid var(--line);
-  border-radius:var(--radius-sm); background:var(--paper);
-  color:var(--ink); font-size:12px; box-sizing:border-box;
-  transition:border-color .15s;
-}
-#mn-tab-os .os-search-input:focus{ outline:none; border-color:var(--red-dark); }
-#mn-tab-os .os-filter-bar select{
-  padding:6px 10px; border:1px solid var(--line);
-  border-radius:var(--radius-sm); background:var(--paper);
-  color:var(--ink); font-size:12px; max-width:160px;
-}
-#mn-tab-os .os-btn-clear{
-  display:none; background:transparent; color:var(--ink-soft); border:1px solid var(--line);
-  padding:5px 12px; border-radius:var(--radius-sm);
-  font-size:12px; cursor:pointer; white-space:nowrap;
-}
-#mn-tab-os .os-btn-clear.visible{ display:inline-block; }
-#mn-tab-os .os-btn-clear:hover{ background:var(--line); }
-
-/* ── Kanban board ── */
-#mn-tab-os .os-kanban-board{
-  display:flex; gap:0; overflow-x:auto; flex:1;
-  /* altura fixa = viewport menos topbar + abas + header OS + filtros + summary strip */
-  height:calc(100vh - 268px);
-}
-#mn-tab-os .os-col{
-  flex:1 1 280px; min-width:260px; display:flex; flex-direction:column;
-  border-right:1px solid var(--line); overflow:hidden;
-}
-#mn-tab-os .os-col:last-child{ border-right:none; }
-
-/* Column headers */
-#mn-tab-os .os-col-header{
-  display:flex; align-items:center; gap:8px;
-  padding:10px 16px; font-size:11px; font-weight:700;
-  text-transform:uppercase; letter-spacing:.06em;
-  border-bottom:2px solid transparent; flex-shrink:0;
-}
-#mn-tab-os .os-col-header-aberta{
-  background:#F0F4FF; border-color:#6384C0; color:#3D5A99;
-}
-#mn-tab-os .os-col-header-em_andamento{
-  background:#FFF4EC; border-color:#E67E22; color:#A0522D;
-}
-#mn-tab-os .os-col-header-concluida{
-  background:#EDFAF3; border-color:#27AE60; color:#1A6B3A;
-}
-#mn-tab-os .os-col-count{
-  background:rgba(0,0,0,0.12); border-radius:99px;
-  padding:1px 8px; font-size:11px; font-weight:700; color:inherit;
-  margin-left:auto;
-}
-
-/* Column body — rola internamente, header fica fixo */
-#mn-tab-os .os-col-body{
-  flex:1; padding:8px; display:flex; flex-direction:column;
-  gap:6px; overflow-y:auto; transition:background .15s;
-}
-#mn-tab-os .os-col-body.drag-over{
-  background:rgba(192,57,43,0.06);
-}
-
-/* ── Cards ── */
-#mn-tab-os .os-card{
-  background:#fff; border:1px solid #E8EAED;
-  border-radius:var(--radius); padding:10px 12px;
-  cursor:pointer; user-select:none;
-  border-left:4px solid #BDC3C7;
-  box-shadow:0 1px 3px rgba(0,0,0,.07);
-  transition:box-shadow .15s, border-color .15s;
-}
-#mn-tab-os .os-card:hover{
-  box-shadow:0 3px 10px rgba(0,0,0,.12); border-color:#C4C8CF;
-}
-#mn-tab-os .os-card.dragging{ opacity:.40; }
-/* Card atrasada — borda vermelha adicional no topo */
-#mn-tab-os .os-card.os-card-atrasada{
-  border-top:2px solid #C0392B;
-}
-
-/* Priority border — left edge */
-#mn-tab-os .os-card-prio-critica{ border-left-color:#C0392B; }
-#mn-tab-os .os-card-prio-alta   { border-left-color:#E67E22; }
-#mn-tab-os .os-card-prio-media  { border-left-color:#95A5A6; }
-#mn-tab-os .os-card-prio-baixa  { border-left-color:#D5D8DC; }
-
-/* Card anatomy */
-#mn-tab-os .os-card-top{
-  display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-bottom:5px;
-}
-#mn-tab-os .os-card-num{
-  margin-left:auto; font-size:10px; color:var(--ink-soft);
-  font-variant-numeric:tabular-nums; white-space:nowrap; flex-shrink:0;
-}
-#mn-tab-os .os-card-desc{
-  font-size:13px; font-weight:500; color:var(--ink); line-height:1.4;
-  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
-  overflow:hidden; margin-bottom:6px;
-}
-#mn-tab-os .os-card-meta{
-  font-size:11px; color:var(--ink-soft); margin-bottom:5px; line-height:1.55;
-}
-#mn-tab-os .os-card-footer{
-  display:flex; justify-content:space-between; align-items:center;
-  font-size:11px; color:var(--ink-soft);
-  border-top:1px solid #F0F0F0; padding-top:6px; margin-top:4px;
-}
-
-/* Priority tags */
-#mn-tab-os .os-prio-tag{
-  display:inline-flex; align-items:center; padding:2px 7px; border-radius:99px;
-  font-size:10px; font-weight:700; white-space:nowrap;
-}
-#mn-tab-os .os-prio-tag-critica{ background:#FDECEA; color:#C0392B; }
-#mn-tab-os .os-prio-tag-alta   { background:#FEF0E0; color:#D35400; }
-#mn-tab-os .os-prio-tag-media  { background:#FFF9E6; color:#9A7D0A; }
-#mn-tab-os .os-prio-tag-baixa  { background:#F2F2F2; color:#888; }
-
-/* Tipo tags */
-#mn-tab-os .os-tipo-tag{
-  display:inline-flex; align-items:center; padding:2px 7px; border-radius:99px;
-  font-size:10px; font-weight:700;
-}
-#mn-tab-os .os-tipo-tag-corretiva { background:#FDECEA; color:#C0392B; }
-#mn-tab-os .os-tipo-tag-preventiva{ background:#EAF4FB; color:#1A6B9A; }
-
-/* Overdue badge */
-#mn-tab-os .os-badge-atrasada{
-  display:inline-flex; align-items:center; gap:3px; padding:2px 7px;
-  border-radius:99px; font-size:10px; font-weight:700;
-  background:#FDECEA; color:#C0392B; white-space:nowrap;
-}
-
-/* Empty column */
-#mn-tab-os .os-col-empty{
-  text-align:center; color:var(--ink-soft); font-size:12px;
-  padding:40px 16px; opacity:.65; line-height:1.6;
-}
-#mn-tab-os .os-col-empty strong{ display:block; font-size:13px; margin-bottom:4px; }
-
-/* ── Modal ── */
-#os-modal-overlay{
-  display:none; position:fixed; inset:0; z-index:9000;
-  background:rgba(0,0,0,.45); align-items:center; justify-content:center;
-}
-#os-modal-overlay.open{ display:flex; }
-#os-modal{
-  background:var(--paper); border-radius:var(--radius);
-  width:min(720px,96vw); max-height:90vh; overflow-y:auto;
-  box-shadow:0 8px 32px rgba(0,0,0,.22);
-}
-#mn-tab-os .os-modal-header{
-  display:flex; align-items:center; justify-content:space-between;
-  padding:16px 20px; border-bottom:1px solid var(--line);
-  position:sticky; top:0; background:var(--paper); z-index:1;
-}
-#mn-tab-os .os-modal-title{ font-size:15px; font-weight:700; color:var(--ink); }
-#mn-tab-os .os-modal-close{
-  background:transparent; border:none; font-size:18px; cursor:pointer;
-  color:var(--ink-soft); line-height:1; padding:2px 6px;
-}
-#mn-tab-os .os-modal-body{ padding:20px; }
-#mn-tab-os .os-modal-grid{
-  display:grid; grid-template-columns:1fr 1fr; gap:14px;
-}
-#mn-tab-os .os-modal-grid .full{ grid-column:1/-1; }
-#mn-tab-os .os-modal-label{
-  display:block; font-size:11px; font-weight:600; color:var(--ink-soft);
-  margin-bottom:4px; text-transform:uppercase; letter-spacing:.04em;
-}
-#mn-tab-os .os-modal-input,
-#mn-tab-os .os-modal-select,
-#mn-tab-os .os-modal-textarea{
-  width:100%; padding:8px 10px; border:1px solid var(--line);
-  border-radius:var(--radius-sm); background:var(--paper);
-  color:var(--ink); font-size:13px; box-sizing:border-box;
-}
-#mn-tab-os .os-modal-textarea{ min-height:72px; resize:vertical; }
-#mn-tab-os .os-modal-actions{
-  display:flex; gap:10px; align-items:center;
-  padding:14px 20px; border-top:1px solid var(--line);
-  position:sticky; bottom:0; background:var(--paper);
-}
-#mn-tab-os .os-modal-save{
-  background:var(--red-dark); color:#fff; border:none;
-  padding:9px 22px; border-radius:var(--radius-sm);
-  font-size:13px; font-weight:600; cursor:pointer;
-}
-#mn-tab-os .os-modal-save:hover{ opacity:.88; }
-#mn-tab-os .os-modal-cancel{
-  background:transparent; color:var(--ink); border:1px solid var(--line);
-  padding:7px 16px; border-radius:var(--radius-sm); font-size:13px; cursor:pointer;
-}
-#mn-tab-os .os-modal-cancel:hover{ background:var(--line); }
-#mn-tab-os .os-modal-msg{ font-size:12px; font-weight:600; }
-#mn-tab-os .os-modal-msg.success{ color:#27AE60; }
-#mn-tab-os .os-modal-msg.error  { color:#C0392B; }
-
-/* ── Responsive ── */
-@media(max-width:720px){
-  #mn-tab-os .os-kanban-board{ flex-direction:column; height:auto; overflow-x:hidden; }
-  #mn-tab-os .os-col{
-    min-width:unset; border-right:none; border-bottom:1px solid var(--line);
-    overflow:visible;
-  }
-  #mn-tab-os .os-col-body{ overflow-y:visible; }
-  #mn-tab-os .os-col:last-child{ border-bottom:none; }
-  #mn-tab-os .os-filter-bar{ padding:8px 12px; }
-  #mn-tab-os .os-kanban-header{ padding:10px 14px; }
-  #mn-tab-os .os-summary-strip{ flex-wrap:wrap; gap:8px; padding:8px 12px; }
-  #mn-tab-os .os-kpi{ min-width:calc(33% - 8px); flex:1 1 calc(33% - 8px); max-width:unset; }
-  #mn-tab-os .os-modal-grid{ grid-template-columns:1fr; }
-  #mn-tab-os .os-modal-grid .full{ grid-column:1; }
-}
 
 
 <style>
@@ -3262,6 +2974,15 @@ body{background:#fff;color:#000}
 #mn-tab-chamados .ch-act.ok{ background:var(--good); }
 #mn-tab-chamados .ch-empty{ text-align:center; font-size:12px; color:var(--ink-soft); padding:20px 8px; }
 #mn-tab-chamados .ch-pecas{ font-size:11.5px; margin-top:4px; }
+#chn-overlay{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9000; align-items:center; justify-content:center; padding:16px; }
+#chn-overlay.open{ display:flex; }
+#chn-modal{ background:#fff; border-radius:var(--radius-md); width:100%; max-width:480px; max-height:92vh; overflow-y:auto; padding:22px 24px; box-shadow:0 8px 40px rgba(0,0,0,.3); }
+#chn-modal h3{ margin:0 0 4px; font-family:var(--font-display); font-size:20px; }
+#chn-modal .ch-sub{ font-size:12px; color:var(--ink-soft); margin-bottom:6px; }
+#chn-modal label{ display:block; font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--ink-soft); margin:12px 0 5px; }
+#chn-modal input[type=text], #chn-modal select, #chn-modal textarea{ width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:var(--radius-sm); font:inherit; font-size:13.5px; background:var(--cream); }
+#chn-modal .ch-err{ color:var(--red); font-size:12.5px; font-weight:600; min-height:18px; margin-top:10px; }
+#chn-modal .ch-foot{ display:flex; gap:10px; justify-content:flex-end; margin-top:14px; }
 #ch-modal-overlay{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9000; align-items:center; justify-content:center; padding:16px; }
 #ch-modal-overlay.open{ display:flex; }
 #ch-modal{ background:#fff; border-radius:var(--radius-md); width:100%; max-width:480px; max-height:92vh; overflow-y:auto; padding:22px 24px; box-shadow:0 8px 40px rgba(0,0,0,.3); }
@@ -4142,8 +3863,7 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
     <!-- Abas do módulo -->
     <div class="setor-tabs" style="border-bottom:2px solid var(--line);margin-bottom:0;">
       <button type="button" class="setor-tab-btn active" data-mntab="relatorio">Relatório</button>
-      <button type="button" class="setor-tab-btn" data-mntab="os">Ordem de Serviço</button>
-      <button type="button" class="setor-tab-btn" data-mntab="chamados">Chamados</button>
+      <button type="button" class="setor-tab-btn" data-mntab="chamados">Ordem de Serviço</button>
     </div>
 
     <!-- ── ABA: RELATÓRIO ── -->
@@ -4227,9 +3947,10 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
     <!-- ── ABA: CHAMADOS (fila aberta pelos líderes no celular) ── -->
     <div id="mn-tab-chamados" style="display:none;">
       <div class="ch-head">
-        <span class="ch-title">Fila de chamados</span>
-        <button type="button" class="ch-btn" id="chBtnMeus" onclick="CH_toggleMeus()">Só meus chamados</button>
+        <span class="ch-title">Ordens de serviço de manutenção</span>
+        <button type="button" class="ch-btn" id="chBtnMeus" onclick="CH_toggleMeus()">Só minhas OS</button>
         <button type="button" class="ch-btn" onclick="CH_load()">↻ Atualizar</button>
+        <button type="button" class="ch-btn on" id="chBtnNova" onclick="CH_novaAbrir()">＋ Abrir OS</button>
       </div>
       <div class="ch-kpis" id="chKpis"></div>
       <div class="ch-board">
@@ -4243,6 +3964,26 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
           <div class="ch-aviso-ico" aria-hidden="true">⚠</div>
           <p id="chAvisoTxt"></p>
           <button type="button" class="ch-btn on" id="chAvisoOk" onclick="CH_fecharAviso()">Entendi</button>
+        </div>
+      </div>
+      <div id="chn-overlay" onclick="if(event.target===this)CH_novaFechar()">
+        <div id="chn-modal" role="dialog" aria-modal="true" aria-labelledby="chnTitulo">
+          <h3 id="chnTitulo">Abrir OS de manutenção</h3>
+          <div class="ch-sub">A data e a hora são registradas automaticamente no envio.</div>
+          <label for="chnSetor">Setor</label>
+          <select id="chnSetor" onchange="CH_novaSetor()"><option value="">Selecione o setor…</option></select>
+          <label for="chnLider">Líder</label>
+          <input type="text" id="chnLider" maxlength="80" autocomplete="off" placeholder="Nome do líder">
+          <label for="chnEquip">Equipamento com problema</label>
+          <select id="chnEquip" onchange="CH_novaEquip()"><option value="">Escolha o setor primeiro</option></select>
+          <input type="text" id="chnEquipOutro" maxlength="120" placeholder="Digite o nome do equipamento" style="display:none;margin-top:8px;">
+          <label for="chnDesc">O que está acontecendo?</label>
+          <textarea id="chnDesc" rows="3" maxlength="1000" placeholder="Descreva o problema"></textarea>
+          <div class="ch-err" id="chnErr" role="alert"></div>
+          <div class="ch-foot">
+            <button type="button" class="ch-btn" onclick="CH_novaFechar()">Cancelar</button>
+            <button type="button" class="ch-btn on" id="chnSalvar" onclick="CH_novaSalvar()">Enviar OS</button>
+          </div>
         </div>
       </div>
       <div id="ch-modal-overlay" onclick="if(event.target===this)CH_fecharModal()">
@@ -4275,215 +4016,6 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
       </div>
     </div>
 
-    <div id="mn-tab-os" style="display:none;">
-
-      <!-- Header -->
-      <div class="os-kanban-header">
-        <span class="os-kanban-title">Ordens de Serviço</span>
-        <button type="button" class="os-new-btn" onclick="OS_openModal(null)">＋ ABRIR NOVA OS</button>
-      </div>
-
-      <!-- Filtros -->
-      <div class="os-filter-bar">
-        <div class="os-search-wrap">
-          <span class="os-search-icon">🔍</span>
-          <input type="text" id="os-fil-busca" class="os-search-input" placeholder="Buscar descrição, equipamento…">
-        </div>
-        <select id="os-fil-setor">
-          <option value="">Todos os locais</option>
-        </select>
-        <select id="os-fil-resp">
-          <option value="">Todos responsáveis</option>
-          <option value="MECÂNICA">Mecânica</option>
-          <option value="ELÉTRICA">Elétrica</option>
-          <option value="HIDRAULICA">Hidráulica</option>
-          <option value="OPERADORES">Operadores</option>
-          <option value="ADM">ADM</option>
-          <option value="TERCEIROS">Terceiros</option>
-        </select>
-        <select id="os-fil-prio">
-          <option value="">Todas prioridades</option>
-          <option value="critica">Urgente / Crítica</option>
-          <option value="alta">Alta</option>
-          <option value="media">Média</option>
-          <option value="baixa">Baixa</option>
-        </select>
-        <select id="os-fil-tipo">
-          <option value="">Corretiva + Preventiva</option>
-          <option value="corretiva">Corretiva</option>
-          <option value="preventiva">Preventiva</option>
-        </select>
-        <input type="text" id="os-fil-equip" placeholder="Equipamento…" style="padding:6px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--paper);color:var(--ink);font-size:12px;max-width:140px;">
-        <button type="button" id="os-btn-clear" class="os-btn-clear" onclick="OS_clearFilters()">✕ Limpar</button>
-      </div>
-
-      <!-- Summary strip -->
-      <div class="os-summary-strip" id="os-summary-strip">
-        <div class="os-kpi">
-          <div class="os-kpi-header"><span class="os-kpi-title">Total OS</span></div>
-          <div class="os-kpi-num" id="os-kpi-total">—</div>
-          <div class="os-kpi-sub">Todas as ordens</div>
-        </div>
-        <div class="os-kpi">
-          <div class="os-kpi-header"><span class="os-kpi-title">Não iniciadas</span></div>
-          <div class="os-kpi-num" id="os-kpi-aberta">—</div>
-          <div class="os-kpi-sub">Aguardando início</div>
-        </div>
-        <div class="os-kpi">
-          <div class="os-kpi-header"><span class="os-kpi-title">Em andamento</span></div>
-          <div class="os-kpi-num" id="os-kpi-andamento">—</div>
-          <div class="os-kpi-sub">Em execução</div>
-        </div>
-        <div class="os-kpi">
-          <div class="os-kpi-header"><span class="os-kpi-dot green"></span><span class="os-kpi-title">Concluídas</span></div>
-          <div class="os-kpi-num green" id="os-kpi-concluida">—</div>
-          <div class="os-kpi-sub">Finalizadas</div>
-        </div>
-        <div class="os-kpi">
-          <div class="os-kpi-header"><span class="os-kpi-dot red"></span><span class="os-kpi-title">Atrasadas</span></div>
-          <div class="os-kpi-num red" id="os-kpi-atrasadas">—</div>
-          <div class="os-kpi-sub">Prazo vencido</div>
-        </div>
-        <div class="os-kpi">
-          <div class="os-kpi-header"><span class="os-kpi-dot orange"></span><span class="os-kpi-title">Alta prioridade</span></div>
-          <div class="os-kpi-num orange" id="os-kpi-altaprio">—</div>
-          <div class="os-kpi-sub">Urgente + Alta</div>
-        </div>
-      </div>
-
-      <!-- Kanban board -->
-      <div class="os-kanban-board">
-
-        <div class="os-col"
-             ondragover="OS_onDragOver(event,'aberta')"
-             ondragleave="OS_onDragLeave(event)"
-             ondrop="OS_onDrop(event,'aberta')">
-          <div class="os-col-header os-col-header-aberta">
-            Não iniciadas <span class="os-col-count" id="os-cnt-aberta">0</span>
-          </div>
-          <div class="os-col-body" id="os-body-aberta"></div>
-        </div>
-
-        <div class="os-col"
-             ondragover="OS_onDragOver(event,'em_andamento')"
-             ondragleave="OS_onDragLeave(event)"
-             ondrop="OS_onDrop(event,'em_andamento')">
-          <div class="os-col-header os-col-header-em_andamento">
-            Em andamento <span class="os-col-count" id="os-cnt-em_andamento">0</span>
-          </div>
-          <div class="os-col-body" id="os-body-em_andamento"></div>
-        </div>
-
-        <div class="os-col"
-             ondragover="OS_onDragOver(event,'concluida')"
-             ondragleave="OS_onDragLeave(event)"
-             ondrop="OS_onDrop(event,'concluida')">
-          <div class="os-col-header os-col-header-concluida">
-            Concluídas <span class="os-col-count" id="os-cnt-concluida">0</span>
-          </div>
-          <div class="os-col-body" id="os-body-concluida"></div>
-        </div>
-
-      </div>
-
-      <!-- Modal nova / edição -->
-      <div id="os-modal-overlay" onclick="OS_overlayClick(event)">
-        <div id="os-modal">
-          <div class="os-modal-header">
-            <span class="os-modal-title" id="os-modal-title">Nova Ordem de Serviço</span>
-            <button type="button" class="os-modal-close" onclick="OS_closeModal()">✕</button>
-          </div>
-          <div class="os-modal-body">
-            <div class="os-modal-grid">
-              <div>
-                <label class="os-modal-label">Tipo *</label>
-                <select id="osm-tipo" class="os-modal-select">
-                  <option value="">Selecione…</option>
-                  <option value="corretiva">Corretiva</option>
-                  <option value="preventiva">Preventiva</option>
-                </select>
-              </div>
-              <div>
-                <label class="os-modal-label">Prioridade</label>
-                <select id="osm-prio" class="os-modal-select">
-                  <option value="baixa">Baixa</option>
-                  <option value="media" selected>Média</option>
-                  <option value="alta">Alta</option>
-                  <option value="critica">🔺 Urgente / Crítica</option>
-                </select>
-              </div>
-              <div>
-                <label class="os-modal-label">Local / Setor</label>
-                <select id="osm-setor" class="os-modal-select">
-                  <option value="">— nenhum —</option>
-                  <option value="SALA/MAQ">SALA/MAQ</option>
-                  <option value="CÂMARA 01">CÂMARA 01</option>
-                  <option value="CÂMARA 02">CÂMARA 02</option>
-                  <option value="MESANINO">MESANINO</option>
-                  <option value="PRODUÇÃO">PRODUÇÃO</option>
-                  <option value="EXPEDIÇÃO">EXPEDIÇÃO</option>
-                  <option value="GIROS/CÂM.">GIROS/CÂM.</option>
-                  <option value="GERAL">GERAL</option>
-                  <option value="SADEMA">SADEMA</option>
-                  <optgroup id="osmSetorGrupo" label="Setores"></optgroup>
-                </select>
-              </div>
-              <div>
-                <label class="os-modal-label">Máquina / Equipamento</label>
-                <input type="text" id="osm-maquina" class="os-modal-input" placeholder="Ex: Compressor 03">
-              </div>
-              <div class="full">
-                <label class="os-modal-label">Descrição do problema / serviço *</label>
-                <textarea id="osm-descricao" class="os-modal-textarea" placeholder="Descreva o que precisa ser feito…"></textarea>
-              </div>
-              <div class="full">
-                <label class="os-modal-label">Justificativa / motivo</label>
-                <textarea id="osm-justificativa" class="os-modal-textarea" placeholder="Por que este serviço é necessário?"></textarea>
-              </div>
-              <div>
-                <label class="os-modal-label">Responsável pela execução</label>
-                <select id="osm-resp" class="os-modal-select">
-                  <option value="">— não definido —</option>
-                  <option value="MECÂNICA">MECÂNICA</option>
-                  <option value="ELÉTRICA">ELÉTRICA</option>
-                  <option value="HIDRAULICA">HIDRÁULICA</option>
-                  <option value="OPERADORES">OPERADORES</option>
-                  <option value="ADM">ADM</option>
-                  <option value="TERCEIROS">TERCEIROS</option>
-                </select>
-              </div>
-              <div>
-                <label class="os-modal-label">Prazo planejado</label>
-                <input type="date" id="osm-prazo" class="os-modal-input">
-              </div>
-              <div>
-                <label class="os-modal-label">Status</label>
-                <select id="osm-status" class="os-modal-select">
-                  <option value="aberta">Não iniciado</option>
-                  <option value="em_andamento">Em andamento</option>
-                  <option value="concluida">Concluída</option>
-                  <option value="cancelada">Cancelada</option>
-                </select>
-              </div>
-              <div>
-                <label class="os-modal-label">Custo estimado (R$)</label>
-                <input type="number" id="osm-custo" class="os-modal-input" placeholder="0,00" min="0" step="0.01">
-              </div>
-              <div class="full">
-                <label class="os-modal-label">Observações</label>
-                <textarea id="osm-obs" class="os-modal-textarea" placeholder="Informações adicionais…"></textarea>
-              </div>
-            </div>
-          </div>
-          <div class="os-modal-actions">
-            <button type="button" class="os-modal-save" onclick="OS_saveModal()">Salvar</button>
-            <button type="button" class="os-modal-cancel" onclick="OS_closeModal()">Cancelar</button>
-            <span class="os-modal-msg" id="osm-msg"></span>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- /mn-tab-os -->
 
   </div> <!-- /page-manutencao -->
 
@@ -6577,8 +6109,8 @@ const BK_PERFIS = {
                 resumo:'Acesso total: edita, exclui e gerencia usuários.' },
   gestao:     { rotulo:'Gerência / Diretoria',  modulos:'*', exceto:['absenteismo'], editar:false,                     excluir:false, admin:false,
                 resumo:'Visualiza todos os módulos, sem editar nada. Não vê o Usuário Admin nem o Controle de Absenteísmo (este só com liberação individual).' },
-  lider:      { rotulo:'Líder',                 modulos:[],                 editar:['chamados_manutencao'],    excluir:false, admin:false,
-                resumo:'Usa só o app de chamados no celular (abre chamados e acompanha os seus). Não acessa o BK360.' },
+  lider:      { rotulo:'Líder',                 modulos:['manutencao'],      editar:['chamados_manutencao'],    excluir:false, admin:false,
+                resumo:'Só a aba Ordem de Serviço em Manutenções: abre OS e acompanha a fila. Não atende nem finaliza.' },
   mecanico:   { rotulo:'Mecânico',              modulos:['manutencao'],      editar:['chamados_manutencao'],    excluir:false, admin:false,
                 resumo:'Só o módulo Manutenções: atende a fila de chamados (inicia e finaliza), não exclui.' },
   conferente: { rotulo:'Conferente',            modulos:['rastreamento'],    editar:['rastreamento_carrinhos'], excluir:false, admin:false,
@@ -6591,7 +6123,7 @@ const BK_MODULOS = [
   { id:'industrial',              rotulo:'Relatório Industrial',     tabelas:[] },
   { id:'produtividade-processos', rotulo:'Produtividade & Processos', tabelas:['produtividade_corridas','produtividade_paradas','produtividade_tempos_massa','tempo_processo_bateladas','tempo_processo_etapas','pp_etapas_referencia'] },
   { id:'rascunho',                rotulo:'Máquinas',                  tabelas:['maquinas','produtos_producao'] },
-  { id:'manutencao',              rotulo:'Manutenções',               tabelas:['chamados_manutencao','manutencoes','ordens_servico','maquinas'] },
+  { id:'manutencao',              rotulo:'Manutenções',               tabelas:['chamados_manutencao','manutencoes','maquinas'] },
   { id:'estoque',                 rotulo:'Almoxarifado',              tabelas:['estoque_contagens','estoque_entradas','estoque_minimos','estoque_requisicoes','estoque_catalogo_insumos'] },
   { id:'pcp-estoque',             rotulo:'Estoque (PCP)',             tabelas:['pcp_cache','estoque_historico','ordens_producao','ordens_producao_itens','vendas_semanais','produtos_producao','familias','produtos'] },
   { id:'melhoria',                rotulo:'Melhoria Contínua',         tabelas:['melhoria_continua','pp_etapas_referencia'] },
@@ -10700,13 +10232,10 @@ document.querySelectorAll('[data-mntab]').forEach(btn => {
     document.querySelectorAll('[data-mntab]').forEach(b => b.classList.remove('active'));
     this.classList.add('active');
     document.getElementById('mn-tab-relatorio').style.display = tab === 'relatorio' ? '' : 'none';
-    document.getElementById('mn-tab-os').style.display       = tab === 'os'        ? '' : 'none';
     document.getElementById('mn-tab-chamados').style.display = tab === 'chamados'  ? '' : 'none';
     const subtitle = document.getElementById('mnSubtitle');
     if(tab === 'relatorio') subtitle.textContent = 'Chamados, intervenções, tempo de reparo e recorrência por máquina e especialidade';
-    if(tab === 'os')        subtitle.textContent = 'Gestão de ordens de serviço corretivas e preventivas';
-    if(tab === 'chamados')  subtitle.textContent = 'Fila de chamados abertos pelos líderes: tempo de espera e tempo de execução';
-    if(tab === 'os')        OS_init();
+    if(tab === 'chamados')  subtitle.textContent = 'Ordens de serviço de manutenção abertas pelos líderes: tempo de espera e tempo de execução';
     if(tab === 'chamados')  CH_init();
   });
 });
@@ -10826,9 +10355,12 @@ function CH_render(){
   document.getElementById('chColOk').innerHTML = ok.length ? ok.map(CH_cardOk).join('') : '<div class="ch-empty">Nenhum chamado concluído no período.</div>';
 }
 
+// Líder só abre e acompanha; atender e finalizar é do mecânico (e de quem tem acesso total)
+function CH_podeAtender(){ return BK_AUTH.nivel !== 'lider'; }
+
 function CH_cardBase(r){
   return `<div class="ch-top"><span class="ch-equip">${CH_esc(r.equipamento)}</span><span class="ch-num">#${String(r.numero).padStart(4,'0')}</span></div>
-    <div class="ch-meta">${CH_esc(r.setor)} · líder ${CH_esc(r.lider)}<br>Chamado em ${CH_fmtDataHora(CH_tChamado(r))}</div>
+    <div class="ch-meta">${CH_esc(r.setor)} · líder ${CH_esc(r.lider)}<br>OS aberta em ${CH_fmtDataHora(CH_tChamado(r))}</div>
     <div class="ch-desc">${CH_esc(r.descricao)}</div>`;
 }
 function CH_cardAberto(r){
@@ -10836,7 +10368,7 @@ function CH_cardAberto(r){
   const atrasado = espera > 60*60000; // mais de 1 h esperando
   return `<div class="ch-card${atrasado ? ' late' : ''}">${CH_cardBase(r)}
     <div class="ch-times"><span class="ch-timer wait">⏱ Aguardando ${CH_fmtDur(espera)}</span></div>
-    <button type="button" class="ch-act" onclick="CH_iniciar('${r.id}')">▶ Iniciar atendimento</button></div>`;
+    ${CH_podeAtender() ? `<button type="button" class="ch-act" onclick="CH_iniciar('${r.id}')">▶ Iniciar atendimento</button>` : ''}</div>`;
 }
 function CH_cardExec(r){
   const meu = r.mecanico_email && r.mecanico_email === CH_usuario().email;
@@ -10847,7 +10379,7 @@ function CH_cardExec(r){
       <span class="ch-timer done">Espera ${CH_fmtDur(CH_espera(r))}</span>
       <span class="ch-timer run">🔧 Em execução ${CH_fmtDur(desde ? Date.now() - desde : null)}</span>
     </div>
-    <button type="button" class="ch-act ok" onclick="CH_abrirFinalizar('${r.id}')">✓ Finalizar chamado</button></div>`;
+    ${CH_podeAtender() ? `<button type="button" class="ch-act ok" onclick="CH_abrirFinalizar('${r.id}')">✓ Finalizar OS</button>` : ''}</div>`;
 }
 function CH_cardOk(r){
   const pecas = Array.isArray(r.pecas) ? r.pecas : [];
@@ -10905,6 +10437,70 @@ function CH_fecharAviso(){
   document.getElementById('ch-aviso-overlay').classList.remove('open');
   if(CH_avisoFoco){ const el = document.getElementById(CH_avisoFoco); if(el) el.focus(); }
 }
+// ── Abrir OS (líder ou qualquer usuário com edição em Manutenções) ──
+let CH_setores = [], CH_maquinas = [];
+const CH_OUTRO = '__outro__';
+const CH_norm = t => (t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();
+async function CH_novaAbrir(){
+  if(!BK_podeGravar('insert','chamados_manutencao')){ CH_aviso('Seu acesso não permite abrir OS.'); return; }
+  const ov = document.getElementById('chn-overlay');
+  document.getElementById('chnErr').textContent = '';
+  document.getElementById('chnDesc').value = '';
+  document.getElementById('chnLider').value = document.getElementById('chnLider').value || CH_usuario().nome || '';
+  ov.classList.add('open');
+  if(!CH_setores.length){
+    const client = getSupabaseClient();
+    const [s, m] = await Promise.all([
+      client.from('setores').select('nome, lider').order('nome'),
+      client.from('maquinas').select('identificacao, setor').order('identificacao')
+    ]);
+    CH_setores = s.data || []; CH_maquinas = m.data || [];
+    document.getElementById('chnSetor').innerHTML = '<option value="">Selecione o setor…</option>' +
+      CH_setores.map(x => `<option value="${CH_esc(x.nome)}">${CH_esc(x.nome)}</option>`).join('');
+  }
+}
+function CH_novaFechar(){ document.getElementById('chn-overlay').classList.remove('open'); }
+function CH_novaSetor(){
+  const nome = document.getElementById('chnSetor').value;
+  const sel = document.getElementById('chnEquip');
+  if(!nome){ sel.innerHTML = '<option value="">Escolha o setor primeiro</option>'; }
+  else{
+    sel.innerHTML = '<option value="">Selecione o equipamento…</option>' +
+      CH_maquinas.filter(x => CH_norm(x.setor) === CH_norm(nome)).map(x => `<option value="${CH_esc(x.identificacao)}">${CH_esc(x.identificacao)}</option>`).join('') +
+      `<option value="${CH_OUTRO}">Outro / não está na lista</option>`;
+  }
+  document.getElementById('chnEquipOutro').style.display = 'none';
+  document.getElementById('chnEquipOutro').value = '';
+}
+function CH_novaEquip(){
+  const outro = document.getElementById('chnEquip').value === CH_OUTRO;
+  const el = document.getElementById('chnEquipOutro');
+  el.style.display = outro ? '' : 'none';
+  if(outro) el.focus();
+}
+async function CH_novaSalvar(){
+  const err = t => { document.getElementById('chnErr').textContent = t; };
+  const setor = document.getElementById('chnSetor').value;
+  const lider = document.getElementById('chnLider').value.trim();
+  const eq = document.getElementById('chnEquip').value;
+  const equipamento = (eq === CH_OUTRO ? document.getElementById('chnEquipOutro').value : eq).trim();
+  const descricao = document.getElementById('chnDesc').value.trim();
+  if(!setor) return err('Escolha o setor.');
+  if(!lider) return err('Informe o nome do líder.');
+  if(!equipamento) return err('Informe o equipamento com problema.');
+  if(descricao.length < 3) return err('Descreva o problema.');
+  const btn = document.getElementById('chnSalvar'); btn.disabled = true; btn.textContent = 'Enviando…';
+  try{
+    // data/hora: o servidor grava no instante do envio
+    const { error } = await getSupabaseClient().from('chamados_manutencao')
+      .insert({ setor, lider, equipamento, descricao, criado_por: CH_usuario().email || null });
+    if(error) throw error;
+    CH_novaFechar();
+    await CH_load();
+  }catch(e){ console.warn('CH_novaSalvar error:', e); err('Não foi possível enviar. Tente de novo em instantes.'); }
+  finally{ btn.disabled = false; btn.textContent = 'Enviar OS'; }
+}
+
 function CH_fecharModal(){ document.getElementById('ch-modal-overlay').classList.remove('open'); CH_finalizarId = null; }
 
 function CH_pecasToggle(){
@@ -10970,470 +10566,6 @@ async function CH_finalizar(){
   finally{ btn.disabled = false; }
 }
 
-// ─────────────────────────────────────────────
-// ORDENS DE SERVIÇO (OS) — Kanban dentro de Manutenções
-// ─────────────────────────────────────────────
-
-let OS_ALL         = [];
-let OS_loadedOnce  = false;
-let OS_draggingId  = null;
-let OS_didDrag     = false;
-let OS_modalMode   = 'new'; // 'new' | 'edit'
-let OS_editId      = null;
-
-const OS_PRIO_ORDER = { critica:0, alta:1, media:2, baixa:3 };
-
-async function OS_init(){
-  if(OS_loadedOnce){ OS_renderKanban(); return; }
-  OS_loadedOnce = true;
-  ['aberta','em_andamento','concluida'].forEach(function(col){
-    const el = document.getElementById('os-body-' + col);
-    if(el) el.innerHTML = '<div class="os-col-empty">Carregando…</div>';
-  });
-  try {
-    const client = getSupabaseClient();
-    const { data, error } = await client
-      .from('ordens_servico')
-      .select('*')
-      .order('data_abertura', { ascending: true });
-    if(error) throw error;
-    OS_ALL = data || [];
-    OS_populateSetorFilter();
-    OS_renderKanban();
-  } catch(e) {
-    ['aberta','em_andamento','concluida'].forEach(function(col){
-      const el = document.getElementById('os-body-' + col);
-      if(el) el.innerHTML = '<div class="os-col-empty" style="color:#C0392B;">Erro ao carregar.</div>';
-    });
-    OS_loadedOnce = false;
-  }
-}
-
-function OS_populateSetorFilter(){
-  const setores = [...new Set(OS_ALL.map(function(r){ return r.setor; }).filter(Boolean))].sort();
-  const sel = document.getElementById('os-fil-setor');
-  if(!sel) return;
-  sel.innerHTML = '<option value="">Todos os locais</option>' +
-    setores.map(function(s){ return '<option value="' + s + '">' + s + '</option>'; }).join('');
-}
-
-function OS_getFilters(){
-  return {
-    setor: document.getElementById('os-fil-setor')  ? document.getElementById('os-fil-setor').value  : '',
-    equip: document.getElementById('os-fil-equip')  ? (document.getElementById('os-fil-equip').value  || '').toLowerCase().trim() : '',
-    resp:  document.getElementById('os-fil-resp')   ? document.getElementById('os-fil-resp').value   : '',
-    prio:  document.getElementById('os-fil-prio')   ? document.getElementById('os-fil-prio').value   : '',
-    tipo:  document.getElementById('os-fil-tipo')   ? document.getElementById('os-fil-tipo').value   : '',
-    busca: document.getElementById('os-fil-busca')  ? (document.getElementById('os-fil-busca').value  || '').toLowerCase().trim() : ''
-  };
-}
-
-function OS_matchFilter(r, f){
-  if(f.setor && r.setor        !== f.setor) return false;
-  if(f.resp  && r.responsavel  !== f.resp)  return false;
-  if(f.prio  && r.prioridade   !== f.prio)  return false;
-  if(f.tipo  && r.tipo         !== f.tipo)  return false;
-  if(f.equip && !(r.maquina||'').toLowerCase().includes(f.equip)) return false;
-  if(f.busca && !((r.descricao||'').toLowerCase().includes(f.busca) ||
-                  (r.maquina  ||'').toLowerCase().includes(f.busca))) return false;
-  return true;
-}
-
-function OS_hasActiveFilter(){
-  const f = OS_getFilters();
-  return !!(f.setor || f.equip || f.resp || f.prio || f.tipo || f.busca);
-}
-
-function OS_updateClearBtn(){
-  const btn = document.getElementById('os-btn-clear');
-  if(!btn) return;
-  if(OS_hasActiveFilter()){
-    btn.classList.add('visible');
-  } else {
-    btn.classList.remove('visible');
-  }
-}
-
-function OS_clearFilters(){
-  ['os-fil-setor','os-fil-resp','os-fil-prio','os-fil-tipo'].forEach(function(id){
-    const el = document.getElementById(id); if(el) el.value = '';
-  });
-  ['os-fil-equip','os-fil-busca'].forEach(function(id){
-    const el = document.getElementById(id); if(el) el.value = '';
-  });
-  OS_renderKanban();
-}
-
-// Calcula quantos dias uma OS está atrasada
-function OS_diasAtraso(r){
-  if(!r.prazo_planejado) return 0;
-  const today = new Date(); today.setHours(0,0,0,0);
-  const d = new Date(r.prazo_planejado + 'T00:00:00');
-  const diff = Math.floor((today - d) / 86400000);
-  return diff > 0 ? diff : 0;
-}
-
-function OS_isAtrasada(r){
-  if(!r.prazo_planejado) return false;
-  if(r.status === 'concluida' || r.status === 'cancelada') return false;
-  return OS_diasAtraso(r) > 0;
-}
-
-function OS_colStatuses(colKey){
-  if(colKey === 'aberta')       return ['aberta'];
-  if(colKey === 'em_andamento') return ['em_andamento'];
-  if(colKey === 'concluida')    return ['concluida', 'cancelada'];
-  return [];
-}
-
-function OS_sortCards(list){
-  // Ordem: 1º atrasadas (mais antigas primeiro), 2º data abertura ASC, 3º prioridade
-  return list.slice().sort(function(a, b){
-    const aAt = OS_isAtrasada(a) ? 1 : 0;
-    const bAt = OS_isAtrasada(b) ? 1 : 0;
-    if(aAt !== bAt) return bAt - aAt; // atrasadas primeiro
-    const da = a.data_abertura || '';
-    const db = b.data_abertura || '';
-    if(da < db) return -1;
-    if(da > db) return  1;
-    return (OS_PRIO_ORDER[a.prioridade] || 2) - (OS_PRIO_ORDER[b.prioridade] || 2);
-  });
-}
-
-function OS_updateSummary(allFiltered){
-  const total    = OS_ALL.length;
-  const abertas  = OS_ALL.filter(function(r){ return r.status === 'aberta'; }).length;
-  const andamento= OS_ALL.filter(function(r){ return r.status === 'em_andamento'; }).length;
-  const conc     = OS_ALL.filter(function(r){ return r.status === 'concluida' || r.status === 'cancelada'; }).length;
-  const atrasadas= OS_ALL.filter(function(r){ return OS_isAtrasada(r); }).length;
-  const altaPrio = OS_ALL.filter(function(r){
-    return (r.prioridade === 'alta' || r.prioridade === 'critica') &&
-           r.status !== 'concluida' && r.status !== 'cancelada';
-  }).length;
-
-  function set(id, val){ const el = document.getElementById(id); if(el) el.textContent = val; }
-  set('os-kpi-total',    total);
-  set('os-kpi-aberta',   abertas);
-  set('os-kpi-andamento',andamento);
-  set('os-kpi-concluida',conc);
-  set('os-kpi-atrasadas',atrasadas);
-  set('os-kpi-altaprio', altaPrio);
-}
-
-function OS_renderKanban(){
-  const f = OS_getFilters();
-  const emptyMsgs = {
-    aberta:       '<strong>Tudo em andamento!</strong>Nenhuma OS aguardando início.',
-    em_andamento: '<strong>Sem OS em andamento.</strong>Arraste um card para cá para iniciar.',
-    concluida:    '<strong>Nenhuma OS concluída.</strong>OS finalizadas aparecerão aqui.'
-  };
-
-  ['aberta', 'em_andamento', 'concluida'].forEach(function(col){
-    const statuses = OS_colStatuses(col);
-    const items    = OS_ALL.filter(function(r){
-      return statuses.includes(r.status) && OS_matchFilter(r, f);
-    });
-    const sorted = OS_sortCards(items);
-    const cntEl  = document.getElementById('os-cnt-' + col);
-    const body   = document.getElementById('os-body-' + col);
-    if(cntEl) cntEl.textContent = sorted.length;
-    if(!body) return;
-    if(!sorted.length){
-      body.innerHTML = '<div class="os-col-empty">' + (emptyMsgs[col] || 'Nenhuma OS.') + '</div>';
-      return;
-    }
-    body.innerHTML = sorted.map(OS_buildCard).join('');
-    body.querySelectorAll('.os-card').forEach(function(card){
-      card.addEventListener('dragstart', OS_onDragStart);
-      card.addEventListener('dragend',   OS_onDragEnd);
-      card.addEventListener('click',     OS_onCardClick);
-    });
-  });
-
-  OS_updateSummary();
-  OS_updateClearBtn();
-}
-
-function OS_buildCard(r){
-  const num        = '#' + String(r.numero || '').padStart(4, '0');
-  const prio       = r.prioridade || 'media';
-  const prioLabels = { critica:'URGENTE', alta:'Alta', media:'Média', baixa:'Baixa' };
-  const prioLabel  = prioLabels[prio] || prio;
-  const tipo       = r.tipo || 'preventiva';
-  const tipoLabel  = tipo === 'corretiva' ? 'Corretiva' : 'Preventiva';
-  const atrasada   = OS_isAtrasada(r);
-  const dias       = atrasada ? OS_diasAtraso(r) : 0;
-  const desc       = (r.descricao || '').slice(0, 130);
-  const equip      = r.maquina ? '🔧 ' + r.maquina : '';
-  const setor      = r.setor   ? '📍 ' + r.setor   : '';
-  const resp       = r.responsavel ? '👤 ' + r.responsavel : '';
-  const p          = (r.data_abertura || '').split('-');
-  const dataStr    = p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0].slice(2) : '';
-  const meta       = [equip, setor].filter(Boolean).join('  ');
-  const atrasadaClass = atrasada ? ' os-card-atrasada' : '';
-
-  return '<div class="os-card os-card-prio-' + prio + atrasadaClass + '" draggable="true" data-id="' + r.id + '">' +
-    '<div class="os-card-top">' +
-      '<span class="os-prio-tag os-prio-tag-' + prio + '">' + prioLabel + '</span>' +
-      '<span class="os-tipo-tag os-tipo-tag-' + tipo + '">' + tipoLabel + '</span>' +
-      (atrasada ? '<span class="os-badge-atrasada">⚠ ATRASADA · ' + dias + ' d</span>' : '') +
-      '<span class="os-card-num">' + num + '</span>' +
-    '</div>' +
-    '<div class="os-card-desc">' + desc + '</div>' +
-    (meta ? '<div class="os-card-meta">' + meta + '</div>' : '') +
-    '<div class="os-card-footer">' +
-      '<span>' + dataStr + '</span>' +
-      '<span>' + resp + '</span>' +
-    '</div>' +
-  '</div>';
-}
-
-function OS_onDragStart(e){
-  OS_didDrag    = true;
-  OS_draggingId = e.currentTarget.dataset.id;
-  e.currentTarget.classList.add('dragging');
-  e.dataTransfer.effectAllowed = 'move';
-}
-
-function OS_onDragEnd(e){
-  e.currentTarget.classList.remove('dragging');
-  setTimeout(function(){ OS_didDrag = false; }, 0);
-}
-
-function OS_onDragOver(e, col){
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  const body = document.getElementById('os-body-' + col);
-  if(body) body.classList.add('drag-over');
-}
-
-function OS_onDragLeave(e){
-  const body = e.currentTarget.querySelector('.os-col-body');
-  if(body) body.classList.remove('drag-over');
-}
-
-function OS_onDrop(e, col){
-  e.preventDefault();
-  const body = document.getElementById('os-body-' + col);
-  if(body) body.classList.remove('drag-over');
-  if(!OS_draggingId) return;
-
-  const record    = OS_ALL.find(function(r){ return r.id === OS_draggingId; });
-  const draggedId = OS_draggingId;
-  OS_draggingId   = null;
-  if(!record) return;
-
-  const statusMap = { aberta:'aberta', em_andamento:'em_andamento', concluida:'concluida' };
-  const newStatus = statusMap[col];
-  if(!newStatus || record.status === newStatus) return;
-
-  // Confirmação antes de marcar como concluída
-  if(newStatus === 'concluida'){
-    const num = '#' + String(record.numero || '').padStart(4, '0');
-    if(!confirm('Marcar OS ' + num + ' como Concluída?\n\nEsta ação registra a data de conclusão e move o card para a coluna Concluídas.')){
-      return;
-    }
-  }
-
-  OS_updateStatus(draggedId, newStatus);
-}
-
-async function OS_updateStatus(id, newStatus){
-  const update = { status: newStatus };
-  if(newStatus === 'concluida'){
-    update.data_conclusao = new Date().toISOString().split('T')[0];
-  }
-  try {
-    const client = getSupabaseClient();
-    const { error } = await client.from('ordens_servico').update(update).eq('id', id);
-    if(error) throw error;
-    const idx = OS_ALL.findIndex(function(r){ return r.id === id; });
-    if(idx !== -1) Object.assign(OS_ALL[idx], update);
-    OS_renderKanban();
-  } catch(e) {
-    alert('Erro ao mover OS: ' + e.message);
-  }
-}
-
-function OS_onCardClick(e){
-  if(OS_didDrag) return;
-  const id = e.currentTarget.dataset.id;
-  OS_openModal(id);
-}
-
-/* Preenche o grupo "Setores" do select Local/Setor a partir do cadastro (tabela setores).
-   Valor legado gravado na OS continua disponível ao editar. */
-async function OS_syncSetorOptions(valorAtual){
-  const sel = document.getElementById('osm-setor');
-  const grupo = document.getElementById('osmSetorGrupo');
-  if(!sel || !grupo) return;
-  if(!ST_CACHE.length) await ST_fetchNomes();
-  const nomes = [...ST_CACHE];
-  const jaExiste = v => nomes.includes(v) || Array.from(sel.options).some(o => o.value === v && o.parentNode !== grupo);
-  if(valorAtual && !jaExiste(valorAtual)) nomes.push(valorAtual);
-  grupo.innerHTML = nomes.map(n => `<option value="${n}">${n}</option>`).join('');
-  if(valorAtual) sel.value = valorAtual;
-}
-
-function OS_openModal(id){
-  OS_resetModalForm();
-  OS_syncSetorOptions(id ? ((OS_ALL.find(function(x){ return x.id === id; })||{}).setor || '') : '');
-  const overlay = document.getElementById('os-modal-overlay');
-  const titleEl = document.getElementById('os-modal-title');
-  const msgEl   = document.getElementById('osm-msg');
-  if(!overlay || !titleEl || !msgEl) return;
-  msgEl.textContent = '';
-  msgEl.className   = 'os-modal-msg';
-
-  if(id){
-    const r = OS_ALL.find(function(x){ return x.id === id; });
-    if(!r) return;
-    OS_modalMode = 'edit';
-    OS_editId    = id;
-    titleEl.textContent = 'OS #' + String(r.numero || '').padStart(4, '0');
-    document.getElementById('osm-tipo').value          = r.tipo          || '';
-    document.getElementById('osm-prio').value          = r.prioridade    || 'media';
-    document.getElementById('osm-setor').value         = r.setor         || '';
-    document.getElementById('osm-maquina').value       = r.maquina       || '';
-    document.getElementById('osm-descricao').value     = r.descricao     || '';
-    document.getElementById('osm-justificativa').value = r.justificativa || '';
-    document.getElementById('osm-resp').value          = r.responsavel   || '';
-    document.getElementById('osm-prazo').value         = r.prazo_planejado || '';
-    document.getElementById('osm-status').value        = r.status        || 'aberta';
-    document.getElementById('osm-custo').value         = r.custo_estimado != null ? r.custo_estimado : '';
-    document.getElementById('osm-obs').value           = r.observacoes   || '';
-  } else {
-    OS_modalMode = 'new';
-    OS_editId    = null;
-    titleEl.textContent = 'Nova Ordem de Serviço';
-  }
-  overlay.classList.add('open');
-}
-
-function OS_closeModal(){
-  const overlay = document.getElementById('os-modal-overlay');
-  if(overlay) overlay.classList.remove('open');
-  OS_editId    = null;
-  OS_modalMode = 'new';
-}
-
-function OS_overlayClick(e){
-  if(e.target === document.getElementById('os-modal-overlay')) OS_closeModal();
-}
-
-function OS_resetModalForm(){
-  ['osm-tipo','osm-setor','osm-maquina','osm-descricao','osm-justificativa',
-   'osm-resp','osm-prazo','osm-custo','osm-obs'].forEach(function(id){
-    const el = document.getElementById(id);
-    if(el) el.value = '';
-  });
-  const prio   = document.getElementById('osm-prio');   if(prio)   prio.value   = 'media';
-  const status = document.getElementById('osm-status'); if(status) status.value = 'aberta';
-}
-
-async function OS_saveModal(){
-  const tipo      = document.getElementById('osm-tipo').value;
-  const descricao = document.getElementById('osm-descricao').value.trim();
-  const msgEl     = document.getElementById('osm-msg');
-  msgEl.textContent = '';
-  msgEl.className   = 'os-modal-msg';
-
-  if(!tipo){
-    msgEl.textContent = 'Selecione o tipo de OS.';
-    msgEl.classList.add('error');
-    return;
-  }
-  if(!descricao){
-    msgEl.textContent = 'Descrição é obrigatória.';
-    msgEl.classList.add('error');
-    return;
-  }
-
-  const newStatus = document.getElementById('osm-status').value || 'aberta';
-  const payload = {
-    tipo,
-    prioridade:      document.getElementById('osm-prio').value          || 'media',
-    setor:           document.getElementById('osm-setor').value          || null,
-    maquina:         document.getElementById('osm-maquina').value.trim() || null,
-    descricao,
-    justificativa:   document.getElementById('osm-justificativa').value.trim() || null,
-    responsavel:     document.getElementById('osm-resp').value            || null,
-    prazo_planejado: document.getElementById('osm-prazo').value            || null,
-    status:          newStatus,
-    custo_estimado:  parseFloat(document.getElementById('osm-custo').value) || null,
-    observacoes:     document.getElementById('osm-obs').value.trim()       || null
-  };
-
-  // Auto-set data_conclusao when marking concluida on edit
-  if(newStatus === 'concluida' && OS_modalMode === 'edit'){
-    const orig = OS_ALL.find(function(r){ return r.id === OS_editId; });
-    if(orig && orig.status !== 'concluida'){
-      payload.data_conclusao = new Date().toISOString().split('T')[0];
-    }
-  }
-
-  msgEl.textContent = 'Salvando…';
-
-  try {
-    const client = getSupabaseClient();
-
-    if(OS_modalMode === 'edit'){
-      const { error } = await client.from('ordens_servico').update(payload).eq('id', OS_editId);
-      if(error) throw error;
-      const idx = OS_ALL.findIndex(function(r){ return r.id === OS_editId; });
-      if(idx !== -1) Object.assign(OS_ALL[idx], payload);
-      msgEl.textContent = 'Salvo!';
-      msgEl.classList.add('success');
-      OS_renderKanban();
-      setTimeout(OS_closeModal, 900);
-    } else {
-      payload.data_abertura = new Date().toISOString().split('T')[0];
-      const { data, error } = await client.from('ordens_servico').insert([payload]).select();
-      if(error) throw error;
-      OS_ALL = (data || []).concat(OS_ALL);
-      OS_populateSetorFilter();
-      const numOS = String(data[0].numero || '').padStart(4, '0');
-      msgEl.textContent = '✅ OS #' + numOS + ' aberta!';
-      msgEl.classList.add('success');
-      OS_renderKanban();
-      setTimeout(OS_closeModal, 1000);
-    }
-  } catch(e) {
-    msgEl.textContent = 'Erro: ' + e.message;
-    msgEl.classList.add('error');
-  }
-}
-
-// Escape fecha modal
-document.addEventListener('keydown', function OS_escHandler(e){
-  if(e.key === 'Escape'){
-    const ov = document.getElementById('os-modal-overlay');
-    if(ov && ov.classList.contains('open')) OS_closeModal();
-  }
-});
-
-// Filtros — atualizam em tempo real
-['os-fil-setor','os-fil-resp','os-fil-prio','os-fil-tipo'].forEach(function(id){
-  const el = document.getElementById(id);
-  if(el) el.addEventListener('change', OS_renderKanban);
-});
-['os-fil-equip','os-fil-busca'].forEach(function(id){
-  const el = document.getElementById(id);
-  if(el) el.addEventListener('input', OS_renderKanban);
-});
-// Responsive: mobile — kanban sem altura fixa e sem overflow hidden
-(function OS_responsiveHeight(){
-  function OS_applyHeight(){
-    const board = document.querySelector('#mn-tab-os .os-kanban-board');
-    if(!board) return;
-    if(window.innerWidth <= 720){
-      board.style.height = 'auto';
-    } else {
-      board.style.height = '';
-    }
-  }
-  window.addEventListener('resize', OS_applyHeight);
-})();
 
 /* ============================================================================
    PÁGINA LANÇAMENTO — formulário de entrada direto no Supabase
@@ -26402,6 +25534,10 @@ function BK_authApply(session){
   BK_jaLogou = true;
   const navs = [...document.querySelectorAll('.sidebar-nav .nav-item')];
   navs.forEach(b => { b.style.display = BK_podeVer(b.dataset.page) ? '' : 'none'; });
+  if(BK_AUTH.nivel === 'lider'){
+    const bRel = document.querySelector('[data-mntab="relatorio"]');
+    if(bRel){ bRel.style.display = 'none'; const bOs = document.querySelector('[data-mntab="chamados"]'); if(bOs) bOs.click(); }
+  }
   const tabAbs = document.getElementById('lancTabAbsenteismo');
   if(tabAbs) tabAbs.style.display = BK_podeVer('absenteismo') ? '' : 'none';
   const ativo = document.querySelector('.sidebar-nav .nav-item.active');
