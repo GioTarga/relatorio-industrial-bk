@@ -24425,24 +24425,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const { ini, fim } = perdasRangePeriodo();
     PERDAS_periodoAtual = { ini, fim };
 
-    let url = `${SUPABASE_URL}/rest/v1/perdas_producao?select=*&order=data.desc,setor.asc,produto.asc`;
-    if(ini && fim){
-      url += `&data=gte.${ini}&data=lte.${fim}`;
-    } else if(ini){
-      url += `&data=gte.${ini}`;
-    } else if(fim){
-      url += `&data=lte.${fim}`;
+    // Usa o cliente Supabase (token do usuário logado): o RLS só libera leitura para "authenticated".
+    const client = getSupabaseClient();
+    const pageSize = 1000;
+    let from = 0, todos = [];
+    while(true){
+      let q = client.from('perdas_producao').select('*')
+        .order('data',{ascending:false}).order('setor',{ascending:true}).order('produto',{ascending:true})
+        .range(from, from + pageSize - 1);
+      if(ini) q = q.gte('data', ini);
+      if(fim) q = q.lte('data', fim);
+      const { data, error } = await q;
+      if(error) throw error;
+      todos = todos.concat(data || []);
+      if(!data || data.length < pageSize) break;
+      from += pageSize;
     }
-
-    const resp = await fetch(url, {
-      headers: {
-        'apikey':        SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Accept':        'application/json'
-      }
-    });
-    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    PERDAS_dados = await resp.json();
+    PERDAS_dados = todos;
 
     // Popular select de motivos dinamicamente
     const motivos = [...new Set(PERDAS_dados.map(r => r.motivo).filter(Boolean))].sort();
