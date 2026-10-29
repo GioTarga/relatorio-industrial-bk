@@ -24977,6 +24977,7 @@ function RF_DASH_draw(){
 // guarda as etapas de 1 massa (ex.: Blocos 11, Telas 33…) em ordem; etapa sem valor = ainda não coletada.
 const MR_ETAPAS_SUGERIDAS = ['Blocos', 'Telas', 'Carrinho', 'Unidades', 'Pacotes', 'Caixas'];
 const MR_ETAPAS_PADRAO = ['Blocos', 'Telas', 'Carrinho', 'Unidades', 'Pacotes'];
+const MR_SETORES = ['GIRO DIA', 'PADARIA', 'PADARIA NOTURNO'];
 let MR_PRODUTOS = [];
 let MR_MAPA = {};
 let MR_EDITANDO = null;
@@ -24998,9 +24999,10 @@ async function MR_load(){
     ]);
     if(prod.error) throw prod.error;
     if(mapa.error) throw mapa.error;
-    MR_PRODUTOS = prod.data || [];
     MR_MAPA = {};
     (mapa.data || []).forEach(r => { MR_MAPA[r.codigo] = r; });
+    // Escopo do Mapa: só massas de Giro Dia e Padaria (inclui noturno); produto já mapeado sempre aparece
+    MR_PRODUTOS = (prod.data || []).filter(p => MR_SETORES.includes(String(p.setor || '').toUpperCase()) || MR_MAPA[p.codigo]);
     document.getElementById('mrNovoWrap').style.display = MR_podeEditar() && !MR_FORM_ABERTO ? '' : 'none';
     MR_fillProdutos();
     if(!document.querySelector('#mrEtapas .mr-etapa')) MR_resetEtapas();
