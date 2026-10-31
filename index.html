@@ -18780,24 +18780,12 @@ function FALTA_opQtd(i){
   const out=rec*rd.out;
   return{q:out,conv:true,rec,pct:rec*m.pac,txt:FALTA_num(out)+' '+su.toLowerCase()};
 }
-// Texto do que está em produção/precisa produzir: {tag:'sim'|'nao'|null, l1, l2} — quantidades na unidade do estoque
+// O que está em produção, só o número na unidade do estoque (mesma da coluna Falta): {tag:'sim'|'nao'|null, l1, l2}
 function FALTA_prod(i){
-  const rd=FALTA_rend(i);
-  const falta=i.s1<0?-i.s1:0;
-  if(i.op){
-    const o=FALTA_opQtd(i);
-    let l2=o.txt;
-    if(o.conv){
-      if(o.pct!=null&&String(i.un||'').toUpperCase()!=='PCT')l2+=' ('+FALTA_num(o.pct)+' pct)';
-      if(o.rec!=null)l2+=' · '+FALTA_num(o.rec)+' rec.';
-      if(falta>0)l2+=' · cobre '+Math.min(999,Math.round(o.q/falta*100))+'%';
-    }
-    return{tag:'sim',l1:'Na OP',l2};
-  }
   if(!opData)return{tag:null,l1:'—',l2:''};
-  let l2='';
-  if(falta>0&&rd){const n=Math.ceil(falta/rd.out);const m=FALTA.mapa[normCod(i.codigo)];l2='produzir '+FALTA_num(n*rd.out)+' '+String(i.un||'').toLowerCase()+(String(i.un||'').toUpperCase()!=='PCT'?' ('+FALTA_num(n*m.pac)+' pct)':'')+' · '+n+' rec.';}
-  return{tag:'nao',l1:'Sem OP',l2};
+  const un=String(i.un||'').toLowerCase();
+  if(!i.op)return{tag:'nao',l1:'0 '+un,l2:''};
+  return{tag:'sim',l1:FALTA_opQtd(i).txt,l2:''};
 }
 async function FALTA_carregar(){  if(FALTA.carregando)return;
   FALTA.carregando=true;FALTA.erro='';
