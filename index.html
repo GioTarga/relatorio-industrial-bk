@@ -25570,6 +25570,7 @@ document.addEventListener('submit', e => { if(e.target.id === 'mrForm') MR_salva
 const RC_CATS = ['Pães / Massas','Massa doce','Pão de queijo / Chipa','Croissant / Folhados','Salgados / Fritos','Bolos / Tortas','Recheios / Cremes','Outras'];
 const RC_UNS = ['KG','L','G','UN'];
 const RC_UNS_PESO = ['KG','L'];
+const RC_COLS_LISTA = 'id,codigo,nome,categoria,cod_produto,revisao,data_revisao,peso_total,rendimento,variantes,observacao';
 let RC_LISTA = [], RC_CARREGADO = false, RC_EDITANDO = null;
 function RC_podeEditar(){ return BK_podeGravar('insert', 'receitas'); }
 function RC_podeExcluir(){ return BK_podeGravar('delete', 'receitas'); }
@@ -25587,14 +25588,26 @@ function RC_aba(nome){
 async function RC_load(){
   const sel = document.getElementById('rcCatFiltro');
   if(!sel.options.length) sel.innerHTML = '<option value="">Todas as categorias</option>' + RC_CATS.map(c => `<option>${ADM_esc(c)}</option>`).join('');
+  const tb = document.getElementById('rcTbody');
+  tb.innerHTML = '<tr><td colspan="8" class="mr-vazio">Carregando receitas…</td></tr>';
   try{
-    const r = await getSupabaseClient().from('receitas').select('*').order('codigo');
+    // lista sem o modo de preparo (texto longo): ele é buscado só ao abrir a receita
+    const consulta = getSupabaseClient().from('receitas').select(RC_COLS_LISTA).order('codigo');
+    const limite = new Promise((_, rej) => setTimeout(() => rej(new Error('o servidor demorou para responder')), 25000));
+    const r = await Promise.race([consulta, limite]);
     if(r.error) throw r.error;
     RC_LISTA = r.data || []; RC_CARREGADO = true;
     RC_render();
   }catch(e){
-    document.getElementById('rcTbody').innerHTML = '<tr><td colspan="8" class="mr-vazio">Não foi possível carregar as receitas.</td></tr>';
+    tb.innerHTML = '<tr><td colspan="8" class="mr-vazio">Não foi possível carregar as receitas (' + ADM_esc(e.message || e) + '). <button type="button" class="mr-btn-sec" data-rc="recarregar">Tentar de novo</button></td></tr>';
   }
+}
+// Modo de preparo da receita (não vem na lista)
+async function RC_modo(r){
+  if(r.modo_preparo !== undefined) return r;
+  const x = await getSupabaseClient().from('receitas').select('modo_preparo').eq('id', r.id).single();
+  r.modo_preparo = x.error ? null : x.data.modo_preparo;
+  return r;
 }
 function RC_render(){
   const q = document.getElementById('rcBusca').value.trim().toUpperCase();
@@ -25622,8 +25635,9 @@ function RC_painel(html){
   if(html) p.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 // Visualização (somente leitura)
-function RC_ver(id){
+async function RC_ver(id){
   const r = RC_LISTA.find(x => x.id === id); if(!r) return;
+  await RC_modo(r);
   const vars = (r.variantes || []).map(v => {
     const tot = RC_somaPeso(v.ingredientes);
     const linhas = (v.ingredientes || []).map(i => `<tr><td class="mr-n">${RC_fmt(i.qtd)}</td><td class="mr-n">${ADM_esc(i.un)}</td><td class="rc-code">${ADM_esc(i.cod || '')}</td><td>${ADM_esc(i.nome)}</td><td class="mr-n">${RC_UNS_PESO.includes(i.un) && tot ? (Number(i.qtd) / tot * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%' : ''}</td></tr>`).join('');
@@ -25651,8 +25665,9 @@ function RC_varHtml(v){
     <div class="rc-ings">${(v.ingredientes && v.ingredientes.length ? v.ingredientes : [null]).map(RC_ingHtml).join('')}</div>
     <button type="button" class="mr-btn-sec" data-rc="add-ing">+ Ingrediente</button></div>`;
 }
-function RC_form(id){
+async function RC_form(id){
   const r = id ? RC_LISTA.find(x => x.id === id) : null;
+  if(r) await RC_modo(r);
   RC_EDITANDO = r ? r.id : null;
   const d = r || { codigo: 'REC-P&D-', nome: '', categoria: RC_CATS[0], variantes: [] };
   const v = (d.variantes && d.variantes.length) ? d.variantes : [null];
@@ -25745,6 +25760,7 @@ document.addEventListener('click', e => {
   else if(a === 'novo') RC_form(null);
   else if(a === 'fechar') RC_painel('');
   else if(a === 'excluir') RC_excluir();
+  else if(a === 'recarregar') RC_load();
   else if(a === 'importar') document.getElementById('rcArq').click();
   else if(a === 'add-var') document.getElementById('rcVars').insertAdjacentHTML('beforeend', RC_varHtml({ nome: 'Variante', ingredientes: [] }));
   else if(a === 'rm-var'){ const b = t.closest('.rc-var'); if(document.querySelectorAll('#rcVars .rc-var').length > 1) b.remove(); }
