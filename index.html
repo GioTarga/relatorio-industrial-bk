@@ -1238,6 +1238,36 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .hist-tab tr.sem td{color:var(--ink-soft);font-style:italic}
 #page-pcp-estoque .hist-tab td.neg{color:var(--red);font-weight:700}
 #page-pcp-estoque .hist-tab td.nota{text-align:left;font-size:10.5px;color:var(--ink-soft)}
+
+/* Hoje por setor (PCP & Estoque): falta = demanda − estoque, comparada com o dia anterior */
+#page-pcp-estoque .fal-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:10px}
+#page-pcp-estoque .fal-bar .hist-info{margin:0;flex:1;min-width:220px}
+#page-pcp-estoque .fal-btn{padding:5px 12px;font-size:11px;font-weight:700;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:6px;cursor:pointer;font-family:inherit}
+#page-pcp-estoque .fal-btn.pri{background:var(--red-dark);border-color:var(--red-dark);color:#fff}
+#page-pcp-estoque .fal-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}
+#page-pcp-estoque .fal-kpi{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+#page-pcp-estoque .fal-kpi b{display:block;font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums}
+#page-pcp-estoque .fal-kpi small{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);font-weight:700}
+#page-pcp-estoque .fal-kpi.bad b{color:var(--red)}
+#page-pcp-estoque .fal-kpi.warn b{color:var(--warn)}
+#page-pcp-estoque .fal-kpi.good b{color:var(--good)}
+#page-pcp-estoque .fal-legenda{font-size:11px;color:var(--ink-soft);margin-bottom:12px;line-height:1.5}
+#page-pcp-estoque .fal-sec{margin-bottom:14px;background:var(--paper);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+#page-pcp-estoque .fal-sec-h{background:var(--red-dark);color:#fff;padding:7px 12px;font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;display:flex;justify-content:space-between;gap:10px}
+#page-pcp-estoque .fal-sec-h span{opacity:.75;font-weight:600}
+#page-pcp-estoque .fal-scroll{overflow-x:auto}
+#page-pcp-estoque .fal-tab td small{display:block;color:var(--ink-soft);font-size:10px}
+#page-pcp-estoque .fal-tab td.c,#page-pcp-estoque .fal-tab th.c{text-align:center}
+#page-pcp-estoque .fal-tab td.falta{color:var(--red);font-weight:800}
+#page-pcp-estoque .fal-tab td.sobra{color:var(--good);font-weight:700}
+#page-pcp-estoque .fal-tab th.dia{text-align:center;border-left:1px solid var(--line)}
+#page-pcp-estoque .fal-sit{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700}
+#page-pcp-estoque .fal-sit.novo{background:var(--bad-bg);color:var(--red)}
+#page-pcp-estoque .fal-sit.piorou{background:var(--warn-bg);color:var(--warn)}
+#page-pcp-estoque .fal-sit.melhorou{background:var(--good-bg);color:var(--good)}
+#page-pcp-estoque .fal-sit.igual{background:var(--cream);color:var(--ink-soft)}
+#page-pcp-estoque .fal-det summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--ink);padding:6px 0}
+@media(max-width:900px){#page-pcp-estoque .fal-kpis{grid-template-columns:repeat(2,1fr)}}
 #page-pcp-estoque .kb-op-legend i{width:12px;height:12px;border-radius:3px;background:#e8f1fb;border:2px solid #1f5fa8;display:inline-block}
 #page-pcp-estoque .kb-top{display:flex;align-items:flex-start;gap:8px}
 #page-pcp-estoque .kb-title{flex:1;min-width:0;font-size:12px;font-weight:700;line-height:1.25;color:var(--ink);overflow-wrap:anywhere}
@@ -3120,7 +3150,7 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
       </button>
       <button class="nav-item" data-page="pcp-estoque">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
-        Estoque
+        PCP &amp; Estoque
       </button>
       <button class="nav-item" data-page="melhoria">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></svg>
@@ -4193,7 +4223,7 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
 <div class="topbar">
   <div class="eyebrow">Bread King · Sistema de Gestão</div>
   <h1>BK360</h1>
-  <div class="subtitle">PCP Estoque</div>
+  <div class="subtitle">PCP &amp; Estoque</div>
   <span class="topbar-date" id="topDate"></span>
   <span id="catalog-badge" style="position:absolute;bottom:10px;right:16px;font-size:10px;font-weight:700;letter-spacing:.5px;color:rgba(255,255,255,.45)">⏳ carregando catálogo…</span>
 </div>
@@ -4344,13 +4374,15 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
     <div class="view-toggle no-print">
       <span class="vt-label">Visualização</span>
       <div class="chips" id="viewChips">
-        <div class="chip active" data-view="kanban" onclick="setEstView('kanban')">Kanban</div>
+        <div class="chip active" data-view="falta" onclick="setEstView('falta')">Hoje por setor</div>
+        <div class="chip" data-view="kanban" onclick="setEstView('kanban')">Kanban</div>
         <div class="chip" data-view="tabela" onclick="setEstView('tabela')">Tabela</div>
         <div class="chip" data-view="historico" onclick="setEstView('historico')">Histórico</div>
       </div>
-      <span class="vt-hint">Cards ordenados por menos dias de estoque</span>
+      <span class="vt-hint" id="vtHint">Cards ordenados por menos dias de estoque</span>
       <span class="kb-op-legend" id="opLegend" style="display:none"></span>
     </div>
+    <div id="viewFalta" class="hist-wrap"></div>
     <div id="viewHistorico" class="hist-wrap">
       <div class="hist-bar">
         <label class="hist-busca">Produto (código ou nome)
@@ -5728,11 +5760,6 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
         <div class="mr-nota">Valores correspondentes a <b>1 massa</b>. "a coletar" = etapa ainda sem medição.</div>
         <div class="mr-toolbar">
           <input type="text" id="mrBusca" placeholder="Buscar produto…">
-          <select id="mrFiltro">
-            <option value="todos">Todos</option>
-            <option value="coletado">Com rendimento</option>
-            <option value="pendente">Faltam coletar</option>
-          </select>
         </div>
         <div class="mr-table-wrap">
           <table class="mr-table">
@@ -6151,7 +6178,7 @@ const BK_MODULOS = [
   { id:'rascunho',                rotulo:'Máquinas',                  tabelas:['maquinas','produtos_producao'] },
   { id:'manutencao',              rotulo:'Manutenções',               tabelas:['chamados_manutencao','manutencoes','maquinas'] },
   { id:'estoque',                 rotulo:'Almoxarifado',              tabelas:['estoque_contagens','estoque_entradas','estoque_minimos','estoque_requisicoes','estoque_catalogo_insumos'] },
-  { id:'pcp-estoque',             rotulo:'Estoque (PCP)',             tabelas:['pcp_cache','estoque_historico','ordens_producao','ordens_producao_itens','vendas_semanais','produtos_producao','familias','produtos'] },
+  { id:'pcp-estoque',             rotulo:'PCP & Estoque',             tabelas:['pcp_cache','estoque_historico','ordens_producao','ordens_producao_itens','vendas_semanais','produtos_producao','familias','produtos'] },
   { id:'melhoria',                rotulo:'Melhoria Contínua',         tabelas:['melhoria_continua','pp_etapas_referencia'] },
   { id:'lancamento',              rotulo:'Lançamento',                tabelas:['producao_diaria','perdas_producao','produtos_producao','setores','maquinas','produtividade_corridas','produtividade_paradas','produtividade_tempos_massa','tempo_processo_bateladas','tempo_processo_etapas','pp_etapas_referencia','ocupacao','familias','estoque_requisicoes'] },
   { id:'expedicao',               rotulo:'Expedição',                 tabelas:['ocupacao','familias','produtos'] },
@@ -17628,7 +17655,7 @@ async function buildSD(){
   }
   const bySetor={};
   allItems.forEach(item=>{
-    let s=setorMap[item.codigo]||setorMap[normCod(item.codigo)]||'SEM SETOR';
+    let s=setorMap[item.codigo]||setorMap[normCod(item.codigo)]||'REVENDA';
     // Compatibilidade: valor legado combinado → separar em Giro Dia por padrão
     if(s==='GIRO DIA/GIRO NOITE')s='GIRO DIA';
     item.setor=s;
@@ -17637,9 +17664,9 @@ async function buildSD(){
   });
   SD.by_setor=bySetor;
   SD.setorMap=setorMap; // lookup direto por codigo → setor
-  // Propagar setor para os arrays reais (sempre, com fallback 'SEM SETOR')
+  // Propagar setor para os arrays reais (sempre, com fallback 'REVENDA': produto sem setor no catálogo é revenda)
   const propagateSetor=arr=>{if(!arr)return;arr.forEach(i=>{
-    let s=setorMap[i.codigo]||setorMap[normCod(i.codigo)]||'SEM SETOR';
+    let s=setorMap[i.codigo]||setorMap[normCod(i.codigo)]||'REVENDA';
     if(s==='GIRO DIA/GIRO NOITE')s='GIRO DIA';
     i.setor=s;
   });};
@@ -18034,8 +18061,8 @@ function getSetor(codigo){
   for(const st of SD.setores){
     if((SD.by_setor[st]||[]).some(i=>i.codigo===codigo||normCod(i.codigo)===normCod(codigo)))return st;
   }
-  // Produto sem setor mapeado — usa 'SEM SETOR' para não poluir GIRO DIA
-  return SD.setores.includes('SEM SETOR')?'SEM SETOR':(SD.setores[SD.setores.length-1]||'SEM SETOR');
+  // Produto sem setor no catálogo = revenda (não polui GIRO DIA)
+  return 'REVENDA';
 }
 
 // Contexto temporário do modal de OP
@@ -18462,6 +18489,8 @@ async function histGravar(tipos){
     // Retenção: apaga o que passou de 30 dias
     await fetch(SUPABASE_URL+'/rest/v1/estoque_historico?data=lt.'+desde,{method:'DELETE',headers:H});
     histProdutos=null; // força recarregar a lista de produtos na próxima abertura
+    FALTA.carregado=false; // "Hoje por setor" relê as posições na próxima exibição
+    if(estView==='falta')renderAlerts();
     return true;
   }catch(e){return false;}
 }
@@ -18624,13 +18653,161 @@ document.addEventListener('click',e=>{
   if(b&&!e.target.closest('.hist-busca'))b.style.display='none';
 });
 
+
+// ─────────────────────────────────────────────
+// HOJE POR SETOR — falta (demanda > estoque) por setor, comparada com o dia anterior
+// ─────────────────────────────────────────────
+// Usa as duas últimas posições de estoque_historico (última importação de cada dia).
+// Demanda = reserva. Falta = demanda − estoque; entra na lista quem tem saldo (estoque − reserva) negativo.
+// Produto sem setor no catálogo cai em REVENDA (getSetor).
+const FALTA={carregado:false,carregando:false,erro:'',d1:'',d0:'',t1:'',t0:'',r1:[],r0:[]};
+const FALTA_COLS='tipo,codigo,descricao,familia,estoque,reserva,saldo,un,veio_import,updated_at';
+const FALTA_SIT={novo:'Novo',piorou:'Piorou',melhorou:'Melhorou',igual:'Igual'};
+function FALTA_dm(iso){return iso?iso.slice(8,10)+'/'+iso.slice(5,7):'';}
+function FALTA_hora(rows){
+  let m='';rows.forEach(r=>{if(r.updated_at&&r.updated_at>m)m=r.updated_at;});
+  return m?new Date(m).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'}):'';
+}
+async function FALTA_get(qs){
+  const r=await fetch(SUPABASE_URL+'/rest/v1/estoque_historico?'+qs,{headers:histHeaders()});
+  if(!r.ok)throw new Error('Erro '+r.status+' ao carregar o histórico');
+  return r.json();
+}
+async function FALTA_dia(data){
+  const rows=[];
+  for(let off=0;;off+=1000){
+    const part=await FALTA_get('select='+FALTA_COLS+'&data=eq.'+data+'&order=tipo.asc,codigo.asc&limit=1000&offset='+off);
+    rows.push(...part);
+    if(part.length<1000)break;
+  }
+  return rows;
+}
+async function FALTA_carregar(){
+  if(FALTA.carregando)return;
+  FALTA.carregando=true;FALTA.erro='';
+  try{
+    const a=await FALTA_get('select=data&order=data.desc&limit=1');
+    if(!a.length){Object.assign(FALTA,{d1:'',d0:'',r1:[],r0:[],t1:'',t0:''});}
+    else{
+      const d1=a[0].data;
+      const b=await FALTA_get('select=data&data=lt.'+d1+'&order=data.desc&limit=1');
+      const d0=b.length?b[0].data:'';
+      const [r1,r0]=await Promise.all([FALTA_dia(d1),d0?FALTA_dia(d0):Promise.resolve([])]);
+      Object.assign(FALTA,{d1,d0,r1,r0,t1:FALTA_hora(r1),t0:FALTA_hora(r0)});
+    }
+    FALTA.carregado=true;
+  }catch(e){FALTA.erro=e.message||'Sem conexão com o Supabase';}
+  FALTA.carregando=false;
+  if(estView==='falta')FALTA_render();
+}
+// Aplica os filtros da barra do módulo (local, setor, busca) e separa quem está em falta de quem saiu da falta
+function FALTA_calc(){
+  const ant=new Map(FALTA.r0.map(r=>[r.tipo+'|'+r.codigo,r]));
+  const q=histNorm((document.getElementById('searchAlert')||{}).value||'');
+  const filtraSetor=alertaSetores.size&&!_setorTodosMarcados();
+  const falta=[],resolvidos=[];
+  FALTA.r1.forEach(r=>{
+    if(locFilter==='CAFE'||(locFilter!=='ALL'&&r.tipo!==locFilter))return;
+    const setor=setorDoItem(r);
+    if(filtraSetor&&!alertaSetores.has(setor))return;
+    if(q&&!histNorm(r.descricao).includes(q)&&!String(r.codigo).startsWith(normCod(q)))return;
+    const p=ant.get(r.tipo+'|'+r.codigo);
+    const e1=Number(r.estoque)||0,d1=Number(r.reserva)||0,s1=e1-d1;
+    const e0=p?(Number(p.estoque)||0):null,d0=p?(Number(p.reserva)||0):null,s0=p?e0-d0:null;
+    const it={tipo:r.tipo,codigo:r.codigo,descricao:r.descricao||r.codigo,un:r.un||'',setor,e1,d1,s1,e0,d0,s0,saiu:e0==null?null:Math.max(e0-e1,0)};
+    if(s1<0){
+      it.sit=(s0==null||s0>=0)?'novo':s1<s0?'piorou':s1>s0?'melhorou':'igual';
+      falta.push(it);
+    }else if(s0!=null&&s0<0)resolvidos.push(it);
+  });
+  const cnt=k=>falta.filter(i=>i.sit===k).length;
+  return{falta,resolvidos,grupos:FALTA_grupos(falta),novos:cnt('novo'),piorou:cnt('piorou'),melhorou:cnt('melhorou')};
+}
+function FALTA_grupos(lista){
+  const m={};
+  lista.forEach(i=>{(m[i.setor]=m[i.setor]||[]).push(i);});
+  const ord=[...SETOR_ORDER,...Object.keys(m).filter(s=>!SETOR_ORDER.includes(s))];
+  return ord.filter(s=>m[s]).map(s=>({setor:s,itens:m[s].sort((a,b)=>a.s1-b.s1)}));
+}
+function FALTA_render(){
+  const el=document.getElementById('viewFalta');if(!el)return;
+  if(!FALTA.carregado){
+    if(!FALTA.carregando)FALTA_carregar();
+    el.innerHTML=FALTA.erro
+      ?`<div class="hist-cons">${opEsc(FALTA.erro)} <button class="fal-btn" onclick="FALTA_atualizar()">Tentar de novo</button></div>`
+      :'<div class="hist-info">Carregando posições de estoque…</div>';
+    return;
+  }
+  if(!FALTA.d1){el.innerHTML='<div class="empty-state"><div class="empty-icon">📂</div>Ainda não há posição de estoque gravada. Importe os dados do CIGAM.</div>';return;}
+  const c=FALTA_calc();
+  const f=v=>v==null?'—':histFmt(v);
+  const d1=FALTA_dm(FALTA.d1),d0=FALTA_dm(FALTA.d0);
+  const info=`Posição de <b>${d1}</b>${FALTA.t1?' ('+FALTA.t1+')':''}`+(FALTA.d0?` comparada com <b>${d0}</b>${FALTA.t0?' ('+FALTA.t0+')':''}`:' · sem dia anterior para comparar');
+  const head=`<thead><tr><th rowspan="2">Produto</th><th rowspan="2" class="c">Un</th><th colspan="2" class="dia">${d0||'ontem'}</th><th colspan="2" class="dia">${d1}</th><th rowspan="2">Falta</th><th rowspan="2">Saiu do estoque</th><th rowspan="2" class="c">Situação</th></tr><tr><th>Estoque</th><th>Demanda</th><th>Estoque</th><th>Demanda</th></tr></thead>`;
+  const linha=i=>`<tr><td>${opEsc(i.descricao)}<small>${HIST_TIPO_LABEL[i.tipo]||i.tipo} · ${opEsc(i.codigo)}</small></td><td class="c">${opEsc(i.un)}</td><td>${f(i.e0)}</td><td>${f(i.d0)}</td><td>${f(i.e1)}</td><td>${f(i.d1)}</td><td class="falta">${histFmt(-i.s1)}</td><td>${i.saiu==null?'—':(i.saiu?histFmt(i.saiu):'–')}</td><td class="c"><span class="fal-sit ${i.sit}">${FALTA_SIT[i.sit]}</span></td></tr>`;
+  const secoes=c.grupos.map(g=>`<div class="fal-sec"><div class="fal-sec-h">${opEsc(g.setor)}<span>${g.itens.length} produto${g.itens.length>1?'s':''}</span></div><div class="fal-scroll"><table class="hist-tab fal-tab">${head}<tbody>${g.itens.map(linha).join('')}</tbody></table></div></div>`).join('');
+  const resolvidos=c.resolvidos.length?`<details class="fal-det"><summary>Saíram da falta desde ${d0} (${c.resolvidos.length})</summary><div class="fal-sec"><div class="fal-scroll"><table class="hist-tab fal-tab"><thead><tr><th>Produto</th><th class="c">Un</th><th>Saldo ${d0}</th><th>Estoque ${d1}</th><th>Demanda ${d1}</th><th>Saldo ${d1}</th></tr></thead><tbody>${c.resolvidos.sort((a,b)=>b.s1-a.s1).map(i=>`<tr><td>${opEsc(i.descricao)}<small>${opEsc(i.setor)} · ${HIST_TIPO_LABEL[i.tipo]||i.tipo} · ${opEsc(i.codigo)}</small></td><td class="c">${opEsc(i.un)}</td><td>${f(i.s0)}</td><td>${f(i.e1)}</td><td>${f(i.d1)}</td><td class="sobra">${f(i.s1)}</td></tr>`).join('')}</tbody></table></div></div></details>`:'';
+  el.innerHTML=`<div class="fal-bar"><div class="hist-info">${info}</div><button class="fal-btn" onclick="FALTA_atualizar()">Atualizar</button><button class="fal-btn pri" onclick="FALTA_exportarPDF()">Exportar PDF</button></div>
+    <div class="fal-kpis">
+      <div class="fal-kpi bad"><b>${c.falta.length}</b><small>Em falta hoje</small></div>
+      <div class="fal-kpi bad"><b>${c.novos}</b><small>Novos desde ${d0||'ontem'}</small></div>
+      <div class="fal-kpi warn"><b>${c.piorou}</b><small>Pioraram</small></div>
+      <div class="fal-kpi good"><b>${c.melhorou}</b><small>Melhoraram</small></div>
+      <div class="fal-kpi good"><b>${c.resolvidos.length}</b><small>Saíram da falta</small></div>
+    </div>
+    <div class="fal-legenda"><b>Estoque</b> = o que existe fisicamente · <b>Demanda</b> = pedidos já reservados para sair · <b>Falta</b> = demanda − estoque · <b>Saiu do estoque</b> = queda do estoque físico entre as duas posições (líquido: pode incluir faturamento, transferência ou ajuste). Use os filtros da barra acima (local, setor, busca) para recortar.</div>
+    ${secoes||'<div class="empty-state"><div class="empty-icon">✅</div>Nenhum produto em falta com os filtros atuais.</div>'}${resolvidos}`;
+}
+function FALTA_atualizar(){FALTA.carregado=false;FALTA.erro='';renderAlerts();}
+function FALTA_exportarPDF(){
+  if(!window.jspdf||!window.jspdf.jsPDF){alert('Não foi possível carregar a biblioteca de PDF (sem conexão com a internet?). Tente novamente.');return;}
+  const c=FALTA_calc();
+  if(!c.falta.length){alert('Não há produtos em falta com os filtros atuais.');return;}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4',orientation:'landscape'});
+  const d1=FALTA_dm(FALTA.d1),d0=FALTA_dm(FALTA.d0),ano=FALTA.d1.slice(0,4);
+  const mx=12,W=297-mx*2;
+  const filtros=[locFilter!=='ALL'?(HIST_TIPO_LABEL[locFilter]||locFilter):'',(alertaSetores.size&&!_setorTodosMarcados())?('setores: '+[...alertaSetores].join(', ')):''].filter(Boolean).join(' | ');
+  doc.setFont('helvetica','bold');doc.setFontSize(15);doc.setTextColor(139,0,0);
+  doc.text(`Produtos com falta de estoque - ${d1}/${ano}`,mx,14);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(60,60,60);
+  let y=20;
+  const resumo=`${c.falta.length} produtos com demanda maior que o estoque. ${c.novos} novos desde ${d0||'ontem'}, ${c.piorou} pioraram, ${c.melhorou} melhoraram, ${c.resolvidos.length} sairam da falta. Posicao de ${d1}${FALTA.t1?' ('+FALTA.t1+')':''}${FALTA.d0?' comparada com '+d0+(FALTA.t0?' ('+FALTA.t0+')':''):''}.${filtros?' Filtros: '+filtros+'.':''}`;
+  doc.splitTextToSize(resumo,W).forEach(l=>{doc.text(l,mx,y);y+=4.3;});
+  y+=1;
+  const leg='Estoque = o que existe fisicamente. Demanda = pedidos ja reservados para sair. Falta = demanda - estoque (o que ainda precisa ser produzido ou entrar). Saiu do estoque = queda do estoque fisico entre as duas posicoes.';
+  doc.setFontSize(8);doc.setTextColor(100,100,100);
+  doc.splitTextToSize(leg,W).forEach(l=>{doc.text(l,mx,y);y+=3.8;});
+  y+=2;
+  const n=v=>v==null?'-':histFmt(v);
+  const cor={novo:[248,203,173],piorou:[255,230,153],melhorou:[198,224,180],igual:[230,230,230]};
+  c.grupos.forEach(g=>{
+    if(y>170){doc.addPage();y=14;}
+    doc.setFont('helvetica','bold');doc.setFontSize(10.5);doc.setTextColor(139,0,0);
+    doc.text(`${g.setor} - ${g.itens.length} produto(s)`,mx,y);
+    doc.autoTable({
+      startY:y+2,margin:{left:mx,right:mx},theme:'grid',
+      styles:{font:'helvetica',fontSize:7.8,cellPadding:1.6,lineColor:[200,200,200],lineWidth:0.2,textColor:[30,30,30]},
+      headStyles:{fillColor:[139,0,0],textColor:255,halign:'center',valign:'middle',fontStyle:'bold'},
+      head:[[{content:'Codigo',rowSpan:2},{content:'Produto',rowSpan:2},{content:'Un',rowSpan:2},{content:d0||'ontem',colSpan:2},{content:d1,colSpan:2},{content:'FALTA',rowSpan:2},{content:'Saiu do estoque',rowSpan:2},{content:'Situacao',rowSpan:2}],['Estoque','Demanda','Estoque','Demanda']],
+      body:g.itens.map(i=>[i.codigo,i.descricao+' ('+(HIST_TIPO_LABEL[i.tipo]||i.tipo)+')',i.un,n(i.e0),n(i.d0),n(i.e1),n(i.d1),histFmt(-i.s1),i.saiu?histFmt(i.saiu):'-',FALTA_SIT[i.sit]]),
+      columnStyles:{0:{cellWidth:20,halign:'center'},1:{cellWidth:'auto'},2:{cellWidth:10,halign:'center'},3:{halign:'right',cellWidth:19},4:{halign:'right',cellWidth:19},5:{halign:'right',cellWidth:19},6:{halign:'right',cellWidth:19},7:{halign:'right',cellWidth:19,fontStyle:'bold',textColor:[192,0,0]},8:{halign:'right',cellWidth:21},9:{halign:'center',cellWidth:21}},
+      didParseCell:d=>{if(d.section==='body'&&d.column.index===9){const it=g.itens[d.row.index];if(it&&cor[it.sit])d.cell.styles.fillColor=cor[it.sit];}}
+    });
+    y=doc.lastAutoTable.finalY+7;
+  });
+  const pg=doc.getNumberOfPages();
+  for(let p=1;p<=pg;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(130,130,130);doc.text(`Bread King - PCP & Estoque - pagina ${p}/${pg}`,mx,205);}
+  doc.save(`falta_estoque_${FALTA.d1}.pdf`);
+}
+
 // ─── KANBAN (Estoque) ────────────────────────────────────────────────────────
-let estView='kanban';
-try{estView=localStorage.getItem('bk360_est_view')||'kanban';}catch(e){}
-if(estView==='historico')estView='kanban'; // histórico precisa ser aberto de propósito
+let estView='falta'; // abre em "Hoje por setor"
+try{estView=localStorage.getItem('bk360_est_view2')||'falta';}catch(e){}
+if(estView==='historico')estView='falta'; // histórico precisa ser aberto de propósito
 function setEstView(v){
   estView=v;
-  try{if(v!=='historico')localStorage.setItem('bk360_est_view',v);}catch(e){}
+  try{if(v!=='historico')localStorage.setItem('bk360_est_view2',v);}catch(e){}
   renderAlerts();
   if(v==='historico')histAbrir();
 }
@@ -18696,7 +18873,10 @@ function renderKanban(items){
 }
 function _applyEstView(){
   const kb=estView==='kanban';
-  const k=document.getElementById('alertKanban'),t=document.getElementById('alertTableWrap'),h=document.getElementById('viewHistorico');
+  const k=document.getElementById('alertKanban'),t=document.getElementById('alertTableWrap'),h=document.getElementById('viewHistorico'),f=document.getElementById('viewFalta');
+  if(f)f.style.display=estView==='falta'?'block':'none';
+  const hint=document.getElementById('vtHint');
+  if(hint)hint.textContent=estView==='falta'?'Produtos com demanda maior que o estoque, por setor':'Cards ordenados por menos dias de estoque';
   if(k)k.style.display=kb?'grid':'none';
   if(t)t.style.display=estView==='tabela'?'':'none';
   if(h)h.style.display=estView==='historico'?'block':'none';
@@ -18709,6 +18889,7 @@ function renderAlerts(){
     const tableEl=document.getElementById('alertTable');
     if(!tableEl)return;
     _applyEstView();
+    if(estView==='falta'){FALTA_render();return;}
     if(!currentFab&&!currentLoja){
       tableEl.innerHTML='<div class="empty-state"><div class="empty-icon">📂</div>Importe os dados do CIGAM para visualizar o estoque.</div>';
       const _k0=document.getElementById('alertKanban');if(_k0)_k0.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📂</div>Importe os dados do CIGAM para visualizar o estoque.</div>';
@@ -25059,15 +25240,12 @@ function MR_render(){
   document.getElementById('mrK2').textContent = mapeados;
   document.getElementById('mrK3').textContent = MR_PRODUTOS.length - mapeados;
   const q = document.getElementById('mrBusca').value.trim().toUpperCase();
-  const f = document.getElementById('mrFiltro').value;
   const pode = MR_podeEditar();
   const temOutras = Object.values(MR_MAPA).some(m => (m.etapas || []).some(x => !MR_COLUNAS.includes((x.nome || '').trim().toLowerCase())));
   document.getElementById('mrThOutras').style.display = temOutras ? '' : 'none';
   const lista = MR_PRODUTOS.filter(p => {
     if(q && !(p.descricao || '').toUpperCase().includes(q) && !(p.codigo || '').toUpperCase().includes(q)) return false;
-    if(f === 'coletado') return !!MR_MAPA[p.codigo];
-    if(f === 'pendente') return !MR_MAPA[p.codigo];
-    return true;
+    return !!MR_MAPA[p.codigo]; // tabela mostra só massas com rendimento mapeado
   });
   lista.sort((a, b) => (MR_MAPA[b.codigo] ? 1 : 0) - (MR_MAPA[a.codigo] ? 1 : 0) || a.descricao.localeCompare(b.descricao));
   const tb = document.getElementById('mrTbody');
@@ -25158,7 +25336,6 @@ document.addEventListener('change', e => {
     const livre = e.target.parentNode.querySelector('.mr-nome-livre');
     livre.style.display = e.target.value === '__outra' ? '' : 'none';
   }
-  if(e.target.id === 'mrFiltro') MR_render();
 });
 document.addEventListener('input', e => { if(e.target.id === 'mrBusca') MR_render(); });
 document.addEventListener('submit', e => { if(e.target.id === 'mrForm') MR_salvar(e); });
