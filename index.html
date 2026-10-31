@@ -1245,7 +1245,10 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .fal-btn{padding:5px 12px;font-size:11px;font-weight:700;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:6px;cursor:pointer;font-family:inherit}
 #page-pcp-estoque .fal-btn.pri{background:var(--red-dark);border-color:var(--red-dark);color:#fff}
 #page-pcp-estoque .fal-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}
-#page-pcp-estoque .fal-kpi{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+#page-pcp-estoque .fal-kpi{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;transition:border-color .15s}
+#page-pcp-estoque .fal-kpi:hover{border-color:var(--red-dark)}
+#page-pcp-estoque .fal-kpi.on{border-color:var(--red-dark);box-shadow:0 0 0 2px rgba(139,0,0,.18)}
+#page-pcp-estoque .fal-kpi em{display:block;font-style:normal;font-size:10px;color:var(--ink-soft);margin-top:2px}
 #page-pcp-estoque .fal-kpi b{display:block;font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums}
 #page-pcp-estoque .fal-kpi small{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);font-weight:700}
 #page-pcp-estoque .fal-kpi.bad b{color:var(--red)}
@@ -18700,12 +18703,23 @@ async function FALTA_carregar(){
   FALTA.carregando=false;
   if(estView==='falta')FALTA_render();
 }
-// Aplica os filtros da barra do módulo (local, setor, busca) e separa quem está em falta de quem saiu da falta
+// Aplica os filtros da barra do módulo (local, setor, busca) e classifica cada produto pelo saldo de hoje
+// (saldo = estoque − demanda). As categorias dos cards:
+//  falta = saldo < 0 · faturado = demanda > estoque (mesma regra, outro nome) · zerados = estoque 0
+//  zero = estoque > 0 e igual à demanda · positivos = saldo > 0
+const FALTA_CATS={
+  falta:   {rotulo:'Em falta hoje',        regra:'demanda > estoque',  titulo:'Produtos com falta de estoque',       col:'Falta',  teste:i=>i.s1<0},
+  zerados: {rotulo:'Zerados hoje',         regra:'estoque = 0',        titulo:'Produtos zerados',                    col:'Saldo',  teste:i=>i.e1===0},
+  faturado:{rotulo:'Faturado sem estoque', regra:'demanda > estoque',  titulo:'Faturado sem estoque',                col:'Falta',  teste:i=>i.s1<0},
+  zero:    {rotulo:'Saldo zero',           regra:'estoque = demanda',  titulo:'Produtos com saldo zero',             col:'Saldo',  teste:i=>i.e1>0&&i.s1===0},
+  positivos:{rotulo:'Disponíveis',         regra:'saldo > 0',          titulo:'Produtos disponiveis (saldo positivo)',col:'Saldo', teste:i=>i.s1>0}
+};
+let FALTA_CAT='falta';
 function FALTA_calc(){
   const ant=new Map(FALTA.r0.map(r=>[r.tipo+'|'+r.codigo,r]));
   const q=histNorm((document.getElementById('searchAlert')||{}).value||'');
   const filtraSetor=alertaSetores.size&&!_setorTodosMarcados();
-  const falta=[],resolvidos=[];
+  const todos=[];
   FALTA.r1.forEach(r=>{
     if(locFilter==='CAFE'||(locFilter!=='ALL'&&r.tipo!==locFilter))return;
     const setor=setorDoItem(r);
@@ -18715,20 +18729,29 @@ function FALTA_calc(){
     const e1=Number(r.estoque)||0,d1=Number(r.reserva)||0,s1=e1-d1;
     const e0=p?(Number(p.estoque)||0):null,d0=p?(Number(p.reserva)||0):null,s0=p?e0-d0:null;
     const it={tipo:r.tipo,codigo:r.codigo,descricao:r.descricao||r.codigo,un:r.un||'',setor,e1,d1,s1,e0,d0,s0,saiu:e0==null?null:Math.max(e0-e1,0)};
-    if(s1<0){
-      it.sit=(s0==null||s0>=0)?'novo':s1<s0?'piorou':s1>s0?'melhorou':'igual';
-      falta.push(it);
-    }else if(s0!=null&&s0<0)resolvidos.push(it);
+    // Situação contra o dia anterior (para quem está em falta: novo/piorou/melhorou; demais: saldo subiu/caiu)
+    it.sit=(s0==null)?'novo':s1<s0?'piorou':s1>s0?'melhorou':'igual';
+    if(s1<0&&(s0==null||s0>=0))it.sit='novo';
+    todos.push(it);
   });
-  const cnt=k=>falta.filter(i=>i.sit===k).length;
-  return{falta,resolvidos,grupos:FALTA_grupos(falta),novos:cnt('novo'),piorou:cnt('piorou'),melhorou:cnt('melhorou')};
+  const lista=cat=>todos.filter(FALTA_CATS[cat].teste);
+  const resolvidos=todos.filter(i=>i.s1>=0&&i.s0!=null&&i.s0<0);
+  const cont={};Object.keys(FALTA_CATS).forEach(k=>{cont[k]=lista(k).length;});
+  return{todos,lista,cont,resolvidos};
 }
-function FALTA_grupos(lista){
+function FALTA_grupos(lista,cat){
   const m={};
   lista.forEach(i=>{(m[i.setor]=m[i.setor]||[]).push(i);});
   const ord=[...SETOR_ORDER,...Object.keys(m).filter(s=>!SETOR_ORDER.includes(s))];
-  return ord.filter(s=>m[s]).map(s=>({setor:s,itens:m[s].sort((a,b)=>a.s1-b.s1)}));
+  const cmp=cat==='zerados'?(a,b)=>b.d1-a.d1||a.descricao.localeCompare(b.descricao):cat==='zero'?(a,b)=>b.e1-a.e1:(a,b)=>a.s1-b.s1;
+  return ord.filter(s=>m[s]).map(s=>({setor:s,itens:m[s].sort(cmp)}));
 }
+function FALTA_sitTxt(i,cat){
+  if(cat==='falta'||cat==='faturado')return FALTA_SIT[i.sit];
+  return i.sit==='novo'?'Novo':i.sit==='melhorou'?'Saldo subiu':i.sit==='piorou'?'Saldo caiu':'Igual';
+}
+function FALTA_sitCls(i,cat){return(cat==='falta'||cat==='faturado')?i.sit:(i.sit==='novo'?'igual':i.sit);}
+function FALTA_cat(k){FALTA_CAT=k;FALTA_render();}
 function FALTA_render(){
   const el=document.getElementById('viewFalta');if(!el)return;
   if(!FALTA.carregado){
@@ -18739,49 +18762,46 @@ function FALTA_render(){
     return;
   }
   if(!FALTA.d1){el.innerHTML='<div class="empty-state"><div class="empty-icon">📂</div>Ainda não há posição de estoque gravada. Importe os dados do CIGAM.</div>';return;}
-  const c=FALTA_calc();
+  const c=FALTA_calc(),cat=FALTA_CAT,def=FALTA_CATS[cat];
   const f=v=>v==null?'—':histFmt(v);
   const d1=FALTA_dm(FALTA.d1),d0=FALTA_dm(FALTA.d0);
   const info=`Posição de <b>${d1}</b>${FALTA.t1?' ('+FALTA.t1+')':''}`+(FALTA.d0?` comparada com <b>${d0}</b>${FALTA.t0?' ('+FALTA.t0+')':''}`:' · sem dia anterior para comparar');
-  const head=`<thead><tr><th rowspan="2">Produto</th><th rowspan="2" class="c">Un</th><th colspan="2" class="dia">${d0||'ontem'}</th><th colspan="2" class="dia">${d1}</th><th rowspan="2">Falta</th><th rowspan="2">Saiu do estoque</th><th rowspan="2" class="c">Situação</th></tr><tr><th>Estoque</th><th>Demanda</th><th>Estoque</th><th>Demanda</th></tr></thead>`;
-  const linha=i=>`<tr><td>${opEsc(i.descricao)}<small>${HIST_TIPO_LABEL[i.tipo]||i.tipo} · ${opEsc(i.codigo)}</small></td><td class="c">${opEsc(i.un)}</td><td>${f(i.e0)}</td><td>${f(i.d0)}</td><td>${f(i.e1)}</td><td>${f(i.d1)}</td><td class="falta">${histFmt(-i.s1)}</td><td>${i.saiu==null?'—':(i.saiu?histFmt(i.saiu):'–')}</td><td class="c"><span class="fal-sit ${i.sit}">${FALTA_SIT[i.sit]}</span></td></tr>`;
-  const secoes=c.grupos.map(g=>`<div class="fal-sec"><div class="fal-sec-h">${opEsc(g.setor)}<span>${g.itens.length} produto${g.itens.length>1?'s':''}</span></div><div class="fal-scroll"><table class="hist-tab fal-tab">${head}<tbody>${g.itens.map(linha).join('')}</tbody></table></div></div>`).join('');
-  const resolvidos=c.resolvidos.length?`<details class="fal-det"><summary>Saíram da falta desde ${d0} (${c.resolvidos.length})</summary><div class="fal-sec"><div class="fal-scroll"><table class="hist-tab fal-tab"><thead><tr><th>Produto</th><th class="c">Un</th><th>Saldo ${d0}</th><th>Estoque ${d1}</th><th>Demanda ${d1}</th><th>Saldo ${d1}</th></tr></thead><tbody>${c.resolvidos.sort((a,b)=>b.s1-a.s1).map(i=>`<tr><td>${opEsc(i.descricao)}<small>${opEsc(i.setor)} · ${HIST_TIPO_LABEL[i.tipo]||i.tipo} · ${opEsc(i.codigo)}</small></td><td class="c">${opEsc(i.un)}</td><td>${f(i.s0)}</td><td>${f(i.e1)}</td><td>${f(i.d1)}</td><td class="sobra">${f(i.s1)}</td></tr>`).join('')}</tbody></table></div></div></details>`:'';
+  const grupos=FALTA_grupos(c.lista(cat),cat);
+  const head=`<thead><tr><th rowspan="2">Produto</th><th rowspan="2" class="c">Un</th><th colspan="2" class="dia">${d0||'ontem'}</th><th colspan="2" class="dia">${d1}</th><th rowspan="2">${def.col}</th><th rowspan="2">Saiu do estoque</th><th rowspan="2" class="c">Situação</th></tr><tr><th>Estoque</th><th>Demanda</th><th>Estoque</th><th>Demanda</th></tr></thead>`;
+  const linha=i=>`<tr><td>${opEsc(i.descricao)}<small>${HIST_TIPO_LABEL[i.tipo]||i.tipo} · ${opEsc(i.codigo)}</small></td><td class="c">${opEsc(i.un)}</td><td>${f(i.e0)}</td><td>${f(i.d0)}</td><td>${f(i.e1)}</td><td>${f(i.d1)}</td><td class="${i.s1<0?'falta':i.s1>0?'sobra':''}">${def.col==='Falta'?histFmt(-i.s1):histFmt(i.s1)}</td><td>${i.saiu==null?'—':(i.saiu?histFmt(i.saiu):'–')}</td><td class="c"><span class="fal-sit ${FALTA_sitCls(i,cat)}">${FALTA_sitTxt(i,cat)}</span></td></tr>`;
+  const secoes=grupos.map(g=>`<div class="fal-sec"><div class="fal-sec-h">${opEsc(g.setor)}<span>${g.itens.length} produto${g.itens.length>1?'s':''}</span></div><div class="fal-scroll"><table class="hist-tab fal-tab">${head}<tbody>${g.itens.map(linha).join('')}</tbody></table></div></div>`).join('');
+  const resolvidos=(cat==='falta'||cat==='faturado')&&c.resolvidos.length?`<details class="fal-det"><summary>Saíram da falta desde ${d0} (${c.resolvidos.length})</summary><div class="fal-sec"><div class="fal-scroll"><table class="hist-tab fal-tab"><thead><tr><th>Produto</th><th class="c">Un</th><th>Saldo ${d0}</th><th>Estoque ${d1}</th><th>Demanda ${d1}</th><th>Saldo ${d1}</th></tr></thead><tbody>${c.resolvidos.sort((a,b)=>b.s1-a.s1).map(i=>`<tr><td>${opEsc(i.descricao)}<small>${opEsc(i.setor)} · ${HIST_TIPO_LABEL[i.tipo]||i.tipo} · ${opEsc(i.codigo)}</small></td><td class="c">${opEsc(i.un)}</td><td>${f(i.s0)}</td><td>${f(i.e1)}</td><td>${f(i.d1)}</td><td class="sobra">${f(i.s1)}</td></tr>`).join('')}</tbody></table></div></div></details>`:'';
+  const card=(k,tom)=>`<div class="fal-kpi ${tom}${k===cat?' on':''}" onclick="FALTA_cat('${k}')"><b>${c.cont[k]}</b><small>${FALTA_CATS[k].rotulo}</small><em>${FALTA_CATS[k].regra}</em></div>`;
   el.innerHTML=`<div class="fal-bar"><div class="hist-info">${info}</div><button class="fal-btn" onclick="FALTA_atualizar()">Atualizar</button><button class="fal-btn pri" onclick="FALTA_exportarPDF()">Exportar PDF</button></div>
-    <div class="fal-kpis">
-      <div class="fal-kpi bad"><b>${c.falta.length}</b><small>Em falta hoje</small></div>
-      <div class="fal-kpi bad"><b>${c.novos}</b><small>Novos desde ${d0||'ontem'}</small></div>
-      <div class="fal-kpi warn"><b>${c.piorou}</b><small>Pioraram</small></div>
-      <div class="fal-kpi good"><b>${c.melhorou}</b><small>Melhoraram</small></div>
-      <div class="fal-kpi good"><b>${c.resolvidos.length}</b><small>Saíram da falta</small></div>
-    </div>
-    <div class="fal-legenda"><b>Estoque</b> = o que existe fisicamente · <b>Demanda</b> = pedidos já reservados para sair · <b>Falta</b> = demanda − estoque · <b>Saiu do estoque</b> = queda do estoque físico entre as duas posições (líquido: pode incluir faturamento, transferência ou ajuste). Use os filtros da barra acima (local, setor, busca) para recortar.</div>
-    ${secoes||'<div class="empty-state"><div class="empty-icon">✅</div>Nenhum produto em falta com os filtros atuais.</div>'}${resolvidos}`;
+    <div class="fal-kpis">${card('falta','bad')}${card('zerados','warn')}${card('faturado','bad')}${card('zero','warn')}${card('positivos','good')}</div>
+    <div class="fal-legenda"><b>Estoque</b> = o que existe fisicamente · <b>Demanda</b> = pedidos já reservados para sair · <b>Saldo</b> = estoque − demanda · <b>Falta</b> = demanda − estoque · <b>Saiu do estoque</b> = queda do estoque físico entre as duas posições (líquido: pode incluir faturamento, transferência ou ajuste). Clique num card para ver a lista; os filtros da barra acima (local, setor, busca) valem para todos.</div>
+    ${secoes||'<div class="empty-state"><div class="empty-icon">✅</div>Nenhum produto nesta categoria com os filtros atuais.</div>'}${resolvidos}`;
 }
 function FALTA_atualizar(){FALTA.carregado=false;FALTA.erro='';renderAlerts();}
 function FALTA_exportarPDF(){
   if(!window.jspdf||!window.jspdf.jsPDF){alert('Não foi possível carregar a biblioteca de PDF (sem conexão com a internet?). Tente novamente.');return;}
-  const c=FALTA_calc();
-  if(!c.falta.length){alert('Não há produtos em falta com os filtros atuais.');return;}
+  const c=FALTA_calc(),cat=FALTA_CAT,def=FALTA_CATS[cat],lista=c.lista(cat);
+  if(!lista.length){alert('Não há produtos nesta categoria com os filtros atuais.');return;}
+  const grupos=FALTA_grupos(lista,cat);
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({unit:'mm',format:'a4',orientation:'landscape'});
   const d1=FALTA_dm(FALTA.d1),d0=FALTA_dm(FALTA.d0),ano=FALTA.d1.slice(0,4);
   const mx=12,W=297-mx*2;
   const filtros=[locFilter!=='ALL'?(HIST_TIPO_LABEL[locFilter]||locFilter):'',(alertaSetores.size&&!_setorTodosMarcados())?('setores: '+[...alertaSetores].join(', ')):''].filter(Boolean).join(' | ');
   doc.setFont('helvetica','bold');doc.setFontSize(15);doc.setTextColor(139,0,0);
-  doc.text(`Produtos com falta de estoque - ${d1}/${ano}`,mx,14);
+  doc.text(`${def.titulo} - ${d1}/${ano}`,mx,14);
   doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(60,60,60);
   let y=20;
-  const resumo=`${c.falta.length} produtos com demanda maior que o estoque. ${c.novos} novos desde ${d0||'ontem'}, ${c.piorou} pioraram, ${c.melhorou} melhoraram, ${c.resolvidos.length} sairam da falta. Posicao de ${d1}${FALTA.t1?' ('+FALTA.t1+')':''}${FALTA.d0?' comparada com '+d0+(FALTA.t0?' ('+FALTA.t0+')':''):''}.${filtros?' Filtros: '+filtros+'.':''}`;
+  const resumo=`${lista.length} produtos (${def.regra}). Em falta: ${c.cont.falta} | Zerados: ${c.cont.zerados} | Saldo zero: ${c.cont.zero} | Disponiveis: ${c.cont.positivos}. Posicao de ${d1}${FALTA.t1?' ('+FALTA.t1+')':''}${FALTA.d0?' comparada com '+d0+(FALTA.t0?' ('+FALTA.t0+')':''):''}.${filtros?' Filtros: '+filtros+'.':''}`;
   doc.splitTextToSize(resumo,W).forEach(l=>{doc.text(l,mx,y);y+=4.3;});
   y+=1;
-  const leg='Estoque = o que existe fisicamente. Demanda = pedidos ja reservados para sair. Falta = demanda - estoque (o que ainda precisa ser produzido ou entrar). Saiu do estoque = queda do estoque fisico entre as duas posicoes.';
+  const leg='Estoque = o que existe fisicamente. Demanda = pedidos ja reservados para sair. Saldo = estoque - demanda. Falta = demanda - estoque. Saiu do estoque = queda do estoque fisico entre as duas posicoes.';
   doc.setFontSize(8);doc.setTextColor(100,100,100);
   doc.splitTextToSize(leg,W).forEach(l=>{doc.text(l,mx,y);y+=3.8;});
   y+=2;
   const n=v=>v==null?'-':histFmt(v);
   const cor={novo:[248,203,173],piorou:[255,230,153],melhorou:[198,224,180],igual:[230,230,230]};
-  c.grupos.forEach(g=>{
+  grupos.forEach(g=>{
     if(y>170){doc.addPage();y=14;}
     doc.setFont('helvetica','bold');doc.setFontSize(10.5);doc.setTextColor(139,0,0);
     doc.text(`${g.setor} - ${g.itens.length} produto(s)`,mx,y);
@@ -18789,16 +18809,17 @@ function FALTA_exportarPDF(){
       startY:y+2,margin:{left:mx,right:mx},theme:'grid',
       styles:{font:'helvetica',fontSize:7.8,cellPadding:1.6,lineColor:[200,200,200],lineWidth:0.2,textColor:[30,30,30]},
       headStyles:{fillColor:[139,0,0],textColor:255,halign:'center',valign:'middle',fontStyle:'bold'},
-      head:[[{content:'Codigo',rowSpan:2},{content:'Produto',rowSpan:2},{content:'Un',rowSpan:2},{content:d0||'ontem',colSpan:2},{content:d1,colSpan:2},{content:'FALTA',rowSpan:2},{content:'Saiu do estoque',rowSpan:2},{content:'Situacao',rowSpan:2}],['Estoque','Demanda','Estoque','Demanda']],
-      body:g.itens.map(i=>[i.codigo,i.descricao+' ('+(HIST_TIPO_LABEL[i.tipo]||i.tipo)+')',i.un,n(i.e0),n(i.d0),n(i.e1),n(i.d1),histFmt(-i.s1),i.saiu?histFmt(i.saiu):'-',FALTA_SIT[i.sit]]),
-      columnStyles:{0:{cellWidth:20,halign:'center'},1:{cellWidth:'auto'},2:{cellWidth:10,halign:'center'},3:{halign:'right',cellWidth:19},4:{halign:'right',cellWidth:19},5:{halign:'right',cellWidth:19},6:{halign:'right',cellWidth:19},7:{halign:'right',cellWidth:19,fontStyle:'bold',textColor:[192,0,0]},8:{halign:'right',cellWidth:21},9:{halign:'center',cellWidth:21}},
-      didParseCell:d=>{if(d.section==='body'&&d.column.index===9){const it=g.itens[d.row.index];if(it&&cor[it.sit])d.cell.styles.fillColor=cor[it.sit];}}
+      head:[[{content:'Codigo',rowSpan:2},{content:'Produto',rowSpan:2},{content:'Un',rowSpan:2},{content:d0||'ontem',colSpan:2},{content:d1,colSpan:2},{content:def.col.toUpperCase(),rowSpan:2},{content:'Saiu do estoque',rowSpan:2},{content:'Situacao',rowSpan:2}],['Estoque','Demanda','Estoque','Demanda']],
+      body:g.itens.map(i=>[i.codigo,i.descricao+' ('+(HIST_TIPO_LABEL[i.tipo]||i.tipo)+')',i.un,n(i.e0),n(i.d0),n(i.e1),n(i.d1),def.col==='Falta'?histFmt(-i.s1):histFmt(i.s1),i.saiu?histFmt(i.saiu):'-',FALTA_sitTxt(i,cat)]),
+      columnStyles:{0:{cellWidth:20,halign:'center'},1:{cellWidth:'auto'},2:{cellWidth:10,halign:'center'},3:{halign:'right',cellWidth:19},4:{halign:'right',cellWidth:19},5:{halign:'right',cellWidth:19},6:{halign:'right',cellWidth:19},7:{halign:'right',cellWidth:19,fontStyle:'bold'},8:{halign:'right',cellWidth:21},9:{halign:'center',cellWidth:23}},
+      didParseCell:d=>{if(d.section==='body'&&d.column.index===9){const it=g.itens[d.row.index];if(it&&cor[FALTA_sitCls(it,cat)])d.cell.styles.fillColor=cor[FALTA_sitCls(it,cat)];}
+        if(d.section==='body'&&d.column.index===7){const it=g.itens[d.row.index];if(it)d.cell.styles.textColor=it.s1<0?[192,0,0]:it.s1>0?[47,125,82]:[30,30,30];}}
     });
     y=doc.lastAutoTable.finalY+7;
   });
   const pg=doc.getNumberOfPages();
   for(let p=1;p<=pg;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(130,130,130);doc.text(`Bread King - PCP & Estoque - pagina ${p}/${pg}`,mx,205);}
-  doc.save(`falta_estoque_${FALTA.d1}.pdf`);
+  doc.save(`${cat}_estoque_${FALTA.d1}.pdf`);
 }
 
 // ─── KANBAN (Estoque) ────────────────────────────────────────────────────────
