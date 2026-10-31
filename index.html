@@ -1292,6 +1292,15 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .fal-x{display:none}
 #page-pcp-estoque .fal-x.open{display:table-row}
 #page-pcp-estoque .fal-x td{text-align:left;background:var(--cream)}
+#page-pcp-estoque .fal-hist{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);width:100%}
+#page-pcp-estoque .fal-hist-t{font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;color:var(--ink-soft);margin-bottom:6px}
+#page-pcp-estoque .fal-hist-cv{position:relative;height:210px;width:100%}
+#page-pcp-estoque .fal-hist-msg{font-size:12px;color:var(--ink-soft)}
+#page-pcp-estoque .fal-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+#page-pcp-estoque .fal-chip{background:var(--cream);border:1px solid var(--line);border-radius:999px;padding:3px 11px;font-size:11.5px;color:var(--ink-soft)}
+#page-pcp-estoque .fal-chip b{color:var(--ink)}
+#page-pcp-estoque .fal-chip.ent b{color:var(--good)}
+#page-pcp-estoque .fal-chip.sai b{color:var(--red)}
 #page-pcp-estoque .fal-grid{display:flex;flex-wrap:wrap;gap:22px}
 #page-pcp-estoque .fal-grid div small{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft);font-weight:700}
 #page-pcp-estoque .fal-grid div b{font-size:14px;color:var(--ink)}
@@ -18761,7 +18770,7 @@ document.addEventListener('click',e=>{
 // Usa as duas últimas posições de estoque_historico (última importação de cada dia).
 // Demanda = reserva. Falta = demanda − estoque; entra na lista quem tem saldo (estoque − reserva) negativo.
 // Produto sem setor no catálogo cai em REVENDA (getSetor).
-const FALTA={carregado:false,carregando:false,erro:'',d1:'',d0:'',t1:'',t0:'',r1:[],r0:[],mapa:{}};
+const FALTA={carregado:false,carregando:false,erro:'',d1:'',d0:'',t1:'',t0:'',r1:[],r0:[],mapa:{},hist:{},charts:[]};
 const FALTA_COLS='tipo,codigo,descricao,familia,estoque,reserva,saldo,un,veio_import,updated_at';
 const FALTA_SIT={novo:'Entrou na falta',piorou:'Piorou',melhorou:'Melhorou',igual:'Igual a ontem'};
 function FALTA_dm(iso){return iso?iso.slice(8,10)+'/'+iso.slice(5,7):'';}
@@ -18927,9 +18936,79 @@ function FALTA_opHtml(i){
   if(!p.tag)return '<span class="fal-nd">—</span>';
   return `<span class="fal-op ${p.tag}"${p.tag==='sim'?` title="OP de ${FALTA_dm(opData.data||'')}"`:''}>${p.l1}${p.l2?`<small>${opEsc(p.l2)}</small>`:''}</span>`;
 }
-function FALTA_tog(tr){const x=tr.nextElementSibling;if(!x)return;x.classList.toggle('open');tr.classList.toggle('open');}
+function FALTA_tog(tr){
+  const x=tr.nextElementSibling;if(!x)return;
+  x.classList.toggle('open');tr.classList.toggle('open');
+  const box=x.querySelector('.fal-hist');
+  if(x.classList.contains('open')&&box&&!box.dataset.ok)FALTA_hist(box);
+}
+// ─── Histórico do produto: linha de estoque x reservado (demanda) dos dias gravados ───
+async function FALTA_histDados(tipo,cod){
+  const k=tipo+'|'+cod;
+  if(FALTA.hist[k])return FALTA.hist[k];
+  const rows=await FALTA_get('select=data,estoque,reserva&tipo=eq.'+encodeURIComponent(tipo)+'&codigo=eq.'+encodeURIComponent(cod)+'&order=data.asc&limit=60');
+  FALTA.hist[k]=rows.map(r=>({data:r.data,e:Number(r.estoque)||0,d:Number(r.reserva)||0}));
+  return FALTA.hist[k];
+}
+function FALTA_cor(el,nome,alfa){
+  const c=getComputedStyle(el).getPropertyValue(nome).trim();
+  if(alfa==null||!/^#[0-9a-f]{6}$/i.test(c))return c;
+  const n=parseInt(c.slice(1),16);
+  return `rgba(${n>>16},${(n>>8)&255},${n&255},${alfa})`;
+}
+async function FALTA_hist(box){
+  box.dataset.ok='1';
+  const un=box.dataset.un||'';
+  const msg=t=>{box.innerHTML=`<div class="fal-hist-msg">${t}</div>`;};
+  let pts;
+  try{pts=await FALTA_histDados(box.dataset.tipo,box.dataset.cod);}
+  catch(e){box.dataset.ok='';msg('Não foi possível carregar o histórico. Feche e abra a linha para tentar de novo.');return;}
+  if(pts.length<2){msg('Histórico ainda curto: só '+pts.length+' dia gravado. O gráfico aparece a partir de 2 dias.');return;}
+  if(typeof Chart==='undefined'){msg('Biblioteca de gráficos não carregou. Verifique a conexão.');return;}
+  const dias=pts.map(q=>FALTA_dm(q.data));
+  // Entrada = estoque subiu de um dia para o outro; saída = estoque caiu (variação líquida, não é venda real)
+  const dl=pts.slice(1).map((q,i)=>({dia:dias[i+1],v:q.e-pts[i].e}));
+  const ent=dl.filter(x=>x.v>0).sort((a,b)=>b.v-a.v)[0],sai=dl.filter(x=>x.v<0).sort((a,b)=>a.v-b.v)[0];
+  const saidas=dl.filter(x=>x.v<0),mediaSai=saidas.length?saidas.reduce((t,x)=>t-x.v,0)/dl.length:0;
+  const zerado=pts.filter(q=>q.e===0).length,falta=pts.filter(q=>q.d>q.e).length;
+  const f=v=>histFmt(Math.round(v*10)/10);
+  const chips=[
+    ent?`<span class="fal-chip ent">Maior entrada <b>+${f(ent.v)} ${opEsc(un)}</b> em ${ent.dia}</span>`:'',
+    sai?`<span class="fal-chip sai">Maior saída <b>${f(sai.v)} ${opEsc(un)}</b> em ${sai.dia}</span>`:'',
+    `<span class="fal-chip">Saída média <b>${f(mediaSai)} ${opEsc(un)}/dia</b></span>`,
+    `<span class="fal-chip">Zerado <b>${zerado} de ${pts.length} dias</b></span>`,
+    `<span class="fal-chip">Em falta <b>${falta} de ${pts.length} dias</b></span>`
+  ].join('');
+  box.innerHTML=`<div class="fal-hist-t">Histórico de ${dias[0]} a ${dias[dias.length-1]} · ${pts.length} dias</div><div class="fal-hist-cv"><canvas></canvas></div><div class="fal-chips">${chips}</div>`;
+  const cv=box.querySelector('canvas');
+  const ink=FALTA_cor(box,'--ink'),red=FALTA_cor(box,'--red'),good=FALTA_cor(box,'--good'),grid=FALTA_cor(box,'--line'),soft=FALTA_cor(box,'--ink-soft');
+  FALTA.charts.push(new Chart(cv,{
+    type:'line',
+    data:{labels:dias,datasets:[
+      {label:'Estoque',data:pts.map(q=>q.e),borderColor:ink,backgroundColor:ink,borderWidth:2,pointRadius:3,tension:0.15,
+       fill:{target:'+1',above:FALTA_cor(box,'--good',0.18),below:FALTA_cor(box,'--red',0.22)}},
+      {label:'Reservado (demanda)',data:pts.map(q=>q.d),borderColor:red,backgroundColor:red,borderWidth:2,borderDash:[6,4],pointRadius:3,tension:0.15,fill:false}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'top',align:'start',labels:{boxWidth:14,boxHeight:3,color:soft,font:{size:11}}},
+        tooltip:{callbacks:{
+          label:c=>c.dataset.label+': '+histFmt(c.parsed.y)+' '+un,
+          afterBody:i=>{const q=pts[i[0].dataIndex];const s=q.e-q.d;return 'Saldo: '+(s>0?'+':'')+histFmt(s)+' '+un;}
+        }}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{color:soft,font:{size:11}}},
+        y:{beginAtZero:true,grid:{color:grid},ticks:{color:soft,font:{size:11}},title:{display:true,text:un,color:soft,font:{size:11}}}
+      }
+    }
+  }));
+}
 function FALTA_render(){
   const el=document.getElementById('viewFalta');if(!el)return;
+  FALTA.charts.forEach(c=>c.destroy());FALTA.charts=[];
   if(!FALTA.carregado){
     if(!FALTA.carregando)FALTA_carregar();
     el.innerHTML=FALTA.erro
@@ -18947,7 +19026,7 @@ function FALTA_render(){
   const vcls=i=>i.s1<0?'falta':i.s1>0?'sobra':'';
   const head=`<thead><tr><th>Produto</th><th>Estoque</th><th>Reservado</th><th>${def.col}</th><th class="c">Produzindo hoje</th><th>Atendimento</th><th class="c">vs ${d0||'ontem'}</th><th class="x"></th></tr></thead>`;
   const linha=i=>`<tr class="fal-r" onclick="FALTA_tog(this)"><td>${opEsc(i.descricao)}<small>${HIST_TIPO_LABEL[i.tipo]||i.tipo} · ${opEsc(i.codigo)}</small></td><td class="num">${histFmt(i.e1)} <small class="u">${opEsc(i.un)}</small></td><td class="num">${histFmt(i.d1)} <small class="u">${opEsc(i.un)}</small></td><td class="${vcls(i)}">${val(i)} <small class="u">${opEsc(i.un)}</small></td><td class="c">${FALTA_opHtml(i)}</td><td>${FALTA_barra(i)}</td><td class="c"><span class="fal-sit ${FALTA_sitCls(i,cat)}">${FALTA_sitTxt(i,cat)}</span></td><td class="x">▾</td></tr>
-    <tr class="fal-x"><td colspan="8"><div class="fal-grid"><div><small>Estoque ${d0||'ontem'}</small><b>${f(i.e0)}</b></div><div><small>Reservado ${d0||'ontem'}</small><b>${f(i.d0)}</b></div><div><small>Saiu do estoque</small><b>${i.saiu==null?'—':f(i.saiu)}</b></div></div></td></tr>`;
+    <tr class="fal-x"><td colspan="8"><div class="fal-grid"><div><small>Estoque ${d0||'ontem'}</small><b>${f(i.e0)}</b></div><div><small>Reservado ${d0||'ontem'}</small><b>${f(i.d0)}</b></div><div><small>Saiu do estoque</small><b>${i.saiu==null?'—':f(i.saiu)}</b></div></div><div class="fal-hist" data-tipo="${opEsc(i.tipo)}" data-cod="${opEsc(i.codigo)}" data-un="${opEsc(i.un)}"><div class="fal-hist-msg">Carregando histórico…</div></div></td></tr>`;
   const grupos=FALTA_grupos(c.lista(cat),cat);
   const secoes=grupos.map(g=>`<div class="fal-sec"><div class="fal-sec-h">${opEsc(g.setor)}<span>${g.itens.length} produto${g.itens.length>1?'s':''}</span></div><div class="fal-scroll"><table class="hist-tab fal-tab fal-tab2">${head}<tbody>${g.itens.map(linha).join('')}</tbody></table></div></div>`).join('');
   // Prioridades: menor cobertura primeiro (0% = nada em estoque), desempate pela maior demanda
@@ -18963,7 +19042,7 @@ function FALTA_render(){
 function FALTA_top(lista){
   return [...lista].sort((a,b)=>(a.pct==null?101:a.pct)-(b.pct==null?101:b.pct)||b.d1-a.d1).slice(0,8);
 }
-function FALTA_atualizar(){FALTA.carregado=false;FALTA.erro='';renderAlerts();}
+function FALTA_atualizar(){FALTA.hist={};FALTA.carregado=false;FALTA.erro='';renderAlerts();}
 function FALTA_exportarPDF(){
   if(!window.jspdf||!window.jspdf.jsPDF){alert('Não foi possível carregar a biblioteca de PDF (sem conexão com a internet?). Tente novamente.');return;}
   const c=FALTA_calc(),cat=FALTA_CAT,def=FALTA_CATS[cat],lista=c.lista(cat);
