@@ -1276,8 +1276,8 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .fal-tab2 td.falta,#page-pcp-estoque .fal-tab2 td.sobra{font-size:15px;white-space:nowrap}
 #page-pcp-estoque .fal-tab2{table-layout:fixed;width:100%}
 #page-pcp-estoque .fal-tab2 th:nth-child(2){width:120px}
-#page-pcp-estoque .fal-tab2 th:nth-child(3){width:190px}
-#page-pcp-estoque .fal-tab2 th:nth-child(4){width:150px}
+#page-pcp-estoque .fal-tab2 th:nth-child(3){width:150px}
+#page-pcp-estoque .fal-tab2 th:nth-child(4){width:190px}
 #page-pcp-estoque .fal-tab2 th:nth-child(5){width:150px}
 #page-pcp-estoque .fal-tab2 th:nth-child(6){width:32px}
 #page-pcp-estoque .fal-tab2 th:not(:first-child),#page-pcp-estoque .fal-tab2 td:not(:first-child){text-align:center;vertical-align:middle}
@@ -18894,8 +18894,8 @@ function FALTA_render(){
   const info=`Posição de <b>${d1}</b>${FALTA.t1?' ('+FALTA.t1+')':''}`+(FALTA.d0?` comparada com <b>${d0}</b>${FALTA.t0?' ('+FALTA.t0+')':''}`:' · sem dia anterior para comparar');
   const val=i=>def.col==='Falta'?histFmt(-i.s1):histFmt(i.s1);
   const vcls=i=>i.s1<0?'falta':i.s1>0?'sobra':'';
-  const head=`<thead><tr><th>Produto</th><th>${def.col}</th><th>Atendimento</th><th class="c">Em produção</th><th class="c">vs ${d0||'ontem'}</th><th class="x"></th></tr></thead>`;
-  const linha=i=>`<tr class="fal-r" onclick="FALTA_tog(this)"><td>${opEsc(i.descricao)}<small>${HIST_TIPO_LABEL[i.tipo]||i.tipo} · ${opEsc(i.codigo)}</small></td><td class="${vcls(i)}">${val(i)} <small class="u">${opEsc(i.un)}</small></td><td>${FALTA_barra(i)}</td><td class="c">${FALTA_opHtml(i)}</td><td class="c"><span class="fal-sit ${FALTA_sitCls(i,cat)}">${FALTA_sitTxt(i,cat)}</span></td><td class="x">▾</td></tr>
+  const head=`<thead><tr><th>Produto</th><th>${def.col}</th><th class="c">Produzindo hoje</th><th>Atendimento</th><th class="c">vs ${d0||'ontem'}</th><th class="x"></th></tr></thead>`;
+  const linha=i=>`<tr class="fal-r" onclick="FALTA_tog(this)"><td>${opEsc(i.descricao)}<small>${HIST_TIPO_LABEL[i.tipo]||i.tipo} · ${opEsc(i.codigo)}</small></td><td class="${vcls(i)}">${val(i)} <small class="u">${opEsc(i.un)}</small></td><td class="c">${FALTA_opHtml(i)}</td><td>${FALTA_barra(i)}</td><td class="c"><span class="fal-sit ${FALTA_sitCls(i,cat)}">${FALTA_sitTxt(i,cat)}</span></td><td class="x">▾</td></tr>
     <tr class="fal-x"><td colspan="6"><div class="fal-grid"><div><small>Estoque hoje (${d1})</small><b>${f(i.e1)}</b></div><div><small>Demanda hoje</small><b>${f(i.d1)}</b></div><div><small>Estoque ${d0||'ontem'}</small><b>${f(i.e0)}</b></div><div><small>Demanda ${d0||'ontem'}</small><b>${f(i.d0)}</b></div><div><small>Saiu do estoque</small><b>${i.saiu==null?'—':f(i.saiu)}</b></div></div></td></tr>`;
   const grupos=FALTA_grupos(c.lista(cat),cat);
   const secoes=grupos.map(g=>`<div class="fal-sec"><div class="fal-sec-h">${opEsc(g.setor)}<span>${g.itens.length} produto${g.itens.length>1?'s':''}</span></div><div class="fal-scroll"><table class="hist-tab fal-tab fal-tab2">${head}<tbody>${g.itens.map(linha).join('')}</tbody></table></div></div>`).join('');
@@ -18906,7 +18906,7 @@ function FALTA_render(){
   el.innerHTML=`<div class="fal-bar"><div class="hist-info">${info}</div><button class="fal-btn" onclick="FALTA_atualizar()">Atualizar</button><button class="fal-btn pri" onclick="FALTA_exportarPDF()">Exportar PDF</button></div>
     <div class="fal-kpis">${card('falta','bad')}${card('zerados','warn')}${card('faturado','bad')}${card('zero','warn')}${card('positivos','good')}</div>
     ${top?`<div class="fal-top-h">Mais críticos agora <span>menor cobertura da demanda primeiro</span></div><div class="fal-tops">${top}</div>`:''}
-    <div class="fal-legenda"><b>${def.col}</b> = ${def.col==='Falta'?'quanto falta para atender a demanda':'estoque − demanda'} · <b>Atendimento</b> = quanto da demanda o estoque atende (0% = nada em estoque) · <b>Em produção</b> = se está na OP do dia e, quando a massa tem rendimento no Mapa, quantas receitas (rec.) isso representa ou precisa · clique numa linha para ver estoque e demanda dos dois dias. Os filtros da barra acima valem para todos os cards.</div>
+    <div class="fal-legenda"><b>${def.col}</b> = ${def.col==='Falta'?'quanto falta para atender a demanda':'estoque − demanda'} · <b>Atendimento</b> = quanto da demanda o estoque atende (0% = nada em estoque) · <b>Produzindo hoje</b> = quantidade da OP do dia, na mesma unidade da coluna ${def.col} · clique numa linha para ver estoque e demanda dos dois dias. Os filtros da barra acima valem para todos os cards.</div>
     ${secoes||'<div class="empty-state"><div class="empty-icon">✅</div>Nenhum produto nesta categoria com os filtros atuais.</div>'}${resolvidos}`;
 }
 function FALTA_top(lista){
@@ -18930,7 +18930,7 @@ function FALTA_exportarPDF(){
   const resumo=`${lista.length} produtos (${def.regra}). Em falta: ${c.cont.falta} | Faturado sem estoque: ${c.cont.faturado} | Zerados: ${c.cont.zerados} | Saldo zero: ${c.cont.zero} | Disponiveis: ${c.cont.positivos}. Posicao de ${d1}${FALTA.t1?' ('+FALTA.t1+')':''}${FALTA.d0?' comparada com '+d0+(FALTA.t0?' ('+FALTA.t0+')':''):''}.${filtros?' Filtros: '+filtros+'.':''}`;
   doc.splitTextToSize(resumo,W).forEach(l=>{doc.text(l,mx,y);y+=4.3;});
   y+=1;
-  const leg=(def.col==='Falta'?'Falta = quanto falta para atender a demanda. ':'Saldo = estoque - demanda. ')+'Atendimento = quanto da demanda o estoque atende (0% = nada em estoque). Demanda = pedidos ja reservados para sair. Em producao = se esta na OP do dia; rec. = receitas da massa (rendimento do Mapa).';
+  const leg=(def.col==='Falta'?'Falta = quanto falta para atender a demanda. ':'Saldo = estoque - demanda. ')+'Atendimento = quanto da demanda o estoque atende (0% = nada em estoque). Demanda = pedidos ja reservados para sair. Produzindo hoje = quantidade da OP do dia, na mesma unidade da coluna de falta.';
   doc.setFontSize(8);doc.setTextColor(100,100,100);
   doc.splitTextToSize(leg,W).forEach(l=>{doc.text(l,mx,y);y+=3.8;});
   y+=2;
@@ -18943,14 +18943,14 @@ function FALTA_exportarPDF(){
     styles:{font:'helvetica',fontSize:8,cellPadding:1.7,lineColor:[200,200,200],lineWidth:0.2,textColor:[30,30,30]},
     headStyles:{fillColor:[139,0,0],textColor:255,halign:'center',valign:'middle',fontStyle:'bold'}
   };
-  const cols=(sit)=>({0:{cellWidth:18,halign:'center'},1:{cellWidth:'auto'},2:{cellWidth:9,halign:'center'},3:{cellWidth:20,halign:'right'},4:{cellWidth:20,halign:'right'},5:{cellWidth:22,halign:'right',fontStyle:'bold'},6:{cellWidth:22,halign:'center'},7:{cellWidth:50,halign:'center'},8:{cellWidth:26,halign:'center'}});
-  const head=[['Codigo','Produto','Un','Estoque','Demanda',def.col.toUpperCase(),'Atendimento','Em producao','vs '+(d0||'ontem')]];
-  const corpo=its=>its.map(i=>[i.codigo,i.descricao+' ('+(HIST_TIPO_LABEL[i.tipo]||i.tipo)+')',i.un,n(i.e1),n(i.d1),def.col==='Falta'?histFmt(-i.s1):histFmt(i.s1),pctTxt(i),opTxt(i),FALTA_sitTxt(i,cat)]);
+  const cols=(sit)=>({0:{cellWidth:18,halign:'center'},1:{cellWidth:'auto'},2:{cellWidth:9,halign:'center'},3:{cellWidth:20,halign:'right'},4:{cellWidth:20,halign:'right'},5:{cellWidth:22,halign:'right',fontStyle:'bold'},6:{cellWidth:30,halign:'center'},7:{cellWidth:24,halign:'center'},8:{cellWidth:26,halign:'center'}});
+  const head=[['Codigo','Produto','Un','Estoque','Demanda',def.col.toUpperCase(),'Produzindo hoje','Atendimento','vs '+(d0||'ontem')]];
+  const corpo=its=>its.map(i=>[i.codigo,i.descricao+' ('+(HIST_TIPO_LABEL[i.tipo]||i.tipo)+')',i.un,n(i.e1),n(i.d1),def.col==='Falta'?histFmt(-i.s1):histFmt(i.s1),opTxt(i),pctTxt(i),FALTA_sitTxt(i,cat)]);
   const parse=its=>d=>{
     if(d.section!=='body')return;const it=its[d.row.index];if(!it)return;
     if(d.column.index===5)d.cell.styles.textColor=it.s1<0?[192,0,0]:it.s1>0?[47,125,82]:[30,30,30];
-    if(d.column.index===6&&it.pct!=null)d.cell.styles.fillColor=it.pct<50?[248,203,173]:it.pct<100?[255,230,153]:[198,224,180];
-    if(d.column.index===7&&opData)d.cell.styles.fillColor=it.op?[198,224,180]:[248,203,173];
+    if(d.column.index===7&&it.pct!=null)d.cell.styles.fillColor=it.pct<50?[248,203,173]:it.pct<100?[255,230,153]:[198,224,180];
+    if(d.column.index===6&&opData)d.cell.styles.fillColor=it.op?[198,224,180]:[248,203,173];
     if(d.column.index===8&&cor[FALTA_sitCls(it,cat)])d.cell.styles.fillColor=cor[FALTA_sitCls(it,cat)];
   };
   if(ehFalta){
