@@ -1733,6 +1733,25 @@ body{background:#fff;color:#000}
   #page-mapa-rendimentos tr.mr-pendente .mr-prod{ font-weight:500; }
   #page-mapa-rendimentos .mr-vazio{ color:var(--ink-soft); text-align:center; padding:24px 0; }
   #page-mapa-rendimentos .mr-acoes{ display:flex; gap:6px; white-space:nowrap; }
+  #page-mapa-rendimentos .mr-tabs{ display:flex; gap:8px; margin-bottom:14px; border-bottom:2px solid var(--line); }
+  #page-mapa-rendimentos .mr-tab{ background:none; border:0; padding:9px 16px; font-size:13px; font-weight:700; color:var(--ink-soft); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; }
+  #page-mapa-rendimentos .mr-tab.active{ color:var(--red); border-bottom-color:var(--red); }
+  #page-mapa-rendimentos .rc-barra{ display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+  #page-mapa-rendimentos .rc-cab{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+  #page-mapa-rendimentos .rc-cab h3{ margin:0; font-size:17px; }
+  #page-mapa-rendimentos .rc-meta{ display:flex; gap:18px; flex-wrap:wrap; font-size:12.5px; color:var(--ink-soft); margin-bottom:12px; }
+  #page-mapa-rendimentos .rc-meta b{ color:var(--ink); }
+  #page-mapa-rendimentos .rc-var{ border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:12px; background:var(--paper); }
+  #page-mapa-rendimentos .rc-var-h{ display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap; font-weight:700; font-size:13px; }
+  #page-mapa-rendimentos .rc-var-h input{ flex:1 1 200px; }
+  #page-mapa-rendimentos .rc-tot{ font-size:12.5px; color:var(--ink-soft); margin-left:auto; }
+  #page-mapa-rendimentos .rc-tot b{ color:var(--red); font-size:14px; }
+  #page-mapa-rendimentos .rc-ing{ display:grid; grid-template-columns:90px 70px 90px 1fr 28px; gap:6px; margin-bottom:6px; align-items:center; }
+  #page-mapa-rendimentos .rc-ing input, #page-mapa-rendimentos .rc-ing select{ width:100%; min-width:0; }
+  #page-mapa-rendimentos .rc-x{ background:none; border:0; color:var(--red); font-size:18px; cursor:pointer; }
+  #page-mapa-rendimentos .rc-modo{ white-space:pre-wrap; font-size:12.5px; background:var(--cream); border-radius:8px; padding:10px 12px; margin-top:8px; }
+  #page-mapa-rendimentos textarea{ width:100%; min-height:120px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font:inherit; font-size:13px; }
+  #page-mapa-rendimentos .rc-code{ white-space:nowrap; font-weight:600; font-size:12px; }
   #page-mapa-rendimentos .mr-obs{ display:block; font-size:11.5px; color:var(--ink-soft); margin-top:3px; }
   .abl-envio{ display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
   .abl-btn-file, .abl-btn{ background:var(--red); color:#fff; border:0; border-radius:8px; padding:9px 18px; font-weight:700; cursor:pointer; font-size:13px; display:inline-block; }
@@ -5771,6 +5790,11 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
       </div>
     </div>
     <div class="container">
+      <div class="mr-tabs">
+        <button type="button" class="mr-tab active" data-mrtab="mapa">Mapa por produto</button>
+        <button type="button" class="mr-tab" data-mrtab="receitas">Catálogo de Receitas</button>
+      </div>
+      <div id="mrTabMapa">
       <div class="kpi-grid">
         <div class="kpi-card"><div class="label">Produtos com "Massa" no catálogo</div><div class="value" id="mrK1">–</div></div>
         <div class="kpi-card"><div class="label">Com rendimento coletado</div><div class="value" id="mrK2">–</div></div>
@@ -5818,6 +5842,31 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
             <thead><tr><th>Produto</th><th>Setor</th><th class="mr-n">Kg massa</th><th class="mr-n">Blocos</th><th class="mr-n">Telas</th><th class="mr-n">Carrinho</th><th class="mr-n">Unid.</th><th class="mr-n">Pacotes</th><th id="mrThOutras">Outras</th><th>Coleta</th><th></th></tr></thead>
             <tbody id="mrTbody"><tr><td colspan="11" class="mr-vazio">Carregando…</td></tr></tbody>
           </table>
+        </div>
+      </div>
+      </div>
+
+      <div id="mrTabReceitas" style="display:none;">
+        <div class="rc-barra" id="rcBarra">
+          <button type="button" class="mr-btn" data-rc="novo">+ NOVA RECEITA</button>
+          <button type="button" class="mr-btn-sec" data-rc="importar">Importar catálogo (.json)</button>
+          <input type="file" id="rcArq" accept=".json,application/json" hidden>
+          <span id="rcImpMsg" class="mr-feedback"></span>
+        </div>
+        <div class="panel" id="rcPainel" style="display:none;"></div>
+        <div class="panel">
+          <h2 class="panel-title">Catálogo de Receitas</h2>
+          <div class="mr-nota">Receitas P&amp;D com ingredientes e modo de preparo. Peso total = soma dos ingredientes em KG/L da receita base.</div>
+          <div class="mr-toolbar">
+            <input type="text" id="rcBusca" placeholder="Buscar por código, receita ou ingrediente…">
+            <select id="rcCatFiltro"></select>
+          </div>
+          <div class="mr-table-wrap">
+            <table class="mr-table">
+              <thead><tr><th>Código</th><th>Receita</th><th>Categoria</th><th class="mr-n">Rev.</th><th class="mr-n">Peso total</th><th class="mr-n">Ingred.</th><th class="mr-n">Variantes</th><th></th></tr></thead>
+              <tbody id="rcTbody"><tr><td colspan="8" class="mr-vazio">Carregando…</td></tr></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -6235,7 +6284,7 @@ const BK_MODULOS = [
   { id:'lancamento',              rotulo:'Lançamento',                tabelas:['producao_diaria','perdas_producao','produtos_producao','setores','maquinas','produtividade_corridas','produtividade_paradas','produtividade_tempos_massa','tempo_processo_bateladas','tempo_processo_etapas','pp_etapas_referencia','ocupacao','familias','estoque_requisicoes'] },
   { id:'expedicao',               rotulo:'Expedição',                 tabelas:['ocupacao','familias','produtos'] },
   { id:'rastreamento',            rotulo:'Rastreamento',              tabelas:['rastreamento_carrinhos'] },
-  { id:'mapa-rendimentos',        rotulo:'Mapa de Rendimentos',       tabelas:['mapa_rendimentos','produtos_producao'] },
+  { id:'mapa-rendimentos',        rotulo:'Mapa de Rendimentos',       tabelas:['mapa_rendimentos','produtos_producao','receitas'] },
   { id:'absenteismo',             rotulo:'Controle de Absenteísmo',   tabelas:['ausencias'] }
 ];
 function BK_perfil(){ return BK_PERFIS[BK_AUTH.nivel] || null; }
@@ -25512,6 +25561,211 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('input', e => { if(e.target.id === 'mrBusca') MR_render(); });
 document.addEventListener('submit', e => { if(e.target.id === 'mrForm') MR_salvar(e); });
+
+// ─────────────────────────────────────────────
+// MAPA · CATÁLOGO DE RECEITAS
+// ─────────────────────────────────────────────
+// Receitas P&D (tabela receitas): dados da receita + variantes (ex.: base 100 kg / 25 kg de farinha),
+// cada uma com a lista de ingredientes. O peso total vem da soma dos ingredientes em KG/L.
+const RC_CATS = ['Pães / Massas','Massa doce','Pão de queijo / Chipa','Croissant / Folhados','Salgados / Fritos','Bolos / Tortas','Recheios / Cremes','Outras'];
+const RC_UNS = ['KG','L','G','UN'];
+const RC_UNS_PESO = ['KG','L'];
+let RC_LISTA = [], RC_CARREGADO = false, RC_EDITANDO = null;
+function RC_podeEditar(){ return BK_podeGravar('insert', 'receitas'); }
+function RC_podeExcluir(){ return BK_podeGravar('delete', 'receitas'); }
+function RC_fmt(v){ return v == null || v === '' ? '–' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 3 }); }
+function RC_somaPeso(ings){ return (ings || []).reduce((t, i) => t + (RC_UNS_PESO.includes(i.un) ? Number(i.qtd) || 0 : 0), 0); }
+function RC_aba(nome){
+  document.getElementById('mrTabMapa').style.display = nome === 'mapa' ? '' : 'none';
+  document.getElementById('mrTabReceitas').style.display = nome === 'receitas' ? '' : 'none';
+  document.querySelectorAll('#page-mapa-rendimentos .mr-tab').forEach(b => b.classList.toggle('active', b.dataset.mrtab === nome));
+  if(nome === 'receitas'){
+    document.getElementById('rcBarra').style.display = RC_podeEditar() ? '' : 'none';
+    if(!RC_CARREGADO) RC_load(); else RC_render();
+  }
+}
+async function RC_load(){
+  const sel = document.getElementById('rcCatFiltro');
+  if(!sel.options.length) sel.innerHTML = '<option value="">Todas as categorias</option>' + RC_CATS.map(c => `<option>${ADM_esc(c)}</option>`).join('');
+  try{
+    const r = await getSupabaseClient().from('receitas').select('*').order('codigo');
+    if(r.error) throw r.error;
+    RC_LISTA = r.data || []; RC_CARREGADO = true;
+    RC_render();
+  }catch(e){
+    document.getElementById('rcTbody').innerHTML = '<tr><td colspan="8" class="mr-vazio">Não foi possível carregar as receitas.</td></tr>';
+  }
+}
+function RC_render(){
+  const q = document.getElementById('rcBusca').value.trim().toUpperCase();
+  const cat = document.getElementById('rcCatFiltro').value;
+  const pode = RC_podeEditar();
+  const lista = RC_LISTA.filter(r => {
+    if(cat && r.categoria !== cat) return false;
+    if(!q) return true;
+    const ings = (r.variantes || []).some(v => (v.ingredientes || []).some(i => String(i.nome || '').toUpperCase().includes(q)));
+    return String(r.codigo).toUpperCase().includes(q) || String(r.nome).toUpperCase().includes(q) || ings;
+  });
+  const tb = document.getElementById('rcTbody');
+  if(!lista.length){ tb.innerHTML = '<tr><td colspan="8" class="mr-vazio">' + (RC_LISTA.length ? 'Nenhuma receita encontrada.' : 'Catálogo vazio. Use "Importar catálogo" ou "Nova receita".') + '</td></tr>'; return; }
+  tb.innerHTML = lista.map(r => {
+    const v0 = (r.variantes || [])[0] || {};
+    return `<tr><td class="rc-code">${ADM_esc(r.codigo)}</td><td class="mr-prod">${ADM_esc(r.nome)}</td><td class="mr-setor">${ADM_esc(r.categoria || '–')}</td>
+      <td class="mr-n">${r.revisao == null ? '–' : r.revisao}</td><td class="mr-n"><b>${RC_fmt(r.peso_total)}</b> kg</td>
+      <td class="mr-n">${(v0.ingredientes || []).length}</td><td class="mr-n">${(r.variantes || []).length}</td>
+      <td><div class="mr-acoes"><button class="mr-btn-sec" data-rc="ver" data-id="${r.id}">Ver</button>${pode ? `<button class="mr-btn-sec" data-rc="editar" data-id="${r.id}">Editar</button>` : ''}</div></td></tr>`;
+  }).join('');
+}
+function RC_painel(html){
+  const p = document.getElementById('rcPainel');
+  p.innerHTML = html; p.style.display = html ? '' : 'none';
+  if(html) p.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+// Visualização (somente leitura)
+function RC_ver(id){
+  const r = RC_LISTA.find(x => x.id === id); if(!r) return;
+  const vars = (r.variantes || []).map(v => {
+    const tot = RC_somaPeso(v.ingredientes);
+    const linhas = (v.ingredientes || []).map(i => `<tr><td class="mr-n">${RC_fmt(i.qtd)}</td><td class="mr-n">${ADM_esc(i.un)}</td><td class="rc-code">${ADM_esc(i.cod || '')}</td><td>${ADM_esc(i.nome)}</td><td class="mr-n">${RC_UNS_PESO.includes(i.un) && tot ? (Number(i.qtd) / tot * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%' : ''}</td></tr>`).join('');
+    return `<div class="rc-var"><div class="rc-var-h">${ADM_esc(v.nome || 'Receita')}<span class="rc-tot">Total <b>${RC_fmt(v.total || tot)}</b> ${ADM_esc(v.unidade || 'KG')}</span></div>
+      <table class="mr-table"><thead><tr><th class="mr-n">Qtd</th><th class="mr-n">Un</th><th>Cód.</th><th>Ingrediente</th><th class="mr-n">%</th></tr></thead><tbody>${linhas}</tbody></table></div>`;
+  }).join('');
+  RC_painel(`<div class="rc-cab"><div><h3>${ADM_esc(r.nome)}</h3><div class="mr-nota">${ADM_esc(r.codigo)}${r.cod_produto ? ' · produto ' + ADM_esc(r.cod_produto) : ''}</div></div>
+    <div class="mr-acoes">${RC_podeEditar() ? `<button class="mr-btn" data-rc="editar" data-id="${r.id}">Editar</button>` : ''}<button class="mr-btn-sec" data-rc="fechar">Fechar</button></div></div>
+    <div class="rc-meta"><span>Categoria: <b>${ADM_esc(r.categoria || '–')}</b></span><span>Revisão: <b>${r.revisao == null ? '–' : r.revisao}</b>${r.data_revisao ? ' (' + MR_br(r.data_revisao) + ')' : ''}</span><span>Peso total: <b>${RC_fmt(r.peso_total)} kg</b></span><span>Rendimento previsto: <b>${r.rendimento ? RC_fmt(r.rendimento) + ' kg' : '–'}</b></span></div>
+    ${vars}${r.observacao ? `<div class="mr-nota">${ADM_esc(r.observacao)}</div>` : ''}${r.modo_preparo ? `<div class="mr-label">Modo de preparo</div><div class="rc-modo">${ADM_esc(r.modo_preparo)}</div>` : ''}`);
+}
+// Formulário (nova / editar)
+function RC_ingHtml(i){
+  i = i || { qtd: '', un: 'KG', cod: '', nome: '' };
+  return `<div class="rc-ing"><input type="number" step="any" class="rc-q" placeholder="Qtd" value="${i.qtd === '' ? '' : ADM_esc(String(i.qtd))}">
+    <select class="rc-u">${RC_UNS.map(u => `<option${u === i.un ? ' selected' : ''}>${u}</option>`).join('')}</select>
+    <input class="rc-c" placeholder="Código" value="${ADM_esc(i.cod || '')}"><input class="rc-n" placeholder="Ingrediente" value="${ADM_esc(i.nome || '')}">
+    <button type="button" class="rc-x" data-rc="rm-ing" title="Remover">×</button></div>`;
+}
+function RC_varHtml(v){
+  v = v || { nome: 'Receita base', ingredientes: [] };
+  const tot = RC_somaPeso(v.ingredientes);
+  return `<div class="rc-var"><div class="rc-var-h"><input class="rc-vn" placeholder="Nome da variante" value="${ADM_esc(v.nome || '')}"><span class="rc-tot">Total <b class="rc-vt">${RC_fmt(tot)}</b> kg</span>
+    <button type="button" class="mr-btn-sec" data-rc="rm-var">Remover variante</button></div>
+    <div class="rc-ings">${(v.ingredientes && v.ingredientes.length ? v.ingredientes : [null]).map(RC_ingHtml).join('')}</div>
+    <button type="button" class="mr-btn-sec" data-rc="add-ing">+ Ingrediente</button></div>`;
+}
+function RC_form(id){
+  const r = id ? RC_LISTA.find(x => x.id === id) : null;
+  RC_EDITANDO = r ? r.id : null;
+  const d = r || { codigo: 'REC-P&D-', nome: '', categoria: RC_CATS[0], variantes: [] };
+  const v = (d.variantes && d.variantes.length) ? d.variantes : [null];
+  RC_painel(`<h2 class="panel-title">${r ? 'Editar receita' : 'Nova receita'}</h2><form id="rcForm" autocomplete="off">
+    <div class="mr-row"><div class="mr-field"><label>Código</label><input id="rcCod" required value="${ADM_esc(d.codigo || '')}"></div>
+      <div class="mr-field mr-grow"><label>Nome da receita</label><input id="rcNome" required value="${ADM_esc(d.nome || '')}"></div>
+      <div class="mr-field"><label>Categoria</label><select id="rcCat">${RC_CATS.map(c => `<option${c === d.categoria ? ' selected' : ''}>${ADM_esc(c)}</option>`).join('')}</select></div></div>
+    <div class="mr-row"><div class="mr-field"><label>Cód. do produto (opcional)</label><input id="rcCodProd" value="${ADM_esc(d.cod_produto || '')}"></div>
+      <div class="mr-field"><label>Revisão</label><input type="number" id="rcRev" min="0" value="${d.revisao == null ? '' : d.revisao}"></div>
+      <div class="mr-field"><label>Data da revisão</label><input type="date" id="rcDataRev" value="${d.data_revisao || ''}"></div>
+      <div class="mr-field"><label>Rendimento previsto (kg)</label><input type="number" step="any" id="rcRend" value="${d.rendimento == null ? '' : d.rendimento}"></div></div>
+    <div class="mr-label">Ingredientes (por variante)</div><div id="rcVars">${v.map(RC_varHtml).join('')}</div>
+    <button type="button" class="mr-btn-sec" data-rc="add-var">+ Variante</button>
+    <div class="mr-field" style="margin-top:12px;"><label>Modo de preparo</label><textarea id="rcModo">${ADM_esc(d.modo_preparo || '')}</textarea></div>
+    <div class="mr-field" style="margin-top:12px;"><label>Observação (opcional)</label><input id="rcObs" maxlength="300" value="${ADM_esc(d.observacao || '')}"></div>
+    <div class="mr-actions"><button type="submit" class="mr-btn" id="rcSalvar">Salvar receita</button><button type="button" class="mr-btn-sec" data-rc="fechar">Cancelar</button>
+      ${r && RC_podeExcluir() ? '<button type="button" class="mr-btn-sec" data-rc="excluir">Excluir receita</button>' : ''}<span id="rcFb" class="mr-feedback"></span></div></form>`);
+}
+function RC_lerVariantes(){
+  return [...document.querySelectorAll('#rcVars .rc-var')].map(b => {
+    const ingredientes = [...b.querySelectorAll('.rc-ing')].map(l => ({
+      qtd: parseFloat(l.querySelector('.rc-q').value), un: l.querySelector('.rc-u').value,
+      cod: l.querySelector('.rc-c').value.trim(), nome: l.querySelector('.rc-n').value.trim()
+    })).filter(i => i.nome && !isNaN(i.qtd));
+    return { nome: b.querySelector('.rc-vn').value.trim() || 'Receita base', unidade: 'KG', total: Math.round(RC_somaPeso(ingredientes) * 1000) / 1000, ingredientes };
+  }).filter(v => v.ingredientes.length);
+}
+async function RC_salvar(ev){
+  ev.preventDefault();
+  const fb = document.getElementById('rcFb'), btn = document.getElementById('rcSalvar');
+  const variantes = RC_lerVariantes();
+  if(!variantes.length){ fb.textContent = 'Adicione ao menos um ingrediente com quantidade.'; fb.className = 'mr-feedback err'; return; }
+  const num = id => { const v = parseFloat(document.getElementById(id).value); return isNaN(v) ? null : v; };
+  const dados = {
+    codigo: document.getElementById('rcCod').value.trim(), nome: document.getElementById('rcNome').value.trim(),
+    categoria: document.getElementById('rcCat').value, cod_produto: document.getElementById('rcCodProd').value.trim() || null,
+    revisao: num('rcRev'), data_revisao: document.getElementById('rcDataRev').value || null, rendimento: num('rcRend'),
+    peso_total: variantes[0].total, variantes, modo_preparo: document.getElementById('rcModo').value.trim() || null,
+    observacao: document.getElementById('rcObs').value.trim() || null, updated_at: new Date().toISOString()
+  };
+  btn.disabled = true; fb.textContent = 'Salvando…'; fb.className = 'mr-feedback';
+  try{
+    const c = getSupabaseClient();
+    const r = RC_EDITANDO ? await c.from('receitas').update(dados).eq('id', RC_EDITANDO) : await c.from('receitas').insert([dados]);
+    if(r.error) throw r.error;
+    RC_painel(''); await RC_load();
+  }catch(err){
+    fb.textContent = '⚠ Erro ao salvar: ' + (err.message || err); fb.className = 'mr-feedback err';
+    btn.disabled = false;
+  }
+}
+async function RC_excluir(){
+  const r = RC_LISTA.find(x => x.id === RC_EDITANDO); if(!r) return;
+  if(!confirm('Excluir a receita "' + r.nome + '"?')) return;
+  const d = await getSupabaseClient().from('receitas').delete().eq('id', r.id);
+  if(d.error){ alert('Erro ao excluir: ' + d.error.message); return; }
+  RC_painel(''); await RC_load();
+}
+// Importação em lote: só entram receitas que ainda não existem (código + nome), as já editadas ficam como estão
+async function RC_importar(arq){
+  const msg = document.getElementById('rcImpMsg');
+  try{
+    const lista = JSON.parse(await arq.text());
+    if(!Array.isArray(lista)) throw new Error('arquivo inválido');
+    const chave = r => String(r.codigo).toUpperCase() + '|' + String(r.nome).toUpperCase().replace(/\s+/g, ' ');
+    const ja = new Set(RC_LISTA.map(chave));
+    const novas = lista.filter(r => r.codigo && r.nome && !ja.has(chave(r)));
+    if(!novas.length){ msg.textContent = 'Nada a importar: todas as receitas do arquivo já estão no catálogo.'; msg.className = 'mr-feedback'; return; }
+    if(!confirm('Importar ' + novas.length + ' receitas novas?')) return;
+    msg.textContent = 'Importando…'; msg.className = 'mr-feedback';
+    const c = getSupabaseClient();
+    for(let i = 0; i < novas.length; i += 40){
+      const r = await c.from('receitas').insert(novas.slice(i, i + 40));
+      if(r.error) throw r.error;
+      msg.textContent = 'Importando… ' + Math.min(i + 40, novas.length) + '/' + novas.length;
+    }
+    msg.textContent = '✓ ' + novas.length + ' receitas importadas.'; msg.className = 'mr-feedback ok';
+    await RC_load();
+  }catch(e){
+    msg.textContent = '⚠ Erro na importação: ' + (e.message || e); msg.className = 'mr-feedback err';
+  }
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest ? e.target.closest('[data-rc],[data-mrtab]') : null;
+  if(!t) return;
+  if(t.dataset.mrtab){ RC_aba(t.dataset.mrtab); return; }
+  const a = t.dataset.rc;
+  if(a === 'ver') RC_ver(t.dataset.id);
+  else if(a === 'editar') RC_form(t.dataset.id);
+  else if(a === 'novo') RC_form(null);
+  else if(a === 'fechar') RC_painel('');
+  else if(a === 'excluir') RC_excluir();
+  else if(a === 'importar') document.getElementById('rcArq').click();
+  else if(a === 'add-var') document.getElementById('rcVars').insertAdjacentHTML('beforeend', RC_varHtml({ nome: 'Variante', ingredientes: [] }));
+  else if(a === 'rm-var'){ const b = t.closest('.rc-var'); if(document.querySelectorAll('#rcVars .rc-var').length > 1) b.remove(); }
+  else if(a === 'add-ing') t.closest('.rc-var').querySelector('.rc-ings').insertAdjacentHTML('beforeend', RC_ingHtml());
+  else if(a === 'rm-ing'){ const b = t.closest('.rc-var'); t.closest('.rc-ing').remove(); RC_atualizaTotal(b); }
+});
+function RC_atualizaTotal(bloco){
+  if(!bloco) return;
+  const ings = [...bloco.querySelectorAll('.rc-ing')].map(l => ({ qtd: parseFloat(l.querySelector('.rc-q').value), un: l.querySelector('.rc-u').value }));
+  bloco.querySelector('.rc-vt').textContent = RC_fmt(RC_somaPeso(ings));
+}
+document.addEventListener('input', e => {
+  if(e.target.id === 'rcBusca') RC_render();
+  else if(e.target.classList && e.target.classList.contains('rc-q')) RC_atualizaTotal(e.target.closest('.rc-var'));
+});
+document.addEventListener('change', e => {
+  if(e.target.id === 'rcCatFiltro') RC_render();
+  else if(e.target.id === 'rcArq' && e.target.files[0]){ RC_importar(e.target.files[0]); e.target.value = ''; }
+  else if(e.target.classList && e.target.classList.contains('rc-u')) RC_atualizaTotal(e.target.closest('.rc-var'));
+});
+document.addEventListener('submit', e => { if(e.target.id === 'rcForm') RC_salvar(e); });
 
 // ─────────────────────────────────────────────
 // LANÇAMENTO · ABSENTEÍSMO (upload dos PDFs de Faltas do ponto)
