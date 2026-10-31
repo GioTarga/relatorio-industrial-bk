@@ -18728,9 +18728,10 @@ async function FALTA_dia(data){
 async function FALTA_carregarMapa(){
   FALTA.mapa={};
   try{
-    const r=await fetch(SUPABASE_URL+'/rest/v1/mapa_rendimentos?select=codigo,etapas&limit=1000',{headers:histHeaders()});
-    if(!r.ok)return;
-    (await r.json()).forEach(m=>{
+    // a tabela só abre para usuário logado: usa o mesmo cliente do módulo Mapa
+    const r=await getSupabaseClient().from('mapa_rendimentos').select('codigo,etapas');
+    if(r.error||!r.data)return;
+    r.data.forEach(m=>{
       const et=Array.isArray(m.etapas)?m.etapas:[];
       const q=nome=>{const e=et.find(x=>x&&x.nome===nome);return e&&Number(e.qtd)>0?Number(e.qtd):0;};
       const kg=q('Kg de massa'),pac=q('Pacotes');
