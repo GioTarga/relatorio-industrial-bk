@@ -1275,11 +1275,13 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .fal-tab2 td small.u{display:inline;color:var(--ink-soft);font-size:10px;font-weight:600}
 #page-pcp-estoque .fal-tab2 td.falta,#page-pcp-estoque .fal-tab2 td.sobra{font-size:15px;white-space:nowrap}
 #page-pcp-estoque .fal-tab2{table-layout:fixed;width:100%}
-#page-pcp-estoque .fal-tab2 th:nth-child(2){width:120px}
-#page-pcp-estoque .fal-tab2 th:nth-child(3){width:150px}
-#page-pcp-estoque .fal-tab2 th:nth-child(4){width:190px}
-#page-pcp-estoque .fal-tab2 th:nth-child(5){width:150px}
-#page-pcp-estoque .fal-tab2 th:nth-child(6){width:32px}
+#page-pcp-estoque .fal-tab2 th:nth-child(2),#page-pcp-estoque .fal-tab2 th:nth-child(3){width:95px}
+#page-pcp-estoque .fal-tab2 th:nth-child(4){width:115px}
+#page-pcp-estoque .fal-tab2 th:nth-child(5){width:140px}
+#page-pcp-estoque .fal-tab2 th:nth-child(6){width:180px}
+#page-pcp-estoque .fal-tab2 th:nth-child(7){width:140px}
+#page-pcp-estoque .fal-tab2 th:nth-child(8){width:32px}
+#page-pcp-estoque .fal-tab2 td.num{white-space:nowrap}
 #page-pcp-estoque .fal-tab2 th:not(:first-child),#page-pcp-estoque .fal-tab2 td:not(:first-child){text-align:center;vertical-align:middle}
 #page-pcp-estoque .fal-tab2 .fal-cob{justify-content:center}
 #page-pcp-estoque .fal-tab2 .fal-cob b{min-width:38px;text-align:left}
@@ -18894,9 +18896,9 @@ function FALTA_render(){
   const info=`Posição de <b>${d1}</b>${FALTA.t1?' ('+FALTA.t1+')':''}`+(FALTA.d0?` comparada com <b>${d0}</b>${FALTA.t0?' ('+FALTA.t0+')':''}`:' · sem dia anterior para comparar');
   const val=i=>def.col==='Falta'?histFmt(-i.s1):histFmt(i.s1);
   const vcls=i=>i.s1<0?'falta':i.s1>0?'sobra':'';
-  const head=`<thead><tr><th>Produto</th><th>${def.col}</th><th class="c">Produzindo hoje</th><th>Atendimento</th><th class="c">vs ${d0||'ontem'}</th><th class="x"></th></tr></thead>`;
-  const linha=i=>`<tr class="fal-r" onclick="FALTA_tog(this)"><td>${opEsc(i.descricao)}<small>${HIST_TIPO_LABEL[i.tipo]||i.tipo} · ${opEsc(i.codigo)}</small></td><td class="${vcls(i)}">${val(i)} <small class="u">${opEsc(i.un)}</small></td><td class="c">${FALTA_opHtml(i)}</td><td>${FALTA_barra(i)}</td><td class="c"><span class="fal-sit ${FALTA_sitCls(i,cat)}">${FALTA_sitTxt(i,cat)}</span></td><td class="x">▾</td></tr>
-    <tr class="fal-x"><td colspan="6"><div class="fal-grid"><div><small>Estoque hoje (${d1})</small><b>${f(i.e1)}</b></div><div><small>Demanda hoje</small><b>${f(i.d1)}</b></div><div><small>Estoque ${d0||'ontem'}</small><b>${f(i.e0)}</b></div><div><small>Demanda ${d0||'ontem'}</small><b>${f(i.d0)}</b></div><div><small>Saiu do estoque</small><b>${i.saiu==null?'—':f(i.saiu)}</b></div></div></td></tr>`;
+  const head=`<thead><tr><th>Produto</th><th>Estoque</th><th>Reservado</th><th>${def.col}</th><th class="c">Produzindo hoje</th><th>Atendimento</th><th class="c">vs ${d0||'ontem'}</th><th class="x"></th></tr></thead>`;
+  const linha=i=>`<tr class="fal-r" onclick="FALTA_tog(this)"><td>${opEsc(i.descricao)}<small>${HIST_TIPO_LABEL[i.tipo]||i.tipo} · ${opEsc(i.codigo)}</small></td><td class="num">${histFmt(i.e1)} <small class="u">${opEsc(i.un)}</small></td><td class="num">${histFmt(i.d1)} <small class="u">${opEsc(i.un)}</small></td><td class="${vcls(i)}">${val(i)} <small class="u">${opEsc(i.un)}</small></td><td class="c">${FALTA_opHtml(i)}</td><td>${FALTA_barra(i)}</td><td class="c"><span class="fal-sit ${FALTA_sitCls(i,cat)}">${FALTA_sitTxt(i,cat)}</span></td><td class="x">▾</td></tr>
+    <tr class="fal-x"><td colspan="8"><div class="fal-grid"><div><small>Estoque ${d0||'ontem'}</small><b>${f(i.e0)}</b></div><div><small>Reservado ${d0||'ontem'}</small><b>${f(i.d0)}</b></div><div><small>Saiu do estoque</small><b>${i.saiu==null?'—':f(i.saiu)}</b></div></div></td></tr>`;
   const grupos=FALTA_grupos(c.lista(cat),cat);
   const secoes=grupos.map(g=>`<div class="fal-sec"><div class="fal-sec-h">${opEsc(g.setor)}<span>${g.itens.length} produto${g.itens.length>1?'s':''}</span></div><div class="fal-scroll"><table class="hist-tab fal-tab fal-tab2">${head}<tbody>${g.itens.map(linha).join('')}</tbody></table></div></div>`).join('');
   // Prioridades: menor cobertura primeiro (0% = nada em estoque), desempate pela maior demanda
