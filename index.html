@@ -18840,7 +18840,7 @@ function FALTA_calc(){
     const e1=Number(r.estoque)||0,d1=Number(r.reserva)||0,s1=e1-d1;
     const e0=p?(Number(p.estoque)||0):null,d0=p?(Number(p.reserva)||0):null,s0=p?e0-d0:null;
     const it={tipo:r.tipo,codigo:r.codigo,descricao:r.descricao||r.codigo,un:r.un||'',setor,e1,d1,s1,e0,d0,s0,saiu:e0==null?null:Math.max(e0-e1,0),
-      pct:d1>0?Math.max(0,Math.round(e1/d1*100)):null, // cobertura: quanto da demanda o estoque atende
+      pct:d1>0?Math.min(100,Math.max(0,Math.round(e1/d1*100))):null, // cobertura: quanto da demanda o estoque atende
       op:(typeof opDoItem==='function')?opDoItem({codigo:r.codigo,descricao:r.descricao}):null};
     // Situação contra o dia anterior (para quem está em falta: novo/piorou/melhorou; demais: saldo subiu/caiu)
     it.sit=(s0==null)?'novo':s1<s0?'piorou':s1>s0?'melhorou':'igual';
