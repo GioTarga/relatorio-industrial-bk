@@ -18820,7 +18820,7 @@ function FALTA_render(){
   const info=`Posição de <b>${d1}</b>${FALTA.t1?' ('+FALTA.t1+')':''}`+(FALTA.d0?` comparada com <b>${d0}</b>${FALTA.t0?' ('+FALTA.t0+')':''}`:' · sem dia anterior para comparar');
   const val=i=>def.col==='Falta'?histFmt(-i.s1):histFmt(i.s1);
   const vcls=i=>i.s1<0?'falta':i.s1>0?'sobra':'';
-  const head=`<thead><tr><th>Produto</th><th>${def.col}</th><th>Cobertura</th><th class="c">Produção</th><th class="c">vs ${d0||'ontem'}</th><th class="x"></th></tr></thead>`;
+  const head=`<thead><tr><th>Produto</th><th>${def.col}</th><th>Atendimento</th><th class="c">Produção</th><th class="c">vs ${d0||'ontem'}</th><th class="x"></th></tr></thead>`;
   const linha=i=>`<tr class="fal-r" onclick="FALTA_tog(this)"><td>${opEsc(i.descricao)}<small>${HIST_TIPO_LABEL[i.tipo]||i.tipo} · ${opEsc(i.codigo)}</small></td><td class="${vcls(i)}">${val(i)} <small class="u">${opEsc(i.un)}</small></td><td>${FALTA_barra(i)}</td><td class="c">${FALTA_opHtml(i)}</td><td class="c"><span class="fal-sit ${FALTA_sitCls(i,cat)}">${FALTA_sitTxt(i,cat)}</span></td><td class="x">▾</td></tr>
     <tr class="fal-x"><td colspan="6"><div class="fal-grid"><div><small>Estoque hoje (${d1})</small><b>${f(i.e1)}</b></div><div><small>Demanda hoje</small><b>${f(i.d1)}</b></div><div><small>Estoque ${d0||'ontem'}</small><b>${f(i.e0)}</b></div><div><small>Demanda ${d0||'ontem'}</small><b>${f(i.d0)}</b></div><div><small>Saiu do estoque</small><b>${i.saiu==null?'—':f(i.saiu)}</b></div></div></td></tr>`;
   const grupos=FALTA_grupos(c.lista(cat),cat);
@@ -18832,7 +18832,7 @@ function FALTA_render(){
   el.innerHTML=`<div class="fal-bar"><div class="hist-info">${info}</div><button class="fal-btn" onclick="FALTA_atualizar()">Atualizar</button><button class="fal-btn pri" onclick="FALTA_exportarPDF()">Exportar PDF</button></div>
     <div class="fal-kpis">${card('falta','bad')}${card('zerados','warn')}${card('faturado','bad')}${card('zero','warn')}${card('positivos','good')}</div>
     ${top?`<div class="fal-top-h">Mais críticos agora <span>menor cobertura da demanda primeiro</span></div><div class="fal-tops">${top}</div>`:''}
-    <div class="fal-legenda"><b>${def.col}</b> = ${def.col==='Falta'?'quanto falta para atender a demanda':'estoque − demanda'} · <b>Cobertura</b> = quanto da demanda o estoque atende (0% = nada em estoque) · <b>Produção</b> = se o produto está na OP do dia · clique numa linha para ver estoque e demanda dos dois dias. Os filtros da barra acima valem para todos os cards.</div>
+    <div class="fal-legenda"><b>${def.col}</b> = ${def.col==='Falta'?'quanto falta para atender a demanda':'estoque − demanda'} · <b>Atendimento</b> = quanto da demanda o estoque atende (0% = nada em estoque) · <b>Produção</b> = se o produto está na OP do dia · clique numa linha para ver estoque e demanda dos dois dias. Os filtros da barra acima valem para todos os cards.</div>
     ${secoes||'<div class="empty-state"><div class="empty-icon">✅</div>Nenhum produto nesta categoria com os filtros atuais.</div>'}${resolvidos}`;
 }
 function FALTA_top(lista){
@@ -18856,7 +18856,7 @@ function FALTA_exportarPDF(){
   const resumo=`${lista.length} produtos (${def.regra}). Em falta: ${c.cont.falta} | Faturado sem estoque: ${c.cont.faturado} | Zerados: ${c.cont.zerados} | Saldo zero: ${c.cont.zero} | Disponiveis: ${c.cont.positivos}. Posicao de ${d1}${FALTA.t1?' ('+FALTA.t1+')':''}${FALTA.d0?' comparada com '+d0+(FALTA.t0?' ('+FALTA.t0+')':''):''}.${filtros?' Filtros: '+filtros+'.':''}`;
   doc.splitTextToSize(resumo,W).forEach(l=>{doc.text(l,mx,y);y+=4.3;});
   y+=1;
-  const leg=(def.col==='Falta'?'Falta = quanto falta para atender a demanda. ':'Saldo = estoque - demanda. ')+'Cobertura = quanto da demanda o estoque atende (0% = nada em estoque). Demanda = pedidos ja reservados para sair. Producao = se esta na OP do dia.';
+  const leg=(def.col==='Falta'?'Falta = quanto falta para atender a demanda. ':'Saldo = estoque - demanda. ')+'Atendimento = quanto da demanda o estoque atende (0% = nada em estoque). Demanda = pedidos ja reservados para sair. Producao = se esta na OP do dia.';
   doc.setFontSize(8);doc.setTextColor(100,100,100);
   doc.splitTextToSize(leg,W).forEach(l=>{doc.text(l,mx,y);y+=3.8;});
   y+=2;
@@ -18870,7 +18870,7 @@ function FALTA_exportarPDF(){
     headStyles:{fillColor:[139,0,0],textColor:255,halign:'center',valign:'middle',fontStyle:'bold'}
   };
   const cols=(sit)=>({0:{cellWidth:18,halign:'center'},1:{cellWidth:'auto'},2:{cellWidth:9,halign:'center'},3:{cellWidth:20,halign:'right'},4:{cellWidth:20,halign:'right'},5:{cellWidth:22,halign:'right',fontStyle:'bold'},6:{cellWidth:22,halign:'center'},7:{cellWidth:30,halign:'center'},8:{cellWidth:30,halign:'center'}});
-  const head=[['Codigo','Produto','Un','Estoque','Demanda',def.col.toUpperCase(),'Cobertura','Producao','vs '+(d0||'ontem')]];
+  const head=[['Codigo','Produto','Un','Estoque','Demanda',def.col.toUpperCase(),'Atendimento','Producao','vs '+(d0||'ontem')]];
   const corpo=its=>its.map(i=>[i.codigo,i.descricao+' ('+(HIST_TIPO_LABEL[i.tipo]||i.tipo)+')',i.un,n(i.e1),n(i.d1),def.col==='Falta'?histFmt(-i.s1):histFmt(i.s1),pctTxt(i),opTxt(i),FALTA_sitTxt(i,cat)]);
   const parse=its=>d=>{
     if(d.section!=='body')return;const it=its[d.row.index];if(!it)return;
