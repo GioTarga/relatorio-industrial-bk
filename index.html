@@ -18701,7 +18701,7 @@ document.addEventListener('click',e=>{
 // Usa as duas últimas posições de estoque_historico (última importação de cada dia).
 // Demanda = reserva. Falta = demanda − estoque; entra na lista quem tem saldo (estoque − reserva) negativo.
 // Produto sem setor no catálogo cai em REVENDA (getSetor).
-const FALTA={carregado:false,carregando:false,erro:'',d1:'',d0:'',t1:'',t0:'',r1:[],r0:[]};
+const FALTA={carregado:false,carregando:false,erro:'',d1:'',d0:'',t1:'',t0:'',r1:[],r0:[],mapa:{}};
 const FALTA_COLS='tipo,codigo,descricao,familia,estoque,reserva,saldo,un,veio_import,updated_at';
 const FALTA_SIT={novo:'Entrou na falta',piorou:'Piorou',melhorou:'Melhorou',igual:'Igual a ontem'};
 function FALTA_dm(iso){return iso?iso.slice(8,10)+'/'+iso.slice(5,7):'';}
@@ -18723,8 +18723,58 @@ async function FALTA_dia(data){
   }
   return rows;
 }
-async function FALTA_carregar(){
-  if(FALTA.carregando)return;
+// Rendimento das massas (Mapa): por código guarda kg de massa e pacotes que 1 receita rende.
+// Sem o Mapa o app continua funcionando, só não calcula receitas.
+async function FALTA_carregarMapa(){
+  FALTA.mapa={};
+  try{
+    const r=await fetch(SUPABASE_URL+'/rest/v1/mapa_rendimentos?select=codigo,etapas&limit=1000',{headers:histHeaders()});
+    if(!r.ok)return;
+    (await r.json()).forEach(m=>{
+      const et=Array.isArray(m.etapas)?m.etapas:[];
+      const q=nome=>{const e=et.find(x=>x&&x.nome===nome);return e&&Number(e.qtd)>0?Number(e.qtd):0;};
+      const kg=q('Kg de massa'),pac=q('Pacotes');
+      if(kg&&pac)FALTA.mapa[normCod(m.codigo)]={kg,pac};
+    });
+  }catch(e){FALTA.mapa={};}
+}
+// Peso do pacote em kg lido do nome do produto ("C/6KG", "C/3,5KG", "- 5KG")
+function FALTA_pesoPacote(desc){
+  const m=[...String(desc||'').matchAll(/(?:C\/|-)\s*(\d+(?:,\d+)?)\s*KG/gi)].pop();
+  return m?parseFloat(m[1].replace(',','.')):0;
+}
+// Quanto 1 receita rende na unidade do estoque do produto (KG ou PCT); null se não dá pra calcular com segurança
+function FALTA_rend(i){
+  const m=FALTA.mapa[normCod(i.codigo)];if(!m)return null;
+  const un=String(i.un||'').toUpperCase();
+  let out=0;
+  if(un==='KG'){
+    const pk=FALTA_pesoPacote(i.descricao);out=pk*m.pac;
+    if(!pk||out/m.kg<0.6||out/m.kg>1.2)return null; // pacotes não batem com o peso da massa: dado suspeito
+  }else if(un==='PCT')out=m.pac;
+  else return null;
+  return{out,kg:m.kg};
+}
+function FALTA_num(v){return Number(v).toLocaleString('pt-BR',{maximumFractionDigits:1});}
+// Texto do que está em produção/precisa produzir: {tag:'sim'|'nao'|null, l1, l2}
+function FALTA_prod(i){
+  const rd=FALTA_rend(i);
+  const falta=i.s1<0?-i.s1:0;
+  if(i.op){
+    const q=Number(i.op.qtd)||0;
+    let l2=FALTA_num(q)+' '+String(i.op.un||'').toLowerCase();
+    if(rd&&String(i.op.un||'').toUpperCase()===String(i.un||'').toUpperCase()){
+      l2+=' · '+FALTA_num(q/rd.out)+' rec.';
+      if(falta>0)l2+=' · cobre '+Math.min(999,Math.round(q/falta*100))+'%';
+    }
+    return{tag:'sim',l1:'Na OP',l2};
+  }
+  if(!opData)return{tag:null,l1:'—',l2:''};
+  let l2='';
+  if(falta>0&&rd){const n=Math.ceil(falta/rd.out);l2='produzir '+n+' rec. · '+FALTA_num(n*rd.kg)+' kg massa';}
+  return{tag:'nao',l1:'Sem OP',l2};
+}
+async function FALTA_carregar(){  if(FALTA.carregando)return;
   FALTA.carregando=true;FALTA.erro='';
   try{
     const a=await FALTA_get('select=data&order=data.desc&limit=1');
@@ -18736,6 +18786,7 @@ async function FALTA_carregar(){
       const [r1,r0]=await Promise.all([FALTA_dia(d1),d0?FALTA_dia(d0):Promise.resolve([])]);
       Object.assign(FALTA,{d1,d0,r1,r0,t1:FALTA_hora(r1),t0:FALTA_hora(r0)});
     }
+    await FALTA_carregarMapa();
     FALTA.carregado=true;
   }catch(e){FALTA.erro=e.message||'Sem conexão com o Supabase';}
   FALTA.carregando=false;
@@ -18799,8 +18850,9 @@ function FALTA_barra(i){
   return `<span class="fal-cob"><span class="fal-bar2"><i class="${cl}" style="width:${w}%"></i></span><b>${i.pct}%</b></span>`;
 }
 function FALTA_opHtml(i){
-  if(!opData)return '<span class="fal-nd">—</span>';
-  return i.op?`<span class="fal-op sim" title="Na OP de ${FALTA_dm(opData.data||'')}">Na OP<small>${opEsc(i.op.qtd)} ${opEsc(String(i.op.un||'').toLowerCase())}</small></span>`:'<span class="fal-op nao">Sem OP</span>';
+  const p=FALTA_prod(i);
+  if(!p.tag)return '<span class="fal-nd">—</span>';
+  return `<span class="fal-op ${p.tag}"${p.tag==='sim'?` title="OP de ${FALTA_dm(opData.data||'')}"`:''}>${p.l1}${p.l2?`<small>${opEsc(p.l2)}</small>`:''}</span>`;
 }
 function FALTA_tog(tr){const x=tr.nextElementSibling;if(!x)return;x.classList.toggle('open');tr.classList.toggle('open');}
 function FALTA_render(){
@@ -18820,7 +18872,7 @@ function FALTA_render(){
   const info=`Posição de <b>${d1}</b>${FALTA.t1?' ('+FALTA.t1+')':''}`+(FALTA.d0?` comparada com <b>${d0}</b>${FALTA.t0?' ('+FALTA.t0+')':''}`:' · sem dia anterior para comparar');
   const val=i=>def.col==='Falta'?histFmt(-i.s1):histFmt(i.s1);
   const vcls=i=>i.s1<0?'falta':i.s1>0?'sobra':'';
-  const head=`<thead><tr><th>Produto</th><th>${def.col}</th><th>Atendimento</th><th class="c">Produção</th><th class="c">vs ${d0||'ontem'}</th><th class="x"></th></tr></thead>`;
+  const head=`<thead><tr><th>Produto</th><th>${def.col}</th><th>Atendimento</th><th class="c">Em produção</th><th class="c">vs ${d0||'ontem'}</th><th class="x"></th></tr></thead>`;
   const linha=i=>`<tr class="fal-r" onclick="FALTA_tog(this)"><td>${opEsc(i.descricao)}<small>${HIST_TIPO_LABEL[i.tipo]||i.tipo} · ${opEsc(i.codigo)}</small></td><td class="${vcls(i)}">${val(i)} <small class="u">${opEsc(i.un)}</small></td><td>${FALTA_barra(i)}</td><td class="c">${FALTA_opHtml(i)}</td><td class="c"><span class="fal-sit ${FALTA_sitCls(i,cat)}">${FALTA_sitTxt(i,cat)}</span></td><td class="x">▾</td></tr>
     <tr class="fal-x"><td colspan="6"><div class="fal-grid"><div><small>Estoque hoje (${d1})</small><b>${f(i.e1)}</b></div><div><small>Demanda hoje</small><b>${f(i.d1)}</b></div><div><small>Estoque ${d0||'ontem'}</small><b>${f(i.e0)}</b></div><div><small>Demanda ${d0||'ontem'}</small><b>${f(i.d0)}</b></div><div><small>Saiu do estoque</small><b>${i.saiu==null?'—':f(i.saiu)}</b></div></div></td></tr>`;
   const grupos=FALTA_grupos(c.lista(cat),cat);
@@ -18832,7 +18884,7 @@ function FALTA_render(){
   el.innerHTML=`<div class="fal-bar"><div class="hist-info">${info}</div><button class="fal-btn" onclick="FALTA_atualizar()">Atualizar</button><button class="fal-btn pri" onclick="FALTA_exportarPDF()">Exportar PDF</button></div>
     <div class="fal-kpis">${card('falta','bad')}${card('zerados','warn')}${card('faturado','bad')}${card('zero','warn')}${card('positivos','good')}</div>
     ${top?`<div class="fal-top-h">Mais críticos agora <span>menor cobertura da demanda primeiro</span></div><div class="fal-tops">${top}</div>`:''}
-    <div class="fal-legenda"><b>${def.col}</b> = ${def.col==='Falta'?'quanto falta para atender a demanda':'estoque − demanda'} · <b>Atendimento</b> = quanto da demanda o estoque atende (0% = nada em estoque) · <b>Produção</b> = se o produto está na OP do dia · clique numa linha para ver estoque e demanda dos dois dias. Os filtros da barra acima valem para todos os cards.</div>
+    <div class="fal-legenda"><b>${def.col}</b> = ${def.col==='Falta'?'quanto falta para atender a demanda':'estoque − demanda'} · <b>Atendimento</b> = quanto da demanda o estoque atende (0% = nada em estoque) · <b>Em produção</b> = se está na OP do dia e, quando a massa tem rendimento no Mapa, quantas receitas (rec.) isso representa ou precisa · clique numa linha para ver estoque e demanda dos dois dias. Os filtros da barra acima valem para todos os cards.</div>
     ${secoes||'<div class="empty-state"><div class="empty-icon">✅</div>Nenhum produto nesta categoria com os filtros atuais.</div>'}${resolvidos}`;
 }
 function FALTA_top(lista){
@@ -18856,21 +18908,21 @@ function FALTA_exportarPDF(){
   const resumo=`${lista.length} produtos (${def.regra}). Em falta: ${c.cont.falta} | Faturado sem estoque: ${c.cont.faturado} | Zerados: ${c.cont.zerados} | Saldo zero: ${c.cont.zero} | Disponiveis: ${c.cont.positivos}. Posicao de ${d1}${FALTA.t1?' ('+FALTA.t1+')':''}${FALTA.d0?' comparada com '+d0+(FALTA.t0?' ('+FALTA.t0+')':''):''}.${filtros?' Filtros: '+filtros+'.':''}`;
   doc.splitTextToSize(resumo,W).forEach(l=>{doc.text(l,mx,y);y+=4.3;});
   y+=1;
-  const leg=(def.col==='Falta'?'Falta = quanto falta para atender a demanda. ':'Saldo = estoque - demanda. ')+'Atendimento = quanto da demanda o estoque atende (0% = nada em estoque). Demanda = pedidos ja reservados para sair. Producao = se esta na OP do dia.';
+  const leg=(def.col==='Falta'?'Falta = quanto falta para atender a demanda. ':'Saldo = estoque - demanda. ')+'Atendimento = quanto da demanda o estoque atende (0% = nada em estoque). Demanda = pedidos ja reservados para sair. Em producao = se esta na OP do dia; rec. = receitas da massa (rendimento do Mapa).';
   doc.setFontSize(8);doc.setTextColor(100,100,100);
   doc.splitTextToSize(leg,W).forEach(l=>{doc.text(l,mx,y);y+=3.8;});
   y+=2;
   const n=v=>v==null?'-':histFmt(v);
   const cor={novo:[248,203,173],piorou:[255,230,153],melhorou:[198,224,180],igual:[230,230,230]};
-  const opTxt=i=>!opData?'-':(i.op?`Na OP (${i.op.qtd} ${String(i.op.un||'').toLowerCase()})`:'Sem OP');
+  const opTxt=i=>{const p=FALTA_prod(i);return p.tag?p.l1+(p.l2?' ('+p.l2.replace(/ · /g,' / ')+')':''):'-';};
   const pctTxt=i=>i.pct==null?'sem demanda':i.pct+'%';
   const base={
     margin:{left:mx,right:mx},theme:'grid',
     styles:{font:'helvetica',fontSize:8,cellPadding:1.7,lineColor:[200,200,200],lineWidth:0.2,textColor:[30,30,30]},
     headStyles:{fillColor:[139,0,0],textColor:255,halign:'center',valign:'middle',fontStyle:'bold'}
   };
-  const cols=(sit)=>({0:{cellWidth:18,halign:'center'},1:{cellWidth:'auto'},2:{cellWidth:9,halign:'center'},3:{cellWidth:20,halign:'right'},4:{cellWidth:20,halign:'right'},5:{cellWidth:22,halign:'right',fontStyle:'bold'},6:{cellWidth:22,halign:'center'},7:{cellWidth:30,halign:'center'},8:{cellWidth:30,halign:'center'}});
-  const head=[['Codigo','Produto','Un','Estoque','Demanda',def.col.toUpperCase(),'Atendimento','Producao','vs '+(d0||'ontem')]];
+  const cols=(sit)=>({0:{cellWidth:18,halign:'center'},1:{cellWidth:'auto'},2:{cellWidth:9,halign:'center'},3:{cellWidth:20,halign:'right'},4:{cellWidth:20,halign:'right'},5:{cellWidth:22,halign:'right',fontStyle:'bold'},6:{cellWidth:22,halign:'center'},7:{cellWidth:50,halign:'center'},8:{cellWidth:26,halign:'center'}});
+  const head=[['Codigo','Produto','Un','Estoque','Demanda',def.col.toUpperCase(),'Atendimento','Em producao','vs '+(d0||'ontem')]];
   const corpo=its=>its.map(i=>[i.codigo,i.descricao+' ('+(HIST_TIPO_LABEL[i.tipo]||i.tipo)+')',i.un,n(i.e1),n(i.d1),def.col==='Falta'?histFmt(-i.s1):histFmt(i.s1),pctTxt(i),opTxt(i),FALTA_sitTxt(i,cat)]);
   const parse=its=>d=>{
     if(d.section!=='body')return;const it=its[d.row.index];if(!it)return;
