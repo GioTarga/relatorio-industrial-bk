@@ -18734,7 +18734,7 @@ async function FALTA_carregarMapa(){
       const et=Array.isArray(m.etapas)?m.etapas:[];
       const q=nome=>{const e=et.find(x=>x&&x.nome===nome);return e&&Number(e.qtd)>0?Number(e.qtd):0;};
       const kg=q('Kg de massa'),pac=q('Pacotes');
-      if(kg&&pac)FALTA.mapa[normCod(m.codigo)]={kg,pac};
+      if(kg&&pac)FALTA.mapa[normCod(m.codigo)]={kg,pac,bloco:q('Blocos'),tela:q('Telas'),carrinho:q('Carrinho'),unid:q('Unidades')};
     });
   }catch(e){FALTA.mapa={};}
 }
@@ -18756,22 +18756,46 @@ function FALTA_rend(i){
   return{out,kg:m.kg};
 }
 function FALTA_num(v){return Number(v).toLocaleString('pt-BR',{maximumFractionDigits:1});}
-// Texto do que está em produção/precisa produzir: {tag:'sim'|'nao'|null, l1, l2}
+// Converte a quantidade da OP para a unidade do estoque (a mesma da coluna Falta) usando o rendimento do Mapa.
+// Na OP, "massa" = nº de receitas (massas) → vira pacotes (rendimento da receita) → unidade do estoque.
+// Outras unidades (bloco, tela, carrinho, unidade, pacote, kg de massa) são levadas a receitas pela proporção do Mapa.
+// Devolve {rec, q, pct, conv}; sem conversão possível: conv:false e q na unidade original.
+function FALTA_opQtd(i){
+  const q=Number(i.op.qtd)||0,un=histNorm(i.op.un||''),su=String(i.un||'').toUpperCase();
+  const raw={q,conv:false,rec:null,pct:null,txt:FALTA_num(q)+' '+(i.op.un||'').toLowerCase()};
+  const rd=FALTA_rend(i),m=FALTA.mapa[normCod(i.codigo)];
+  const direto=(su==='KG'&&/^(kg|quilo)/.test(un)&&!/massa/.test(un))||(su==='PCT'&&/^(pct|pc$|pacote)/.test(un))||(['UN','UND'].includes(su)&&/^(un|und|unidade)/.test(un));
+  if(direto)return{q,conv:true,rec:rd?q/rd.out:null,pct:null,txt:FALTA_num(q)+' '+su.toLowerCase()};
+  if(!rd||!m)return raw;
+  let rec=0;
+  if(/^massa/.test(un)&&!/kg/.test(un))rec=q;
+  else if(/kg/.test(un)&&/massa/.test(un))rec=q/m.kg;
+  else if(/^bloco/.test(un)&&m.bloco)rec=q/m.bloco;
+  else if(/^tela/.test(un)&&m.tela)rec=q/m.tela;
+  else if(/^carrinho/.test(un)&&m.carrinho)rec=q/m.carrinho;
+  else if(/^(un|und|unidade)/.test(un)&&m.unid)rec=q/m.unid;
+  else if(/^(pct|pc$|pacote)/.test(un))rec=q/m.pac;
+  if(!rec)return raw;
+  const out=rec*rd.out;
+  return{q:out,conv:true,rec,pct:rec*m.pac,txt:FALTA_num(out)+' '+su.toLowerCase()};
+}
+// Texto do que está em produção/precisa produzir: {tag:'sim'|'nao'|null, l1, l2} — quantidades na unidade do estoque
 function FALTA_prod(i){
   const rd=FALTA_rend(i);
   const falta=i.s1<0?-i.s1:0;
   if(i.op){
-    const q=Number(i.op.qtd)||0;
-    let l2=FALTA_num(q)+' '+String(i.op.un||'').toLowerCase();
-    if(rd&&String(i.op.un||'').toUpperCase()===String(i.un||'').toUpperCase()){
-      l2+=' · '+FALTA_num(q/rd.out)+' rec.';
-      if(falta>0)l2+=' · cobre '+Math.min(999,Math.round(q/falta*100))+'%';
+    const o=FALTA_opQtd(i);
+    let l2=o.txt;
+    if(o.conv){
+      if(o.pct!=null&&String(i.un||'').toUpperCase()!=='PCT')l2+=' ('+FALTA_num(o.pct)+' pct)';
+      if(o.rec!=null)l2+=' · '+FALTA_num(o.rec)+' rec.';
+      if(falta>0)l2+=' · cobre '+Math.min(999,Math.round(o.q/falta*100))+'%';
     }
     return{tag:'sim',l1:'Na OP',l2};
   }
   if(!opData)return{tag:null,l1:'—',l2:''};
   let l2='';
-  if(falta>0&&rd){const n=Math.ceil(falta/rd.out);l2='produzir '+n+' rec. · '+FALTA_num(n*rd.kg)+' kg massa';}
+  if(falta>0&&rd){const n=Math.ceil(falta/rd.out);const m=FALTA.mapa[normCod(i.codigo)];l2='produzir '+FALTA_num(n*rd.out)+' '+String(i.un||'').toLowerCase()+(String(i.un||'').toUpperCase()!=='PCT'?' ('+FALTA_num(n*m.pac)+' pct)':'')+' · '+n+' rec.';}
   return{tag:'nao',l1:'Sem OP',l2};
 }
 async function FALTA_carregar(){  if(FALTA.carregando)return;
