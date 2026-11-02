@@ -18831,7 +18831,10 @@ document.addEventListener('click',e=>{
 // Produto sem setor no catálogo cai em REVENDA (getSetor).
 const FALTA={carregado:false,carregando:false,erro:'',d1:'',d0:'',t1:'',t0:'',r1:[],r0:[],mapa:{},hist:{},charts:[]};
 const FALTA_COLS='tipo,codigo,descricao,familia,estoque,reserva,saldo,un,veio_import,updated_at';
-const FALTA_SIT={novo:'Entrou na falta',piorou:'Piorou',melhorou:'Melhorou',igual:'Igual a ontem'};
+// Situação contra o dia anterior (mesma regra para todos os cards)
+const FALTA_SIT={corte:'Entrou em Corte',reservado:'Reservado sem Estoque',disp:'Disponível',semmov:'Sem Movimentação'};
+// Classe visual (cores já existentes do chip) de cada situação
+const FALTA_SIT_CLS={corte:'novo',reservado:'piorou',disp:'melhorou',semmov:'igual'};
 function FALTA_dm(iso){return iso?iso.slice(8,10)+'/'+iso.slice(5,7):'';}
 function FALTA_hora(rows){
   let m='';rows.forEach(r=>{if(r.updated_at&&r.updated_at>m)m=r.updated_at;});
@@ -18962,8 +18965,9 @@ function FALTA_calc(){
       pct:d1>0?Math.min(100,Math.max(0,Math.round(e1/d1*100))):null, // cobertura: quanto da demanda o estoque atende
       op:(typeof opDoItem==='function')?opDoItem({codigo:r.codigo,descricao:r.descricao}):null};
     // Situação contra o dia anterior (para quem está em falta: novo/piorou/melhorou; demais: saldo subiu/caiu)
-    it.sit=(s0==null)?'novo':s1<s0?'piorou':s1>s0?'melhorou':'igual';
-    if(s1<0&&(s0==null||s0>=0))it.sit='novo';
+    // Sem Movimentação: estoque e reservado iguais ao dia anterior · Entrou em Corte: saldo negativo que ontem não era ·
+    // Reservado sem Estoque: já estava negativo ontem · Disponível: saldo hoje não é negativo
+    it.sit=(s0!=null&&e1===e0&&d1===d0)?'semmov':s1<0?((s0==null||s0>=0)?'corte':'reservado'):'disp';
     todos.push(it);
   });
   const lista=cat=>todos.filter(FALTA_CATS[cat].teste);
@@ -18978,11 +18982,8 @@ function FALTA_grupos(lista,cat){
   const cmp=cat==='zerados'?(a,b)=>b.d1-a.d1||a.descricao.localeCompare(b.descricao):cat==='zero'?(a,b)=>b.e1-a.e1:(a,b)=>a.s1-b.s1;
   return ord.filter(s=>m[s]).map(s=>({setor:s,itens:m[s].sort(cmp)}));
 }
-function FALTA_sitTxt(i,cat){
-  if(cat==='falta'||cat==='faturado')return FALTA_SIT[i.sit];
-  return i.sit==='novo'?'Novo':i.sit==='melhorou'?'Saldo subiu':i.sit==='piorou'?'Saldo caiu':'Igual a ontem';
-}
-function FALTA_sitCls(i,cat){return(cat==='falta'||cat==='faturado')?i.sit:(i.sit==='novo'?'igual':i.sit);}
+function FALTA_sitTxt(i){return FALTA_SIT[i.sit];}
+function FALTA_sitCls(i){return FALTA_SIT_CLS[i.sit];}
 function FALTA_cat(k){FALTA_CAT=k;FALTA_render();}
 // Barra de cobertura (quanto da demanda o estoque atende): vermelho < 50%, âmbar 50–99%, verde ≥ 100%
 function FALTA_barra(i){
