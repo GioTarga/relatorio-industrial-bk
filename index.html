@@ -1224,12 +1224,15 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .hist-prod{font-size:14px;font-weight:800;color:var(--ink);margin-bottom:2px}
 #page-pcp-estoque .hist-cons{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:8px 12px;margin-bottom:10px;background:var(--paper);border:1px solid var(--line);border-radius:8px;font-size:12px;color:var(--ink)}
 #page-pcp-estoque .hist-cons b{font-size:15px}
-#page-pcp-estoque .hist-chart{width:100%;height:220px;margin-bottom:10px;background:var(--paper);border:1px solid var(--line);border-radius:8px}
-#page-pcp-estoque .hist-chart .ln{fill:none;stroke:var(--red-dark);stroke-width:2}
-#page-pcp-estoque .hist-chart .pt{fill:var(--red-dark)}
-#page-pcp-estoque .hist-chart .gr{stroke:var(--line);stroke-width:1}
-#page-pcp-estoque .hist-chart .zr{stroke:var(--ink-soft);stroke-width:1;stroke-dasharray:4 3}
-#page-pcp-estoque .hist-chart text{font-size:10px;fill:var(--ink-soft)}
+#page-pcp-estoque .hist-cv{position:relative;width:100%;height:250px;margin-bottom:14px;padding:10px 12px 6px;background:var(--paper);border:1px solid var(--line);border-radius:10px;box-sizing:border-box}
+#page-pcp-estoque .hist-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:8px 0 14px}
+#page-pcp-estoque .hist-kpi{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+#page-pcp-estoque .hist-kpi small{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;color:var(--ink-soft)}
+#page-pcp-estoque .hist-kpi b{display:block;font-size:19px;color:var(--ink);margin-top:2px}
+#page-pcp-estoque .hist-kpi b small{display:inline;font-size:11px;text-transform:none;letter-spacing:0;font-weight:600}
+#page-pcp-estoque .hist-kpi b small.qd{display:block;margin-top:1px}
+#page-pcp-estoque .hist-kpi b.neg,#page-pcp-estoque .hist-tab2 td.neg{color:var(--red)}
+#page-pcp-estoque .hist-kpi b.pos,#page-pcp-estoque .hist-tab2 td.pos{color:var(--good)}
 #page-pcp-estoque .hist-filtro{width:100%;box-sizing:border-box;margin-bottom:8px;padding:5px 9px;border:1px solid var(--line);border-radius:6px;font-size:12px;font-family:inherit;background:var(--cream);color:var(--ink)}
 #page-pcp-estoque .hist-tab{width:100%;border-collapse:collapse;font-size:12px;background:var(--paper)}
 #page-pcp-estoque .hist-tab th{text-align:right;padding:6px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);border-bottom:2px solid var(--line)}
@@ -1237,6 +1240,25 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .hist-tab th:first-child,#page-pcp-estoque .hist-tab td:first-child{text-align:left}
 #page-pcp-estoque .hist-tab tr.sem td{color:var(--ink-soft);font-style:italic}
 #page-pcp-estoque .hist-tab td.neg{color:var(--red);font-weight:700}
+#page-pcp-estoque .hist-scroll{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--paper)}
+#page-pcp-estoque .hist-tab2{border:0;table-layout:auto}
+#page-pcp-estoque .hist-tab2 th{position:sticky;top:0;background:var(--paper);z-index:1;padding:9px 14px;text-align:center}
+#page-pcp-estoque .hist-tab2 td{padding:8px 14px;text-align:center;font-size:13px;white-space:nowrap}
+#page-pcp-estoque .hist-tab2 th:first-child,#page-pcp-estoque .hist-tab2 td:first-child{text-align:left}
+#page-pcp-estoque .hist-tab2 tbody tr:nth-child(even) td{background:var(--cream)}
+#page-pcp-estoque .hist-tab2 td small{color:var(--ink-soft);font-size:10.5px;font-weight:600}
+#page-pcp-estoque .hist-tab2 td.dt b{font-size:13px}
+#page-pcp-estoque .hist-tab2 td.dt small{margin-left:6px;text-transform:uppercase}
+#page-pcp-estoque .hist-tab2 td.neg,#page-pcp-estoque .hist-tab2 td.pos{font-weight:800}
+#page-pcp-estoque .hist-tab2 tr.sem td{text-align:left;background:transparent;font-size:11.5px;padding:5px 14px}
+#page-pcp-estoque .hist-mov{font-weight:700}
+#page-pcp-estoque .hist-mov.ent{color:var(--good)}
+#page-pcp-estoque .hist-mov.sai{color:var(--red)}
+#page-pcp-estoque .hist-nd{color:var(--ink-soft);font-size:11.5px}
+#page-pcp-estoque .hist-sit{display:inline-block;padding:2px 10px;border-radius:999px;font-size:10.5px;font-weight:700}
+#page-pcp-estoque .hist-sit.falta{background:var(--bad-bg);color:var(--red)}
+#page-pcp-estoque .hist-sit.ok{background:var(--good-bg);color:var(--good)}
+#page-pcp-estoque .hist-sit.zero{background:var(--cream);color:var(--ink-soft);border:1px solid var(--line)}
 #page-pcp-estoque .hist-tab td.nota{text-align:left;font-size:10.5px;color:var(--ink-soft)}
 
 /* Hoje por setor (PCP & Estoque): falta = demanda − estoque, comparada com o dia anterior */
@@ -18660,54 +18682,88 @@ async function histConsultar(){
   await histCarregarDia(dq);
   histRender();
 }
-function histChartSvg(dias,mapa){
-  const W=700,Ht=220,L=50,R=14,T=14,B=26,N=dias.length;
-  const vals=dias.map(d=>mapa[d]?Number(mapa[d].saldo):null).filter(v=>v!==null);
-  if(!vals.length)return '';
-  let mn=Math.min(0,...vals),mx=Math.max(0,...vals);
-  if(mn===mx){mx=mn+1;}
-  const x=i=>L+(N>1?i*(W-L-R)/(N-1):(W-L-R)/2),y=v=>T+(mx-v)*(Ht-T-B)/(mx-mn);
-  let grid='';
-  for(let g=0;g<=4;g++){
-    const v=mn+(mx-mn)*g/4,yy=y(v);
-    grid+=`<line class="gr" x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}"/><text x="${L-6}" y="${yy+3}" text-anchor="end">${histFmt((mx-mn)>=10?Math.round(v):Math.round(v*10)/10)}</text>`;
-  }
-  if(mn<0&&mx>0)grid+=`<line class="zr" x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}"/>`;
-  let path='',pts='',pen=false;
-  dias.forEach((d,i)=>{
-    const o=mapa[d];
-    if(!o){pen=false;return;}
-    const px=x(i),py=y(Number(o.saldo));
-    path+=(pen?'L':'M')+px.toFixed(1)+' '+py.toFixed(1)+' ';pen=true;
-    pts+=`<circle class="pt" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3"><title>${formatDateBR(d)}: ${histFmt(o.saldo)}</title></circle>`;
+// Gráfico de linhas compartilhado (aba Histórico e linha expandida do Hoje por setor):
+// Estoque (contínua) x Reservado/demanda (tracejada); a área entre elas é verde quando sobra e vermelha quando falta.
+// est/dem aceitam null (dia sem registro): a linha liga os dias que existem.
+function histLinhasChart(cv,labels,est,dem,un,host){
+  const ink=FALTA_cor(host,'--ink'),red=FALTA_cor(host,'--red'),grid=FALTA_cor(host,'--line'),soft=FALTA_cor(host,'--ink-soft');
+  return new Chart(cv,{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'Estoque',data:est,borderColor:ink,backgroundColor:ink,borderWidth:2,pointRadius:3,pointHoverRadius:5,tension:0.15,spanGaps:true,
+       fill:{target:'+1',above:FALTA_cor(host,'--good',0.18),below:FALTA_cor(host,'--red',0.22)}},
+      {label:'Reservado (demanda)',data:dem,borderColor:red,backgroundColor:red,borderWidth:2,borderDash:[6,4],pointRadius:3,pointHoverRadius:5,tension:0.15,spanGaps:true,fill:false}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'top',align:'start',labels:{boxWidth:14,boxHeight:3,color:soft,font:{size:11}}},
+        tooltip:{callbacks:{
+          label:c=>c.parsed.y==null?'':c.dataset.label+': '+histFmt(c.parsed.y)+' '+un,
+          afterBody:i=>{const k=i[0].dataIndex;return est[k]==null||dem[k]==null?'':'Saldo: '+(est[k]-dem[k]>0?'+':'')+histFmt(est[k]-dem[k])+' '+un;}
+        }}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{color:soft,font:{size:11},maxRotation:0,autoSkip:true,maxTicksLimit:10}},
+        y:{beginAtZero:true,grid:{color:grid},ticks:{color:soft,font:{size:11}},title:{display:true,text:un,color:soft,font:{size:11}}}
+      }
+    }
   });
-  const lab=[0,Math.floor((N-1)/2),N-1].filter((v,i,a)=>a.indexOf(v)===i)
-    .map(i=>`<text x="${x(i)}" y="${Ht-8}" text-anchor="middle">${formatDateBR(dias[i]).slice(0,5)}</text>`).join('');
-  return `<svg class="hist-chart" viewBox="0 0 ${W} ${Ht}" preserveAspectRatio="none">${grid}<path class="ln" d="${path}"/>${pts}${lab}</svg>`;
 }
+let histChart=null,histGraf=null;
+function histSitChip(o){
+  const e=Number(o.estoque),d=Number(o.reserva),sd=e-d;
+  if(sd<0)return '<span class="hist-sit falta">Em falta</span>';
+  if(e===0)return '<span class="hist-sit zero">Sem estoque</span>';
+  if(sd===0)return '<span class="hist-sit zero">Saldo zero</span>';
+  return '<span class="hist-sit ok">Disponível</span>';
+}
+function histDiaSemana(iso){return new Date(iso+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');}
 function histProdutoHtml(){
+  histGraf=null;
   if(!histSel)return '';
   const hoje=histHoje(),per=parseInt(document.getElementById('histPeriodo').value,10)||30;
   const mapa={};histDados.forEach(r=>{mapa[r.data]=r;});
   const dias=[];for(let i=per-1;i>=0;i--)dias.push(histAddDias(hoje,-i));
   const un=(histDados.find(r=>r.un)||{}).un||'';
-  const cons='';
-  let prev=null;
-  const linhas=dias.map(d=>{
+  const u=un?` <small>${opEsc(un.toLowerCase())}</small>`:'';
+  const reg=dias.filter(d=>mapa[d]);
+  if(!reg.length)return `<div class="hist-prod">${opEsc(histSel.descricao||histSel.codigo)}</div><div class="hist-info">Sem registros no período escolhido.</div>`;
+  // Linhas da tabela, da mais recente para a mais antiga; dias seguidos sem registro viram uma linha só
+  let prevE=null;const lin=[];
+  dias.forEach(d=>{
     const o=mapa[d];
-    if(!o)return {d,sem:true};
-    const v=Number(o.saldo),dif=prev===null?null:v-prev;prev=v;
-    return {d,o,dif};
+    if(!o){const ult=lin[lin.length-1];if(ult&&ult.sem)ult.dias.push(d);else lin.push({sem:true,dias:[d]});return;}
+    const e=Number(o.estoque);lin.push({o,d,mov:prevE==null?null:e-prevE});prevE=e;
   });
-  const tabela=linhas.slice().reverse().map(l=>{
-    if(l.sem)return `<tr class="sem"><td>${formatDateBR(l.d)}</td><td colspan="4">sem registro</td></tr>`;
-    const o=l.o,dif=l.dif===null?'—':(l.dif>0?'+':'')+histFmt(l.dif);
-    return `<tr><td>${formatDateBR(l.d)}</td><td>${histFmt(o.estoque)}</td><td>${histFmt(o.reserva)}</td><td class="${Number(o.saldo)<0?'neg':''}">${histFmt(o.saldo)}</td><td>${dif}</td></tr>`;
+  const mov=m=>m==null?'<span class="hist-nd">—</span>':m>0?`<span class="hist-mov ent">▲ +${histFmt(m)}</span>`:m<0?`<span class="hist-mov sai">▼ ${histFmt(m)}</span>`:'<span class="hist-nd">sem mudança</span>';
+  const tabela=lin.slice().reverse().map(l=>{
+    if(l.sem){
+      const a=l.dias[0],z=l.dias[l.dias.length-1];
+      return `<tr class="sem"><td colspan="6">${a===z?formatDateBR(a).slice(0,5):formatDateBR(a).slice(0,5)+' a '+formatDateBR(z).slice(0,5)} · sem registro${l.dias.length>1?' ('+l.dias.length+' dias)':''}</td></tr>`;
+    }
+    const o=l.o,sd=Number(o.estoque)-Number(o.reserva);
+    return `<tr><td class="dt"><b>${formatDateBR(l.d).slice(0,5)}</b><small>${histDiaSemana(l.d)}</small></td><td>${histFmt(o.estoque)}${u}</td><td>${histFmt(o.reserva)}${u}</td>
+      <td class="${sd<0?'neg':sd>0?'pos':''}">${sd>0?'+':''}${histFmt(sd)}${u}</td><td>${mov(l.mov)}</td><td class="c">${histSitChip(o)}</td></tr>`;
   }).join('');
+  // Resumo do período
+  const ult=mapa[reg[reg.length-1]],sdAtual=Number(ult.estoque)-Number(ult.reserva);
+  const diasFalta=reg.filter(d=>Number(mapa[d].estoque)<Number(mapa[d].reserva)).length;
+  const movs=lin.filter(l=>l.mov!=null&&l.mov!==0);
+  const maiorSai=movs.filter(l=>l.mov<0).sort((a,b)=>a.mov-b.mov)[0],maiorEnt=movs.filter(l=>l.mov>0).sort((a,b)=>b.mov-a.mov)[0];
+  const kpi=(r,v,cl)=>`<div class="hist-kpi"><small>${r}</small><b class="${cl||''}">${v}</b></div>`;
+  const kpis=kpi('Estoque em '+formatDateBR(reg[reg.length-1]).slice(0,5),histFmt(ult.estoque)+u)+kpi('Reservado',histFmt(ult.reserva)+u)
+    +kpi('Saldo',(sdAtual>0?'+':'')+histFmt(sdAtual)+u,sdAtual<0?'neg':sdAtual>0?'pos':'')
+    +kpi('Dias em falta',diasFalta+' <small>de '+reg.length+'</small>',diasFalta?'neg':'')
+    +(maiorSai?kpi('Maior saída',histFmt(maiorSai.mov)+u+`<small class="qd">em ${formatDateBR(maiorSai.d).slice(0,5)}</small>`,'neg'):'')
+    +(maiorEnt?kpi('Maior entrada','+'+histFmt(maiorEnt.mov)+u+`<small class="qd">em ${formatDateBR(maiorEnt.d).slice(0,5)}</small>`,'pos'):'');
+  histGraf={labels:dias.map(d=>FALTA_dm(d)),est:dias.map(d=>mapa[d]?Number(mapa[d].estoque):null),dem:dias.map(d=>mapa[d]?Number(mapa[d].reserva):null),un};
   return `<div class="hist-prod">${opEsc(histSel.descricao||histSel.codigo)}</div>
-    <div class="hist-info">${HIST_TIPO_LABEL[histSel.tipo]||histSel.tipo} · código ${opEsc(histSel.codigo)}${un?' · '+opEsc(un):''}</div>
-    ${cons}${histChartSvg(dias,mapa)}
-    <table class="hist-tab"><thead><tr><th>Data</th><th>Estoque</th><th>Reserva</th><th>Saldo</th><th>Variação</th></tr></thead><tbody>${tabela}</tbody></table>`;
+    <div class="hist-info">${HIST_TIPO_LABEL[histSel.tipo]||histSel.tipo} · código ${opEsc(histSel.codigo)}${un?' · '+opEsc(un):''} · ${reg.length} de ${per} dias com registro</div>
+    <div class="hist-kpis">${kpis}</div>
+    <div class="hist-cv"><canvas id="histCv"></canvas></div>
+    <div class="hist-scroll"><table class="hist-tab hist-tab2"><thead><tr><th>Data</th><th>Estoque</th><th>Reservado</th><th>Saldo</th><th>Mov. do estoque</th><th class="c">Situação</th></tr></thead><tbody>${tabela}</tbody></table></div>`;
 }
 
 // Lista de todos os produtos gravados em um dia
@@ -18754,8 +18810,11 @@ function histRender(manterFoco){
   // O campo "Saldo em" acompanha o período escolhido; data fora dele é limpa
   {const hj=histHoje(),pr=parseInt(document.getElementById('histPeriodo').value,10)||30,di=document.getElementById('histData'),ini=histAddDias(hj,-(pr-1));
    di.min=ini;di.max=hj;if(di.value&&(di.value<ini||di.value>hj))di.value='';}
+  if(histChart){histChart.destroy();histChart=null;}
   const dia=histDiaHtml(),prod=histProdutoHtml();
   corpo.innerHTML=(dia||prod)?dia+prod:'<div class="empty-state"><div class="empty-icon">🔎</div>Busque um produto ou escolha uma data para ver o saldo.</div>';
+  const cv=document.getElementById('histCv');
+  if(cv&&histGraf&&typeof Chart!=='undefined')histChart=histLinhasChart(cv,histGraf.labels,histGraf.est,histGraf.dem,histGraf.un,corpo);
   if(manterFoco===true){const f=document.getElementById('histFiltroDia');if(f){f.focus();f.setSelectionRange(f.value.length,f.value.length);}}
 }
 document.addEventListener('click',e=>{
@@ -18981,30 +19040,7 @@ async function FALTA_hist(box){
   ].join('');
   box.innerHTML=`<div class="fal-hist-t">Histórico de ${dias[0]} a ${dias[dias.length-1]} · ${pts.length} dias</div><div class="fal-hist-cv"><canvas></canvas></div><div class="fal-chips">${chips}</div>`;
   const cv=box.querySelector('canvas');
-  const ink=FALTA_cor(box,'--ink'),red=FALTA_cor(box,'--red'),good=FALTA_cor(box,'--good'),grid=FALTA_cor(box,'--line'),soft=FALTA_cor(box,'--ink-soft');
-  FALTA.charts.push(new Chart(cv,{
-    type:'line',
-    data:{labels:dias,datasets:[
-      {label:'Estoque',data:pts.map(q=>q.e),borderColor:ink,backgroundColor:ink,borderWidth:2,pointRadius:3,tension:0.15,
-       fill:{target:'+1',above:FALTA_cor(box,'--good',0.18),below:FALTA_cor(box,'--red',0.22)}},
-      {label:'Reservado (demanda)',data:pts.map(q=>q.d),borderColor:red,backgroundColor:red,borderWidth:2,borderDash:[6,4],pointRadius:3,tension:0.15,fill:false}
-    ]},
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      interaction:{mode:'index',intersect:false},
-      plugins:{
-        legend:{position:'top',align:'start',labels:{boxWidth:14,boxHeight:3,color:soft,font:{size:11}}},
-        tooltip:{callbacks:{
-          label:c=>c.dataset.label+': '+histFmt(c.parsed.y)+' '+un,
-          afterBody:i=>{const q=pts[i[0].dataIndex];const s=q.e-q.d;return 'Saldo: '+(s>0?'+':'')+histFmt(s)+' '+un;}
-        }}
-      },
-      scales:{
-        x:{grid:{display:false},ticks:{color:soft,font:{size:11}}},
-        y:{beginAtZero:true,grid:{color:grid},ticks:{color:soft,font:{size:11}},title:{display:true,text:un,color:soft,font:{size:11}}}
-      }
-    }
-  }));
+  FALTA.charts.push(histLinhasChart(cv,dias,pts.map(q=>q.e),pts.map(q=>q.d),un,box));
 }
 function FALTA_render(){
   const el=document.getElementById('viewFalta');if(!el)return;
