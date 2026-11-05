@@ -1260,6 +1260,42 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .hist-sit.ok{background:var(--good-bg);color:var(--good)}
 #page-pcp-estoque .hist-sit.zero{background:var(--cream);color:var(--ink-soft);border:1px solid var(--line)}
 #page-pcp-estoque .hist-tab td.nota{text-align:left;font-size:10.5px;color:var(--ink-soft)}
+/* Histórico · Movimentação diária (matriz produto x dia) */
+#page-pcp-estoque .hist-modos{display:inline-flex;gap:4px;padding:3px;margin-bottom:10px;background:var(--cream);border:1px solid var(--line);border-radius:8px}
+#page-pcp-estoque .hist-modo{border:0;background:transparent;padding:5px 12px;border-radius:6px;font:inherit;font-size:12px;font-weight:700;color:var(--ink-soft);cursor:pointer}
+#page-pcp-estoque .hist-modo.on{background:var(--paper);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+#page-pcp-estoque .hm-per{position:relative}
+#page-pcp-estoque .hm-per-btn{padding:5px 12px;border:1px solid var(--line);border-radius:6px;font:inherit;font-size:12px;font-weight:700;background:var(--cream);color:var(--ink);cursor:pointer;white-space:nowrap}
+#page-pcp-estoque .hm-cal{position:absolute;z-index:30;top:100%;left:0;margin-top:4px;width:max-content;max-width:calc(100vw - 40px);padding:10px;box-sizing:border-box;background:var(--paper);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 22px rgba(0,0,0,.16);text-transform:none;letter-spacing:0;font-weight:400}
+#page-pcp-estoque .hm-cal-meses{display:flex;flex-wrap:wrap;gap:16px}
+#page-pcp-estoque .hm-cal-mes{width:252px}
+#page-pcp-estoque .hm-cal-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:13px;font-weight:800;color:var(--ink);text-transform:capitalize}
+#page-pcp-estoque .hm-cal-nav{border:0;background:transparent;font-size:15px;line-height:1;padding:4px 8px;border-radius:6px;color:var(--ink);cursor:pointer}
+#page-pcp-estoque .hm-cal-nav:hover:not(:disabled){background:var(--cream)}
+#page-pcp-estoque .hm-cal-nav:disabled{opacity:.3;cursor:default}
+#page-pcp-estoque .hm-cal-grade{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+#page-pcp-estoque .hm-cal-sem{text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--ink-soft);padding:2px 0}
+#page-pcp-estoque .hm-d{position:relative;height:32px;border:0;border-radius:6px;background:transparent;font:inherit;font-size:12px;color:var(--ink);cursor:pointer}
+#page-pcp-estoque .hm-d:disabled{opacity:.3;cursor:default}
+#page-pcp-estoque .hm-d.reg::after{content:'';position:absolute;bottom:3px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--ink-soft)}
+#page-pcp-estoque .hm-d.meio{background:var(--bad-bg);border-radius:0}
+#page-pcp-estoque .hm-d.ini,#page-pcp-estoque .hm-d.fim{background:var(--red);color:var(--paper);font-weight:800}
+#page-pcp-estoque .hm-d.ini.reg::after,#page-pcp-estoque .hm-d.fim.reg::after{background:var(--paper)}
+#page-pcp-estoque .hm-cal-dica{margin-top:8px;font-size:11px;color:var(--ink-soft)}
+#page-pcp-estoque .hm-chk{flex-direction:row !important;align-items:center;gap:6px !important;padding-bottom:6px;text-transform:none !important;letter-spacing:0 !important;font-size:12px !important;font-weight:600 !important}
+#page-pcp-estoque .hm-scroll{max-height:600px}
+#page-pcp-estoque .hm-tab th,#page-pcp-estoque .hm-tab td{padding:7px 10px;font-size:12px}
+#page-pcp-estoque .hm-tab th{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft)}
+#page-pcp-estoque .hm-tab th small{display:block;font-size:9.5px;font-weight:600;letter-spacing:0}
+#page-pcp-estoque .hm-tab th:first-child,#page-pcp-estoque .hm-tab td:first-child{position:sticky;left:0;z-index:2;min-width:230px;max-width:290px;white-space:normal;background:var(--paper)}
+#page-pcp-estoque .hm-tab tbody tr{cursor:pointer}
+#page-pcp-estoque .hm-tab td.hm-nome b{display:block;font-size:12px;color:var(--ink)}
+#page-pcp-estoque .hm-tab td.hm-nome small{display:block;margin:0}
+#page-pcp-estoque .hm-tab th.hm-tot,#page-pcp-estoque .hm-tab td.hm-tot{border-right:1px solid var(--line);font-weight:800}
+#page-pcp-estoque .hm-tab th.hm-sem,#page-pcp-estoque .hm-tab td.hm-sem{color:var(--ink-soft);opacity:.7}
+#page-pcp-estoque .hm-tab tbody tr td.hm-c.ent,#page-pcp-estoque .hm-tab tbody tr td.hm-tot.ent{color:var(--good);background:var(--good-bg);font-weight:700}
+#page-pcp-estoque .hm-tab tbody tr td.hm-c.sai,#page-pcp-estoque .hm-tab tbody tr td.hm-tot.sai{color:var(--red);background:var(--bad-bg);font-weight:700}
+#page-pcp-estoque .hm-tab td.hm-z{color:var(--ink-soft)}
 
 /* Hoje por setor (PCP & Estoque): falta = demanda − estoque, comparada com o dia anterior */
 #page-pcp-estoque .fal-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:10px}
@@ -4486,6 +4522,11 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
     </div>
     <div id="viewFalta" class="hist-wrap"></div>
     <div id="viewHistorico" class="hist-wrap">
+      <div class="hist-modos">
+        <button type="button" class="hist-modo on" id="hmModoProd" onclick="hmModo('prod')">Por produto</button>
+        <button type="button" class="hist-modo" id="hmModoMov" onclick="hmModo('mov')">Movimentação diária</button>
+      </div>
+      <div id="hmPainelProd">
       <div class="hist-bar">
         <label class="hist-busca">Produto (código ou nome)
           <input type="text" id="histBusca" placeholder="digite para buscar..." autocomplete="off" oninput="histBuscar()" onfocus="histBuscar()">
@@ -4507,6 +4548,29 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
       </div>
       <div class="hist-info" id="histInfo">Guarda o saldo da última atualização de cada dia, por 30 dias. Dias sem importação aparecem como “sem registro”.</div>
       <div id="histCorpo"></div>
+      </div>
+      <div id="hmPainelMov" hidden>
+        <div class="hist-bar">
+          <label>Período
+            <div class="hm-per">
+              <button type="button" class="hm-per-btn" id="hmPerBtn" onclick="hmCalAbrir()">Escolher período</button>
+              <div class="hm-cal" id="hmCal" hidden></div>
+            </div>
+          </label>
+          <label class="hist-busca">Produto (código ou nome)
+            <input type="text" id="hmBusca" placeholder="filtrar esta lista..." autocomplete="off" oninput="hmRender(true)">
+          </label>
+          <label>Local
+            <select id="hmLocal" onchange="hmRender()"><option value="">Todos</option><option value="FABRICA">Fábrica</option><option value="LOJA">Loja</option></select>
+          </label>
+          <label>Ordenar por
+            <select id="hmOrd" onchange="hmRender()"><option value="nome">Nome</option><option value="ent">Maior entrada</option><option value="sai">Maior saída</option></select>
+          </label>
+          <label class="hm-chk"><input type="checkbox" id="hmSoMov" checked onchange="hmRender()"> Só com movimento</label>
+        </div>
+        <div class="hist-info" id="hmInfo"></div>
+        <div id="hmCorpo"></div>
+      </div>
     </div>
     <div id="alertKanban" class="kb-board"></div>
     <div class="table-wrap" id="alertTableWrap">
@@ -18621,6 +18685,7 @@ async function histGravar(tipos){
     // Retenção: apaga o que passou de 30 dias
     await fetch(SUPABASE_URL+'/rest/v1/estoque_historico?data=lt.'+desde,{method:'DELETE',headers:H});
     histProdutos=null; // força recarregar a lista de produtos na próxima abertura
+    HM.prods=null;     // idem para a matriz de movimentação
     FALTA.carregado=false; // "Hoje por setor" relê as posições na próxima exibição
     if(estView==='falta')renderAlerts();
     return true;
@@ -18817,6 +18882,178 @@ function histRender(manterFoco){
   if(cv&&histGraf&&typeof Chart!=='undefined')histChart=histLinhasChart(cv,histGraf.labels,histGraf.est,histGraf.dem,histGraf.un,corpo);
   if(manterFoco===true){const f=document.getElementById('histFiltroDia');if(f){f.focus();f.setSelectionRange(f.value.length,f.value.length);}}
 }
+
+// ─────────────────────────────────────────────
+// HISTÓRICO · MOVIMENTAÇÃO DIÁRIA (produto x dia)
+// ─────────────────────────────────────────────
+// Movimento do dia = estoque do dia − estoque do registro anterior (altas = "entrou", quedas = "saiu").
+// Dia sem importação fica como "·" e a variação seguinte é calculada contra o último dia que teve registro.
+const HM_MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const HM_PADRAO_DIAS=7;
+const HM={modo:'prod',ini:'',fim:'',mes:'',aguardaFim:false,hover:'',bak:null,prods:null,datas:new Set(),erro:'',linhas:[]};
+function hmModo(m){
+  HM.modo=m;
+  document.getElementById('hmPainelProd').hidden=m!=='prod';
+  document.getElementById('hmPainelMov').hidden=m!=='mov';
+  document.getElementById('hmModoProd').classList.toggle('on',m==='prod');
+  document.getElementById('hmModoMov').classList.toggle('on',m==='mov');
+  if(m==='mov')hmAbrir();
+}
+async function hmCarregar(){
+  const corpo=document.getElementById('hmCorpo');
+  if(corpo)corpo.innerHTML='<div class="hist-info">Carregando…</div>';
+  HM.erro='';
+  try{
+    const desde=histAddDias(histHoje(),-HIST_DIAS),prods=new Map(),datas=new Set();
+    for(let off=0;;off+=1000){
+      const r=await fetch(SUPABASE_URL+'/rest/v1/estoque_historico?select=data,tipo,codigo,descricao,estoque,un&data=gte.'+desde+'&order=data.asc,tipo.asc,codigo.asc&limit=1000&offset='+off,{headers:histHeaders()});
+      if(!r.ok){HM.prods=null;HM.erro='Erro '+r.status+' ao carregar a movimentação';return;}
+      const part=await r.json();
+      part.forEach(x=>{
+        const k=x.tipo+'|'+x.codigo;
+        let p=prods.get(k);
+        if(!p){p={tipo:x.tipo,codigo:x.codigo,descricao:x.descricao,un:x.un||'',reg:{}};prods.set(k,p);}
+        if(x.descricao)p.descricao=x.descricao;
+        if(x.un)p.un=x.un;
+        p.reg[x.data]=Number(x.estoque);
+        datas.add(x.data);
+      });
+      if(part.length<1000)break;
+    }
+    HM.prods=prods;HM.datas=datas;
+  }catch(e){HM.prods=null;HM.erro='Sem conexão com o Supabase';}
+}
+async function hmAbrir(){
+  if(!HM.ini){const hj=histHoje();HM.fim=hj;HM.ini=histAddDias(hj,-(HM_PADRAO_DIAS-1));HM.mes=HM.fim.slice(0,7);}
+  if(!HM.prods)await hmCarregar();
+  hmRender();
+}
+function hmDias(ini,fim){const d=[];for(let x=ini;x<=fim;x=histAddDias(x,1))d.push(x);return d;}
+function hmCalcular(){
+  const dias=hmDias(HM.ini,HM.fim),linhas=[];
+  HM.prods.forEach(p=>{
+    const datas=Object.keys(p.reg).sort();
+    let prev=null;
+    for(const d of datas){if(d<HM.ini)prev=p.reg[d];else break;}
+    let ent=0,sai=0,temReg=false;
+    const cel=dias.map(d=>{
+      if(!(d in p.reg))return {t:'sem'};
+      temReg=true;
+      const e=p.reg[d],v=prev==null?null:histR3(e-prev);
+      prev=e;
+      if(v==null)return {t:'ini'};
+      if(v>0)ent=histR3(ent+v);else if(v<0)sai=histR3(sai+v);
+      return {t:'mov',v};
+    });
+    if(temReg)linhas.push({p,cel,ent,sai,liq:histR3(ent+sai)});
+  });
+  return {dias,linhas};
+}
+function hmCelHtml(c){
+  if(c.t==='sem')return '<td class="hm-sem">·</td>';
+  if(c.t==='ini')return '<td class="hm-sem">—</td>';
+  if(c.v>0)return `<td class="hm-c ent">+${histFmt(c.v)}</td>`;
+  if(c.v<0)return `<td class="hm-c sai">${histFmt(c.v)}</td>`;
+  return '<td class="hm-z">0</td>';
+}
+function hmTotHtml(v,sinal){
+  if(!v)return '<td class="hm-tot hm-z">0</td>';
+  return `<td class="hm-tot ${v>0?'ent':'sai'}">${sinal&&v>0?'+':''}${histFmt(v)}</td>`;
+}
+function hmRender(manterFoco){
+  const corpo=document.getElementById('hmCorpo'),info=document.getElementById('hmInfo'),btn=document.getElementById('hmPerBtn');
+  if(!corpo)return;
+  if(btn&&HM.ini)btn.textContent=FALTA_dm(HM.ini)+' → '+FALTA_dm(HM.fim);
+  if(!HM.prods){corpo.innerHTML=`<div class="hist-cons">${opEsc(HM.erro||'Movimentação indisponível')}</div>`;info.textContent='';return;}
+  const {dias,linhas}=hmCalcular();
+  const loc=document.getElementById('hmLocal').value,txt=histNorm(document.getElementById('hmBusca').value),ord=document.getElementById('hmOrd').value,soMov=document.getElementById('hmSoMov').checked;
+  const qc=normCod(document.getElementById('hmBusca').value.trim());
+  let vis=linhas.filter(l=>(!loc||l.p.tipo===loc)&&(!txt||histNorm(l.p.descricao).includes(txt)||l.p.codigo.startsWith(qc))&&(!soMov||l.ent!==0||l.sai!==0));
+  vis.sort(ord==='ent'?(a,b)=>b.ent-a.ent:ord==='sai'?(a,b)=>a.sai-b.sai:(a,b)=>(a.p.descricao||'').localeCompare(b.p.descricao||'','pt-BR'));
+  HM.linhas=vis;
+  info.textContent=`${vis.length} de ${linhas.length} produtos · ${dias.length} dia(s) · “Entrou” soma as altas do estoque e “Saiu” soma as quedas entre um registro e o anterior · “·” = dia sem importação (a variação vai para o próximo dia com registro)`;
+  if(!vis.length){corpo.innerHTML='<div class="empty-state"><div class="empty-icon">🔎</div>Nenhum produto com movimento neste período.</div>';return;}
+  const cab=dias.map(d=>`<th class="${HM.datas.has(d)?'':'hm-sem'}">${FALTA_dm(d)}<small>${histDiaSemana(d)}</small></th>`).join('');
+  const corpoTab=vis.map((l,ix)=>`<tr onclick="hmAbrirProduto(${ix})"><td class="hm-nome"><b>${opEsc(l.p.descricao||l.p.codigo)}</b><small>${HIST_TIPO_LABEL[l.p.tipo]||l.p.tipo} · ${opEsc(l.p.codigo)}${l.p.un?' · '+opEsc(l.p.un.toLowerCase()):''}</small></td>
+    ${hmTotHtml(l.ent,true)}${hmTotHtml(l.sai,false)}${hmTotHtml(l.liq,true)}${l.cel.map(hmCelHtml).join('')}</tr>`).join('');
+  corpo.innerHTML=`<div class="hist-scroll hm-scroll"><table class="hist-tab2 hm-tab"><thead><tr><th>Produto</th><th class="hm-tot">Entrou</th><th class="hm-tot">Saiu</th><th class="hm-tot">Líquido</th>${cab}</tr></thead><tbody>${corpoTab}</tbody></table></div>`;
+  if(manterFoco===true){const f=document.getElementById('hmBusca');if(f){f.focus();f.setSelectionRange(f.value.length,f.value.length);}}
+}
+function hmAbrirProduto(ix){
+  const l=HM.linhas[ix];if(!l)return;
+  histSel={tipo:l.p.tipo,codigo:l.p.codigo,descricao:l.p.descricao};
+  document.getElementById('histBusca').value=l.p.descricao||l.p.codigo;
+  hmModo('prod');
+  histCarregar();
+}
+// Calendário de período: clique 1 = início, clique 2 = fim
+function hmMesAnt(ym,delta){
+  let [a,m]=ym.split('-').map(Number);m+=delta;
+  while(m<1){m+=12;a--;}
+  while(m>12){m-=12;a++;}
+  return a+'-'+String(m).padStart(2,'0');
+}
+function hmCalAbrir(){
+  const cal=document.getElementById('hmCal');
+  if(!cal.hidden){hmCalFechar();return;}
+  HM.mes=hmMesAnt(hmCalLimites().max.slice(0,7),-1); // mostra o mês anterior e o atual lado a lado
+  HM.aguardaFim=false;HM.hover='';
+  cal.hidden=false;hmCalRender();
+}
+function hmCalFechar(){
+  const cal=document.getElementById('hmCal');if(!cal||cal.hidden)return;
+  if(HM.aguardaFim&&HM.bak){HM.ini=HM.bak.ini;HM.fim=HM.bak.fim;}
+  HM.aguardaFim=false;HM.bak=null;cal.hidden=true;
+  hmRender();
+}
+function hmCalLimites(){const hj=histHoje();return {min:histAddDias(hj,-HIST_DIAS),max:hj};}
+function hmCalMes(delta){HM.mes=hmMesAnt(HM.mes,delta);hmCalRender();}
+// Um mês do calendário (Dom a Sáb); dias fora da retenção de 30 dias ficam desabilitados
+function hmCalMesHtml(ym,nav){
+  const {min,max}=hmCalLimites(),[a,m]=ym.split('-').map(Number);
+  const dow=new Date(Date.UTC(a,m-1,1)).getUTCDay(),nd=new Date(Date.UTC(a,m,0)).getUTCDate();
+  let dd='';
+  for(let i=0;i<dow;i++)dd+='<span></span>';
+  for(let d=1;d<=nd;d++){
+    const iso=ym+'-'+String(d).padStart(2,'0'),fora=iso<min||iso>max;
+    dd+=`<button type="button" class="hm-d${HM.datas.has(iso)?' reg':''}" data-d="${iso}" ${fora?'disabled':`onclick="hmCalDia('${iso}')" onmouseover="hmCalHover('${iso}')"`}>${d}</button>`;
+  }
+  const ant=nav==='ant'?`<button type="button" class="hm-cal-nav" onclick="hmCalMes(-1)" ${ym<=min.slice(0,7)?'disabled':''}>◀</button>`:'<span class="hm-cal-nav"></span>';
+  const prox=nav==='prox'?`<button type="button" class="hm-cal-nav" onclick="hmCalMes(1)" ${ym>=max.slice(0,7)?'disabled':''}>▶</button>`:'<span class="hm-cal-nav"></span>';
+  return `<div class="hm-cal-mes"><div class="hm-cal-top">${ant}<span>${HM_MESES[m-1]} ${a}</span>${prox}</div>
+    <div class="hm-cal-grade">${['D','S','T','Q','Q','S','S'].map(x=>`<span class="hm-cal-sem">${x}</span>`).join('')}${dd}</div></div>`;
+}
+function hmCalRender(){
+  const cal=document.getElementById('hmCal');
+  cal.innerHTML=`<div class="hm-cal-meses">${hmCalMesHtml(HM.mes,'ant')}${hmCalMesHtml(hmMesAnt(HM.mes,1),'prox')}</div><div class="hm-cal-dica" id="hmCalDica"></div>`;
+  hmCalPintar();
+}
+function hmCalPintar(){
+  const cal=document.getElementById('hmCal');if(!cal)return;
+  let a=HM.ini,b=HM.aguardaFim?(HM.hover||HM.ini):HM.fim;
+  if(b<a){const t=a;a=b;b=t;}
+  cal.querySelectorAll('.hm-d').forEach(el=>{
+    const d=el.dataset.d;
+    el.classList.toggle('ini',d===a);
+    el.classList.toggle('fim',d===b);
+    el.classList.toggle('meio',d>a&&d<b);
+  });
+  const dica=document.getElementById('hmCalDica');
+  if(dica)dica.textContent=HM.aguardaFim?'Agora clique no dia final do período.':'Clique no dia inicial e depois no dia final. ● = dia com registro.';
+}
+function hmCalDia(iso){
+  if(!HM.aguardaFim){
+    HM.bak={ini:HM.ini,fim:HM.fim};
+    HM.ini=iso;HM.fim=iso;HM.aguardaFim=true;HM.hover=iso;
+    hmCalPintar();return;
+  }
+  if(iso<HM.ini){HM.fim=HM.ini;HM.ini=iso;}else HM.fim=iso;
+  HM.aguardaFim=false;HM.bak=null;HM.hover='';
+  document.getElementById('hmCal').hidden=true;
+  hmRender();
+}
+function hmCalHover(iso){if(!HM.aguardaFim||HM.hover===iso)return;HM.hover=iso;hmCalPintar();}
+document.addEventListener('click',e=>{if(!e.target.closest('.hm-per'))hmCalFechar();});
 document.addEventListener('click',e=>{
   const b=document.getElementById('histLista');
   if(b&&!e.target.closest('.hist-busca'))b.style.display='none';
