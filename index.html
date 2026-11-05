@@ -19471,7 +19471,7 @@ function renderKanbanCard(item){
     `<div class="kb-m agr"><small>Agrupado</small><span>${agr}</span></div>`,
     `<div class="kb-m saldo ${saldoCls}"><small>Saldo</small><span>${n(saldo)}${un}</span></div>`
   ];
-  metrics.push(`<div class="kb-m ven"><small>Venda/sem</small><span>${venda!=null?n(venda):'—'}</span></div>`);
+  metrics.push(`<div class="kb-m ven"><small>Venda/sem</small><span>${venda!=null?n(venda)+un:'—'}</span></div>`);
   const sub=[item.familia,setor&&setor!=='—'&&setor!=='SEM SETOR'?setor:''].filter(Boolean).map(t=>`<span>${t}</span>`).join('');
   const op=opDoItem(item);
   const opTag=op?`<div class="kb-op-tag" title="${opEsc([op.maq,op.destino].filter(Boolean).join(' · '))}">Em produção<small>${op.qtd!=null?n(op.qtd)+' ':''}${opEsc(op.un)}${op.destino?' · '+opEsc(op.destino):''}</small></div>`:'';
