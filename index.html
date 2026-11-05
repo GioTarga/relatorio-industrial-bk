@@ -25771,8 +25771,16 @@ async function MR_load(){
     if(mapa.error) throw mapa.error;
     MR_MAPA = {};
     (mapa.data || []).forEach(r => { MR_MAPA[r.codigo] = r; });
+    // Produto mapeado cuja descrição não tem "massa" (ex.: croissant assado) não vem da consulta acima: busca pelo código
+    const jaVieram = new Set((prod.data || []).map(p => p.codigo));
+    const faltam = Object.keys(MR_MAPA).filter(c => !jaVieram.has(c));
+    let extras = [];
+    if(faltam.length){
+      const ex = await client.from('produtos_producao').select('codigo, descricao, setor').in('codigo', faltam);
+      if(!ex.error) extras = ex.data || [];
+    }
     // Escopo do Mapa: só massas de Giro Dia e Padaria (inclui noturno); produto já mapeado sempre aparece
-    MR_PRODUTOS = (prod.data || []).filter(p => MR_SETORES.includes(String(p.setor || '').toUpperCase()) || MR_MAPA[p.codigo]);
+    MR_PRODUTOS = [...(prod.data || []), ...extras].filter(p => MR_SETORES.includes(String(p.setor || '').toUpperCase()) || MR_MAPA[p.codigo]);
     document.getElementById('mrNovoWrap').style.display = MR_podeEditar() && !MR_FORM_ABERTO ? '' : 'none';
     MR_fillProdutos();
     if(!document.querySelector('#mrEtapas .mr-etapa')) MR_resetEtapas();
