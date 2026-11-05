@@ -19391,28 +19391,25 @@ function FALTA_exportarPDF(){
   const resumo=`${lista.length} produtos (${def.regra}). Em falta: ${c.cont.falta} | Faturado sem estoque: ${c.cont.faturado} | Zerados: ${c.cont.zerados} | Saldo zero: ${c.cont.zero} | Disponiveis: ${c.cont.positivos}. Posicao de ${d1}${FALTA.t1?' ('+FALTA.t1+')':''}${FALTA.d0?' comparada com '+d0+(FALTA.t0?' ('+FALTA.t0+')':''):''}.${filtros?' Filtros: '+filtros+'.':''}`;
   doc.splitTextToSize(resumo,W).forEach(l=>{doc.text(l,mx,y);y+=4.3;});
   y+=1;
-  const leg=(def.col==='Falta'?'Falta = quanto falta para atender a demanda. ':'Saldo = estoque - demanda. ')+'Atendimento = quanto da demanda o estoque atende (0% = nada em estoque). Demanda = pedidos ja reservados para sair. Produzindo hoje = quantidade da OP do dia, na mesma unidade da coluna de falta.';
+  const leg=(def.col==='Falta'?'Falta = quanto falta para atender a demanda. ':'Saldo = estoque - demanda. ')+'Demanda = pedidos ja reservados para sair. Situacao = Produzindo hoje (o produto esta na OP do dia) ou Sem Produção.';
   doc.setFontSize(8);doc.setTextColor(100,100,100);
   doc.splitTextToSize(leg,W).forEach(l=>{doc.text(l,mx,y);y+=3.8;});
   y+=2;
   const n=v=>v==null?'-':histFmt(v);
-  const cor={novo:[248,203,173],piorou:[255,230,153],melhorou:[198,224,180],igual:[230,230,230]};
-  const opTxt=i=>{const p=FALTA_prod(i);return p.tag?p.l1+(p.l2?' ('+p.l2.replace(/ · /g,' / ')+')':''):'-';};
-  const pctTxt=i=>i.pct==null?'sem demanda':i.pct+'%';
+  // No PDF não mostra a quantidade: só se o produto está na OP de hoje
+  const opStatusTxt=i=>!opData?'-':(i.op?'Produzindo hoje':'Sem Produção');
   const base={
     margin:{left:mx,right:mx},theme:'grid',
     styles:{font:'helvetica',fontSize:8,cellPadding:1.7,lineColor:[200,200,200],lineWidth:0.2,textColor:[30,30,30]},
     headStyles:{fillColor:[139,0,0],textColor:255,halign:'center',valign:'middle',fontStyle:'bold'}
   };
-  const cols=(sit)=>({0:{cellWidth:18,halign:'center'},1:{cellWidth:'auto'},2:{cellWidth:9,halign:'center'},3:{cellWidth:20,halign:'right'},4:{cellWidth:20,halign:'right'},5:{cellWidth:22,halign:'right',fontStyle:'bold'},6:{cellWidth:30,halign:'center'},7:{cellWidth:24,halign:'center'},8:{cellWidth:26,halign:'center'}});
-  const head=[['Codigo','Produto','Un','Estoque','Demanda',def.col.toUpperCase(),'Produzindo hoje','Atendimento','vs '+(d0||'ontem')]];
-  const corpo=its=>its.map(i=>[i.codigo,i.descricao+' ('+(HIST_TIPO_LABEL[i.tipo]||i.tipo)+')',i.un,n(i.e1),n(i.d1),def.col==='Falta'?histFmt(-i.s1):histFmt(i.s1),opTxt(i),pctTxt(i),FALTA_sitTxt(i,cat)]);
+  const cols=(sit)=>({0:{cellWidth:18,halign:'center'},1:{cellWidth:'auto'},2:{cellWidth:9,halign:'center'},3:{cellWidth:24,halign:'center'},4:{cellWidth:24,halign:'center'},5:{cellWidth:24,halign:'center',fontStyle:'bold'},6:{cellWidth:36,halign:'center'}});
+  const head=[['Codigo','Produto','Un','Estoque','Demanda',def.col.toUpperCase(),'Situacao']];
+  const corpo=its=>its.map(i=>[i.codigo,i.descricao+' ('+(HIST_TIPO_LABEL[i.tipo]||i.tipo)+')',i.un,n(i.e1),n(i.d1),def.col==='Falta'?histFmt(-i.s1):histFmt(i.s1),opStatusTxt(i)]);
   const parse=its=>d=>{
     if(d.section!=='body')return;const it=its[d.row.index];if(!it)return;
     if(d.column.index===5)d.cell.styles.textColor=it.s1<0?[192,0,0]:it.s1>0?[47,125,82]:[30,30,30];
-    if(d.column.index===7&&it.pct!=null)d.cell.styles.fillColor=it.pct<50?[248,203,173]:it.pct<100?[255,230,153]:[198,224,180];
-    if(d.column.index===6&&opData)d.cell.styles.fillColor=it.op?[198,224,180]:[248,203,173];
-    if(d.column.index===8&&cor[FALTA_sitCls(it,cat)])d.cell.styles.fillColor=cor[FALTA_sitCls(it,cat)];
+    if(d.column.index===6&&opData){d.cell.styles.fillColor=it.op?[198,224,180]:[248,203,173];d.cell.styles.textColor=it.op?[47,125,82]:[192,0,0];d.cell.styles.fontStyle='bold';}
   };
   if(ehFalta){
     const tp=FALTA_top(lista);
