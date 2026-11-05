@@ -1291,10 +1291,21 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .hm-tab tbody tr{cursor:pointer}
 #page-pcp-estoque .hm-tab td.hm-nome b{display:block;font-size:12px;color:var(--ink)}
 #page-pcp-estoque .hm-tab td.hm-nome small{display:block;margin:0}
-#page-pcp-estoque .hm-tab th.hm-tot,#page-pcp-estoque .hm-tab td.hm-tot{border-right:1px solid var(--line);font-weight:800}
+#page-pcp-estoque .hm-tab th.hm-tot,#page-pcp-estoque .hm-tab td.hm-tot{font-weight:800}
+#page-pcp-estoque .hm-tab th.hm-tot:nth-child(3),#page-pcp-estoque .hm-tab td.hm-tot:nth-child(3){border-right:1px solid var(--line)}
 #page-pcp-estoque .hm-tab th.hm-sem,#page-pcp-estoque .hm-tab td.hm-sem{color:var(--ink-soft);opacity:.7}
-#page-pcp-estoque .hm-tab tbody tr td.hm-c.ent,#page-pcp-estoque .hm-tab tbody tr td.hm-tot.ent{color:var(--good);background:var(--good-bg);font-weight:700}
-#page-pcp-estoque .hm-tab tbody tr td.hm-c.sai,#page-pcp-estoque .hm-tab tbody tr td.hm-tot.sai{color:var(--red);background:var(--bad-bg);font-weight:700}
+#page-pcp-estoque .hm-tab td.hm-tot.ent{color:var(--good)}
+#page-pcp-estoque .hm-tab td.hm-tot.sai{color:var(--red)}
+#page-pcp-estoque .hm-tab td small,#page-pcp-estoque .hm-tab th small{font-size:10px}
+#page-pcp-estoque .hm-tab td.hm-tot small{margin-left:3px;font-weight:600;color:var(--ink-soft)}
+#page-pcp-estoque .hm-tab td.hm-c{min-width:92px}
+#page-pcp-estoque .hm-tab td.hm-c b{display:block;font-size:14px;font-weight:800;color:var(--ink)}
+#page-pcp-estoque .hm-tab td.hm-c b small{margin-left:3px;font-weight:600;color:var(--ink-soft)}
+#page-pcp-estoque .hm-mv{display:block;margin-top:2px;font-size:10.5px;font-weight:700}
+#page-pcp-estoque .hm-mv.ent{color:var(--good)}
+#page-pcp-estoque .hm-mv.sai{color:var(--red)}
+#page-pcp-estoque .hm-mv.zero{color:var(--ink-soft);font-weight:600}
+#page-pcp-estoque .hm-tab td.hm-nome small u{text-decoration:none;font-weight:800;color:var(--ink)}
 #page-pcp-estoque .hm-tab td.hm-z{color:var(--ink-soft)}
 
 /* Hoje por setor (PCP & Estoque): falta = demanda − estoque, comparada com o dia anterior */
@@ -18941,24 +18952,25 @@ function hmCalcular(){
       temReg=true;
       const e=p.reg[d],v=prev==null?null:histR3(e-prev);
       prev=e;
-      if(v==null)return {t:'ini'};
+      if(v==null)return {t:'ini',e};
       if(v>0)ent=histR3(ent+v);else if(v<0)sai=histR3(sai+v);
-      return {t:'mov',v};
+      return {t:'mov',v,e};
     });
-    if(temReg)linhas.push({p,cel,ent,sai,liq:histR3(ent+sai)});
+    if(temReg)linhas.push({p,cel,ent,sai});
   });
   return {dias,linhas};
 }
-function hmCelHtml(c){
+// Célula de um dia: estoque do dia em destaque (com a unidade) e, abaixo, o que entrou (▲) ou saiu (▼)
+function hmCelHtml(c,un){
   if(c.t==='sem')return '<td class="hm-sem">·</td>';
-  if(c.t==='ini')return '<td class="hm-sem">—</td>';
-  if(c.v>0)return `<td class="hm-c ent">+${histFmt(c.v)}</td>`;
-  if(c.v<0)return `<td class="hm-c sai">${histFmt(c.v)}</td>`;
-  return '<td class="hm-z">0</td>';
+  const est=`<b>${histFmt(c.e)}${un?`<small>${un}</small>`:''}</b>`;
+  let mv='<span class="hm-mv zero">—</span>';
+  if(c.t==='mov')mv=c.v>0?`<span class="hm-mv ent">▲ +${histFmt(c.v)}</span>`:c.v<0?`<span class="hm-mv sai">▼ ${histFmt(c.v)}</span>`:'<span class="hm-mv zero">sem mov.</span>';
+  return `<td class="hm-c">${est}${mv}</td>`;
 }
-function hmTotHtml(v,sinal){
+function hmTotHtml(v,un){
   if(!v)return '<td class="hm-tot hm-z">0</td>';
-  return `<td class="hm-tot ${v>0?'ent':'sai'}">${sinal&&v>0?'+':''}${histFmt(v)}</td>`;
+  return `<td class="hm-tot ${v>0?'ent':'sai'}">${v>0?'+':''}${histFmt(v)}${un?`<small>${un}</small>`:''}</td>`;
 }
 function hmRender(manterFoco){
   const corpo=document.getElementById('hmCorpo'),info=document.getElementById('hmInfo'),btn=document.getElementById('hmPerBtn');
@@ -18971,12 +18983,14 @@ function hmRender(manterFoco){
   let vis=linhas.filter(l=>(!loc||l.p.tipo===loc)&&(!txt||histNorm(l.p.descricao).includes(txt)||l.p.codigo.startsWith(qc))&&(!soMov||l.ent!==0||l.sai!==0));
   vis.sort(ord==='ent'?(a,b)=>b.ent-a.ent:ord==='sai'?(a,b)=>a.sai-b.sai:(a,b)=>(a.p.descricao||'').localeCompare(b.p.descricao||'','pt-BR'));
   HM.linhas=vis;
-  info.textContent=`${vis.length} de ${linhas.length} produtos · ${dias.length} dia(s) · “Entrou” soma as altas do estoque e “Saiu” soma as quedas entre um registro e o anterior · “·” = dia sem importação (a variação vai para o próximo dia com registro)`;
+  info.textContent=`${vis.length} de ${linhas.length} produtos · ${dias.length} dia(s) · Cada dia mostra o estoque (em destaque) e, abaixo, o que entrou (▲) ou saiu (▼) em relação ao registro anterior · “·” = dia sem importação (a variação vai para o próximo dia com registro)`;
   if(!vis.length){corpo.innerHTML='<div class="empty-state"><div class="empty-icon">🔎</div>Nenhum produto com movimento neste período.</div>';return;}
   const cab=dias.map(d=>`<th class="${HM.datas.has(d)?'':'hm-sem'}">${FALTA_dm(d)}<small>${histDiaSemana(d)}</small></th>`).join('');
-  const corpoTab=vis.map((l,ix)=>`<tr onclick="hmAbrirProduto(${ix})"><td class="hm-nome"><b>${opEsc(l.p.descricao||l.p.codigo)}</b><small>${HIST_TIPO_LABEL[l.p.tipo]||l.p.tipo} · ${opEsc(l.p.codigo)}${l.p.un?' · '+opEsc(l.p.un.toLowerCase()):''}</small></td>
-    ${hmTotHtml(l.ent,true)}${hmTotHtml(l.sai,false)}${hmTotHtml(l.liq,true)}${l.cel.map(hmCelHtml).join('')}</tr>`).join('');
-  corpo.innerHTML=`<div class="hist-scroll hm-scroll"><table class="hist-tab2 hm-tab"><thead><tr><th>Produto</th><th class="hm-tot">Entrou</th><th class="hm-tot">Saiu</th><th class="hm-tot">Líquido</th>${cab}</tr></thead><tbody>${corpoTab}</tbody></table></div>`;
+  const corpoTab=vis.map((l,ix)=>{
+    const un=(l.p.un||'').toLowerCase();
+    return `<tr onclick="hmAbrirProduto(${ix})"><td class="hm-nome"><b>${opEsc(l.p.descricao||l.p.codigo)}</b><small>${HIST_TIPO_LABEL[l.p.tipo]||l.p.tipo} · ${opEsc(l.p.codigo)}${un?' · estoque em <u>'+opEsc(un)+'</u>':''}</small></td>
+    ${hmTotHtml(l.ent,un)}${hmTotHtml(l.sai,un)}${l.cel.map(c=>hmCelHtml(c,un)).join('')}</tr>`;}).join('');
+  corpo.innerHTML=`<div class="hist-scroll hm-scroll"><table class="hist-tab2 hm-tab"><thead><tr><th>Produto</th><th class="hm-tot">Entrou</th><th class="hm-tot">Saiu</th>${cab}</tr></thead><tbody>${corpoTab}</tbody></table></div>`;
   if(manterFoco===true){const f=document.getElementById('hmBusca');if(f){f.focus();f.setSelectionRange(f.value.length,f.value.length);}}
 }
 function hmAbrirProduto(ix){
