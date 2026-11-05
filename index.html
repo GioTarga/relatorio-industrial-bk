@@ -18643,7 +18643,29 @@ const EQUIV_GRUPOS=[
   ['8020','7191'],    // Mini Pastel Forno Calabresa  ↔ Mini Pastel Nata Calabresa
   ['2209207','7193'], // Mini Pastel Forno Chocolate  ↔ Mini Pastel Nata Chocolate
   ['8021','7195'],    // Mini Pastel Forno Requeijão  ↔ Mini Pastel Nata Catupiry
-  ['104','7335']      // Croissant Presunto/Queijo FD C/5KG (produção) ↔ PCT 540G (embalado p/ Loja: "xx FD LOJA" na OP)
+  ['104','7335'],     // Croissant Presunto/Queijo FD C/5KG (produção) ↔ PCT 540G (embalado p/ Loja: "xx FD LOJA" na OP)
+  // Massa de pão de queijo: a OP não separa Fábrica e Loja, só a embalagem; a mesma massa aparece nos dois destinos
+  ['2209371','7078','3463'],  // 30g: FD C/5KG (Fábrica) ↔ PCT 750G (Loja) ↔ PCT 1KG
+  ['2209370','7079','11111'], // 50g: FD C/5KG (Fábrica) ↔ PCT 750G (Loja) ↔ Mini 50g 750G
+  ['2209369','7080','3465','6229'], // 75g: FD C/5KG (Fábrica) ↔ PCT 750G (Loja) ↔ C/1KG ↔ assado café
+  // Demais produtos: a OP lista um código só, mas o mesmo produto existe na Fábrica, na Loja e/ou no BK Café
+  ['7180','224','7420'],      // Coxinha frango c/ req 130g
+  ['807','6226','7409'],      // Mini coxinha frango (Fábrica ↔ BK Café ↔ para fritar)
+  ['3461','7135','1194934-1'],// Massa de chipa 40g
+  ['6672','7075'],            // Bauru frango
+  ['2209092','7064'],         // Doguinho salsicha e requeijão
+  ['2209353','5925','7069'],  // Empada frango c/ req 130g
+  ['2209091','7065'],         // Hamburgão carne e cheddar
+  ['2209009','7072','5380'],  // Pão batata frango 150g
+  ['6320','6389'],            // Mini pão batata frango
+  ['3439','2209083'],         // Pastel de nata (belém)
+  ['5863','2209115'],         // Mini pastel bolha carne
+  ['6112','7339','9555','7348'], // Mini croissant frango (6112 só existe na OP)
+  ['8000','3577'],            // Mini pão francês pré-assado
+  ['3579','1194690-1'],       // Pão mini sovadinho
+  ['3860','1436011-1'],       // Pão mini massinha doce
+  ['7197','6230'],            // Pastel nata carne 130g (Loja ↔ BK Café)
+  ['7077','7134','6228']    // Mini 15g: PCT 750G ↔ PCT 400G ↔ assado café (mostra as massas da OP, sem conversão)
 ];
 const EQUIV_GRUPO={};EQUIV_GRUPOS.forEach((g,ix)=>g.forEach(c=>{EQUIV_GRUPO[c]=ix+1;}));
 // ─────────────────────────────────────────────
