@@ -17954,7 +17954,7 @@ function opIndexar(){
   opMapCod={};opMapDesc={};
   if(!opData||!opData.itens)return;
   opData.itens.forEach(it=>{
-    const c=normCod(String(it.cod||'').trim());
+    const c=normCod(String(it.cod||'').replace(/\s+/g,''));
     if(c&&!opMapCod[c])opMapCod[c]=it;
     const d=opNormDesc(it.desc);
     if(d&&!opMapDesc[d])opMapDesc[d]=it;
@@ -19080,7 +19080,7 @@ document.addEventListener('click',e=>{
 // Usa as duas últimas posições de estoque_historico (última importação de cada dia).
 // Demanda = reserva. Falta = demanda − estoque; entra na lista quem tem saldo (estoque − reserva) negativo.
 // Produto sem setor no catálogo cai em REVENDA (getSetor).
-const FALTA={carregado:false,carregando:false,erro:'',d1:'',d0:'',t1:'',t0:'',r1:[],r0:[],mapa:{},hist:{},charts:[]};
+const FALTA={carregado:false,carregando:false,erro:'',d1:'',d0:'',t1:'',t0:'',r1:[],r0:[],mapa:{},cx:{},hist:{},charts:[]};
 const FALTA_COLS='tipo,codigo,descricao,familia,estoque,reserva,saldo,un,veio_import,updated_at';
 // Situação contra o dia anterior (mesma regra para todos os cards)
 const FALTA_SIT={corte:'Entrou em Corte',reservado:'Reservado sem Estoque',disp:'Disponível',semmov:'Sem Movimentação'};
@@ -19108,7 +19108,7 @@ async function FALTA_dia(data){
 // Rendimento das massas (Mapa): por código guarda kg de massa e pacotes que 1 receita rende.
 // Sem o Mapa o app continua funcionando, só não calcula receitas.
 async function FALTA_carregarMapa(){
-  FALTA.mapa={};
+  FALTA.mapa={};FALTA.cx={};
   try{
     // a tabela só abre para usuário logado: usa o mesmo cliente do módulo Mapa
     const r=await getSupabaseClient().from('mapa_rendimentos').select('codigo,etapas');
@@ -19117,6 +19117,8 @@ async function FALTA_carregarMapa(){
       const et=Array.isArray(m.etapas)?m.etapas:[];
       const q=nome=>{const e=et.find(x=>x&&x.nome===nome);return e&&Number(e.qtd)>0?Number(e.qtd):0;};
       const kg=q('Kg de massa'),pac=q('Pacotes');
+      const cx=q('Caixas');
+      if(cx&&q('Carrinho'))FALTA.cx[normCod(m.codigo)]={carrinho:q('Carrinho'),unid:q('Unidades'),caixas:cx};
       if(kg&&pac)FALTA.mapa[normCod(m.codigo)]={kg,pac,bloco:q('Blocos'),tela:q('Telas'),carrinho:q('Carrinho'),unid:q('Unidades')};
     });
   }catch(e){FALTA.mapa={};}
@@ -19139,6 +19141,23 @@ function FALTA_rend(i){
   return{out,kg:m.kg};
 }
 function FALTA_num(v){return Number(v).toLocaleString('pt-BR',{maximumFractionDigits:1});}
+// Conversão por caixas (croissant assado): carrinho/unidade da OP → caixas → pacotes ou unidades do estoque.
+// Pacotes por caixa vêm do nome do produto ("CX C/12 PCTS"); sem isso não converte.
+function FALTA_opPorCaixa(i,q,un,su){
+  const c=FALTA.cx[normCod(i.codigo)];if(!c)return null;
+  let cx=0;
+  if(/^carrinho/.test(un))cx=q/c.carrinho*c.caixas;
+  else if(/^(un|und|unidade)/.test(un)&&c.unid)cx=q/c.unid*c.caixas;
+  if(!cx)return null;
+  const d=String(i.descricao||'');
+  const pct=(d.match(/CX\s*C\/\s*(\d+)\s*PCT/i)||[])[1],und=(d.match(/CX\s*C\/\s*(\d+)\s*UN/i)||[])[1];
+  let out=0;
+  if(su==='CX')out=cx;
+  else if(su==='PCT'&&pct)out=cx*Number(pct);
+  else if(['UN','UND'].includes(su)&&und)out=cx*Number(und);
+  if(!out)return null;
+  return{q:out,conv:true,rec:null,pct:null,txt:FALTA_num(out)+' '+su.toLowerCase()};
+}
 // Converte a quantidade da OP para a unidade do estoque (a mesma da coluna Falta) usando o rendimento do Mapa.
 // Na OP, "massa" = nº de receitas (massas) → vira pacotes (rendimento da receita) → unidade do estoque.
 // Outras unidades (bloco, tela, carrinho, unidade, pacote, kg de massa) são levadas a receitas pela proporção do Mapa.
@@ -19149,6 +19168,8 @@ function FALTA_opQtd(i){
   const rd=FALTA_rend(i),m=FALTA.mapa[normCod(i.codigo)];
   const direto=(su==='KG'&&/^(kg|quilo)/.test(un)&&!/massa/.test(un))||(su==='PCT'&&/^(pct|pc$|pacote)/.test(un))||(['UN','UND'].includes(su)&&/^(un|und|unidade)/.test(un));
   if(direto)return{q,conv:true,rec:rd?q/rd.out:null,pct:null,txt:FALTA_num(q)+' '+su.toLowerCase()};
+  const porCx=FALTA_opPorCaixa(i,q,un,su);
+  if(porCx)return porCx;
   if(!rd||!m)return raw;
   let rec=0;
   if(/^massa/.test(un)&&!/kg/.test(un))rec=q;
