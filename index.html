@@ -4602,7 +4602,7 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
         <div class="cell-num th-loja">Venda.Loja</div>
         <div class="cell-num th-cafe">Est.Café</div><div class="cell-num th-cafe">Res.Café</div>
         <div class="cell-num th-cafe">Agrup.Café</div><div class="cell-num th-saldo th-cafe">Saldo Café</div>
-        <div class="cell-num" title="Estoque Segurança = (Estoque − Reserva) + 20%">Est. Seg.</div>
+        <div class="cell-num" title="Estoque Segurança = (Média de venda semanal − Estoque) + 20%">Est. Seg.</div>
       </div>
       <div id="alertTable"></div>
     </div>
@@ -4633,7 +4633,7 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
         <div class="cell-num th-loja">Venda.Loja</div>
         <div class="cell-num th-cafe">Est.Café</div><div class="cell-num th-cafe">Res.Café</div>
         <div class="cell-num th-cafe">Agrup.Café</div><div class="cell-num th-saldo th-cafe">Saldo Café</div>
-        <div class="cell-num" title="Estoque Segurança = (Estoque − Reserva) + 20%">Est. Seg.</div>
+        <div class="cell-num" title="Estoque Segurança = (Média de venda semanal − Estoque) + 20%">Est. Seg.</div>
       </div>
       <div id="fabTable"></div>
     </div>
@@ -4664,7 +4664,7 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
         <div class="cell-num th-loja">Venda.Loja</div>
         <div class="cell-num th-cafe">Est.Café</div><div class="cell-num th-cafe">Res.Café</div>
         <div class="cell-num th-cafe">Agrup.Café</div><div class="cell-num th-saldo th-cafe">Saldo Café</div>
-        <div class="cell-num" title="Estoque Segurança = (Estoque − Reserva) + 20%">Est. Seg.</div>
+        <div class="cell-num" title="Estoque Segurança = (Média de venda semanal − Estoque) + 20%">Est. Seg.</div>
       </div>
       <div id="lojaTable"></div>
     </div>
@@ -18211,9 +18211,12 @@ function getStockStatus(item){
 function shouldEnterProductionOrder(item){
   return calculateAvailableStock(item)<0;
 }
-// Estoque Segurança = (Estoque − Reserva) + 20%
+// Estoque Segurança = (Média de venda semanal − Estoque) + 20%. Retorna null se não há dados de venda.
 function calculateSafetyStock(item){
-  return calculateAvailableStock(item)*1.2;
+  const cod=normCod(item.codigo)||item.codigo;
+  const venda=item.tipo==='FABRICA'?vendaFabMap[cod]:vendaLojaMap[cod];
+  if(venda==null)return null;
+  return (venda-(item.estoque||0))*1.2;
 }
 // Cobertura em dias = Saldo ÷ (VendaSemanal ÷ 7). Retorna null se não há dados de venda.
 function calculateCoverage(item){
@@ -18390,8 +18393,8 @@ function renderTableRow(item){
   const agrupCafe=isCafe?_agrupStr:'—';
   // Estoque Segurança
   const segV=calculateSafetyStock(item);
-  const cobVal=n(Math.round(segV));
-  const cobCls=segV<0?'cob-deficit':segV===0?'cob-critico':'cob-ok';
+  const cobVal=segV===null?'—':n(Math.round(segV));
+  const cobCls=segV===null?'cob-sem-dados':segV>0?'cob-deficit':'cob-ok';
   // Vendas por canal (semanais, vindas dos arquivos CIGAM)
   const cod=normCod(item.codigo)||item.codigo;
   const vFab=vendaFabMap[cod];
@@ -19466,7 +19469,8 @@ function renderKanbanCard(item){
   const saldoCls=saldo<0?'neg':saldo===0?'zero':'pos';
   let dias='';
   {
-    dias=`<div class="kb-dias ${st.cls}"><b>${n(Math.round(calculateSafetyStock(item)))}</b><small>Est. Segurança</small></div>`;
+    const seg=calculateSafetyStock(item);
+    dias=`<div class="kb-dias ${seg===null?'none':st.cls}"><b>${seg===null?'—':n(Math.round(seg))}</b><small>Est. Segurança</small></div>`;
   }
   const setor=getSetor(item.codigo);
   const metrics=[
