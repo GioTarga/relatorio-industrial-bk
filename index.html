@@ -18213,8 +18213,11 @@ function shouldEnterProductionOrder(item){
   return calculateAvailableStock(item)<0;
 }
 // Estoque Segurança = Venda semanal + 20%. Retorna null se não há dados de venda.
+// Produtos com Estoque Segurança fixo (código → quantidade), no lugar da regra de venda + 20%
+const SEGURANCA_FIXA={'6180':1775}; // Massa Pão Francês Premium 6H 75g PCT 2,5kg
 function calculateSafetyStock(item){
   const cod=normCod(item.codigo)||item.codigo;
+  if(SEGURANCA_FIXA[cod]!=null)return SEGURANCA_FIXA[cod];
   const venda=item.tipo==='FABRICA'?vendaFabMap[cod]:vendaLojaMap[cod];
   if(venda==null)return null;
   return venda*1.2;
@@ -19481,7 +19484,7 @@ function renderKanbanCard(item){
     `<div class="kb-m saldo ${saldoCls}"><small>Saldo</small><span>${n(saldo)}${un}</span></div>`
   ];
   metrics.push(`<div class="kb-m ven"><small>Venda/sem</small><span>${venda!=null?n(venda)+un:'—'}</span></div>`);
-  const sub=[item.familia,setor&&setor!=='—'&&setor!=='SEM SETOR'?setor:''].filter(Boolean).map(t=>`<span>${t}</span>`).join('');
+  const sub=[item.codigo?'Cód. '+opEsc(item.codigo):'',item.familia,setor&&setor!=='—'&&setor!=='SEM SETOR'?setor:''].filter(Boolean).map(t=>`<span>${t}</span>`).join('');
   const op=opDoItem(item);
   const opTag=op?`<div class="kb-op-tag" title="${opEsc([op.maq,op.destino].filter(Boolean).join(' · '))}">Em produção<small>${op.qtd!=null?n(op.qtd)+' ':''}${opEsc(op.un)}${op.destino?' · '+opEsc(op.destino):''}</small></div>`:'';
   return `<div class="kb-card ${st.cls}${op?' emprod':''}">
