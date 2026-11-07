@@ -6386,7 +6386,7 @@ const BK_MODULOS = [
   { id:'rascunho',                rotulo:'Máquinas',                  tabelas:['maquinas','produtos_producao'] },
   { id:'manutencao',              rotulo:'Manutenções',               tabelas:['chamados_manutencao','manutencoes','maquinas'] },
   { id:'estoque',                 rotulo:'Almoxarifado',              tabelas:['estoque_contagens','estoque_entradas','estoque_minimos','estoque_requisicoes','estoque_catalogo_insumos'] },
-  { id:'pcp-estoque',             rotulo:'PCP & Estoque',             tabelas:['pcp_cache','estoque_historico','ordens_producao','ordens_producao_itens','vendas_semanais','produtos_producao','familias','produtos'] },
+  { id:'pcp-estoque',             rotulo:'PCP & Estoque',             tabelas:['pcp_cache','estoque_historico','ordens_producao','ordens_producao_itens','vendas_semanais','venda_semanal_historico','produtos_producao','familias','produtos'] },
   { id:'melhoria',                rotulo:'Melhoria Contínua',         tabelas:['melhoria_continua','pp_etapas_referencia'] },
   { id:'lancamento',              rotulo:'Lançamento',                tabelas:['producao_diaria','perdas_producao','produtos_producao','setores','maquinas','produtividade_corridas','produtividade_paradas','produtividade_tempos_massa','tempo_processo_bateladas','tempo_processo_etapas','pp_etapas_referencia','ocupacao','familias','estoque_requisicoes'] },
   { id:'expedicao',               rotulo:'Expedição',                 tabelas:['ocupacao','familias','produtos'] },
@@ -18050,6 +18050,16 @@ function opImportar(file){
 
 // ── Supabase helpers — usa fetch REST (mesmo padrão do restante do app) ──
 const SB_CACHE_HEADERS={'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY,'Content-Type':'application/json','Prefer':'return=minimal'};
+// Guarda a foto semanal da venda (histórico para médias de várias semanas). Uma linha por semana e origem;
+// recarregar o relatório na mesma semana (segunda a domingo) substitui a foto daquela semana.
+async function sbSaveVendaHist(tipo,dados,arquivo){
+  try{
+    const d=new Date(); d.setDate(d.getDate()-((d.getDay()+6)%7));
+    const semana=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    await getSupabaseClient().from('venda_semanal_historico').upsert(
+      {semana,tipo,dados,arquivo:arquivo||null,carregado_em:new Date().toISOString()},{onConflict:'semana,tipo'});
+  }catch(e){}
+}
 async function sbSaveCache(tipo,dados){
   try{
     await fetch(SUPABASE_URL+'/rest/v1/pcp_cache',{
@@ -19153,7 +19163,7 @@ async function FALTA_carregarMapa(){
       const q=nome=>{const e=et.find(x=>x&&x.nome===nome);return e&&Number(e.qtd)>0?Number(e.qtd):0;};
       const kg=q('Kg de massa'),pac=q('Pacotes');
       const cx=q('Caixas');
-      if(cx&&q('Carrinho'))FALTA.cx[normCod(m.codigo)]={carrinho:q('Carrinho'),unid:q('Unidades'),caixas:cx};
+      if(q('Carrinho')&&(cx||q('Unidades')))FALTA.cx[normCod(m.codigo)]={carrinho:q('Carrinho'),unid:q('Unidades'),caixas:cx};
       if(kg&&pac)FALTA.mapa[normCod(m.codigo)]={kg,pac,bloco:q('Blocos'),tela:q('Telas'),carrinho:q('Carrinho'),unid:q('Unidades')};
     });
   }catch(e){FALTA.mapa={};}
@@ -19180,11 +19190,22 @@ function FALTA_num(v){return Number(v).toLocaleString('pt-BR',{maximumFractionDi
 // Pacotes por caixa vêm do nome do produto ("CX C/12 PCTS"); sem isso não converte.
 function FALTA_opPorCaixa(i,q,un,su){
   const c=FALTA.cx[normCod(i.codigo)];if(!c)return null;
+  const d=String(i.descricao||'');
+  if(!c.caixas){
+    // sem caixas no Mapa: converte direto por unidades (carrinho → unidades → unidade do estoque)
+    const unids=/^carrinho/.test(un)?q/c.carrinho*c.unid:(/^(un|und|unidade)/.test(un)?q:0);
+    if(!unids)return null;
+    const pk=(d.match(/(\d+)\s*X\s*\d+\s*G/i)||d.match(/C\/\s*(\d+)\s*UN\b/i)||[])[1];
+    let o=0;
+    if(['UN','UND'].includes(su))o=unids;
+    else if(su==='PCT'&&pk)o=unids/Number(pk);
+    if(!o)return null;
+    return{q:o,conv:true,rec:null,pct:null,txt:FALTA_num(o)+' '+su.toLowerCase()};
+  }
   let cx=0;
   if(/^carrinho/.test(un))cx=q/c.carrinho*c.caixas;
   else if(/^(un|und|unidade)/.test(un)&&c.unid)cx=q/c.unid*c.caixas;
   if(!cx)return null;
-  const d=String(i.descricao||'');
   const pct=(d.match(/CX\s*C\/\s*(\d+)\s*PCT/i)||[])[1],und=(d.match(/CX\s*C\/\s*(\d+)\s*UN/i)||[])[1];
   let out=0;
   if(su==='CX')out=cx;
@@ -19973,6 +19994,7 @@ function processFile(file,tipo){
         if(isFab)vendaFabMap=map;
         else vendaLojaMap=map;
         lsSaveVendas(); // persiste no localStorage
+        sbSaveVendaHist(isFab?'FAB':'LOJA',map,file.name);
         const now=new Date();
         const ts=now.toLocaleDateString('pt-BR')+' · '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
         uploadHistory.unshift({tipo,ts,total,deficits:0,file:file.name,vendaOnly:false});
