@@ -1897,7 +1897,17 @@ body{background:#fff;color:#000}
 .gd-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}.gd-fam{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
 .gd-f-RED{background:#f7e2df;color:#8a1a10}.gd-f-QUE{background:#fbefcf;color:#7a5600}.gd-f-DEM{background:#e3eaee;color:#34454f}
 .gd-su{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fff;border:1px dashed var(--sd-ab);color:var(--sd-ab)}
-.gd-tot{font-size:12.5px;margin:0 0 8px;padding:5px 8px;background:#f6efef;border-radius:6px}
+.gd-regra{font-size:11.5px;color:var(--sd-mut);align-self:center}
+.gd-tot{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin:0 0 8px;padding:5px 9px;background:var(--red);color:#fff;border-radius:6px}.gd-tot b{font-size:14px;letter-spacing:0;text-transform:none}
+.gd-pcs{display:flex;flex-direction:column;gap:8px}
+.gd-pc{background:#fff;border:1px solid var(--sd-line);border-left:5px solid #cfc6c6;border-radius:8px;padding:9px 10px 8px;display:flex;flex-direction:column;gap:7px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.gd-pc.red{border-left-color:#c0392b;background:#fdf3f2}.gd-pc.yellow{border-left-color:#d4a017}.gd-pc.green{border-left-color:#2e7d32}
+.gd-pt{display:flex;align-items:flex-start;gap:8px}.gd-pn{flex:1;min-width:0;font-size:12px;font-weight:700;line-height:1.25;overflow-wrap:anywhere}.gd-pn em{color:var(--sd-mut);font-style:normal;font-weight:600}
+.gd-mb{flex:none;min-width:64px;text-align:center;border-radius:8px;padding:3px 6px;line-height:1.05;background:var(--red);color:#fff}.gd-mb b{display:block;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums}.gd-mb small{display:block;font-size:8.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;opacity:.9}
+.gd-pk{display:grid;grid-template-columns:repeat(auto-fit,minmax(54px,1fr));gap:4px;border-top:1px dashed var(--sd-line);padding-top:6px}
+.gd-m{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}.gd-m small{font-size:8.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--sd-mut)}.gd-m span{font-size:12px;font-weight:600;color:#3a3a3a;font-variant-numeric:tabular-nums;white-space:nowrap}
+.gd-pk5{grid-template-columns:repeat(5,minmax(0,1fr));gap:2px}.gd-pe .gd-pk{grid-template-columns:repeat(4,minmax(0,1fr))}.gd-m{text-align:center}.gd-m small{font-size:8px;letter-spacing:.2px}.gd-m.pr span{font-weight:800}.gd-m.at span{font-weight:800}.gd-m.at.green span{color:#2e7d32}.gd-m.at.yellow span{color:#9a7400}.gd-m.at.red span{color:#c0392b}
+.gd-pe{background:#f6efef;border-radius:6px;padding:5px 7px;display:flex;flex-direction:column;gap:4px}.gd-pe .gd-pk{border-top:0;padding-top:0}.gd-pel{font-size:9.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--sd-mut)}
 .gd-emb{grid-column:1/-1;display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:#6b6262;line-height:1.35}.gd-emb span:first-child{overflow-wrap:anywhere}.gd-emb span:last-child{text-align:right;white-space:nowrap}.gd-emb .gd-ok{color:#1e7a3c}.gd-emb .gd-up{color:var(--red)}
 .gd-bw{min-width:150px}.gd-b{height:7px;border-radius:2px;margin:2px 0}.gd-b.hoje{background:#b9b0b0}.gd-b.sug{background:var(--red)}
 .gd-ok{color:var(--sd-ok);font-weight:700}.gd-up{color:var(--red);font-weight:700}.gd-dn{color:var(--sd-mut);font-weight:700}.gd-est{color:var(--sd-at);font-weight:700;cursor:help}
@@ -9524,7 +9534,7 @@ function salToggle(){
    apontamento em MASSAS, convertido para KG com o Mapa de Rendimentos (kg de massa por massa);
    venda e estoque do CIGAM já vêm em KG. Produtos sem rendimento cadastrado ficam "sem conversão".
    ═══════════════════════════════════════════════════════════ */
-const GIR={umDia:true,grupos:null,hDia:7,dSem:5,setup:30,estq:false,dias:90,busca:'',ord:{col:'ratio',dir:1},mapa:null,mapaCarregando:false,calc:null};
+const GIR={umDia:true,grupos:null,hDia:7,dSem:5,setup:30,marg:20,dias:90,busca:'',ord:{col:'ratio',dir:1},mapa:null,mapaCarregando:false,calc:null};
 function girNome(raw){
   let s=(raw||'').replace(/\s+/g,' ').trim().replace(/^MASSA P\/ ?/i,'').replace(/\bBREAD KING\b|\bBK\b/gi,'').replace(/\s+-\s*(C\/|FD C\/|CX C\/)?[\d,.]+\s*(KG|G|UNID|PCT)\b.*$/i,'').replace(/\s+-\s*[\d,.]+\s*(KG|G)\b.*$/i,'').replace(/\s+/g,' ').trim();
   s=s.toLowerCase().replace(/(^|[\s\/])([a-zà-ú])/g,(m,a,b)=>a+b.toUpperCase()).replace(/\b(\d+)g\b/gi,'$1g').replace(/\bSs\b/,'SS').replace(/\bSesi\b/,'SESI').replace(/\bDe\b/g,'de').replace(/\bP\/\b/g,'p/');
@@ -9653,8 +9663,9 @@ function girPlanoCalc(rows,cap){
   if(!L.length||!med)return null;
   let tot=0;
   const P=L.map(r=>{
-    const t=r.taxa||med,est=!r.taxa,excesso=Math.max(0,(r.est||0)-r.venda),kg=GIR.estq?Math.max(0,r.venda-excesso):r.venda,hN=kg/t;tot+=hN;
-    return {nome:r.nome,mem:r.mem||[],fam:girFam(r.bruto||r.nome),prodKg:r.prodSem||0,nApt:r.nApt,bruto:r.bruto,kgM:r.kgM,t,est,venda:r.venda,kgNec:kg,hN,hoje:r.massasSem,hHoje:r.massasSem*r.kgM/t,cob:r.cob};
+    // Produção = (venda − estoque) × (1 + margem). Se o estoque já cobre a venda, mantém ao menos a margem sobre a venda.
+    const t=r.taxa||med,est=!r.taxa,mg=GIR.marg/100,estq=Math.max(0,r.est||0),kg=Math.max((r.venda-estq)*(1+mg),r.venda*mg),hN=kg/t;tot+=hN;
+    return {nome:r.nome,mem:r.mem||[],fam:girFam(r.bruto||r.nome),prodKg:r.prodSem||0,nApt:r.nApt,bruto:r.bruto,kgM:r.kgM,t,est,venda:r.venda,estKg:estq,kgNec:kg,hN,hoje:r.massasSem,hHoje:r.massasSem*r.kgM/t,cob:r.cob};
   });
   const f=tot>cap?cap/tot:1;let totH=0;
   // Massas inteiras sem estourar as horas: começa pelo piso (mínimo 1) e acrescenta massas a quem tem a maior sobra, enquanto couber.
@@ -9764,31 +9775,41 @@ function girDias(P){
 function girEmbProj(p,mas){
   const mem=(p.mem||[]).filter(m=>m.vKg>0),tot=mem.reduce((a,m)=>a+m.vKg,0);if(!tot)return [];
   return mem.map(m=>{const ms=mas*m.vKg/tot,pc=m.un==='PCT'&&m.pct,proj=pc?ms*m.pct:ms*(m.kg||p.kgM);
-    return {lbl:girEmbLabel(m.nome),un:pc?'pct':'kg',proj,venda:m.vUn,pct:m.vUn>0?proj/m.vUn:null};});
+    return {lbl:girEmbLabel(m.nome),un:pc?'pct':'kg',proj,est:m.eUn,venda:m.vUn,pct:m.vUn>0?(proj+m.eUn)/m.vUn:null};});
 }
 function girDiasHtml(D){
   const cap=GIR.hDia;
   return '<div class="gd-dias">'+D.dias.map(d=>{const pct=Math.min(100,d.h/cap*100),cls=d.h>cap+0.05?'ab':'ok';
     const chips=d.fams.map(f=>`<span class="gd-fam gd-f-${f}">${GIR_FAM[f].maq}</span>`).join('')+(d.setup>0?`<span class="gd-su">setup ${salFmt(d.setup*60,0)} min</span>`:'');
+    const tot=d.itens.reduce((a,it)=>a+it.mas,0);
     return `<div class="gd-dia"><div class="gd-dh"><b>${GIR_DIAS[d.i]}</b><span class="${cls}">${salFmt(d.h,1)} h de ${salFmt(cap,1)} h${d.h>cap+0.05?' (+'+salFmt(d.h-cap,1)+' h)':''}</span></div><div class="gd-dbarra"><i class="${cls}" style="width:${pct.toFixed(1)}%"></i></div>`
      +(chips?`<div class="gd-chips">${chips}</div>`:'')
-     +(d.itens.length?`<div class="gd-tot">Total do dia: <b>${d.itens.reduce((a,it)=>a+it.mas,0)} massas</b></div>`:'')
-     +(d.itens.length?'<ul>'+d.itens.map(it=>`<li><span>${salEsc(it.p.nome)}${it.de>1?` <em>(parte ${it.parte}/${it.de})</em>`:''}</span><b>${it.mas} ${it.mas===1?'massa':'massas'}</b><small>${salFmt(it.h,1)} h</small>`+girEmbProj(it.p,it.mas).map(e=>`<div class="gd-emb"><span>${salEsc(e.lbl)}</span><span>${salFmt(e.proj)} ${e.un} de ${salFmt(e.venda)}${e.pct===null?'':' · <b class="'+(e.pct>=0.995?'gd-ok':e.pct<0.7?'gd-up':'')+'">'+salPct(e.pct)+'</b>'}</span></div>`).join('')+'</li>').join('')+'</ul>':'<div class="sd-vazio">Folga: sem produção</div>')+'</div>';}).join('')+'</div>'
+     +(tot?`<div class="gd-tot"><span>Total do dia</span><b>${tot} ${tot===1?'massa':'massas'}</b></div>`:'')
+     +(d.itens.length?'<div class="gd-pcs">'+d.itens.map(girCardProd).join('')+'</div>':'<div class="sd-vazio">Folga: sem produção</div>')+'</div>';}).join('')+'</div>'
    +(D.avisos.length?'<div class="gd-msg ab">'+D.avisos.map(salEsc).join('<br>')+'</div>':'');
+}
+// Card de produto no quadro semanal: mesmo desenho do kanban de estoque (borda de urgência, selo de destaque, métricas em grade).
+function girCardProd(it){
+  const p=it.p,kgProd=it.mas*p.kgM,cobKg=p.venda>0?(kgProd+p.estKg)/p.venda:null,cls=cobKg===null?'':cobKg>=0.995?'green':cobKg>=0.7?'yellow':'red';
+  const emb=girEmbProj(p,it.mas);
+  const m=(l,v,c)=>`<div class="gd-m ${c||''}"><small>${l}</small><span>${v}</span></div>`;
+  return `<div class="gd-pc ${cls}"><div class="gd-pt"><div class="gd-pn">${salEsc(p.nome)}${it.de>1?` <em>(parte ${it.parte}/${it.de})</em>`:''}</div><div class="gd-mb"><b>${it.mas}</b><small>${it.mas===1?'massa':'massas'} · ${salFmt(it.h,1)} h</small></div></div>`
+   +`<div class="gd-pk gd-pk5">${m('Venda kg',salFmt(p.venda))}${m('Estoque kg',salFmt(p.estKg))}${m('Meta kg',salFmt(p.kgNec))}${m('Produz kg',salFmt(kgProd),'pr')}${cobKg===null?'':m('Atende',salPct(cobKg),'at '+cls)}</div>`
+   +(emb.length===1&&emb[0].un==='kg'?[]:emb).map(e=>`<div class="gd-pe"><div class="gd-pel">${salEsc(e.lbl)}</div><div class="gd-pk">${m('Produz '+e.un,salFmt(e.proj),'pr')}${m('Estoque '+e.un,salFmt(e.est))}${m('Venda '+e.un,salFmt(e.venda))}${e.pct===null?'':m('Atende',salPct(e.pct),'at '+(e.pct>=0.995?'green':e.pct>=0.7?'yellow':'red'))}</div></div>`).join('')+'</div>';
 }
 function girPlanoHtml(rows){
   const pl=girPlano(rows);
-  const ctl=`<div class="gd-ctl"><label>Horas líquidas por dia <input type="number" id="gdHDia" min="1" max="24" step="0.5" value="${GIR.hDia}"></label><label>Dias por semana <input type="number" id="gdDSem" min="1" max="7" step="1" value="${GIR.dSem}"></label><label>Setup entre máquinas (min) <input type="number" id="gdSetup" min="0" max="180" step="5" value="${GIR.setup}"></label><label class="gd-chk"><input type="checkbox" id="gdUmDia" ${GIR.umDia?'checked':''}> Produção única: chipa/pão de queijo e redondos em um dia só</label><label class="gd-chk"><input type="checkbox" id="gdEstq" ${GIR.estq?'checked':''}> Descontar do plano o estoque acima de 1 semana</label></div>`;
+  const ctl=`<div class="gd-ctl"><label>Horas líquidas por dia <input type="number" id="gdHDia" min="1" max="24" step="0.5" value="${GIR.hDia}"></label><label>Dias por semana <input type="number" id="gdDSem" min="1" max="7" step="1" value="${GIR.dSem}"></label><label>Setup entre máquinas (min) <input type="number" id="gdSetup" min="0" max="180" step="5" value="${GIR.setup}"></label><label class="gd-chk"><input type="checkbox" id="gdUmDia" ${GIR.umDia?'checked':''}> Produção única: chipa/pão de queijo e redondos em um dia só</label><label>Margem de segurança (%) <input type="number" id="gdMarg" min="0" max="100" step="5" value="${GIR.marg}"></label><span class="gd-regra">Produzir = (venda − estoque) × ${salFmt(1+GIR.marg/100,2)}; se o estoque cobre a venda, produz ao menos ${GIR.marg}% da venda</span></div>`;
   if(!pl)return ctl+'<div class="sd-vazio">Sem produtos com venda e rendimento para montar o plano.</div>';
   const util=pl.tot/pl.capEf,dif=pl.capEf-pl.tot,mx=Math.max(...pl.P.map(p=>Math.max(p.hReal,p.hHoje)),0.1);
   const desc=[];if(pl.setupTotal>0.05)desc.push(salFmt(pl.setupTotal,1)+' h de setup entre máquinas');if(pl.perda>0.05)desc.push(salFmt(pl.perda,1)+' h que não encaixam em dias inteiros, pois a corrida não se parte');
   const disp=`<b>${salFmt(pl.capEf,1)} h</b> disponíveis para produzir${desc.length?` (${salFmt(pl.cap,1)} h menos ${desc.join(' e ')})`:''}`;
-  const msg=dif>=0?`A venda exige <b>${salFmt(pl.tot,1)} h</b> e há ${disp}: <b>sobram ${salFmt(dif,1)} h</b>. Dá para atender 100% da venda e ainda sobra tempo para produzir estoque ou absorver paradas.`:`A venda exige <b>${salFmt(pl.tot,1)} h</b> e há só ${disp}: <b>faltam ${salFmt(-dif,1)} h</b>. Com as horas disponíveis dá para cobrir cerca de <b>${salPct(pl.f)}</b> da venda de cada produto. O plano abaixo reparte a falta por igual entre eles.`;
+  const msg=dif>=0?`O plano exige <b>${salFmt(pl.tot,1)} h</b> e há ${disp}: <b>sobram ${salFmt(dif,1)} h</b>. Dá para atender 100% da venda e ainda sobra tempo para produzir estoque ou absorver paradas.`:`O plano exige <b>${salFmt(pl.tot,1)} h</b> e há só ${disp}: <b>faltam ${salFmt(-dif,1)} h</b>. Com as horas disponíveis dá para cobrir cerca de <b>${salPct(pl.f)}</b> da venda de cada produto. O plano abaixo reparte a falta por igual entre eles.`;
   const tr=pl.P.map(p=>{const d=p.aj,ds=Math.abs(d)<0.5?'manter':(d>0?'+':'−')+salFmt(Math.abs(d),0)+' massas';
-    return `<tr data-sd-prod="${salEsc(p.nome)}" class="sd-lk"><td>${salEsc(p.nome)}${p.nApt?' <span class="gd-est" title="'+p.nApt+' linha(s) planejadas sem produção apontada no período: a média de hoje pode estar subestimada">⚠ '+p.nApt+'</span>':''}${p.est?' <span class="gd-est" title="Sem apontamento com horário: ritmo estimado pela mediana dos demais produtos">~</span>':''}</td><td><span class="gd-fam gd-f-${p.fam}">${GIR_FAM[p.fam].maq}</span></td><td>${salFmt(p.venda)}</td><td>${salFmt(p.prodKg)}</td><td>${salFmt(p.t)}</td><td>${salFmt(p.hN,1)}</td><td class="gd-bw"><div class="gd-b hoje" style="width:${(p.hHoje/mx*100).toFixed(1)}%"></div><div class="gd-b sug" style="width:${(p.hReal/mx*100).toFixed(1)}%"></div></td><td>${salFmt(p.hHoje,1)} → <b>${salFmt(p.hReal,1)}</b></td><td>${salFmt(p.hoje,1)}</td><td><b>${p.mas}</b></td><td>${(pl.D.porProd.get(p)||[]).join(' + ')||'—'}</td><td class="${d>=0.5?'gd-up':d<=-0.5?'gd-dn':''}">${ds}</td><td>${salPct(p.cobSug)}</td></tr>`;}).join('');
-  const cab=['Produto','Máquina','Venda (kg/sem)','Produção semanal (kg/sem)','Ritmo (kg/h)','Horas que a venda exige','Hoje (cinza) × sugerido (vermelho)','Horas: hoje → sugerido','Massas por semana hoje','Corrida sugerida (massas)','Dia da corrida','Ajuste','Cobre a venda'];
+    return `<tr data-sd-prod="${salEsc(p.nome)}" class="sd-lk"><td>${salEsc(p.nome)}${p.nApt?' <span class="gd-est" title="'+p.nApt+' linha(s) planejadas sem produção apontada no período: a média de hoje pode estar subestimada">⚠ '+p.nApt+'</span>':''}${p.est?' <span class="gd-est" title="Sem apontamento com horário: ritmo estimado pela mediana dos demais produtos">~</span>':''}</td><td><span class="gd-fam gd-f-${p.fam}">${GIR_FAM[p.fam].maq}</span></td><td>${salFmt(p.venda)}</td><td>${salFmt(p.estKg)}</td><td>${salFmt(p.kgNec)}</td><td>${salFmt(p.prodKg)}</td><td>${salFmt(p.t)}</td><td>${salFmt(p.hN,1)}</td><td class="gd-bw"><div class="gd-b hoje" style="width:${(p.hHoje/mx*100).toFixed(1)}%"></div><div class="gd-b sug" style="width:${(p.hReal/mx*100).toFixed(1)}%"></div></td><td>${salFmt(p.hHoje,1)} → <b>${salFmt(p.hReal,1)}</b></td><td>${salFmt(p.hoje,1)}</td><td><b>${p.mas}</b></td><td>${(pl.D.porProd.get(p)||[]).join(' + ')||'—'}</td><td class="${d>=0.5?'gd-up':d<=-0.5?'gd-dn':''}">${ds}</td><td>${salPct(p.cobSug)}</td></tr>`;}).join('');
+  const cab=['Produto','Máquina','Venda (kg/sem)','Estoque (kg)','A produzir (kg)','Produção semanal (kg/sem)','Ritmo (kg/h)','Horas que o plano exige','Hoje (cinza) × sugerido (vermelho)','Horas: hoje → sugerido','Massas por semana hoje','Corrida sugerida (massas)','Dia da corrida','Ajuste','Cobre a venda'];
   const porFam=GIR_FAM_ORD.map(f=>{const h=pl.P.filter(p=>p.fam===f).reduce((s,p)=>s+p.hReal,0);return h>0?`<span>${GIR_FAM[f].maq} <b>${salFmt(h,1)} h</b></span>`:'';}).join('');
-  return ctl+`<div class="sd-mini"><span>Horas da semana <b>${salFmt(pl.cap,1)} h</b> (${GIR.hDia} h × ${GIR.dSem} dias)</span><span>Setup entre máquinas <b>${salFmt(pl.setupTotal,1)} h</b></span><span>A venda exige <b>${salFmt(pl.tot,1)} h</b> (${salPct(util)} do disponível)</span><span>Usamos hoje <b>${salFmt(pl.hHoje,1)} h</b></span><span>Plano sugerido <b>${salFmt(pl.totH,1)} h</b></span><span>Massas na semana <b>${pl.P.reduce((a,p)=>a+p.mas,0)}</b></span></div><div class="sd-mini">${porFam}</div><div class="gd-msg ${dif>=0?'ok':'ab'}">${msg}</div>`
+  return ctl+`<div class="sd-mini"><span>Horas da semana <b>${salFmt(pl.cap,1)} h</b> (${GIR.hDia} h × ${GIR.dSem} dias)</span><span>Setup entre máquinas <b>${salFmt(pl.setupTotal,1)} h</b></span><span>O plano exige <b>${salFmt(pl.tot,1)} h</b> (${salPct(util)} do disponível)</span><span>Usamos hoje <b>${salFmt(pl.hHoje,1)} h</b></span><span>Plano sugerido <b>${salFmt(pl.totH,1)} h</b></span><span>Massas na semana <b>${pl.P.reduce((a,p)=>a+p.mas,0)}</b></span></div><div class="sd-mini">${porFam}</div><div class="gd-msg ${dif>=0?'ok':'ab'}">${msg}</div>`
    +'<div class="sd-panel-t gd-sub">Quadro semanal sugerido: um dia de corrida por produto, uma máquina por dia. Em cada produto, o que a corrida rende embalado contra a venda da semana e o % da demanda atendida</div>'+girDiasHtml(pl.D)
    +'<div class="sd-panel-t gd-sub">Detalhe por produto</div>'
    +`<div class="sd-tbl-wrap"><table class="sd-tbl gd-plano"><thead><tr>${cab.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${tr}</tbody></table></div>`;
@@ -9857,10 +9878,10 @@ function girRender(){
   el.querySelectorAll('[data-gd-dias]').forEach(b=>b.onclick=()=>{GIR.dias=+b.dataset.gdDias;girRender();});
   const bu=el.querySelector('#gdBusca');if(bu)bu.oninput=()=>{GIR.busca=bu.value;clearTimeout(girRender._t);girRender._t=setTimeout(()=>{girRender();const n=document.getElementById('gdBusca');if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length);}},250);};
   const a=el.querySelector('#gdAtualizar');if(a)a.onclick=()=>{loadData(true);SAL.hist=null;GIR.mapa=null;};
-  const hd=el.querySelector('#gdHDia'),ds=el.querySelector('#gdDSem'),eq2=el.querySelector('#gdEstq');
+  const hd=el.querySelector('#gdHDia'),ds=el.querySelector('#gdDSem'),eq2=el.querySelector('#gdMarg');
   if(hd)hd.onchange=()=>{GIR.hDia=Math.min(24,Math.max(1,+hd.value||7));girRender();};
   if(ds)ds.onchange=()=>{GIR.dSem=Math.min(7,Math.max(1,Math.round(+ds.value)||5));girRender();};
-  if(eq2)eq2.onchange=()=>{GIR.estq=eq2.checked;girRender();};
+  if(eq2)eq2.onchange=()=>{GIR.marg=Math.min(100,Math.max(0,+eq2.value||0));girRender();};
   const ud=el.querySelector('#gdUmDia');if(ud)ud.onchange=()=>{GIR.umDia=ud.checked;girRender();};
   const su2=el.querySelector('#gdSetup');if(su2)su2.onchange=()=>{GIR.setup=Math.min(180,Math.max(0,+su2.value||0));girRender();};
   const x=el.querySelector('#gdExcel');if(x)x.onclick=()=>girExcel(c);
@@ -9873,9 +9894,9 @@ function girExcel(c){
   const dados=girOrdena(c.out).map(r=>({Produto:r.nome,'Última produção':salDd(r.ult),'Ritmo da linha (kg/h)':r.taxa?Math.round(r.taxa):null,'Atendimento ao plano':r.atend===null?null:Math.round(r.atend*100)/100,'Massas por semana':Math.round(r.massasSem*10)/10,'Massas por dia de produção':r.massasDia===null?null:Math.round(r.massasDia*10)/10,'Semanas com produção':r.semProd,'Linhas não apontadas':r.nApt,'Produzimos (kg/sem)':r.prodSem===null?null:Math.round(r.prodSem),'Vendemos (kg/sem)':r.venda===null?null:Math.round(r.venda),'Produção cobre a venda?':r.ratio===null?null:Math.round(r.ratio*100)/100,'Horas de produção que a venda exige':r.hNec===null?null:Math.round(r.hNec*10)/10,'Horas de produção que usamos':r.hUs===null?null:Math.round(r.hUs*10)/10,'Diferença de horas (+ faltam / − sobram)':r.dif===null?null:Math.round(r.dif*10)/10,'Semanas que cobriu a venda':r.regul===null?'':r.cobriu+' de '+r.denomSem,'Estoque dura (dias)':r.cobDias===null?null:Math.round(r.cobDias*10)/10,'Próxima corrida (dias)':r.prox,'Ruptura antes da próxima corrida':r.risco?'sim':'',Status:r.status==='nc'?'Sem conversão':(SAL_STATUS[r.status]||'')}));
   const ws=XLSX.utils.json_to_sheet(dados),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Giro Dia');
   const pl=girPlano(c.out);
-  if(pl){const pd=pl.P.map(p=>({Produto:p.nome,'Venda (kg/sem)':Math.round(p.venda),'Máquina':GIR_FAM[p.fam].maq,'Produção semanal (kg/sem)':Math.round(p.prodKg),'Ritmo (kg/h)':Math.round(p.t),'Ritmo estimado':p.est?'sim':'','Horas que a venda exige':Math.round(p.hN*10)/10,'Horas hoje':Math.round(p.hHoje*10)/10,'Horas sugeridas':Math.round(p.hReal*10)/10,'Massas/sem hoje':Math.round(p.hoje*10)/10,'Corrida sugerida (massas)':p.mas,'Dia(s) da corrida':(pl.D.porProd.get(p)||[]).join(' + '),'Ajuste (massas)':Math.round((p.mas-p.hoje)*10)/10,'Cobre a venda':p.cobSug===null?null:Math.round(p.cobSug*100)/100}));
+  if(pl){const pd=pl.P.map(p=>({Produto:p.nome,'Venda (kg/sem)':Math.round(p.venda),'Estoque (kg)':Math.round(p.estKg),'A produzir (kg)':Math.round(p.kgNec),'Máquina':GIR_FAM[p.fam].maq,'Produção semanal (kg/sem)':Math.round(p.prodKg),'Ritmo (kg/h)':Math.round(p.t),'Ritmo estimado':p.est?'sim':'','Horas que o plano exige':Math.round(p.hN*10)/10,'Horas hoje':Math.round(p.hHoje*10)/10,'Horas sugeridas':Math.round(p.hReal*10)/10,'Massas/sem hoje':Math.round(p.hoje*10)/10,'Corrida sugerida (massas)':p.mas,'Dia(s) da corrida':(pl.D.porProd.get(p)||[]).join(' + '),'Ajuste (massas)':Math.round((p.mas-p.hoje)*10)/10,'Cobre a venda':p.cobSug===null?null:Math.round(p.cobSug*100)/100}));
     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(pd),'Plano de horas ('+GIR.hDia+'h x '+GIR.dSem+'d)');
-    const qd=[];pl.D.dias.forEach(d=>{d.itens.forEach(it=>qd.push({Dia:GIR_DIAS[d.i],'Máquina':GIR_FAM[it.fam].maq,Produto:it.p.nome,Parte:it.de>1?it.parte+'/'+it.de:'','Massas':it.mas,'Horas':Math.round(it.h*10)/10,'Projetado embalado':girEmbProj(it.p,it.mas).map(e=>e.lbl+': '+Math.round(e.proj)+' '+e.un+' de '+Math.round(e.venda)+(e.pct===null?'':' ('+Math.round(e.pct*100)+'%)')).join(' | ')}));qd.push({Dia:GIR_DIAS[d.i],'Máquina':'',Produto:'TOTAL DO DIA',Parte:'','Massas':d.itens.reduce((a,it)=>a+it.mas,0),'Horas':Math.round(d.h*10)/10});if(d.setup>0)qd.push({Dia:GIR_DIAS[d.i],'Máquina':d.fams.map(f=>GIR_FAM[f].maq).join(' + '),Produto:'Setup entre máquinas',Parte:'','Massas':null,'Horas':Math.round(d.setup*10)/10});});
+    const qd=[];pl.D.dias.forEach(d=>{d.itens.forEach(it=>qd.push({Dia:GIR_DIAS[d.i],'Máquina':GIR_FAM[it.fam].maq,Produto:it.p.nome,Parte:it.de>1?it.parte+'/'+it.de:'','Massas':it.mas,'Horas':Math.round(it.h*10)/10,'Projetado embalado':girEmbProj(it.p,it.mas).map(e=>e.lbl+': produz '+Math.round(e.proj)+' + estoque '+Math.round(e.est)+' '+e.un+' / venda '+Math.round(e.venda)+(e.pct===null?'':' ('+Math.round(e.pct*100)+'%)')).join(' | ')}));qd.push({Dia:GIR_DIAS[d.i],'Máquina':'',Produto:'TOTAL DO DIA',Parte:'','Massas':d.itens.reduce((a,it)=>a+it.mas,0),'Horas':Math.round(d.h*10)/10});if(d.setup>0)qd.push({Dia:GIR_DIAS[d.i],'Máquina':d.fams.map(f=>GIR_FAM[f].maq).join(' + '),Produto:'Setup entre máquinas',Parte:'','Massas':null,'Horas':Math.round(d.setup*10)/10});});
     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(qd),'Quadro semanal');}
   XLSX.writeFile(wb,'giro-dia-capacidade-demanda-'+c.fim+'.xlsx');
 }
