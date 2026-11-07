@@ -1845,8 +1845,8 @@ body{background:#fff;color:#000}
   .abl-acoes{ display:flex; gap:10px; margin-top:14px; }
 /* ── Dashboard do Salgado ── */
 #page-industrial.sal-mode .period-bar{display:none}
-#riGeralContent.sal-mode>*:not(#salgadoDash){display:none !important}
-#salgadoDash{--sd-ok:var(--good);--sd-at:#c98a00;--sd-ab:#c0392b;--sd-mut:#8a7f7f;--sd-line:var(--line);display:flex;flex-direction:column;gap:14px;padding-bottom:30px}
+#riGeralContent.sal-mode>*:not(#salgadoDash):not(#giroDash){display:none !important}
+#salgadoDash,#giroDash{--sd-ok:var(--good);--sd-at:#c98a00;--sd-ab:#c0392b;--sd-mut:#8a7f7f;--sd-line:var(--line);display:flex;flex-direction:column;gap:14px;padding-bottom:30px}
 .sd-filtros{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--paper);border:1px solid var(--sd-line);border-radius:var(--radius-md,10px);padding:10px 12px}
 .sd-seg{display:inline-flex;border:1px solid var(--red);border-radius:var(--radius-sm)}
 .sd-seg button{background:transparent;border:0;padding:7px 14px;font:600 12px var(--font-body);color:var(--red);cursor:pointer}
@@ -1886,6 +1886,7 @@ body{background:#fff;color:#000}
 .sd-val{font:11px var(--font-body);fill:var(--ink);font-variant-numeric:tabular-nums}.sd-val.b{font-weight:700;fill:var(--red)}
 .sd-ref{stroke:var(--ink);stroke-width:1;stroke-dasharray:4 3;opacity:.7}.sd-ref.mut{stroke:var(--sd-mut);opacity:.9}
 .sd-grid{stroke:var(--sd-line);stroke-width:1}.sd-grid.meta{stroke:var(--ink);stroke-dasharray:4 3}
+.sd-tag.nc{background:#ece7e7;color:#6b5c5c}.sd-bar.nc{fill:var(--sd-mut)}
 .sd-bar.ok{fill:var(--sd-ok)}.sd-bar.at{fill:var(--sd-at)}.sd-bar.ab,.sd-bar.sem{fill:var(--sd-ab)}.sd-bar.brand{fill:var(--red)}.sd-bar.claro{fill:#dca4a4}
 .sd-dot{stroke:#fff;stroke-width:1.2}.sd-dot.ok{fill:var(--sd-ok)}.sd-dot.at{fill:var(--sd-at)}.sd-dot.ab,.sd-dot.sem{fill:var(--sd-ab)}
 .sd-q{font:700 9.5px var(--font-body)}.sd-q.ab{fill:var(--sd-ab)}.sd-q.at{fill:var(--sd-at)}.sd-q.ok{fill:var(--sd-ok)}.sd-q.mut{fill:var(--sd-mut)}
@@ -3477,6 +3478,7 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
   <!-- Conteúdo: Geral -->
   <div id="riGeralContent">
   <div id="salgadoDash" style="display:none;"></div>
+  <div id="giroDash" style="display:none;"></div>
 
   <div class="kpi-grid" id="kpiGrid"></div>
   <div class="kpi-grid" id="kpiGridExtra"></div>
@@ -9241,7 +9243,7 @@ async function salCarregarHist(){
   if(SAL.histCarregando)return;SAL.histCarregando=true;
   try{
     const {data,error}=await getSupabaseClient().from('venda_semanal_historico').select('semana,tipo,dados').order('semana',{ascending:false}).limit(60);
-    if(!error&&data){SAL.hist=data;if(selectedSector==='SALGADO')salRender();}
+    if(!error&&data){SAL.hist=data;salRenderAtivo();}
   }catch(e){}
   SAL.histCarregando=false;
 }
@@ -9387,11 +9389,7 @@ function salOrdena(rows){
 }
 function salRender(){
   const el=document.getElementById('salgadoDash');if(!el)return;
-  // Venda e estoque só são carregados quando o módulo PCP & Estoque abre; aqui buscamos sozinhos na primeira vez.
-  if(!SAL.cacheTentado&&!Object.keys(vendaFabMap||{}).length&&!Object.keys(vendaLojaMap||{}).length){
-    SAL.cacheTentado=true;
-    sbRestoreCache().then(ok=>{if(!ok)lsRestore();}).catch(()=>{try{lsRestore();}catch(e){}}).then(()=>{if(selectedSector==='SALGADO')salRender();});
-  }
+  salGarantirCache();
   const c=SAL.calc=salCalcular();
   if(SAL.hist===null)salCarregarHist();
   if(!c){el.innerHTML='<div class="sd-vazio">Sem apontamentos do Salgado carregados ainda.</div>';return;}
@@ -9483,12 +9481,175 @@ function salDetalhe(nome){
   ov.style.display='flex';
   ov.onclick=e=>{if(e.target===ov||e.target.classList.contains('sd-x'))ov.style.display='none';};
 }
-// Liga/desliga o modo dashboard: só na aba SALGADO do Relatório Industrial.
+// Renderiza a dashboard do setor ativo (Salgado ou Giro Dia).
+function salRenderAtivo(){if(selectedSector==='SALGADO')salRender();else if(selectedSector==='GIRO DIA')girRender();}
+// Venda e estoque só são carregados quando o módulo PCP & Estoque abre; aqui buscamos sozinhos na primeira vez.
+function salGarantirCache(){
+  if(!SAL.cacheTentado&&!Object.keys(vendaFabMap||{}).length&&!Object.keys(vendaLojaMap||{}).length){
+    SAL.cacheTentado=true;
+    sbRestoreCache().then(ok=>{if(!ok)lsRestore();}).catch(()=>{try{lsRestore();}catch(e){}}).then(()=>salRenderAtivo());
+  }
+}
+// Liga/desliga o modo dashboard: só nas abas SALGADO e GIRO DIA do Relatório Industrial.
 function salToggle(){
-  const on=selectedSector==='SALGADO';
-  const page=document.getElementById('page-industrial'),ger=document.getElementById('riGeralContent'),d=document.getElementById('salgadoDash');
-  if(page)page.classList.toggle('sal-mode',on);if(ger)ger.classList.toggle('sal-mode',on);if(d)d.style.display=on?'':'none';
-  if(on)salRender();
+  const sal=selectedSector==='SALGADO',gir=selectedSector==='GIRO DIA',on=sal||gir;
+  const page=document.getElementById('page-industrial'),ger=document.getElementById('riGeralContent'),d=document.getElementById('salgadoDash'),g=document.getElementById('giroDash');
+  if(page)page.classList.toggle('sal-mode',on);if(ger)ger.classList.toggle('sal-mode',on);
+  if(d)d.style.display=sal?'':'none';if(g)g.style.display=gir?'':'none';
+  salRenderAtivo();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DASHBOARD DO GIRO DIA — mesma estrutura da dashboard do Salgado, adaptada ao Giro:
+   apontamento em MASSAS, convertido para KG com o Mapa de Rendimentos (kg de massa por massa);
+   venda e estoque do CIGAM já vêm em KG. Produtos sem rendimento cadastrado ficam "sem conversão".
+   ═══════════════════════════════════════════════════════════ */
+const GIR={dias:90,busca:'',ord:{col:'ratio',dir:1},mapa:null,mapaCarregando:false,calc:null};
+function girNome(raw){
+  let s=(raw||'').replace(/\s+/g,' ').trim().replace(/^MASSA P\/ ?/i,'').replace(/\bBREAD KING\b|\bBK\b/gi,'').replace(/\s+-\s*(C\/|FD C\/|CX C\/)?[\d,.]+\s*(KG|G|UNID|PCT)\b.*$/i,'').replace(/\s+-\s*[\d,.]+\s*(KG|G)\b.*$/i,'').replace(/\s+/g,' ').trim();
+  s=s.toLowerCase().replace(/(^|[\s\/])([a-zà-ú])/g,(m,a,b)=>a+b.toUpperCase()).replace(/\b(\d+)g\b/gi,'$1g').replace(/\bSs\b/,'SS').replace(/\bSesi\b/,'SESI').replace(/\bDe\b/g,'de').replace(/\bP\/\b/g,'p/');
+  return s;
+}
+async function girCarregarMapa(){
+  if(GIR.mapaCarregando)return;GIR.mapaCarregando=true;
+  try{
+    const {data,error}=await getSupabaseClient().from('mapa_rendimentos').select('codigo,produto,etapas');
+    if(!error&&data){
+      const m={};
+      data.forEach(r=>{const et=Array.isArray(r.etapas)?r.etapas:[];const kg=(et.find(e=>e.nome==='Kg de massa')||{}).qtd;
+        m[SAL_NORM(r.produto)]={cod:normCod(String(r.codigo||'')),kg:kg>0?+kg:null};});
+      GIR.mapa=m;if(selectedSector==='GIRO DIA')girRender();
+    }
+  }catch(e){}
+  GIR.mapaCarregando=false;
+}
+function girCalcular(){
+  const rowsAll=[];
+  Object.keys(DATA).forEach(d=>(DATA[d].rows||[]).forEach(r=>{if(r.setor==='GIRO DIA')rowsAll.push(Object.assign({d},r));}));
+  if(!rowsAll.length)return null;
+  const fim=rowsAll.reduce((m,r)=>r.d>m?r.d:m,''),dias=GIR.dias,iniMs=salMs(fim)-(dias-1)*864e5,ini=salIso(iniMs);
+  const prevIni=salIso(iniMs-dias*864e5),prevFim=salIso(iniMs-864e5),semanas=dias/7,lim28=salIso(salMs(fim)-27*864e5);
+  const vF=salVendaMap('F'),vL=salVendaMap('L');
+  const estF=salEstoqueMap(currentFab&&currentFab.length?currentFab:(typeof RAW!=='undefined'?RAW.fabrica:[]));
+  const estL=salEstoqueMap(currentLoja&&currentLoja.length?currentLoja:(typeof RAW!=='undefined'?RAW.loja:[]));
+  const mapa=GIR.mapa||{};
+  const G={};
+  const kp={plan:0,real:0,planAnt:0,realAnt:0,parH:0,parN:0,causas:{},linhas:0,comHor:0,comEq:0,comPar:0,comConv:0};
+  const semanasAt={},eq={};
+  rowsAll.forEach(r=>{
+    const noPer=r.d>=ini&&r.d<=fim,k=SAL_NORM(r.produto),mp=mapa[k]||null;
+    const g=G[k]||(G[k]={nome:girNome(r.produto),bruto:r.produto,cod:mp?mp.cod:'',kgM:mp?mp.kg:null,rows:[],massasPer:0,massas28:0,hTot:0,kgT:0,ult:'',real:0,prev:0});
+    if(r.d>g.ult)g.ult=r.d;
+    if(noPer){
+      kp.linhas++;if(r.inicio&&r.fim)kp.comHor++;if(r.equipe)kp.comEq++;if(mp&&mp.kg)kp.comConv++;
+      const ph=salHoras(r.duracaoParada)||0;if(r.causa||ph>0)kp.comPar++;if(ph>0)kp.parH+=ph;
+      if(r.causa){kp.parN++;String(r.causa).split('|').forEach(c=>{c=c.trim();if(c){const q=c.charAt(0).toUpperCase()+c.slice(1).toLowerCase();kp.causas[q]=(kp.causas[q]||0)+1;}});}
+      if(r.prev!=null&&r.prev>0){kp.plan+=r.prev;kp.real+=r.real;g.real+=r.real;g.prev+=r.prev;
+        if(r.equipe){const o=eq[r.equipe]||(eq[r.equipe]={plan:0,real:0,n:0});o.plan+=r.prev;o.real+=r.real;o.n++;}}
+      g.massasPer+=r.real||0;g.rows.push(r);
+    }else if(r.d>=prevIni&&r.d<=prevFim&&r.prev!=null&&r.prev>0){kp.planAnt+=r.prev;kp.realAnt+=r.real;}
+    if(r.prev!=null&&r.prev>0){const wMs=salMs(r.d)-((new Date(salMs(r.d)).getUTCDay()+6)%7)*864e5,w=salIso(wMs),o=semanasAt[w]||(semanasAt[w]={plan:0,real:0});o.plan+=r.prev;o.real+=r.real;}
+    if(r.d>=lim28&&r.d<=fim)g.massas28+=r.real||0;
+    const h=salDuracao(r);if(h!==null&&mp&&mp.kg){g.hTot+=h;g.kgT+=(r.real||0)*mp.kg;}
+  });
+  const out=[];
+  Object.keys(G).forEach(k=>{
+    const g=G[k],conv=g.kgM>0;
+    let venda=null,est=null;
+    if(conv&&g.cod){venda=(+vF.map[g.cod]||0)+(+vL.map[g.cod]||0);est=(+estF[g.cod]||0)+(+estL[g.cod]||0);}
+    const prodSem=conv?g.massasPer*g.kgM/semanas:null,taxa=conv&&g.hTot>0?g.kgT/g.hTot:null;
+    const ratio=conv&&venda>0?prodSem/venda:null;
+    let status='ok';
+    if(!conv)status='nc';else if(venda>0&&g.massas28===0)status='sem';else if(ratio===null)status='';else if(ratio<0.7)status='ab';else if(ratio<1)status='at';
+    const hNec=taxa&&venda>0?venda/taxa:null,hUs=taxa?prodSem/taxa:null;
+    if(!g.massasPer&&!g.ult)return;
+    out.push({nome:g.nome,bruto:g.bruto,ult:g.ult,taxa,massasSem:g.massasPer/semanas,prodSem,venda,ratio,est,cob:conv&&venda>0?est/venda:null,hNec,hUs,dif:hNec!==null&&hUs!==null?hNec-hUs:null,status,atend:g.prev>0?g.real/g.prev:null,rows:g.rows,kgM:g.kgM});
+  });
+  return {out,ini,fim,dias,semanas,kp,semanasAt,eq,vendaN:Math.max(vF.n,vL.n),vendaTem:Object.keys(vendaFabMap||{}).length+Object.keys(vendaLojaMap||{}).length>0,mapaOk:!!GIR.mapa};
+}
+function girOrdena(rows){
+  const {col,dir}=GIR.ord;
+  const val=r=>col==='nome'?r.nome:col==='status'?['ab','sem','at','ok','nc'].indexOf(r.status):col==='ult'?(r.ult||''):(r[col]===null||r[col]===undefined?Infinity:r[col]);
+  return rows.slice().sort((a,b)=>{const x=val(a),y=val(b);return (x<y?-1:x>y?1:0)*dir;});
+}
+function girRender(){
+  const el=document.getElementById('giroDash');if(!el)return;
+  salGarantirCache();
+  if(GIR.mapa===null)girCarregarMapa();
+  if(SAL.hist===null)salCarregarHist();
+  const c=GIR.calc=girCalcular();
+  if(!c){el.innerHTML='<div class="sd-vazio">Sem apontamentos do Giro Dia carregados ainda.</div>';return;}
+  const q=GIR.busca.trim().toLowerCase(),rows=c.out.filter(r=>!q||r.nome.toLowerCase().includes(q));
+  const comVenda=rows.filter(r=>r.venda>0);
+  const totP=comVenda.reduce((s,r)=>s+r.prodSem,0),totV=comVenda.reduce((s,r)=>s+r.venda,0);
+  const nProd=comVenda.filter(r=>r.status==='ab'||r.status==='sem').length,nEst=comVenda.filter(r=>r.cob!==null&&r.cob<1).length,dh=rows.reduce((s,r)=>s+(r.dif||0),0);
+  const kp=c.kp,at=kp.plan>0?kp.real/kp.plan:null,atAnt=kp.planAnt>0?kp.realAnt/kp.planAnt:null,dAt=at!==null&&atAnt!==null?Math.round((at-atAnt)*100):null;
+  const causas=Object.keys(kp.causas).map(k=>[k,kp.causas[k]]).sort((a,b)=>b[1]-a[1]);
+  const clsAt=at===null?'':at>=0.9?'ok':at>=0.7?'at':'ab',cobT=totV>0?totP/totV:null,clsCob=cobT===null?'':cobT>=1?'ok':cobT>=0.7?'at':'ab';
+  let h=`<div class="sd-filtros"><div class="sd-seg" role="group" aria-label="Período">${SAL_PERIODOS.map(p=>`<button type="button" class="${GIR.dias===p[0]?'on':''}" data-gd-dias="${p[0]}">${p[1]}</button>`).join('')}</div>
+   <input type="search" id="gdBusca" placeholder="Buscar produto..." value="${salEsc(GIR.busca)}"><button type="button" class="sd-btn" id="gdAtualizar">⟳ Atualizar</button><button type="button" class="sd-btn" id="gdExcel">Exportar Excel</button>
+   <span class="sd-per">Apontamentos de ${salDd(c.ini)} a ${salDd(c.fim)} · ${salFmt(c.semanas,1)} semanas · comparação em kg</span></div>`;
+  if(!c.vendaTem)h+='<div class="sd-aviso">Venda ainda não carregada. Se não aparecer em alguns segundos, suba o relatório de venda em PCP &amp; Estoque.</div>';
+  else if(c.vendaN<3)h+=`<div class="sd-aviso">Venda semanal de ${c.vendaN} semana. Com 3 ou mais semanas guardadas (gravadas a cada upload de venda), passa a ser a média das últimas 4.</div>`;
+  else h+=`<div class="sd-info">Venda semanal = média das últimas ${c.vendaN} semanas guardadas.</div>`;
+  if(c.mapaOk){const nc=c.out.filter(r=>r.status==='nc').length;if(nc)h+=`<div class="sd-aviso">${nc} produto(s) sem rendimento no Mapa de Rendimentos ficaram sem conversão para kg (aparecem como "Sem conversão" na tabela).</div>`;}
+  h+='<div class="sd-cards">';
+  h+=salCard('Atendimento ao plano',salPct(at),'Real ÷ planejado em massas',dAt===null?'Sem período anterior para comparar':(dAt<0?'▼ ':'▲ ')+Math.abs(dAt)+' pp vs período anterior',clsAt);
+  h+=salCard('Produção cobre a venda',salPct(cobT),'Produzimos ÷ vendemos (kg)','Meta: 100% ou mais',clsCob);
+  h+=salCard('Produzir mais',String(nProd),`de ${comVenda.length} produtos`,'Abaixo de 70% ou sem produção',nProd>0?'ab':'ok');
+  h+=salCard('Estoque &lt; 1 semana',String(nEst),`de ${comVenda.length} produtos`,'Risco de ruptura',nEst>3?'ab':nEst>0?'at':'ok');
+  h+=salCard('Horas de produção',(dh<0?'sobram ':'faltam ')+salFmt(Math.abs(dh))+' h','Exigidas pela venda − usadas','Por semana, todos os produtos',dh<=0?'ok':'ab');
+  h+=salCard('Paradas no período',salFmt(kp.parH,1)+' h',salFmt(kp.parN)+' apontamentos com causa',causas.length?'Principal: '+salEsc(causas[0][0]):'Sem causas descritas',kp.parH>0?'at':'ok');
+  h+='</div>';
+  const ordB=comVenda.filter(r=>r.ratio!==null).sort((a,b)=>a.ratio-b.ratio);
+  h+='<div class="sd-grid2">'+salPainel('Cobertura da venda: produzimos o que vendemos?',salSvgBarrasH(ordB.map(r=>({label:r.nome.slice(0,32),v:r.ratio,cls:r.status,tip:`${r.nome}: cobre ${salPct(r.ratio)} da venda (produzimos ${salFmt(r.prodSem)} kg · vendemos ${salFmt(r.venda)} kg por semana)`})),{max:3.4,refs:[{v:0.7,label:'70%',cls:'mut'},{v:1,label:'100%'}],lh:ordB.length>22?24:30,fmt:v=>salPct(v),aria:'Produção cobre a venda por produto'}),'Cada barra é um produto, em kg. Verde: 100% ou mais · amarelo: 70% a 99% · vermelho: abaixo de 70% ou sem produção nas últimas 4 semanas.','sd-w1')
+   +'<div class="sd-col">'+salPainel('Produção × estoque',salSvgQuadrante(comVenda),'Canto inferior esquerdo é prioridade: produz pouco e o estoque dura menos de 1 semana. Passe o mouse para ver o produto.')+salPainel('Prioridade de produção',salPrioridade(comVenda),'Produtos sem produção ou abaixo da venda, e os que têm menos de 1 semana de estoque. Ordem: pior primeiro.','sd-fill')+'</div></div>';
+  const ordD=comVenda.filter(r=>r.dif!==null).sort((a,b)=>b.dif-a.dif);
+  const ritmo=rows.filter(r=>r.taxa).sort((a,b)=>b.taxa-a.taxa);
+  h+='<div class="sd-grid2 sd-eq">'+salPainel('Horas de produção: faltam ou sobram por semana',salSvgDiverg(ordD.map(r=>({label:r.nome.slice(0,32),v:r.dif,tip:`${r.nome}: a venda exige ${salFmt(r.hNec,1)} h por semana e usamos ${salFmt(r.hUs,1)} h`})),{}),'Vermelho (direita): faltam horas de produção para repor a venda. Verde (esquerda): sobram horas.')
+   +salPainel('Ritmo da linha (kg por hora de produção)',ritmo.length?salSvgBarrasH(ritmo.map(r=>({label:r.nome.slice(0,32),v:r.taxa,cls:'brand',tip:`${r.nome}: ${salFmt(r.taxa)} kg por hora`})),{max:ritmo[0].taxa*1.12,refs:[],lh:ordD.length>22?18:24,fmt:v=>salFmt(v),aria:'Ritmo da linha por produto'}):'<div class="sd-vazio">Sem apontamentos com horário.</div>','Kg por hora de produção, já descontadas as paradas apontadas. Só entram apontamentos com horário de início e fim e produto com rendimento cadastrado.')+'</div>';
+  const sem=Object.keys(c.semanasAt).sort().slice(-13),fimSemana=salIso(salMs(c.fim)-((new Date(salMs(c.fim)).getUTCDay()+6)%7)*864e5);
+  const pts=sem.map(w=>({label:salDd(w),v:c.semanasAt[w].plan>0?c.semanasAt[w].real/c.semanasAt[w].plan:0,parcial:w===fimSemana&&new Date(salMs(c.fim)).getUTCDay()!==0}));
+  const par=causas.slice(0,8),totC=causas.reduce((s,x)=>s+x[1],0);let ac=0;
+  const parH=par.length?`<div class="sd-pareto">${par.map(x=>{ac+=x[1];return `<div class="sd-prow"><span class="sd-pn">${salEsc(x[0])}</span><span class="sd-pb"><i style="width:${(x[1]/par[0][1]*100).toFixed(1)}%"></i></span><span class="sd-pv">${x[1]}</span><span class="sd-pa">${Math.round(ac/totC*100)}%</span></div>`;}).join('')}</div>`:'<div class="sd-vazio">Sem causas de parada descritas no período.</div>';
+  const eqs=Object.keys(c.eq).sort().map(k=>({k,v:c.eq[k].plan>0?c.eq[k].real/c.eq[k].plan:0,n:c.eq[k].n}));
+  const eqH=eqs.length?salSvgBarrasH(eqs.map(e=>({label:'Equipe '+e.k+' ('+e.n+' apont.)',v:e.v,cls:e.v>=0.9?'ok':e.v>=0.7?'at':'ab',tip:`Equipe ${e.k}: ${salPct(e.v)} do planejado em ${e.n} apontamentos`})),{max:1.4,refs:[{v:1,label:'100%'}],lh:30,fmt:v=>salPct(v),aria:'Atendimento ao plano por equipe'}):'<div class="sd-vazio">Sem equipe informada nos apontamentos do período.</div>';
+  h+='<div class="sd-grid3">'+salPainel('Atendimento ao plano por semana',pts.length?salSvgLinha(pts):'<div class="sd-vazio">Sem semanas com meta.</div>','Real ÷ planejado por semana. Ponto vazado: semana incompleta. A linha forte marca 100%.')
+   +salPainel('Paradas e desvios por causa',parH,'Ocorrências no período e % acumulado. Ex.: se as 2 primeiras causas somam 70%, são elas que valem atacar primeiro.')
+   +salPainel('Atendimento ao plano por equipe',eqH,'Real ÷ planejado de cada equipe no período. Só entram apontamentos com meta e equipe informadas.')+'</div>';
+  const cols=[['nome','Produto'],['ult','Última produção'],['taxa','Ritmo da linha (kg/h)'],['atend','Atendimento ao plano'],['massasSem','Massas por semana'],['prodSem','Produzimos (kg/sem)'],['venda','Vendemos (kg/sem)'],['ratio','Produção cobre a venda?'],['hNec','Horas de produção que a venda exige'],['hUs','Horas de produção que usamos'],['dif','Diferença de horas'],['cob','Estoque dura (semanas)'],['status','Status']];
+  const STT=Object.assign({nc:'Sem conversão'},SAL_STATUS);
+  const tr=girOrdena(rows).map(r=>`<tr data-gd-prod="${salEsc(r.bruto)}" class="sd-lk"><td>${salEsc(r.nome)}</td><td>${salDd(r.ult)}</td><td>${salFmt(r.taxa)}</td><td>${salPct(r.atend)}</td><td>${salFmt(r.massasSem,1)}</td><td>${salFmt(r.prodSem)}</td><td>${salFmt(r.venda)}</td><td>${salPct(r.ratio)}</td><td>${salFmt(r.hNec,1)}</td><td>${salFmt(r.hUs,1)}</td><td>${r.dif===null?'—':(r.dif>0.05?'faltam '+salFmt(r.dif,1)+' h':r.dif<-0.05?'sobram '+salFmt(-r.dif,1)+' h':'ok')}</td><td>${salFmt(r.cob,1)}</td><td><span class="sd-tag ${r.status}">${STT[r.status]||'—'}</span></td></tr>`).join('');
+  h+=salPainel('Detalhe por produto','<div class="sd-tbl-wrap"><table class="sd-tbl"><thead><tr>'+cols.map(x=>`<th data-gd-ord="${x[0]}" class="${GIR.ord.col===x[0]?'on':''}">${x[1]}${GIR.ord.col===x[0]?(GIR.ord.dir>0?' ▲':' ▼'):''}</th>`).join('')+'</tr></thead><tbody>'+tr+'</tbody></table></div>','Clique no produto para ver a evolução semanal e os apontamentos. Clique no título da coluna para ordenar. Quilos = massas × kg de massa do Mapa de Rendimentos.','sd-w1');
+  const pc=n=>kp.linhas?Math.round(n/kp.linhas*100):0,cl=v=>v>=80?'ok':v>=50?'at':'ab';
+  const qual=[['Linhas com horário de início e fim',pc(kp.comHor)],['Linhas com equipe informada',pc(kp.comEq)],['Linhas com parada ou causa descrita',pc(kp.comPar)],['Linhas de produtos com rendimento (kg)',pc(kp.comConv)]].map(x=>`<div class="sd-q-row"><span>${x[0]}</span><span class="sd-q-bar"><i class="${cl(x[1])}" style="width:${x[1]}%"></i></span><b>${x[1]}%</b></div>`).join('');
+  h+=salPainel('Qualidade do dado','<div class="sd-qgrid">'+qual+'</div>','Percentual das linhas do período. Horário faltando reduz a confiança do ritmo da linha; produto sem rendimento fica fora da comparação em kg.','sd-qual');
+  el.innerHTML=h;
+  el.querySelectorAll('[data-gd-dias]').forEach(b=>b.onclick=()=>{GIR.dias=+b.dataset.gdDias;girRender();});
+  const bu=el.querySelector('#gdBusca');if(bu)bu.oninput=()=>{GIR.busca=bu.value;clearTimeout(girRender._t);girRender._t=setTimeout(()=>{girRender();const n=document.getElementById('gdBusca');if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length);}},250);};
+  const a=el.querySelector('#gdAtualizar');if(a)a.onclick=()=>{loadData(true);SAL.hist=null;GIR.mapa=null;};
+  const x=el.querySelector('#gdExcel');if(x)x.onclick=()=>girExcel(c);
+  el.querySelectorAll('[data-gd-ord]').forEach(t=>t.onclick=()=>{const k=t.dataset.gdOrd;GIR.ord=GIR.ord.col===k?{col:k,dir:-GIR.ord.dir}:{col:k,dir:1};girRender();});
+  el.querySelectorAll('[data-gd-prod]').forEach(t=>t.onclick=()=>girDetalhe(t.dataset.gdProd));
+  el.querySelectorAll('[data-sd-prod]').forEach(t=>t.onclick=()=>girDetalhe(t.dataset.sdProd));
+}
+function girExcel(c){
+  if(typeof XLSX==='undefined')return;
+  const dados=girOrdena(c.out).map(r=>({Produto:r.nome,'Última produção':salDd(r.ult),'Ritmo da linha (kg/h)':r.taxa?Math.round(r.taxa):null,'Atendimento ao plano':r.atend===null?null:Math.round(r.atend*100)/100,'Massas por semana':Math.round(r.massasSem*10)/10,'Produzimos (kg/sem)':r.prodSem===null?null:Math.round(r.prodSem),'Vendemos (kg/sem)':r.venda===null?null:Math.round(r.venda),'Produção cobre a venda?':r.ratio===null?null:Math.round(r.ratio*100)/100,'Horas de produção que a venda exige':r.hNec===null?null:Math.round(r.hNec*10)/10,'Horas de produção que usamos':r.hUs===null?null:Math.round(r.hUs*10)/10,'Diferença de horas (+ faltam / − sobram)':r.dif===null?null:Math.round(r.dif*10)/10,'Estoque dura (semanas)':r.cob===null?null:Math.round(r.cob*10)/10,Status:r.status==='nc'?'Sem conversão':(SAL_STATUS[r.status]||'')}));
+  const ws=XLSX.utils.json_to_sheet(dados),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Giro Dia');XLSX.writeFile(wb,'giro-dia-capacidade-demanda-'+c.fim+'.xlsx');
+}
+function girDetalhe(bruto){
+  const c=GIR.calc;if(!c)return;const r=c.out.find(x=>x.bruto===bruto||x.nome===bruto);if(!r)return;
+  const k=r.kgM||0,porSem={};r.rows.forEach(x=>{const w=salIso(salMs(x.d)-((new Date(salMs(x.d)).getUTCDay()+6)%7)*864e5);porSem[w]=(porSem[w]||0)+(x.real||0)*(k||1);});
+  const ws=Object.keys(porSem).sort(),mx=Math.max(r.venda||0,...ws.map(w=>porSem[w]),1);
+  const barras=ws.map(w=>`<div class="sd-dcol"><div class="sd-dbar" style="height:${(porSem[w]/mx*100).toFixed(1)}%" title="${salFmt(porSem[w])} ${k?'kg':'massas'}"></div><span>${salDd(w)}</span></div>`).join('');
+  const linhas=r.rows.slice().sort((a,b)=>a.d<b.d?1:-1).slice(0,25).map(x=>`<tr><td>${salDd(x.d)}</td><td>${salFmt(x.real,1)}</td><td>${x.prev!=null?salFmt(x.prev,1):'—'}</td><td>${x.prev>0?salPct(x.real/x.prev):'—'}</td><td>${salEsc(x.equipe||'—')}</td><td>${salEsc(x.inicio?x.inicio.slice(0,5)+'–'+(x.fim||'').slice(0,5):'—')}</td><td>${salEsc(x.causa||'')}</td></tr>`).join('');
+  let ov=document.getElementById('sdDetalhe');if(!ov){ov=document.createElement('div');ov.id='sdDetalhe';ov.className='sd-ov';document.body.appendChild(ov);}
+  ov.innerHTML=`<div class="sd-modal" role="dialog" aria-label="${salEsc(r.nome)}"><button type="button" class="sd-x" aria-label="Fechar">×</button><h3>${salEsc(r.nome)}</h3>
+   <div class="sd-mini"><span>Produzimos <b>${salFmt(r.prodSem)}</b> kg/sem</span><span>Vendemos <b>${salFmt(r.venda)}</b> kg/sem</span><span>Cobre <b>${salPct(r.ratio)}</b></span><span>Atendimento ao plano <b>${salPct(r.atend)}</b></span><span>Estoque dura <b>${salFmt(r.cob,1)}</b> sem.</span><span>Última produção <b>${salDd(r.ult)}</b></span></div>
+   <div class="sd-panel-t">${k?'Kg produzidos por semana (a linha vermelha é a venda semanal)':'Massas produzidas por semana (produto sem rendimento cadastrado)'}</div><div class="sd-dgraf" style="--sd-venda:${((r.venda||0)/mx*100).toFixed(1)}%">${barras||'<div class="sd-vazio">Sem produção no período.</div>'}${k&&r.venda?'<i class="sd-dvenda"></i>':''}</div>
+   <div class="sd-panel-t">Apontamentos do período (últimos 25)</div><div class="sd-tbl-wrap"><table class="sd-tbl"><thead><tr><th>Dia</th><th>Massas</th><th>Planejado</th><th>Atendimento</th><th>Equipe</th><th>Horário</th><th>Causa</th></tr></thead><tbody>${linhas}</tbody></table></div></div>`;
+  ov.style.display='flex';ov.onclick=e=>{if(e.target===ov||e.target.classList.contains('sd-x'))ov.style.display='none';};
 }
 
 function applyStandardPanelVisibility(){
@@ -18461,7 +18622,7 @@ async function sbRestoreCache(){
       localStorage.setItem(LS_KEYS.vendaFab,JSON.stringify(vendaFabMap));
       localStorage.setItem(LS_KEYS.vendaLoja,JSON.stringify(vendaLojaMap));
     }catch(_){}
-    if(typeof salRender==='function'&&selectedSector==='SALGADO')salRender();
+    if(typeof salRenderAtivo==='function')salRenderAtivo();
     return true;
   }catch(e){return false;}
 }
@@ -20365,7 +20526,7 @@ function processFile(file,tipo){
         statusEl.textContent=`✅ ${total} produtos · ${now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
         cardEl.style.borderColor='var(--good)';
         // Re-render tabelas com novos dados de vendas
-        renderAlerts();renderFab();renderLoja();SAL.hist=null;if(selectedSector==='SALGADO')salRender();
+        renderAlerts();renderFab();renderLoja();SAL.hist=null;salRenderAtivo();
       }catch(err){
         statusEl.style.color='var(--red)';
         statusEl.textContent='❌ Erro: '+err.message;
