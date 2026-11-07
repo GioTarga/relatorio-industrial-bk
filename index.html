@@ -1843,6 +1843,74 @@ body{background:#fff;color:#000}
   .abl-chip.at{ background:#fff1de; color:var(--gold); }
   .abl-aviso{ background:#fff7e0; border:1px solid #e8cf86; border-radius:8px; padding:8px 12px; font-size:12.5px; margin-bottom:10px; }
   .abl-acoes{ display:flex; gap:10px; margin-top:14px; }
+/* ── Dashboard do Salgado ── */
+#page-industrial.sal-mode .period-bar{display:none}
+#riGeralContent.sal-mode>*:not(#salgadoDash){display:none !important}
+#salgadoDash{--sd-ok:var(--good);--sd-at:#c98a00;--sd-ab:#c0392b;--sd-mut:#8a7f7f;--sd-line:var(--line);display:flex;flex-direction:column;gap:14px;padding-bottom:30px}
+.sd-filtros{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--paper);border:1px solid var(--sd-line);border-radius:var(--radius-md,10px);padding:10px 12px}
+.sd-seg{display:inline-flex;border:1px solid var(--red);border-radius:var(--radius-sm)}
+.sd-seg button{background:transparent;border:0;padding:7px 14px;font:600 12px var(--font-body);color:var(--red);cursor:pointer}
+.sd-seg button+button{border-left:1px solid var(--red)}
+.sd-seg button.on{background:var(--red);color:#fff}
+.sd-filtros select,.sd-filtros input{padding:7px 10px;border:1px solid var(--sd-line);border-radius:var(--radius-sm);font:13px var(--font-body);background:var(--paper)}
+.sd-btn{padding:7px 12px;border:1px solid var(--sd-line);border-radius:var(--radius-sm);background:var(--paper);font:600 12px var(--font-body);cursor:pointer;color:var(--ink)}
+.sd-btn:hover{border-color:var(--red);color:var(--red)}
+.sd-per{margin-left:auto;font-size:12px;color:var(--ink-soft)}
+.sd-aviso,.sd-info{padding:9px 12px;border-radius:var(--radius-sm);font-size:12.5px}
+.sd-aviso{background:#fff4d6;border:1px solid #ecd28b;color:#6b4e00}
+.sd-info{background:var(--good-bg);color:var(--good)}
+.sd-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.sd-card{background:var(--paper);border:1px solid var(--sd-line);border-radius:var(--radius-md,10px);padding:12px 14px;border-bottom:4px solid var(--sd-mut)}
+.sd-card.ok{border-bottom-color:var(--sd-ok)}.sd-card.at{border-bottom-color:var(--sd-at)}.sd-card.ab{border-bottom-color:var(--sd-ab)}
+.sd-card-t{font:700 10.5px var(--font-body);letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft)}
+.sd-card-v{font:700 26px var(--font-body);margin:6px 0 4px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.sd-card-l{font-size:12px;color:var(--ink)}
+.sd-card-l2{font-size:11.5px;font-weight:600;margin-top:2px}
+.sd-card.ok .sd-card-l2{color:var(--sd-ok)}.sd-card.at .sd-card-l2{color:var(--sd-at)}.sd-card.ab .sd-card-l2{color:var(--sd-ab)}
+.sd-grid2{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:14px}
+.sd-grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.sd-end{grid-template-columns:minmax(0,2.4fr) minmax(0,1fr)}
+.sd-col{display:flex;flex-direction:column;gap:14px;min-width:0}
+@media(max-width:900px){.sd-grid2,.sd-end{grid-template-columns:1fr}}
+.sd-panel{background:var(--paper);border:1px solid var(--sd-line);border-radius:var(--radius-md,10px);padding:12px 14px;min-width:0}
+.sd-panel-t{font:700 13px var(--font-body);color:var(--red);margin-bottom:8px}
+.sd-nota{font-size:11.5px;color:var(--ink-soft);margin-top:8px;line-height:1.45}
+.sd-vazio{padding:18px;text-align:center;color:var(--ink-soft);font-size:13px}
+.sd-svg{width:100%;height:auto;display:block}
+.sd-lbl{font:10px var(--font-body);fill:var(--ink-soft)}
+.sd-val{font:10px var(--font-body);fill:var(--ink);font-variant-numeric:tabular-nums}.sd-val.b{font-weight:700;fill:var(--red)}
+.sd-ref{stroke:var(--ink);stroke-width:1;stroke-dasharray:4 3;opacity:.7}.sd-ref.mut{stroke:var(--sd-mut);opacity:.9}
+.sd-grid{stroke:var(--sd-line);stroke-width:1}.sd-grid.meta{stroke:var(--ink);stroke-dasharray:4 3}
+.sd-bar.ok{fill:var(--sd-ok)}.sd-bar.at{fill:var(--sd-at)}.sd-bar.ab,.sd-bar.sem{fill:var(--sd-ab)}.sd-bar.brand{fill:var(--red)}.sd-bar.claro{fill:#dca4a4}
+.sd-dot{stroke:#fff;stroke-width:1.2}.sd-dot.ok{fill:var(--sd-ok)}.sd-dot.at{fill:var(--sd-at)}.sd-dot.ab,.sd-dot.sem{fill:var(--sd-ab)}
+.sd-q{font:700 9.5px var(--font-body)}.sd-q.ab{fill:var(--sd-ab)}.sd-q.at{fill:var(--sd-at)}.sd-q.ok{fill:var(--sd-ok)}.sd-q.mut{fill:var(--sd-mut)}
+.sd-line{fill:none;stroke:var(--red);stroke-width:2.2}.sd-pt{fill:var(--red);stroke:#fff;stroke-width:1}.sd-pt.parcial{fill:#fff;stroke:var(--red);stroke-width:1.5}
+.sd-pareto{display:flex;flex-direction:column;gap:6px}
+.sd-prow{display:grid;grid-template-columns:minmax(90px,1.3fr) 2fr 30px 38px;gap:8px;align-items:center;font-size:12px}
+.sd-pn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sd-pb{background:#f3ece4;border-radius:3px;height:12px;display:block}.sd-pb i{display:block;height:100%;background:var(--red);border-radius:3px}
+.sd-pv{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}.sd-pa{text-align:right;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.sd-tbl-wrap{overflow:auto;max-height:560px}
+.sd-tbl{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+.sd-tbl th{position:sticky;top:0;background:var(--red);color:#fff;font:700 11px var(--font-body);padding:7px 8px;text-align:center;cursor:pointer;white-space:normal}
+.sd-tbl th:first-child,.sd-tbl td:first-child{text-align:left}.sd-tbl td{padding:6px 8px;border-bottom:1px solid var(--sd-line);text-align:center}
+.sd-tbl tr.sd-lk{cursor:pointer}.sd-tbl tr.sd-lk:hover td{background:var(--cream)}
+.sd-tag{display:inline-block;padding:2px 9px;border-radius:999px;font:700 11px var(--font-body);white-space:nowrap}
+.sd-tag.ok{background:var(--good-bg);color:var(--sd-ok)}.sd-tag.at{background:#fff1cc;color:#8a5f00}.sd-tag.ab,.sd-tag.sem{background:var(--bad-bg);color:#a42b1d}
+.sd-q-row{display:grid;grid-template-columns:1fr 80px 36px;gap:8px;align-items:center;font-size:12px;margin-bottom:10px}
+.sd-q-bar{background:#f3ece4;border-radius:3px;height:10px;display:block}.sd-q-bar i{display:block;height:100%;border-radius:3px}
+.sd-q-bar i.ok{background:var(--sd-ok)}.sd-q-bar i.at{background:var(--sd-at)}.sd-q-bar i.ab{background:var(--sd-ab)}
+.sd-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:9999;padding:16px}
+.sd-modal{background:var(--paper);border-radius:12px;max-width:760px;width:100%;max-height:90vh;overflow:auto;padding:18px 20px;position:relative}
+.sd-modal h3{margin:0 0 8px;font:700 17px var(--font-body);color:var(--red);padding-right:30px}
+.sd-x{position:absolute;top:8px;right:12px;border:0;background:transparent;font-size:26px;cursor:pointer;color:var(--ink-soft)}
+.sd-mini{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;margin-bottom:12px;color:var(--ink-soft)}.sd-mini b{color:var(--ink)}
+.sd-dgraf{position:relative;display:flex;align-items:flex-end;gap:6px;height:150px;border-bottom:1px solid var(--sd-line);margin-bottom:14px;padding-top:6px}
+.sd-dcol{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;font-size:10px;color:var(--ink-soft);gap:3px}
+.sd-dbar{width:70%;background:var(--red);border-radius:3px 3px 0 0;min-height:2px}
+.sd-dvenda{position:absolute;left:0;right:0;bottom:calc(var(--sd-venda) + 17px);border-top:2px dashed var(--sd-ab);pointer-events:none}
+@media print{#page-industrial.sal-mode .sd-filtros,.sd-ov{display:none}}
+
 </style>
 
 </style>
@@ -3403,6 +3471,7 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
 
   <!-- Conteúdo: Geral -->
   <div id="riGeralContent">
+  <div id="salgadoDash" style="display:none;"></div>
 
   <div class="kpi-grid" id="kpiGrid"></div>
   <div class="kpi-grid" id="kpiGridExtra"></div>
@@ -7216,12 +7285,13 @@ function transformSupabaseRowsToData(rows){
     const causa = r.paradas_desvios || '';
     const observacaoLivre = r.observacao || '';
     const obs = [causa, observacaoLivre].filter(Boolean).join(' — ');
+    const causaTxt = causa;
     const duracaoParada = r.duracao_parada || '';
     const apontamentoCompleto = (r.apontamento_completo === true || r.apontamento_completo === false) ? r.apontamento_completo : null;
     const recheio = (r.recheio_consumido_caixas !== null && r.recheio_consumido_caixas !== undefined) ? Number(r.recheio_consumido_caixas) : null;
 
     if(!byDate[dateISO]) byDate[dateISO] = [];
-    byDate[dateISO].push({ setor, equipe, maquina, produto, codigo, prev, foraDoPlano, semQuantidade, real, uni, dif, obs, inicio, fim, duracaoParada, apontamentoCompleto, recheio });
+    byDate[dateISO].push({ setor, equipe, maquina, produto, codigo, prev, foraDoPlano, semQuantidade, real, uni, dif, obs, inicio, fim, duracaoParada, apontamentoCompleto, recheio, causa: causaTxt });
   });
 
   const result = {};
@@ -9131,6 +9201,279 @@ function refreshDaySelectOptions(filteredDates){
 /* Painéis que só existem no layout original do Fritador (fora da
    padronização de 4 linhas dos demais setores): comparativo por produto +
    pódio, Atendimento de Meta, Ranking de Produtividade e Fora do Plano. */
+
+/* ═══════════════════════════════════════════════════════════
+   DASHBOARD DO SALGADO — substitui o conteúdo da aba SALGADO do Relatório Industrial.
+   Fontes: apontamentos (DATA, vindos de producao_diaria), venda (vendaFabMap/vendaLojaMap + histórico
+   semanal em venda_semanal_historico) e estoque (currentFab/currentLoja). Tudo convertido para peças.
+   ═══════════════════════════════════════════════════════════ */
+// Cada grupo = um produto da dashboard. prods: nomes dos apontamentos; f: peças por unidade apontada
+// (ex.: caixa de mini pastel = 42 peças); comps: [origem F/L, código CIGAM, peças por unidade de venda/estoque].
+const SAL_GRUPOS=[{"nome": "Doguinho salsicha e queijo", "f": 1, "prods": ["DOGUINHO SALSICHA E QUEIJO BREAD KING 170G - C/15UN", "DOGUINHO SALSICHA E REQUEIJAO BREAD KING 4X170G - CX C12 PCT"], "comps": [["F", "2209092", 1], ["L", "7064", 4]]}, {"nome": "Empada frango 130g", "f": 1, "prods": ["EMPADA FRANGO C/ REQ BREAD KING 130G - C/25UN", "EMPADA FRANGO C/ REQ BREAD KING 2X130G - CX C/25 UNID"], "comps": [["F", "2209353", 1], ["L", "5925", 2], ["L", "7069", 4]]}, {"nome": "Hambúrgão carne c/ cheddar", "f": 1, "prods": ["HAMBURGAO CARNE C/ CHEDDAR BREAD KING 170G - C/12UN"], "comps": [["F", "2209091", 1], ["L", "7065", 4]]}, {"nome": "Bauru sabor pizza 165g", "f": 1, "prods": ["BAURU SABOR PIZZA BREAD KING 165G - C/15UN", "BAURU SABOR PIZZA BREAD KING 4X165G - CX C/12 PCT"], "comps": [["F", "6670", 1], ["L", "7076", 4]]}, {"nome": "Pastel nata frango 130g", "f": 1, "prods": ["PASTEL NATA FRANGO C/REQ CONG BKING 130G - C/18UN", "PASTEL NATA FRANGO C/ REQ BREAD KING 130G - C/3 UN"], "comps": [["F", "7", 1], ["L", "7199", 3]]}, {"nome": "Empada palmito 130g", "f": 1, "prods": ["EMPADA PALMITO BREAD KING 130G - C/25UN", "EMPADA PALMITO BREAD KING 4X130G - CX C/12 PCT"], "comps": [["F", "100825", 1], ["L", "6118", 2], ["L", "7070", 4]]}, {"nome": "Bauru frango c/ req 165g", "f": 1, "prods": ["BAURU FRANGO C/ REQ BREAD KING 165G - CX C/15 UM", "BAURU FRANGO C/ REQUEIJAO BREAD KING 4X165G - CX C/12 PCT", "BAURU FRANGO C/ REQ BREAD KING 165G - CX C/15 UN"], "comps": [["F", "6672", 1], ["L", "7075", 4]]}, {"nome": "Bauru calabresa c/ req 165g", "f": 1, "prods": ["BAURU CALABRESA C/ REQ BREAD KING 165G - CX C/15 UM"], "comps": [["F", "6671", 1], ["L", "7074", 4]]}, {"nome": "Pastel de nata (Belém) 60g", "f": 1, "prods": ["PASTEL DE NATA (BELEM) BREAD KING 60G - C/36 UNID", "PASTEL BELEM VAREJO BREAD KING 60G - C/6 UN 360G"], "comps": [["F", "2209083", 1], ["L", "3439", 1]]}, {"nome": "Pastel p/ fritar carne", "f": 1, "prods": ["PASTEL P/ FRITAR CARNE BREAD KING 130G - C/15UN"], "comps": [["F", "2209297", 1]]}, {"nome": "Pastel nata carne 130g", "f": 1, "prods": ["PASTEL NATA CARNE C/REQ CONG BREAD KING 130G - C/18UN", "PASTEL NATA CARNE C/ REQ BREAD KING 130G - C/3 UN"], "comps": [["F", "6", 1], ["L", "7197", 3]]}, {"nome": "Pastel p/ fritar frango", "f": 1, "prods": ["PASTEL P/ FRITAR FRANGO E REQ BREAD KING 130G - C/15UN"], "comps": [["F", "2209306", 1]]}, {"nome": "Pastel p/ fritar queijo", "f": 1, "prods": ["PASTEL P/ FRITAR QUEIJO BREAD KING 130G - C/15UN"], "comps": [["F", "2209030", 1]]}, {"nome": "Pastel nata calabresa 130g", "f": 1, "prods": ["PASTEL NATA CALABRESA C/REQ CONG BKING 130G-C/18UN"], "comps": [["F", "196", 1]]}, {"nome": "Pastel nata filé c/ cheddar", "f": 1, "prods": ["PASTEL NATA FILE C/CHEDDAR CONG BKING 130G - C/18UN", "PASTEL NATA FILE C/ CHEDDAR BREAD KING 130G - C/3 UN"], "comps": [["F", "2209012", 1], ["L", "7198", 3]]}, {"nome": "Esfiha frango c/ req", "f": 1, "prods": ["ESFIHA FRANGO C/ REQ BREAD KING 4X150G - CX C/12 PCT", "ESFIHA FRANGO C/ REQ BREAD KING 130G - C/6 UN - CX C/8 PCT"], "comps": [["L", "7067", 4]]}, {"nome": "Esfiha carne c/ req", "f": 1, "prods": ["ESFIHA CARNE BREAD KING 4X150G - CX C/12 PCT", "ESFIHA CARNE BREAD KING 130G - C/6 UN - CX C/8 PCT"], "comps": [["L", "7066", 4]]}, {"nome": "Esfiha carne assado cong", "f": 1, "prods": ["ESFIHA CARNE ASSADO CONG BREAD KING 130 G - C/15 UNID"], "comps": [["F", "11", 1]]}, {"nome": "Esfiha frango assado cong", "f": 1, "prods": ["ESFIHA FRANGO ASSADO CONG BREAD KING 130G - C/15UN"], "comps": [["F", "12", 1]]}, {"nome": "Strudel folhado maçã", "f": 1, "prods": ["STRUDEL FOLHADO MACA BREAD KING 130G - C/6 UN"], "comps": [["L", "7190", 3]]}, {"nome": "Empada carne c/ req e azeitona", "f": 1, "prods": ["EMPADA CARNE C/ REQ. E AZEITONA BREAD KING 130G - C/25 UM", "EMPADA CARNE C/ REQ. E AZEITONA BREAD KING 6X130G - C/9 PCTS", "Empada Carne c/ Req BK 4x130g"], "comps": [["F", "7318", 1], ["L", "7319", 4]]}, {"nome": "Mini pastel nata/forno frango", "f": 42, "prods": ["MINI PASTEL NATA FRANGO BK 35G PCT 600G - CX C/18 UNID", "MINI PASTEL FORNO FRANGO BREAD KING 35G - C/2,5KG"], "comps": [["L", "7194", 17.142857], ["F", "8018", 28.571429]]}, {"nome": "Mini pastel nata/forno carne", "f": 42, "prods": ["MINI PASTEL NATA CARNE BK 35G PCT  600G - CX C/18 UNID", "MINI PASTEL FORNO CARNE BREAD KING 35G - C/2,5KG"], "comps": [["L", "7192", 17.142857], ["F", "8019", 28.571429]]}, {"nome": "Mini pastel nata/forno calabresa", "f": 42, "prods": ["MINI PASTEL NATA CALABRESA BK 35G PCT 600G - CX C/18 UNID", "MINI PASTEL FORNO CALABRESA BREAD KING 35G - C/2,5KG"], "comps": [["L", "7191", 17.142857], ["F", "8020", 28.571429]]}, {"nome": "Mini pastel nata/forno chocolate", "f": 42, "prods": ["MINI PASTEL NATA CHOCOLATE PTO BK 35G PCT 600G - CX C/18 UNID", "MINI PASTEL FORNO CHOCOLATE BREAD KING 35G - C/2,5KG"], "comps": [["L", "7193", 17.142857], ["F", "2209207", 28.571429]]}, {"nome": "Mini pastel nata/forno catupiry (requeijão)", "f": 42, "prods": ["MINI PASTEL NATA CATUPIRY BK 35G PCT 400G - CX C/18 UNID", "MINI PASTEL FORNO REQUEIJÃO BREAD KING 35G - C/2,5KG"], "comps": [["L", "7195", 11.428571], ["F", "8021", 28.571429]]}, {"nome": "Mini pastel bolha queijo", "f": 36, "prods": ["MINI PASTEL BOLHA QUEIJO FRITO BREAD KING 30G - C/500G"], "comps": [["L", "6322", 16.666667]]}, {"nome": "Mini pastel bolha carne frito", "f": 42, "prods": ["MINI PASTEL BOLHA CARNE FRITO BK 30G - C/500G"], "comps": [["L", "5863", 16.666667]]}, {"nome": "Mini pastel bolha carne c/ ovo", "f": 42, "prods": ["MINI PASTEL BOLHA CARNE C/ OVO BREAD KING 30G - C/2KG"], "comps": [["F", "2209115", 33.333333]]}];
+const SAL_NORM=s=>(s||'').toString().trim().toUpperCase().replace(/\s+/g,' ');
+const SAL_PROD2G={};SAL_GRUPOS.forEach((g,i)=>g.prods.forEach(p=>{SAL_PROD2G[SAL_NORM(p)]=i;}));
+const SAL={dias:90,maq:'',busca:'',ord:{col:'ratio',dir:1},hist:null,histCarregando:false,calc:null};
+const SAL_STATUS={ok:'Ok',at:'Atenção',ab:'Produzir mais',sem:'Sem produção'};
+const SAL_PERIODOS=[[7,'Última semana'],[28,'4 semanas'],[90,'90 dias']];
+
+function salFmt(v,d){if(v===null||v===undefined||isNaN(v))return'—';return v.toLocaleString('pt-BR',{minimumFractionDigits:d||0,maximumFractionDigits:d||0});}
+function salPct(v){return v===null||v===undefined||isNaN(v)?'—':salFmt(v*100)+'%';}
+function salMs(iso){const p=iso.split('-');return Date.UTC(+p[0],+p[1]-1,+p[2]);}
+function salIso(ms){return new Date(ms).toISOString().slice(0,10);}
+function salDd(iso){return iso?iso.slice(8,10)+'/'+iso.slice(5,7):'—';}
+function salHoras(t){ // 'HH:MM[:SS]' → horas decimais
+  if(!t)return null;const m=String(t).match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);if(!m)return null;
+  return (+m[1])+(+m[2])/60+(+(m[3]||0))/3600;
+}
+function salDuracao(r){ // horas de produção efetiva do apontamento (fim − início − paradas), ou null
+  const a=salHoras(r.inicio),b=salHoras(r.fim);if(a===null||b===null)return null;
+  let h=b-a;if(h<0)h+=24;h-=(salHoras(r.duracaoParada)||0);
+  return h>0?h:null;
+}
+function salEsc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+async function salCarregarHist(){
+  if(SAL.histCarregando)return;SAL.histCarregando=true;
+  try{
+    const {data,error}=await getSupabaseClient().from('venda_semanal_historico').select('semana,tipo,dados').order('semana',{ascending:false}).limit(60);
+    if(!error&&data){SAL.hist=data;if(selectedSector==='SALGADO')salRender();}
+  }catch(e){}
+  SAL.histCarregando=false;
+}
+// Venda semanal base: média das últimas 4 semanas guardadas (se houver 3 ou mais); senão a venda carregada hoje.
+function salVendaMap(tipo){
+  const cur=tipo==='F'?vendaFabMap:vendaLojaMap,t=tipo==='F'?'FAB':'LOJA';
+  const sem=(SAL.hist||[]).filter(h=>h.tipo===t).sort((a,b)=>a.semana<b.semana?1:-1).slice(0,4);
+  if(sem.length>=3){
+    const out={};sem.forEach(h=>Object.keys(h.dados||{}).forEach(c=>{out[c]=(out[c]||0)+(+h.dados[c]||0)/sem.length;}));
+    return {map:out,n:sem.length};
+  }
+  return {map:cur||{},n:1};
+}
+function salEstoqueMap(lista){const m={};(lista||[]).forEach(i=>{const c=normCod(String(i.codigo||''));if(c)m[c]=(m[c]||0)+(+i.estoque||0);});return m;}
+
+function salCalcular(){
+  const rowsAll=[];
+  Object.keys(DATA).forEach(d=>(DATA[d].rows||[]).forEach(r=>{if(r.setor==='SALGADO')rowsAll.push(Object.assign({d},r));}));
+  if(!rowsAll.length)return null;
+  let fim=rowsAll.reduce((m,r)=>r.d>m?r.d:m,'');
+  const dias=SAL.dias,iniMs=salMs(fim)-(dias-1)*864e5,ini=salIso(iniMs);
+  const prevIni=salIso(iniMs-dias*864e5),prevFim=salIso(iniMs-864e5);
+  const semanas=dias/7;
+  const vF=salVendaMap('F'),vL=salVendaMap('L');
+  const estF=salEstoqueMap(currentFab&&currentFab.length?currentFab:(typeof RAW!=='undefined'?RAW.fabrica:[]));
+  const estL=salEstoqueMap(currentLoja&&currentLoja.length?currentLoja:(typeof RAW!=='undefined'?RAW.loja:[]));
+  const lim28=salIso(salMs(fim)-27*864e5);
+  const grupos=SAL_GRUPOS.map(g=>({nome:g.nome,f:g.f,comps:g.comps,rows:[],pecasPer:0,pecas28:0,hTot:0,pecasT:0,rc:0,pecasRc:0,nRc:0,ult:'',maqs:{}}));
+  const semGrupo={n:0,nomes:{}};
+  const kp={plan:0,real:0,planAnt:0,realAnt:0,parH:0,parN:0,causas:{},linhas:0,comHor:0,comRec:0,comPar:0};
+  const semanasAt={};
+  rowsAll.forEach(r=>{
+    const noPer=r.d>=ini&&r.d<=fim;
+    if(noPer){
+      kp.linhas++;if(r.inicio&&r.fim)kp.comHor++;if(r.recheio!=null)kp.comRec++;
+      const ph=salHoras(r.duracaoParada)||0;if(r.causa||ph>0){kp.comPar++;}
+      if(ph>0)kp.parH+=ph;
+      if(r.causa){kp.parN++;String(r.causa).split('|').forEach(c=>{c=c.trim();if(c){const k=c.charAt(0).toUpperCase()+c.slice(1).toLowerCase();kp.causas[k]=(kp.causas[k]||0)+1;}});}
+      if(r.prev!=null&&r.prev>0){kp.plan+=r.prev;kp.real+=r.real;}
+    }else if(r.d>=prevIni&&r.d<=prevFim&&r.prev!=null&&r.prev>0){kp.planAnt+=r.prev;kp.realAnt+=r.real;}
+    if(r.prev!=null&&r.prev>0){
+      const wMs=salMs(r.d)-((new Date(salMs(r.d)).getUTCDay()+6)%7)*864e5,w=salIso(wMs);
+      const o=semanasAt[w]||(semanasAt[w]={plan:0,real:0});o.plan+=r.prev;o.real+=r.real;
+    }
+    const gi=SAL_PROD2G[SAL_NORM(r.produto)];
+    if(gi===undefined){semGrupo.n++;semGrupo.nomes[r.produto]=1;return;}
+    const g=grupos[gi],pecas=(r.real||0)*g.f;
+    if(!g.ult||r.d>g.ult)g.ult=r.d;
+    if(r.maquina){const k=r.maquina.trim().toUpperCase();g.maqs[k]=(g.maqs[k]||0)+1;}
+    if(noPer){g.pecasPer+=pecas;g.rows.push(r);}
+    if(r.d>=lim28&&r.d<=fim)g.pecas28+=pecas;
+    const h=salDuracao(r);if(h!==null){g.hTot+=h;g.pecasT+=pecas;}
+    if(r.recheio!=null&&r.recheio>0&&pecas>0){g.rc+=r.recheio;g.pecasRc+=pecas;g.nRc++;}
+  });
+  const out=[];
+  grupos.forEach(g=>{
+    let venda=0,est=0;
+    g.comps.forEach(c=>{const m=c[0]==='F'?vF.map:vL.map,e=c[0]==='F'?estF:estL;venda+=(+m[c[1]]||0)*c[2];est+=(+e[c[1]]||0)*c[2];});
+    if(!(venda>0)&&!g.pecasPer&&!g.ult)return;
+    const prodSem=g.pecasPer/semanas,taxa=g.hTot>0?g.pecasT/g.hTot:null;
+    const ratio=venda>0?prodSem/venda:null;
+    let status='ok';
+    if(venda>0&&g.pecas28===0)status='sem';else if(ratio===null)status='';else if(ratio<0.7)status='ab';else if(ratio<1)status='at';
+    const hNec=taxa&&venda>0?venda/taxa:null,hUs=taxa?prodSem/taxa:null;
+    const rcMil=g.pecasRc>0?g.rc/g.pecasRc*1000:null;
+    const maq=Object.keys(g.maqs).sort((a,b)=>g.maqs[b]-g.maqs[a])[0]||'';
+    out.push({nome:g.nome,maq:maq.charAt(0)+maq.slice(1).toLowerCase(),ult:g.ult,taxa,prodSem,venda,ratio,est,cob:venda>0?est/venda:null,hNec,hUs,
+      dif:hNec!==null&&hUs!==null?hNec-hUs:null,status,rcMil,nRc:g.nRc,rcAtual:rcMil!==null?rcMil*prodSem/1000:null,rcVenda:rcMil!==null&&venda>0?rcMil*venda/1000:null,rowsN:g.rows.length,rows:g.rows});
+  });
+  return {out,ini,fim,dias,semanas,prevIni,prevFim,kp,semanasAt,vendaN:Math.max(vF.n,vL.n),semGrupo,vendaTem:Object.keys(vendaFabMap||{}).length+Object.keys(vendaLojaMap||{}).length>0};
+}
+
+/* ---------- gráficos (SVG simples, sem biblioteca) ---------- */
+function salSvgBarrasH(items,opt){ // items: [{label,v,cls,tip}] · opt: max, refs:[{v,label}], fmt
+  const W=620,lh=17,padL=190,padR=46,H=items.length*lh+26,max=opt.max;
+  const x=v=>padL+(Math.min(v,max)/max)*(W-padL-padR);
+  let s=`<svg viewBox="0 0 ${W} ${H}" class="sd-svg" role="img" aria-label="${salEsc(opt.aria||'')}">`;
+  (opt.refs||[]).forEach(r=>{s+=`<line x1="${x(r.v)}" x2="${x(r.v)}" y1="14" y2="${H-4}" class="sd-ref ${r.cls||''}"/><text x="${x(r.v)}" y="10" text-anchor="middle" class="sd-lbl">${r.label}</text>`;});
+  items.forEach((it,i)=>{const y=18+i*lh;
+    s+=`<text x="${padL-6}" y="${y+10}" text-anchor="end" class="sd-lbl">${salEsc(it.label)}</text><rect x="${padL}" y="${y}" width="${Math.max(2,x(it.v)-padL)}" height="12" rx="2" class="sd-bar ${it.cls}"><title>${salEsc(it.tip)}</title></rect><text x="${x(it.v)+4}" y="${y+10}" class="sd-val">${opt.fmt(it.v,it)}</text>`;});
+  return s+'</svg>';
+}
+function salSvgDiverg(items,opt){ // barras para esquerda (sobram, verde) / direita (faltam, vermelho)
+  const W=620,lh=17,padL=190,H=items.length*lh+22,mxP=Math.max(0.5,...items.map(i=>i.v>0?i.v:0)),mxN=Math.max(0.5,...items.map(i=>i.v<0?-i.v:0)),area=W-padL-70,sc=area/(mxP+mxN),mid=padL+40+mxN*sc;
+  let s=`<svg viewBox="0 0 ${W} ${H}" class="sd-svg" role="img" aria-label="Diferença de horas de produção por produto"><line x1="${mid}" x2="${mid}" y1="6" y2="${H-4}" class="sd-ref"/>`;
+  items.forEach((it,i)=>{const y=10+i*lh,w=Math.abs(it.v)*sc,x0=it.v>0?mid:mid-w;
+    s+=`<text x="${padL-6}" y="${y+10}" text-anchor="end" class="sd-lbl">${salEsc(it.label)}</text><rect x="${x0}" y="${y}" width="${Math.max(1.5,w)}" height="12" rx="2" class="sd-bar ${it.v>0?'ab':'ok'}"><title>${salEsc(it.tip)}</title></rect><text x="${it.v>0?mid+w+4:mid-w-4}" y="${y+10}" text-anchor="${it.v>0?'start':'end'}" class="sd-val">${salFmt(Math.abs(it.v),1)} h</text>`;});
+  return s+'</svg>';
+}
+function salSvgQuadrante(rows){
+  const W=520,H=330,pl=44,pr=14,pt=14,pb=34,mx=3.4,my=6.5;
+  const x=v=>pl+(Math.min(v,mx)/mx)*(W-pl-pr),y=v=>H-pb-(Math.min(v,my)/my)*(H-pt-pb);
+  let s=`<svg viewBox="0 0 ${W} ${H}" class="sd-svg" role="img" aria-label="Produção cobre a venda contra semanas de estoque">`;
+  s+=`<line x1="${x(1)}" x2="${x(1)}" y1="${pt}" y2="${H-pb}" class="sd-ref"/><line x1="${pl}" x2="${W-pr}" y1="${y(1)}" y2="${y(1)}" class="sd-ref"/>`;
+  s+=`<text x="${pl+4}" y="${y(1)+13}" class="sd-q ab">RISCO ALTO</text><text x="${W-pr-4}" y="${y(1)+13}" text-anchor="end" class="sd-q at">REPOR NO RITMO</text><text x="${pl+4}" y="${pt+11}" class="sd-q mut">ESTOQUE ALTO, PRODUZ POUCO</text><text x="${W-pr-4}" y="${pt+11}" text-anchor="end" class="sd-q ok">EXCESSO</text>`;
+  [0,1,2,3].forEach(t=>{s+=`<text x="${x(t)}" y="${H-pb+14}" text-anchor="middle" class="sd-lbl">${t*100}%</text>`;});
+  [0,2,4,6].forEach(t=>{s+=`<text x="${pl-6}" y="${y(t)+3}" text-anchor="end" class="sd-lbl">${t}</text>`;});
+  s+=`<text x="${(pl+W-pr)/2}" y="${H-4}" text-anchor="middle" class="sd-lbl">Produção cobre a venda?</text><text transform="rotate(-90 11 ${H/2})" x="11" y="${H/2}" text-anchor="middle" class="sd-lbl">Estoque dura (semanas)</text>`;
+  rows.forEach(r=>{if(r.ratio===null||r.cob===null)return;
+    s+=`<circle cx="${x(r.ratio)}" cy="${y(r.cob)}" r="5" class="sd-dot ${r.status}"><title>${salEsc(r.nome)}: cobre ${salPct(r.ratio)}, estoque dura ${salFmt(r.cob,1)} sem.</title></circle>`;});
+  return s+'</svg>';
+}
+function salSvgColunas(items,fmt,aria){
+  const W=620,H=230,pl=10,pb=92,mx=Math.max(1,...items.map(i=>i.v)),bw=(W-pl*2)/items.length;
+  let s=`<svg viewBox="0 0 ${W} ${H}" class="sd-svg" role="img" aria-label="${aria}">`;
+  items.forEach((it,i)=>{const h=(it.v/mx)*(H-pb-18),x=pl+i*bw+bw*0.15;
+    s+=`<rect x="${x}" y="${H-pb-h}" width="${bw*0.7}" height="${h}" rx="2" class="sd-bar brand"><title>${salEsc(it.label)}: ${fmt(it.v)}</title></rect><text x="${x+bw*0.35}" y="${H-pb-h-4}" text-anchor="middle" class="sd-val">${fmt(it.v)}</text><text transform="rotate(-38 ${x+bw*0.35} ${H-pb+10})" x="${x+bw*0.35}" y="${H-pb+10}" text-anchor="end" class="sd-lbl">${salEsc(it.label.slice(0,22))}</text>`;});
+  return s+'</svg>';
+}
+function salSvgLinha(pts){ // pts:[{label,v(0..1+),parcial}]
+  const W=620,H=210,pl=40,pr=14,pt=14,pb=28,mx=1.1,mn=0.4;
+  const x=i=>pl+(pts.length>1?i/(pts.length-1):0.5)*(W-pl-pr),y=v=>H-pb-((Math.min(Math.max(v,mn),mx)-mn)/(mx-mn))*(H-pt-pb);
+  let s=`<svg viewBox="0 0 ${W} ${H}" class="sd-svg" role="img" aria-label="Atendimento ao plano por semana">`;
+  [0.5,0.7,0.9,1].forEach(t=>{s+=`<line x1="${pl}" x2="${W-pr}" y1="${y(t)}" y2="${y(t)}" class="sd-grid ${t===1?'meta':''}"/><text x="${pl-5}" y="${y(t)+3}" text-anchor="end" class="sd-lbl">${t*100}%</text>`;});
+  s+=`<polyline class="sd-line" points="${pts.map((p,i)=>x(i)+','+y(p.v)).join(' ')}"/>`;
+  pts.forEach((p,i)=>{s+=`<circle cx="${x(i)}" cy="${y(p.v)}" r="3.5" class="sd-pt ${p.parcial?'parcial':''}"><title>Semana de ${p.label}: ${salPct(p.v)}${p.parcial?' (semana incompleta)':''}</title></circle>`;
+    if(i%2===0||i===pts.length-1)s+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" class="sd-lbl">${p.label}</text>`;});
+  const l=pts[pts.length-1];if(l)s+=`<text x="${x(pts.length-1)}" y="${y(l.v)-9}" text-anchor="end" class="sd-val b">${salPct(l.v)}</text>`;
+  return s+'</svg>';
+}
+function salSvgRecheio(items){
+  const W=620,lh=26,padL=190,H=items.length*lh+30,mx=Math.max(1,...items.map(i=>Math.max(i.a,i.b)))*1.1,x=v=>padL+(v/mx)*(W-padL-50);
+  let s=`<svg viewBox="0 0 ${W} ${H}" class="sd-svg" role="img" aria-label="Caixas de recheio por semana"><rect x="${padL}" y="2" width="10" height="9" class="sd-bar brand"/><text x="${padL+14}" y="10" class="sd-lbl">No ritmo atual</text><rect x="${padL+110}" y="2" width="10" height="9" class="sd-bar claro"/><text x="${padL+124}" y="10" class="sd-lbl">Para atender a venda</text>`;
+  items.forEach((it,i)=>{const y=22+i*lh;
+    s+=`<text x="${padL-6}" y="${y+12}" text-anchor="end" class="sd-lbl">${salEsc(it.label)}${it.baixa?' *':''}</text><rect x="${padL}" y="${y}" width="${Math.max(1,x(it.a)-padL)}" height="9" rx="2" class="sd-bar brand"><title>${salEsc(it.label)}: ${salFmt(it.a)} caixas/sem no ritmo atual</title></rect><text x="${x(it.a)+4}" y="${y+8}" class="sd-val">${salFmt(it.a)}</text><rect x="${padL}" y="${y+11}" width="${Math.max(1,x(it.b)-padL)}" height="9" rx="2" class="sd-bar claro"><title>${salEsc(it.label)}: ${salFmt(it.b)} caixas/sem para atender a venda</title></rect><text x="${x(it.b)+4}" y="${y+19}" class="sd-val">${salFmt(it.b)}</text>`;});
+  return s+'</svg>';
+}
+
+/* ---------- montagem da dashboard ---------- */
+function salCard(titulo,valor,l1,l2,cls){return `<div class="sd-card ${cls||''}"><div class="sd-card-t">${titulo}</div><div class="sd-card-v">${valor}</div><div class="sd-card-l">${l1}</div><div class="sd-card-l2">${l2}</div></div>`;}
+function salPainel(titulo,corpo,nota,cls){return `<div class="sd-panel ${cls||''}"><div class="sd-panel-t">${titulo}</div>${corpo}${nota?`<div class="sd-nota">${nota}</div>`:''}</div>`;}
+function salOrdena(rows){
+  const {col,dir}=SAL.ord;
+  const val=r=>col==='nome'||col==='maq'?(r[col]||''):col==='status'?['ab','sem','at','ok'].indexOf(r.status):col==='ult'?(r.ult||''):(r[col]===null||r[col]===undefined?Infinity:r[col]);
+  return rows.slice().sort((a,b)=>{const x=val(a),y=val(b);return (x<y?-1:x>y?1:0)*dir;});
+}
+function salRender(){
+  const el=document.getElementById('salgadoDash');if(!el)return;
+  const c=SAL.calc=salCalcular();
+  if(SAL.hist===null)salCarregarHist();
+  if(!c){el.innerHTML='<div class="sd-vazio">Sem apontamentos do Salgado carregados ainda.</div>';return;}
+  const q=SAL.busca.trim().toLowerCase();
+  let all=c.out;
+  const maqs=[...new Set(all.map(r=>r.maq).filter(Boolean))].sort();
+  let rows=all.filter(r=>(!SAL.maq||r.maq===SAL.maq)&&(!q||r.nome.toLowerCase().includes(q)));
+  const comVenda=rows.filter(r=>r.venda>0);
+  const totP=comVenda.reduce((s,r)=>s+r.prodSem,0),totV=comVenda.reduce((s,r)=>s+r.venda,0);
+  const nProd=comVenda.filter(r=>r.status==='ab'||r.status==='sem').length;
+  const nEst=comVenda.filter(r=>r.cob!==null&&r.cob<1).length;
+  const dh=rows.reduce((s,r)=>s+(r.dif||0),0);
+  const kp=c.kp,at=kp.plan>0?kp.real/kp.plan:null,atAnt=kp.planAnt>0?kp.realAnt/kp.planAnt:null;
+  const causas=Object.keys(kp.causas).map(k=>[k,kp.causas[k]]).sort((a,b)=>b[1]-a[1]);
+  const clsAt=at===null?'':at>=0.9?'ok':at>=0.7?'at':'ab',cobT=totV>0?totP/totV:null,clsCob=cobT===null?'':cobT>=1?'ok':cobT>=0.7?'at':'ab';
+  const dAt=at!==null&&atAnt!==null?Math.round((at-atAnt)*100):null;
+  let h='';
+  // filtros
+  h+=`<div class="sd-filtros"><div class="sd-seg" role="group" aria-label="Período">${SAL_PERIODOS.map(p=>`<button type="button" class="${SAL.dias===p[0]?'on':''}" data-sd-dias="${p[0]}">${p[1]}</button>`).join('')}</div>
+   <select id="sdMaq" aria-label="Máquina"><option value="">Todas as máquinas</option>${maqs.map(m=>`<option ${SAL.maq===m?'selected':''}>${salEsc(m)}</option>`).join('')}</select>
+   <input type="search" id="sdBusca" placeholder="Buscar produto..." value="${salEsc(SAL.busca)}">
+   <button type="button" class="sd-btn" id="sdAtualizar">⟳ Atualizar</button><button type="button" class="sd-btn" id="sdExcel">Exportar Excel</button>
+   <span class="sd-per">Apontamentos de ${salDd(c.ini)} a ${salDd(c.fim)} · ${salFmt(c.semanas,1)} semanas</span></div>`;
+  if(!c.vendaTem)h+='<div class="sd-aviso">Venda não carregada: suba o relatório de venda em PCP &amp; Estoque para ver cobertura, estoque e horas exigidas.</div>';
+  else if(c.vendaN<3)h+=`<div class="sd-aviso">A venda semanal usada é a de ${c.vendaN} semana carregada. A partir de 3 semanas guardadas, passa a ser a média das últimas 4 semanas (as semanas são gravadas ao carregar o relatório de venda).</div>`;
+  else h+=`<div class="sd-info">Venda semanal = média das últimas ${c.vendaN} semanas guardadas.</div>`;
+  // cards
+  h+='<div class="sd-cards">';
+  h+=salCard('Atendimento ao plano',salPct(at),'Real ÷ planejado no período',dAt===null?'Sem semana anterior para comparar':(dAt<0?'▼ ':'▲ ')+Math.abs(dAt)+' pp vs período anterior',clsAt);
+  h+=salCard('Produção cobre a venda',salPct(cobT),'Produzimos ÷ vendemos','Meta: 100% ou mais',clsCob);
+  h+=salCard('Produzir mais',String(nProd),`de ${comVenda.length} produtos`,'Abaixo de 70% ou sem produção',nProd>0?'ab':'ok');
+  h+=salCard('Estoque &lt; 1 semana',String(nEst),`de ${comVenda.length} produtos`,'Risco de ruptura',nEst>3?'ab':nEst>0?'at':'ok');
+  h+=salCard('Horas de produção',(dh<0?'sobram ':'faltam ')+salFmt(Math.abs(dh))+' h','Exigidas pela venda − usadas','Por semana, todos os produtos',dh<=0?'ok':'ab');
+  h+=salCard('Paradas no período',salFmt(kp.parH,1)+' h',salFmt(kp.parN)+' apontamentos com causa',causas.length?'Principal: '+salEsc(causas[0][0]):'Sem causas descritas',kp.parH>0?'at':'ok');
+  h+='</div>';
+  // B, C, D
+  const ordB=comVenda.filter(r=>r.ratio!==null).sort((a,b)=>a.ratio-b.ratio);
+  const bB=salSvgBarrasH(ordB.map(r=>({label:r.nome.slice(0,32),v:r.ratio,cls:r.status,tip:`${r.nome}: cobre ${salPct(r.ratio)} da venda (produzimos ${salFmt(r.prodSem)} · vendemos ${salFmt(r.venda)} por semana)`})),{max:3.4,refs:[{v:0.7,label:'70%',cls:'mut'},{v:1,label:'100%'}],fmt:(v)=>salPct(v),aria:'Produção cobre a venda por produto'});
+  h+='<div class="sd-grid2">'+salPainel('Cobertura da venda: produzimos o que vendemos?',bB,'Cada barra é um produto. Verde: 100% ou mais · amarelo: 70% a 99% · vermelho: abaixo de 70% ou sem produção nas últimas 4 semanas.','sd-w1')
+   +'<div class="sd-col">'+salPainel('Produção × estoque',salSvgQuadrante(comVenda),'Canto inferior esquerdo é prioridade: produz pouco e o estoque dura menos de 1 semana. Passe o mouse para ver o produto.')+'</div></div>';
+  const ordD=comVenda.filter(r=>r.dif!==null).sort((a,b)=>b.dif-a.dif);
+  h+='<div class="sd-grid2">'+salPainel('Horas de produção: faltam ou sobram por semana',salSvgDiverg(ordD.map(r=>({label:r.nome.slice(0,32),v:r.dif,tip:`${r.nome}: a venda exige ${salFmt(r.hNec,1)} h por semana e usamos ${salFmt(r.hUs,1)} h`})),{}),'Vermelho (direita): faltam horas de produção para repor a venda. Verde (esquerda): sobram horas.')
+   +salPainel('Ritmo da linha (peças por hora de produção)',salSvgColunas(rows.filter(r=>r.taxa).sort((a,b)=>b.taxa-a.taxa).slice(0,12).map(r=>({label:r.nome,v:r.taxa})),v=>salFmt(v),'Ritmo da linha'),'Peças por hora de produção, já descontadas as paradas apontadas. Só entram apontamentos com horário de início e fim.')+'</div>';
+  // E, F, G
+  const sem=Object.keys(c.semanasAt).sort().slice(-13),fimSemana=salIso(salMs(c.fim)-((new Date(salMs(c.fim)).getUTCDay()+6)%7)*864e5);
+  const pts=sem.map(w=>({label:salDd(w),v:c.semanasAt[w].plan>0?c.semanasAt[w].real/c.semanasAt[w].plan:0,parcial:w===fimSemana&&new Date(salMs(c.fim)).getUTCDay()!==0}));
+  const par=causas.slice(0,8),totC=causas.reduce((s,x)=>s+x[1],0);let ac=0;
+  const parH=par.length?`<div class="sd-pareto">${par.map(x=>{ac+=x[1];return `<div class="sd-prow"><span class="sd-pn">${salEsc(x[0])}</span><span class="sd-pb"><i style="width:${(x[1]/par[0][1]*100).toFixed(1)}%"></i></span><span class="sd-pv">${x[1]}</span><span class="sd-pa">${Math.round(ac/totC*100)}%</span></div>`;}).join('')}</div>`:'<div class="sd-vazio">Sem causas de parada descritas no período.</div>';
+  const rec=rows.filter(r=>r.rcVenda!==null).sort((a,b)=>b.rcVenda-a.rcVenda).slice(0,10).map(r=>({label:r.nome.slice(0,32),a:r.rcAtual,b:r.rcVenda,baixa:r.nRc<3}));
+  h+='<div class="sd-grid3">'+salPainel('Atendimento ao plano por semana',pts.length?salSvgLinha(pts):'<div class="sd-vazio">Sem semanas com meta.</div>','Real ÷ planejado por semana. Ponto vazado: semana incompleta. A linha forte marca 100%.')
+   +salPainel('Paradas e desvios por causa',parH,'Ocorrências no período e % acumulado. Ex.: se as 2 primeiras causas somam 70%, são elas que valem atacar primeiro.')
+   +salPainel('Recheio: caixas por semana',rec.length?salSvgRecheio(rec):'<div class="sd-vazio">Sem recheio apontado.</div>','* confiança baixa: menos de 3 apontamentos de recheio. Caixas = caixas de recheio por 1.000 peças produzidas × peças por semana.')+'</div>';
+  // H tabela + I qualidade
+  const cols=[['nome','Produto'],['ult','Última produção'],['maq','Máquina'],['taxa','Ritmo da linha (pç/h)'],['prodSem','Produzimos por semana'],['venda','Vendemos por semana'],['ratio','Produção cobre a venda?'],['hNec','Horas de produção que a venda exige'],['hUs','Horas de produção que usamos'],['dif','Diferença de horas'],['cob','Estoque dura (semanas)'],['status','Status']];
+  const tr=salOrdena(rows).map(r=>`<tr data-sd-prod="${salEsc(r.nome)}" class="sd-lk"><td>${salEsc(r.nome)}</td><td>${salDd(r.ult)}</td><td>${salEsc(r.maq)||'—'}</td><td>${salFmt(r.taxa)}</td><td>${salFmt(r.prodSem)}</td><td>${salFmt(r.venda)}</td><td>${salPct(r.ratio)}</td><td>${salFmt(r.hNec,1)}</td><td>${salFmt(r.hUs,1)}</td><td>${r.dif===null?'—':(r.dif>0.05?'faltam '+salFmt(r.dif,1)+' h':r.dif<-0.05?'sobram '+salFmt(-r.dif,1)+' h':'ok')}</td><td>${salFmt(r.cob,1)}</td><td><span class="sd-tag ${r.status}">${SAL_STATUS[r.status]||'—'}</span></td></tr>`).join('');
+  const pc=(n)=>kp.linhas?Math.round(n/kp.linhas*100):0,cl=v=>v>=80?'ok':v>=50?'at':'ab';
+  const qual=[['Linhas com horário de início e fim',pc(kp.comHor)],['Linhas com recheio apontado',pc(kp.comRec)],['Linhas com parada ou causa descrita',pc(kp.comPar)]].map(q=>`<div class="sd-q-row"><span>${q[0]}</span><span class="sd-q-bar"><i class="${cl(q[1])}" style="width:${q[1]}%"></i></span><b>${q[1]}%</b></div>`).join('');
+  h+='<div class="sd-grid2 sd-end">'+salPainel('Detalhe por produto','<div class="sd-tbl-wrap"><table class="sd-tbl"><thead><tr>'+cols.map(x=>`<th data-sd-ord="${x[0]}" class="${SAL.ord.col===x[0]?'on':''}">${x[1]}${SAL.ord.col===x[0]?(SAL.ord.dir>0?' ▲':' ▼'):''}</th>`).join('')+'</tr></thead><tbody>'+tr+'</tbody></table></div>','Clique no produto para ver a evolução semanal e os apontamentos. Clique no título da coluna para ordenar.','sd-w1')
+   +salPainel('Qualidade do dado',qual+(c.semGrupo.n?`<div class="sd-nota">${c.semGrupo.n} apontamentos de produtos sem venda cadastrada ficaram fora da comparação (ex.: ${salEsc(Object.keys(c.semGrupo.nomes).slice(0,2).join('; '))}).</div>`:''),'Percentual das linhas do período. Horário e recheio faltando reduzem a confiança do ritmo da linha e do consumo de recheio.')+'</div>';
+  el.innerHTML=h;
+  salLigar(el,c);
+}
+function salLigar(el,c){
+  el.querySelectorAll('[data-sd-dias]').forEach(b=>b.onclick=()=>{SAL.dias=+b.dataset.sdDias;salRender();});
+  const m=el.querySelector('#sdMaq');if(m)m.onchange=()=>{SAL.maq=m.value;salRender();};
+  const b=el.querySelector('#sdBusca');if(b)b.oninput=()=>{SAL.busca=b.value;clearTimeout(salLigar._t);salLigar._t=setTimeout(()=>{salRender();const n=document.getElementById('sdBusca');if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length);}},250);};
+  const a=el.querySelector('#sdAtualizar');if(a)a.onclick=()=>{loadData(true);SAL.hist=null;};
+  const x=el.querySelector('#sdExcel');if(x)x.onclick=()=>salExcel(c);
+  el.querySelectorAll('[data-sd-ord]').forEach(t=>t.onclick=()=>{const k=t.dataset.sdOrd;SAL.ord=SAL.ord.col===k?{col:k,dir:-SAL.ord.dir}:{col:k,dir:1};salRender();});
+  el.querySelectorAll('[data-sd-prod]').forEach(t=>t.onclick=()=>salDetalhe(t.dataset.sdProd));
+}
+function salExcel(c){
+  if(typeof XLSX==='undefined')return;
+  const dados=salOrdena(c.out).map(r=>({Produto:r.nome,'Última produção':salDd(r.ult),Máquina:r.maq,'Ritmo da linha (pç/h)':r.taxa?Math.round(r.taxa):null,'Produzimos por semana':Math.round(r.prodSem),'Vendemos por semana':Math.round(r.venda),'Produção cobre a venda?':r.ratio===null?null:Math.round(r.ratio*100)/100,'Horas de produção que a venda exige':r.hNec===null?null:Math.round(r.hNec*10)/10,'Horas de produção que usamos':r.hUs===null?null:Math.round(r.hUs*10)/10,'Diferença de horas (+ faltam / − sobram)':r.dif===null?null:Math.round(r.dif*10)/10,'Estoque dura (semanas)':r.cob===null?null:Math.round(r.cob*10)/10,Status:SAL_STATUS[r.status]||''}));
+  const ws=XLSX.utils.json_to_sheet(dados),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Salgado');
+  XLSX.writeFile(wb,'salgado-capacidade-demanda-'+c.fim+'.xlsx');
+}
+function salDetalhe(nome){
+  const c=SAL.calc;if(!c)return;const r=c.out.find(x=>x.nome===nome);if(!r)return;
+  const porSem={};r.rows.forEach(x=>{const w=salIso(salMs(x.d)-((new Date(salMs(x.d)).getUTCDay()+6)%7)*864e5);const g=SAL_GRUPOS.find(g=>g.nome===nome);porSem[w]=(porSem[w]||0)+(x.real||0)*(g?g.f:1);});
+  const ws=Object.keys(porSem).sort(),mx=Math.max(r.venda||0,...ws.map(w=>porSem[w]),1);
+  const barras=ws.map(w=>`<div class="sd-dcol"><div class="sd-dbar" style="height:${(porSem[w]/mx*100).toFixed(1)}%" title="${salFmt(porSem[w])} peças"></div><span>${salDd(w)}</span></div>`).join('');
+  const linhas=r.rows.slice().sort((a,b)=>a.d<b.d?1:-1).slice(0,25).map(x=>`<tr><td>${salDd(x.d)}</td><td>${salFmt(x.real)} ${salEsc(x.uni||'')}</td><td>${x.prev!=null?salFmt(x.prev):'—'}</td><td>${salEsc(x.inicio?x.inicio.slice(0,5)+'–'+(x.fim||'').slice(0,5):'—')}</td><td>${x.recheio!=null?salFmt(x.recheio):'—'}</td><td>${salEsc(x.causa||'')}</td></tr>`).join('');
+  let ov=document.getElementById('sdDetalhe');if(!ov){ov=document.createElement('div');ov.id='sdDetalhe';ov.className='sd-ov';document.body.appendChild(ov);}
+  ov.innerHTML=`<div class="sd-modal" role="dialog" aria-label="${salEsc(nome)}"><button type="button" class="sd-x" aria-label="Fechar">×</button><h3>${salEsc(nome)}</h3>
+   <div class="sd-mini"><span>Produzimos <b>${salFmt(r.prodSem)}</b>/sem</span><span>Vendemos <b>${salFmt(r.venda)}</b>/sem</span><span>Cobre <b>${salPct(r.ratio)}</b></span><span>Estoque dura <b>${salFmt(r.cob,1)}</b> sem.</span><span>Última produção <b>${salDd(r.ult)}</b></span></div>
+   <div class="sd-panel-t">Peças produzidas por semana (a linha vermelha é a venda semanal)</div><div class="sd-dgraf" style="--sd-venda:${(r.venda/mx*100).toFixed(1)}%">${barras||'<div class="sd-vazio">Sem produção no período.</div>'}<i class="sd-dvenda"></i></div>
+   <div class="sd-panel-t">Apontamentos do período (últimos 25)</div><div class="sd-tbl-wrap"><table class="sd-tbl"><thead><tr><th>Dia</th><th>Produzido</th><th>Planejado</th><th>Horário</th><th>Recheio (cx)</th><th>Causa</th></tr></thead><tbody>${linhas}</tbody></table></div></div>`;
+  ov.style.display='flex';
+  ov.onclick=e=>{if(e.target===ov||e.target.classList.contains('sd-x'))ov.style.display='none';};
+}
+// Liga/desliga o modo dashboard: só na aba SALGADO do Relatório Industrial.
+function salToggle(){
+  const on=selectedSector==='SALGADO';
+  const page=document.getElementById('page-industrial'),ger=document.getElementById('riGeralContent'),d=document.getElementById('salgadoDash');
+  if(page)page.classList.toggle('sal-mode',on);if(ger)ger.classList.toggle('sal-mode',on);if(d)d.style.display=on?'':'none';
+  if(on)salRender();
+}
+
 function applyStandardPanelVisibility(){
   const showFritadorOnly = selectedSector === 'FRITADOR';
   ['comparativoRow','lostProdPanel','prodRatePanel','foraDoPlanoPanel'].forEach(id=>{
@@ -9142,6 +9485,7 @@ function applyStandardPanelVisibility(){
 function refreshAll(){
   if(DR_updaters.main) DR_updaters.main();
   applyStandardPanelVisibility();
+  salToggle();
   const filteredDates = getFilteredDates();
   // Mantém os chips de comparação sincronizados sempre que o período principal muda
   updateComparisonChips(filteredDates);
@@ -18100,6 +18444,7 @@ async function sbRestoreCache(){
       localStorage.setItem(LS_KEYS.vendaFab,JSON.stringify(vendaFabMap));
       localStorage.setItem(LS_KEYS.vendaLoja,JSON.stringify(vendaLojaMap));
     }catch(_){}
+    if(typeof salRender==='function'&&selectedSector==='SALGADO')salRender();
     return true;
   }catch(e){return false;}
 }
@@ -20003,7 +20348,7 @@ function processFile(file,tipo){
         statusEl.textContent=`✅ ${total} produtos · ${now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
         cardEl.style.borderColor='var(--good)';
         // Re-render tabelas com novos dados de vendas
-        renderAlerts();renderFab();renderLoja();
+        renderAlerts();renderFab();renderLoja();SAL.hist=null;if(selectedSector==='SALGADO')salRender();
       }catch(err){
         statusEl.style.color='var(--red)';
         statusEl.textContent='❌ Erro: '+err.message;
