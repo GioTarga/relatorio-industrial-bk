@@ -9522,21 +9522,34 @@ function salToggle(){
    apontamento em MASSAS, convertido para KG com o Mapa de Rendimentos (kg de massa por massa);
    venda e estoque do CIGAM já vêm em KG. Produtos sem rendimento cadastrado ficam "sem conversão".
    ═══════════════════════════════════════════════════════════ */
-const GIR={hDia:7,dSem:5,setup:30,estq:false,dias:90,busca:'',ord:{col:'ratio',dir:1},mapa:null,mapaCarregando:false,calc:null};
+const GIR={grupos:null,hDia:7,dSem:5,setup:30,estq:false,dias:90,busca:'',ord:{col:'ratio',dir:1},mapa:null,mapaCarregando:false,calc:null};
 function girNome(raw){
   let s=(raw||'').replace(/\s+/g,' ').trim().replace(/^MASSA P\/ ?/i,'').replace(/\bBREAD KING\b|\bBK\b/gi,'').replace(/\s+-\s*(C\/|FD C\/|CX C\/)?[\d,.]+\s*(KG|G|UNID|PCT)\b.*$/i,'').replace(/\s+-\s*[\d,.]+\s*(KG|G)\b.*$/i,'').replace(/\s+/g,' ').trim();
   s=s.toLowerCase().replace(/(^|[\s\/])([a-zà-ú])/g,(m,a,b)=>a+b.toUpperCase()).replace(/\b(\d+)g\b/gi,'$1g').replace(/\bSs\b/,'SS').replace(/\bSesi\b/,'SESI').replace(/\bDe\b/g,'de').replace(/\bP\/\b/g,'p/');
   return s;
+}
+// Chave do produto-massa: a mesma massa em embalagens diferentes (C/5kg, pacote 750g, C/1kg) é UM produto na produção.
+// Fica o nome até a gramatura da unidade; embalagem e "tradicional/Bread King" são ignorados.
+function girGrupoKey(raw){
+  let n=(raw||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
+  n=n.replace(/^MASSA P\/ ?/,'').replace(/\bHOT DOG\b/g,'HOTDOG').replace(/\bBREAD KING\b|\bBK\b/g,'').replace(/\bTRADICIONAL\b|\bTRAD\b/g,'').replace(/\s+/g,' ').trim().replace(/^HOTDOG/,'PAO HOTDOG');
+  // SS = SESI; "mini" só vale para o pão de queijo de 15g; hífen solto antes da gramatura ("SESI - 50G") não conta.
+  n=n.replace(/\bSS\b/g,'SESI').replace(/^(PAO DE QUEIJO) MINI (?!15\s*GR?\b)/,'$1 ').replace(/\s*-\s*(?=\d+(?:[.,]\d+)?\s*GR?\b)/g,' ').replace(/\s+/g,' ').trim();
+  const m=n.match(/^(.*?\b\d+(?:[.,]\d+)?\s*GR?)\b/);
+  if(m)n=m[1];
+  return n.replace(/\s+/g,' ').trim();
 }
 async function girCarregarMapa(){
   if(GIR.mapaCarregando)return;GIR.mapaCarregando=true;
   try{
     const {data,error}=await getSupabaseClient().from('mapa_rendimentos').select('codigo,produto,etapas');
     if(!error&&data){
-      const m={};
-      data.forEach(r=>{const et=Array.isArray(r.etapas)?r.etapas:[];const kg=(et.find(e=>e.nome==='Kg de massa')||{}).qtd;
-        m[SAL_NORM(r.produto)]={cod:normCod(String(r.codigo||'')),kg:kg>0?+kg:null};});
-      GIR.mapa=m;if(selectedSector==='GIRO DIA')girRender();
+      const m={},gr={};
+      data.forEach(r=>{const et=Array.isArray(r.etapas)?r.etapas:[];const kg=(et.find(e=>e.nome==='Kg de massa')||{}).qtd,cod=normCod(String(r.codigo||''));
+        m[SAL_NORM(r.produto)]={cod,kg:kg>0?+kg:null};
+        const k=girGrupoKey(r.produto),o=gr[k]||(gr[k]={cods:[],kgs:[]});if(cod&&!o.cods.includes(cod))o.cods.push(cod);if(kg>0)o.kgs.push(+kg);});
+      Object.keys(gr).forEach(k=>{gr[k].kg=gr[k].kgs.length?gr[k].kgs.reduce((a,b)=>a+b,0)/gr[k].kgs.length:null;});
+      GIR.grupos=gr;GIR.mapa=m;if(selectedSector==='GIRO DIA')girRender();
     }
   }catch(e){}
   GIR.mapaCarregando=false;
@@ -9555,8 +9568,9 @@ function girCalcular(){
   const kp={plan:0,real:0,planAnt:0,realAnt:0,parH:0,parN:0,causas:{},linhas:0,comHor:0,comEq:0,comPar:0,comConv:0,metaLin:0,nApt:0};
   const semanasAt={},eq={};
   rowsAll.forEach(r=>{
-    const noPer=r.d>=ini&&r.d<=fim,k=SAL_NORM(r.produto),mp=mapa[k]||null;
-    const g=G[k]||(G[k]={nome:girNome(r.produto),bruto:r.produto,cod:mp?mp.cod:'',kgM:mp?mp.kg:null,rows:[],massasPer:0,massas28:0,hTot:0,kgT:0,ult:'',real:0,prev:0,nApt:0,dias:{},sems:{},semKg:{},semNA:{},dow:{}});
+    const noPer=r.d>=ini&&r.d<=fim,k=girGrupoKey(r.produto),mp0=mapa[SAL_NORM(r.produto)]||null,grp=(GIR.grupos||{})[k]||null;
+    const rkg=mp0&&mp0.kg?mp0.kg:(grp&&grp.kg?grp.kg:null),mp=rkg?{kg:rkg}:null;
+    const g=G[k]||(G[k]={nome:girNome(k),bruto:k,cods:new Set(grp?grp.cods:[]),kgM:grp&&grp.kg?grp.kg:(mp0?mp0.kg:null),rows:[],massasPer:0,massas28:0,hTot:0,kgT:0,ult:'',real:0,prev:0,nApt:0,dias:{},sems:{},semKg:{},semNA:{},dow:{}});
     const na=salNaoApont(r);if(!na&&r.d>g.ult)g.ult=r.d;
     if(noPer){
       kp.linhas++;if(r.inicio&&r.fim)kp.comHor++;if(r.equipe)kp.comEq++;if(mp&&mp.kg)kp.comConv++;
@@ -9579,7 +9593,7 @@ function girCalcular(){
   Object.keys(G).forEach(k=>{
     const g=G[k],conv=g.kgM>0;
     let venda=null,est=null;
-    if(conv&&g.cod){venda=(+vF.map[g.cod]||0)+(+vL.map[g.cod]||0);est=(+estF[g.cod]||0)+(+estL[g.cod]||0);}
+    if(conv&&g.cods.size){venda=0;est=0;g.cods.forEach(c=>{venda+=(+vF.map[c]||0)+(+vL.map[c]||0);est+=(+estF[c]||0)+(+estL[c]||0);});}
     const semProd=Object.keys(g.sems).length,prodSem=conv?(semProd?g.massasPer*g.kgM/semProd:0):null,taxa=conv&&g.hTot>0?g.kgT/g.hTot:null;
     const ratio=conv&&venda>0?prodSem/venda:null;
     let status='ok';
