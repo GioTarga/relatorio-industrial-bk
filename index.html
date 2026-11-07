@@ -9554,9 +9554,11 @@ async function girCarregarMapa(){
   }catch(e){}
   GIR.mapaCarregando=false;
 }
+// Produtos lançados no setor Giro Dia que não fazem parte do plano do Giro: ficam fora de todos os cálculos.
+const GIR_FORA=[{re:/CASEIRINHO|SOVADINHO/i,nome:'Caseirinho/Sovadinho',motivo:'é produto do Croissant'},{re:/NUTRI/i,nome:'Pão francês Nutri',motivo:'passou para a linha 100, automatizada'}];
 function girCalcular(){
-  const rowsAll=[];
-  Object.keys(DATA).forEach(d=>(DATA[d].rows||[]).forEach(r=>{if(r.setor==='GIRO DIA')rowsAll.push(Object.assign({d},r));}));
+  const rowsAll=[],fora={};
+  Object.keys(DATA).forEach(d=>(DATA[d].rows||[]).forEach(r=>{if(r.setor!=='GIRO DIA')return;const f=GIR_FORA.find(x=>x.re.test(r.produto||''));if(f){fora[f.nome]=f;return;}rowsAll.push(Object.assign({d},r));}));
   if(!rowsAll.length)return null;
   const fim=rowsAll.reduce((m,r)=>r.d>m?r.d:m,''),dias=GIR.dias,iniMs=salMs(fim)-(dias-1)*864e5,ini=salIso(iniMs);
   const prevIni=salIso(iniMs-dias*864e5),prevFim=salIso(iniMs-864e5),semanas=dias/7,lim28=salIso(salMs(fim)-27*864e5);
@@ -9609,7 +9611,7 @@ function girCalcular(){
     if(!g.massasPer&&!g.ult)return;
     out.push({nome:g.nome,bruto:g.bruto,ult:g.ult,taxa,massasSem:semProd?g.massasPer/semProd:0,semProd,prodSem,venda,ratio,est,cob:conv&&venda>0?est/venda:null,hNec,hUs,dif:hNec!==null&&hUs!==null?hNec-hUs:null,status,atend:g.prev>0?g.real/g.prev:null,cobriu,denomSem,regul:denomSem&&venda>0&&conv?cobriu/denomSem:null,dowUsual,prox,cobDias,risco,nApt:g.nApt,diasProd:Object.keys(g.dias).length,massasDia:Object.keys(g.dias).length?g.massasPer/Object.keys(g.dias).length:null,rows:g.rows,kgM:g.kgM});
   });
-  return {out,ini,fim,dias,semanas,kp,semanasAt,eq,vendaN:Math.max(vF.n,vL.n),vendaTem:Object.keys(vendaFabMap||{}).length+Object.keys(vendaLojaMap||{}).length>0,mapaOk:!!GIR.mapa};
+  return {out,ini,fim,dias,semanas,kp,semanasAt,eq,fora:Object.values(fora),vendaN:Math.max(vF.n,vL.n),vendaTem:Object.keys(vendaFabMap||{}).length+Object.keys(vendaLojaMap||{}).length>0,mapaOk:!!GIR.mapa};
 }
 
 // Plano de horas da semana: reparte as horas líquidas disponíveis entre os produtos, na proporção do que a venda exige.
@@ -9782,6 +9784,7 @@ function girRender(){
   if(!c.vendaTem)h+='<div class="sd-aviso">Venda ainda não carregada. Se não aparecer em alguns segundos, suba o relatório de venda em PCP &amp; Estoque.</div>';
   else if(c.vendaN<3)h+=`<div class="sd-aviso">Venda semanal de ${c.vendaN} semana. Com 3 ou mais semanas guardadas (gravadas a cada upload de venda), passa a ser a média das últimas 4.</div>`;
   else h+=`<div class="sd-info">Venda semanal = média das últimas ${c.vendaN} semanas guardadas.</div>`;
+  if(c.fora.length)h+=`<div class="sd-info">Fora dos cálculos do Giro: ${c.fora.map(f=>salEsc(f.nome)+' ('+salEsc(f.motivo)+')').join('; ')}.</div>`;
   if(c.mapaOk){const nc=c.out.filter(r=>r.status==='nc').length;if(nc)h+=`<div class="sd-aviso">${nc} produto(s) sem rendimento no Mapa de Rendimentos ficaram sem conversão para kg (aparecem como "Sem conversão" na tabela).</div>`;}
   h+='<div class="sd-cards">';
   h+=salCard('Atendimento ao plano',salPct(at),'Real ÷ planejado em massas',dAt===null?'Sem período anterior para comparar':(dAt<0?'▼ ':'▲ ')+Math.abs(dAt)+' pp vs período anterior',clsAt);
