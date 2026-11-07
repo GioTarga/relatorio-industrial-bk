@@ -1906,7 +1906,7 @@ body{background:#fff;color:#000}
 .gd-mb{flex:none;min-width:64px;text-align:center;border-radius:8px;padding:3px 6px;line-height:1.05;background:var(--red);color:#fff}.gd-mb b{display:block;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums}.gd-mb small{display:block;font-size:8.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;opacity:.9}
 .gd-pk{display:grid;grid-template-columns:repeat(auto-fit,minmax(54px,1fr));gap:4px;border-top:1px dashed var(--sd-line);padding-top:6px}
 .gd-m{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}.gd-m small{font-size:8.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--sd-mut)}.gd-m span{font-size:12px;font-weight:600;color:#3a3a3a;font-variant-numeric:tabular-nums;white-space:nowrap}
-.gd-pk5{grid-template-columns:repeat(5,minmax(0,1fr));gap:2px}.gd-pe .gd-pk{grid-template-columns:repeat(4,minmax(0,1fr))}.gd-m{text-align:center}.gd-m small{font-size:8px;letter-spacing:.2px}.gd-m.pr span{font-weight:800}.gd-m.at span{font-weight:800}.gd-m.at.green span{color:#2e7d32}.gd-m.at.yellow span{color:#9a7400}.gd-m.at.red span{color:#c0392b}
+.gd-pk5{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 2px}.gd-pe .gd-pk{grid-template-columns:repeat(4,minmax(0,1fr))}.gd-m{text-align:center}.gd-m small{font-size:8px;letter-spacing:.2px}.gd-m.pr span{font-weight:800}.gd-m.at span{font-weight:800}.gd-m.at.green span{color:#2e7d32}.gd-m.at.yellow span{color:#9a7400}.gd-m.at.red span{color:#c0392b}
 .gd-pe{background:#f6efef;border-radius:6px;padding:5px 7px;display:flex;flex-direction:column;gap:4px}.gd-pe .gd-pk{border-top:0;padding-top:0}.gd-pel{font-size:9.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--sd-mut)}
 .gd-emb{grid-column:1/-1;display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:#6b6262;line-height:1.35}.gd-emb span:first-child{overflow-wrap:anywhere}.gd-emb span:last-child{text-align:right;white-space:nowrap}.gd-emb .gd-ok{color:#1e7a3c}.gd-emb .gd-up{color:var(--red)}
 .gd-bw{min-width:150px}.gd-b{height:7px;border-radius:2px;margin:2px 0}.gd-b.hoje{background:#b9b0b0}.gd-b.sug{background:var(--red)}
@@ -9264,6 +9264,16 @@ function salDuracao(r){ // horas de produção efetiva do apontamento (fim − i
 }
 function salEsc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 
+// Aviso sobre a base de venda: quantas semanas formam a média e se o relatório da semana anterior já foi carregado.
+function salVendaAviso(c){
+  const fm=w=>{const p=w.split('-');return p[2]+'/'+p[1];},sems=(c.vendaSems||[]).slice().sort(),n=c.vendaN;
+  const d=new Date();d.setDate(d.getDate()-7-((d.getDay()+6)%7));const esperada=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const faixa=sems.length?` (semanas de ${sems.map(fm).join(', ')})`:'';
+  let h=`<div class="sd-info">Venda semanal = média das últimas ${n} ${n===1?'semana guardada':'semanas guardadas'}${faixa}. O estoque de segurança acompanha essa média a cada relatório de venda carregado.</div>`;
+  if(sems.length&&sems[sems.length-1]<esperada)h+=`<div class="sd-aviso">O relatório de venda da semana de ${fm(esperada)} ainda não foi carregado: a última semana guardada é a de ${fm(sems[sems.length-1])}.</div>`;
+  if(n<4)h+=`<div class="sd-aviso">Só há ${n} ${n===1?'semana guardada':'semanas guardadas'}; com 4 a média fica estável.</div>`;
+  return h;
+}
 async function salCarregarHist(){
   if(SAL.histCarregando)return;SAL.histCarregando=true;
   try{
@@ -9276,11 +9286,12 @@ async function salCarregarHist(){
 function salVendaMap(tipo){
   const cur=tipo==='F'?vendaFabMap:vendaLojaMap,t=tipo==='F'?'FAB':'LOJA';
   const sem=(SAL.hist||[]).filter(h=>h.tipo===t).sort((a,b)=>a.semana<b.semana?1:-1).slice(0,4);
-  if(sem.length>=3){
+  // Cada upload semanal de venda grava uma semana; a base é a média das últimas 4 guardadas, então o estoque de segurança acompanha a demanda.
+  if(sem.length>=1){
     const out={};sem.forEach(h=>Object.keys(h.dados||{}).forEach(c=>{out[c]=(out[c]||0)+(+h.dados[c]||0)/sem.length;}));
-    return {map:out,n:sem.length};
+    return {map:out,n:sem.length,sems:sem.map(h=>h.semana)};
   }
-  return {map:cur||{},n:1};
+  return {map:cur||{},n:1,sems:[]};
 }
 function salEstoqueMap(lista){const m={};(lista||[]).forEach(i=>{const c=normCod(String(i.codigo||''));if(c)m[c]=(m[c]||0)+(+i.estoque||0);});return m;}
 
@@ -9343,7 +9354,7 @@ function salCalcular(){
     out.push({nome:g.nome,maq:maq.charAt(0)+maq.slice(1).toLowerCase(),ult:g.ult,taxa,prodSem,venda,ratio,est,cob:venda>0?est/venda:null,hNec,hUs,
       dif:hNec!==null&&hUs!==null?hNec-hUs:null,status,rcMil,nRc:g.nRc,rcAtual:rcMil!==null?rcMil*prodSem/1000:null,rcVenda:rcMil!==null&&venda>0?rcMil*venda/1000:null,nApt:g.nApt,semProd,diasProd:Object.keys(g.dias).length,pecasDia:Object.keys(g.dias).length?g.pecasPer/Object.keys(g.dias).length:null,rowsN:g.rows.length,rows:g.rows});
   });
-  return {out,ini,fim,dias,semanas,prevIni,prevFim,kp,semanasAt,vendaN:Math.max(vF.n,vL.n),semGrupo,vendaTem:Object.keys(vendaFabMap||{}).length+Object.keys(vendaLojaMap||{}).length>0};
+  return {out,ini,fim,dias,semanas,prevIni,prevFim,kp,semanasAt,vendaN:Math.max(vF.n,vL.n),vendaSems:(vF.sems&&vF.sems.length>=(vL.sems||[]).length?vF.sems:vL.sems)||[],semGrupo,vendaTem:Object.keys(vendaFabMap||{}).length+Object.keys(vendaLojaMap||{}).length>0};
 }
 
 /* ---------- gráficos (SVG simples, sem biblioteca) ---------- */
@@ -9444,8 +9455,7 @@ function salRender(){
    <button type="button" class="sd-btn" id="sdAtualizar">⟳ Atualizar</button><button type="button" class="sd-btn" id="sdExcel">Exportar Excel</button>
    <span class="sd-per">Apontamentos de ${salDd(c.ini)} a ${salDd(c.fim)} · ${salFmt(c.semanas,1)} semanas</span></div>`;
   if(!c.vendaTem)h+='<div class="sd-aviso">Venda ainda não carregada. Se não aparecer em alguns segundos, suba o relatório de venda em PCP &amp; Estoque.</div>';
-  else if(c.vendaN<3)h+=`<div class="sd-aviso">Venda semanal de ${c.vendaN} semana. Com 3 ou mais semanas guardadas (gravadas a cada upload de venda), passa a ser a média das últimas 4.</div>`;
-  else h+=`<div class="sd-info">Venda semanal = média das últimas ${c.vendaN} semanas guardadas.</div>`;
+  else h+=salVendaAviso(c);
   // cards
   h+='<div class="sd-cards">';
   h+=salCard('Atendimento ao plano',salPct(at),'Real ÷ planejado no período',dAt===null?'Sem semana anterior para comparar':(dAt<0?'▼ ':'▲ ')+Math.abs(dAt)+' pp vs período anterior',clsAt);
@@ -9569,6 +9579,8 @@ async function girCarregarMapa(){
 }
 // Unidade do estoque/venda por código no CIGAM: KG (massa em caixa) ou PCT (pacote de loja).
 function girUnMap(lista){const m={};(lista||[]).forEach(i=>{const c=normCod(String(i.codigo||''));if(c&&i.estoque_un)m[c]=String(i.estoque_un).toUpperCase();});return m;}
+// Reserva por código (pedidos já comprometidos): o estoque disponível é estoque − reserva, como no kanban de estoque.
+function girResMap(lista){const m={};(lista||[]).forEach(i=>{const c=normCod(String(i.codigo||''));if(c)m[c]=(m[c]||0)+(+i.reserva||0);});return m;}
 // Rótulo da embalagem: o que vem depois da gramatura ("PCT 750G - C/15 PCT", "C/5KG").
 function girEmbLabel(nome){
   const n=(nome||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
@@ -9588,6 +9600,7 @@ function girCalcular(){
   const estF=salEstoqueMap(currentFab&&currentFab.length?currentFab:(typeof RAW!=='undefined'?RAW.fabrica:[]));
   const estL=salEstoqueMap(currentLoja&&currentLoja.length?currentLoja:(typeof RAW!=='undefined'?RAW.loja:[]));
   const unM=Object.assign({},girUnMap(currentFab&&currentFab.length?currentFab:(typeof RAW!=='undefined'?RAW.fabrica:[])),girUnMap(currentLoja&&currentLoja.length?currentLoja:(typeof RAW!=='undefined'?RAW.loja:[])));
+  const resF=girResMap(currentFab&&currentFab.length?currentFab:(typeof RAW!=='undefined'?RAW.fabrica:[])),resL=girResMap(currentLoja&&currentLoja.length?currentLoja:(typeof RAW!=='undefined'?RAW.loja:[]));
   const mapa=GIR.mapa||{};
   const G={};
   const kp={plan:0,real:0,planAnt:0,realAnt:0,parH:0,parN:0,causas:{},linhas:0,comHor:0,comEq:0,comPar:0,comConv:0,metaLin:0,nApt:0};
@@ -9626,7 +9639,7 @@ function girCalcular(){
       const grp0=(GIR.grupos||{})[k],lista=grp0&&grp0.mem&&grp0.mem.length?grp0.mem:[...g.cods].map(c=>({cod:c,nome:'',kg:g.kgM,pct:null}));
       lista.forEach(mb=>{const c=mb.cod,un=unM[c]||'KG',kgPct=un==='PCT'&&mb.kg&&mb.pct?mb.kg/mb.pct:null,f=kgPct||1;
         const vUn=(+vF.map[c]||0)+(+vL.map[c]||0),eUn=(+estF[c]||0)+(+estL[c]||0);
-        venda+=vUn*f;est+=eUn*f;mem.push({cod:c,nome:mb.nome,un:kgPct?'PCT':'KG',kg:mb.kg||g.kgM,pct:mb.pct,vUn,eUn,vKg:vUn*f});});
+        venda+=vUn*f;est+=eUn*f;mem.push({cod:c,nome:mb.nome,un:kgPct?'PCT':'KG',kg:mb.kg||g.kgM,pct:mb.pct,vUn,eUn,rUn:(+resF[c]||0)+(+resL[c]||0),f,vKg:vUn*f});});
     }
     const semProd=Object.keys(g.sems).length,prodSem=conv?(semProd?g.massasPer*g.kgM/semProd:0):null,taxa=conv&&g.hTot>0?g.kgT/g.hTot:null;
     const ratio=conv&&venda>0?prodSem/venda:null;
@@ -9639,11 +9652,14 @@ function girCalcular(){
     // Estoque x próxima corrida: o estoque de hoje só preocupa se acabar antes do dia em que o produto costuma rodar.
     const dwk=Object.keys(g.dow).sort((a,b)=>g.dow[b]-g.dow[a])[0],dowUsual=dwk===undefined?null:+dwk;
     let prox=null;if(dowUsual!==null){prox=(dowUsual-hojeDow+7)%7;if(prox===0&&g.ult===hojeIso)prox=7;}
+    // Estoque disponível (estoque − reserva) e o que sobra quando o produto roda: a venda continua até a corrida, então o estoque de hoje encolhe.
+    const pd=prox===null?0:prox;let disp=0,dispProj=0;
+    mem.forEach(m=>{m.dHoje=Math.max(0,m.eUn-m.rUn);m.dProj=Math.max(0,m.dHoje-m.vUn/7*pd);disp+=m.dHoje*m.f;dispProj+=m.dProj*m.f;});
     const cobDias=conv&&venda>0&&est!==null?est/venda*7:null,risco=cobDias!==null&&cobDias<(prox===null?7:prox);
     if(!g.massasPer&&!g.ult)return;
-    out.push({nome:g.nome,bruto:g.bruto,ult:g.ult,taxa,massasSem:semProd?g.massasPer/semProd:0,semProd,prodSem,venda,ratio,est,cob:conv&&venda>0?est/venda:null,hNec,hUs,dif:hNec!==null&&hUs!==null?hNec-hUs:null,status,atend:g.prev>0?g.real/g.prev:null,cobriu,denomSem,regul:denomSem&&venda>0&&conv?cobriu/denomSem:null,dowUsual,prox,cobDias,risco,mem,nApt:g.nApt,diasProd:Object.keys(g.dias).length,massasDia:Object.keys(g.dias).length?g.massasPer/Object.keys(g.dias).length:null,rows:g.rows,kgM:g.kgM});
+    out.push({nome:g.nome,bruto:g.bruto,ult:g.ult,taxa,massasSem:semProd?g.massasPer/semProd:0,semProd,prodSem,venda,ratio,est,cob:conv&&venda>0?est/venda:null,hNec,hUs,dif:hNec!==null&&hUs!==null?hNec-hUs:null,status,atend:g.prev>0?g.real/g.prev:null,cobriu,denomSem,regul:denomSem&&venda>0&&conv?cobriu/denomSem:null,dowUsual,prox,cobDias,risco,mem,disp,dispProj,pd,nApt:g.nApt,diasProd:Object.keys(g.dias).length,massasDia:Object.keys(g.dias).length?g.massasPer/Object.keys(g.dias).length:null,rows:g.rows,kgM:g.kgM});
   });
-  return {out,ini,fim,dias,semanas,kp,semanasAt,eq,fora:Object.values(fora),vendaN:Math.max(vF.n,vL.n),vendaTem:Object.keys(vendaFabMap||{}).length+Object.keys(vendaLojaMap||{}).length>0,mapaOk:!!GIR.mapa};
+  return {out,ini,fim,dias,semanas,kp,semanasAt,eq,fora:Object.values(fora),vendaN:Math.max(vF.n,vL.n),vendaSems:(vF.sems&&vF.sems.length>=(vL.sems||[]).length?vF.sems:vL.sems)||[],vendaTem:Object.keys(vendaFabMap||{}).length+Object.keys(vendaLojaMap||{}).length>0,mapaOk:!!GIR.mapa};
 }
 
 // Plano de horas da semana: reparte as horas líquidas disponíveis entre os produtos, na proporção do que a venda exige.
@@ -9662,11 +9678,15 @@ function girPlanoCalc(rows,cap){
   const tx=L.map(r=>r.taxa).filter(Boolean).sort((a,b)=>a-b),med=tx.length?tx[Math.floor(tx.length/2)]:null;
   if(!L.length||!med)return null;
   let tot=0;
-  const P=L.map(r=>{
-    // Produção = (venda − estoque) × (1 + margem). Se o estoque já cobre a venda, mantém ao menos a margem sobre a venda.
-    const t=r.taxa||med,est=!r.taxa,mg=GIR.marg/100,estq=Math.max(0,r.est||0),kg=Math.max((r.venda-estq)*(1+mg),r.venda*mg),hN=kg/t;tot+=hN;
-    return {nome:r.nome,mem:r.mem||[],fam:girFam(r.bruto||r.nome),prodKg:r.prodSem||0,nApt:r.nApt,bruto:r.bruto,kgM:r.kgM,t,est,venda:r.venda,estKg:estq,kgNec:kg,hN,hoje:r.massasSem,hHoje:r.massasSem*r.kgM/t,cob:r.cob};
+  const P0=L.map(r=>{
+    // Estoque de segurança ES = venda média semanal × (1 + margem). A corrida recompõe o estoque até ES:
+    // Produção = max(0, ES − estoque na corrida), com estoque na corrida = (estoque − reserva) menos a venda até o dia em que o produto costuma rodar.
+    // Se o estoque na corrida já alcança ES, o produto não entra no quadro.
+    const t=r.taxa||med,est=!r.taxa,mg=GIR.marg/100,es=r.venda*(1+mg),estq=Math.max(0,r.dispProj||0),kg=Math.max(0,es-estq),hN=kg/t;tot+=hN;
+    return {nome:r.nome,mem:r.mem||[],fam:girFam(r.bruto||r.nome),prodKg:r.prodSem||0,nApt:r.nApt,bruto:r.bruto,kgM:r.kgM,t,est,venda:r.venda,es,estKg:estq,dispHoje:r.disp||0,pd:r.pd||0,kgNec:kg,hN,hoje:r.massasSem,hHoje:r.massasSem*r.kgM/t,cob:r.cob};
   });
+  const P=P0.filter(p=>p.hN>0),semNec=P0.filter(p=>p.hN<=0);
+  if(!P.length)return {P,semNec,tot:0,f:1,totH:0,hHoje:0,nEst:0};
   const f=tot>cap?cap/tot:1;let totH=0;
   // Massas inteiras sem estourar as horas: começa pelo piso (mínimo 1) e acrescenta massas a quem tem a maior sobra, enquanto couber.
   P.forEach(p=>{p.hSug=p.hN*f;p.x=p.hSug*p.t/p.kgM;p.mas=p.hN>0?Math.max(1,Math.floor(p.x)):0;});
@@ -9674,7 +9694,7 @@ function girPlanoCalc(rows,cap){
   P.slice().sort((a,b)=>(b.x-Math.floor(b.x))-(a.x-Math.floor(a.x))).forEach(p=>{if(p.hN>0&&p.x>p.mas&&usadas+p.kgM/p.t<=cap+1e-9){p.mas++;usadas+=p.kgM/p.t;}});
   P.forEach(p=>{p.hReal=p.mas*p.kgM/p.t;p.kgSug=p.mas*p.kgM;p.cobSug=p.venda>0?p.kgSug/p.venda:null;p.aj=p.mas-p.hoje;totH+=p.hReal;});
   P.sort((a,b)=>b.hReal-a.hReal);
-  return {P,tot,f,totH,hHoje:P.reduce((s,p)=>s+p.hHoje,0),nEst:P.filter(p=>p.est).length};
+  return {P,semNec,tot,f,totH,hHoje:P.reduce((s,p)=>s+p.hHoje,0),nEst:P.filter(p=>p.est).length};
 }
 // O setup das trocas de máquina consome horas da semana: calcula o plano, encaixa nos dias, vê quanto setup deu e refaz com as horas que sobraram.
 function girPlano(rows){
@@ -9682,6 +9702,7 @@ function girPlano(rows){
   const capBruta=GIR.hDia*GIR.dSem;let capEf=capBruta,res=null,D=null,perda=0;
   for(let k=0;k<10;k++){
     res=girPlanoCalc(rows,capEf);if(!res)return null;
+    if(!res.P.length)return Object.assign(res,{D:{dias:GIR_DIAS.slice(0,GIR.dSem).map((n,i)=>({i,h:0,setup:0,fams:[],itens:[]})),avisos:[],setupTotal:0,porProd:new Map()},cap:capBruta,capEf:capBruta,setupTotal:0,perda:0});
     D=girDias(res.P);
     const over=D.dias.reduce((s,d)=>s+(d.unico?0:Math.max(0,d.h-GIR.hDia)),0);
     if(over>0.05)perda+=over;
@@ -9775,7 +9796,7 @@ function girDias(P){
 function girEmbProj(p,mas){
   const mem=(p.mem||[]).filter(m=>m.vKg>0),tot=mem.reduce((a,m)=>a+m.vKg,0);if(!tot)return [];
   return mem.map(m=>{const ms=mas*m.vKg/tot,pc=m.un==='PCT'&&m.pct,proj=pc?ms*m.pct:ms*(m.kg||p.kgM);
-    return {lbl:girEmbLabel(m.nome),un:pc?'pct':'kg',proj,est:m.eUn,venda:m.vUn,pct:m.vUn>0?(proj+m.eUn)/m.vUn:null};});
+    return {lbl:girEmbLabel(m.nome),un:pc?'pct':'kg',proj,est:m.dProj,venda:m.vUn,es:m.vUn*(1+GIR.marg/100),pct:m.vUn>0?(proj+m.dProj)/(m.vUn*(1+GIR.marg/100)):null};});
 }
 function girDiasHtml(D){
   const cap=GIR.hDia;
@@ -9790,27 +9811,27 @@ function girDiasHtml(D){
 }
 // Card de produto no quadro semanal: mesmo desenho do kanban de estoque (borda de urgência, selo de destaque, métricas em grade).
 function girCardProd(it){
-  const p=it.p,kgProd=it.mas*p.kgM,cobKg=p.venda>0?(kgProd+p.estKg)/p.venda:null,cls=cobKg===null?'':cobKg>=0.995?'green':cobKg>=0.7?'yellow':'red';
+  const p=it.p,kgProd=it.mas*p.kgM,cobKg=p.es>0?(kgProd+p.estKg)/p.es:null,cls=cobKg===null?'':cobKg>=0.995?'green':cobKg>=0.7?'yellow':'red';
   const emb=girEmbProj(p,it.mas);
   const m=(l,v,c)=>`<div class="gd-m ${c||''}"><small>${l}</small><span>${v}</span></div>`;
   return `<div class="gd-pc ${cls}"><div class="gd-pt"><div class="gd-pn">${salEsc(p.nome)}${it.de>1?` <em>(parte ${it.parte}/${it.de})</em>`:''}</div><div class="gd-mb"><b>${it.mas}</b><small>${it.mas===1?'massa':'massas'} · ${salFmt(it.h,1)} h</small></div></div>`
-   +`<div class="gd-pk gd-pk5">${m('Venda kg',salFmt(p.venda))}${m('Estoque kg',salFmt(p.estKg))}${m('Meta kg',salFmt(p.kgNec))}${m('Produz kg',salFmt(kgProd),'pr')}${cobKg===null?'':m('Atende',salPct(cobKg),'at '+cls)}</div>`
-   +(emb.length===1&&emb[0].un==='kg'?[]:emb).map(e=>`<div class="gd-pe"><div class="gd-pel">${salEsc(e.lbl)}</div><div class="gd-pk">${m('Produz '+e.un,salFmt(e.proj),'pr')}${m('Estoque '+e.un,salFmt(e.est))}${m('Venda '+e.un,salFmt(e.venda))}${e.pct===null?'':m('Atende',salPct(e.pct),'at '+(e.pct>=0.995?'green':e.pct>=0.7?'yellow':'red'))}</div></div>`).join('')+'</div>';
+   +`<div class="gd-pk gd-pk5">${m('Venda média kg',salFmt(p.venda))}${m('Est. segurança kg',salFmt(p.es))}${m('Disponível hoje',salFmt(p.dispHoje))}${m('Na corrida',salFmt(p.estKg))}${m('Produz kg',salFmt(kgProd),'pr')}${cobKg===null?'':m('Atinge o seguro',salPct(cobKg),'at '+cls)}</div>`
+   +(emb.length===1&&emb[0].un==='kg'?[]:emb).map(e=>`<div class="gd-pe"><div class="gd-pel">${salEsc(e.lbl)}</div><div class="gd-pk">${m('Produz '+e.un,salFmt(e.proj),'pr')}${m('Na corrida '+e.un,salFmt(e.est))}${m('Est. seg. '+e.un,salFmt(e.es))}${e.pct===null?'':m('Atinge o seguro',salPct(e.pct),'at '+(e.pct>=0.995?'green':e.pct>=0.7?'yellow':'red'))}</div></div>`).join('')+'</div>';
 }
 function girPlanoHtml(rows){
   const pl=girPlano(rows);
-  const ctl=`<div class="gd-ctl"><label>Horas líquidas por dia <input type="number" id="gdHDia" min="1" max="24" step="0.5" value="${GIR.hDia}"></label><label>Dias por semana <input type="number" id="gdDSem" min="1" max="7" step="1" value="${GIR.dSem}"></label><label>Setup entre máquinas (min) <input type="number" id="gdSetup" min="0" max="180" step="5" value="${GIR.setup}"></label><label class="gd-chk"><input type="checkbox" id="gdUmDia" ${GIR.umDia?'checked':''}> Produção única: chipa/pão de queijo e redondos em um dia só</label><label>Margem de segurança (%) <input type="number" id="gdMarg" min="0" max="100" step="5" value="${GIR.marg}"></label><span class="gd-regra">Produzir = (venda − estoque) × ${salFmt(1+GIR.marg/100,2)}; se o estoque cobre a venda, produz ao menos ${GIR.marg}% da venda</span></div>`;
+  const ctl=`<div class="gd-ctl"><label>Horas líquidas por dia <input type="number" id="gdHDia" min="1" max="24" step="0.5" value="${GIR.hDia}"></label><label>Dias por semana <input type="number" id="gdDSem" min="1" max="7" step="1" value="${GIR.dSem}"></label><label>Setup entre máquinas (min) <input type="number" id="gdSetup" min="0" max="180" step="5" value="${GIR.setup}"></label><label class="gd-chk"><input type="checkbox" id="gdUmDia" ${GIR.umDia?'checked':''}> Produção única: chipa/pão de queijo e redondos em um dia só</label><label>Estoque de segurança = venda média + (%) <input type="number" id="gdMarg" min="0" max="100" step="5" value="${GIR.marg}"></label><span class="gd-regra">Estoque de segurança (ES) = venda média × ${salFmt(1+GIR.marg/100,2)}. Produzir = ES − estoque na corrida (estoque − reserva, menos a venda até o dia em que o produto costuma rodar). Se já alcança ES, o produto sai do quadro</span></div>`;
   if(!pl)return ctl+'<div class="sd-vazio">Sem produtos com venda e rendimento para montar o plano.</div>';
   const util=pl.tot/pl.capEf,dif=pl.capEf-pl.tot,mx=Math.max(...pl.P.map(p=>Math.max(p.hReal,p.hHoje)),0.1);
   const desc=[];if(pl.setupTotal>0.05)desc.push(salFmt(pl.setupTotal,1)+' h de setup entre máquinas');if(pl.perda>0.05)desc.push(salFmt(pl.perda,1)+' h que não encaixam em dias inteiros, pois a corrida não se parte');
   const disp=`<b>${salFmt(pl.capEf,1)} h</b> disponíveis para produzir${desc.length?` (${salFmt(pl.cap,1)} h menos ${desc.join(' e ')})`:''}`;
   const msg=dif>=0?`O plano exige <b>${salFmt(pl.tot,1)} h</b> e há ${disp}: <b>sobram ${salFmt(dif,1)} h</b>. Dá para atender 100% da venda e ainda sobra tempo para produzir estoque ou absorver paradas.`:`O plano exige <b>${salFmt(pl.tot,1)} h</b> e há só ${disp}: <b>faltam ${salFmt(-dif,1)} h</b>. Com as horas disponíveis dá para cobrir cerca de <b>${salPct(pl.f)}</b> da venda de cada produto. O plano abaixo reparte a falta por igual entre eles.`;
   const tr=pl.P.map(p=>{const d=p.aj,ds=Math.abs(d)<0.5?'manter':(d>0?'+':'−')+salFmt(Math.abs(d),0)+' massas';
-    return `<tr data-sd-prod="${salEsc(p.nome)}" class="sd-lk"><td>${salEsc(p.nome)}${p.nApt?' <span class="gd-est" title="'+p.nApt+' linha(s) planejadas sem produção apontada no período: a média de hoje pode estar subestimada">⚠ '+p.nApt+'</span>':''}${p.est?' <span class="gd-est" title="Sem apontamento com horário: ritmo estimado pela mediana dos demais produtos">~</span>':''}</td><td><span class="gd-fam gd-f-${p.fam}">${GIR_FAM[p.fam].maq}</span></td><td>${salFmt(p.venda)}</td><td>${salFmt(p.estKg)}</td><td>${salFmt(p.kgNec)}</td><td>${salFmt(p.prodKg)}</td><td>${salFmt(p.t)}</td><td>${salFmt(p.hN,1)}</td><td class="gd-bw"><div class="gd-b hoje" style="width:${(p.hHoje/mx*100).toFixed(1)}%"></div><div class="gd-b sug" style="width:${(p.hReal/mx*100).toFixed(1)}%"></div></td><td>${salFmt(p.hHoje,1)} → <b>${salFmt(p.hReal,1)}</b></td><td>${salFmt(p.hoje,1)}</td><td><b>${p.mas}</b></td><td>${(pl.D.porProd.get(p)||[]).join(' + ')||'—'}</td><td class="${d>=0.5?'gd-up':d<=-0.5?'gd-dn':''}">${ds}</td><td>${salPct(p.cobSug)}</td></tr>`;}).join('');
-  const cab=['Produto','Máquina','Venda (kg/sem)','Estoque (kg)','A produzir (kg)','Produção semanal (kg/sem)','Ritmo (kg/h)','Horas que o plano exige','Hoje (cinza) × sugerido (vermelho)','Horas: hoje → sugerido','Massas por semana hoje','Corrida sugerida (massas)','Dia da corrida','Ajuste','Cobre a venda'];
+    return `<tr data-sd-prod="${salEsc(p.nome)}" class="sd-lk"><td>${salEsc(p.nome)}${p.nApt?' <span class="gd-est" title="'+p.nApt+' linha(s) planejadas sem produção apontada no período: a média de hoje pode estar subestimada">⚠ '+p.nApt+'</span>':''}${p.est?' <span class="gd-est" title="Sem apontamento com horário: ritmo estimado pela mediana dos demais produtos">~</span>':''}</td><td><span class="gd-fam gd-f-${p.fam}">${GIR_FAM[p.fam].maq}</span></td><td>${salFmt(p.venda)}</td><td>${salFmt(p.es)}</td><td>${salFmt(p.dispHoje)}</td><td>${salFmt(p.estKg)}</td><td>${salFmt(p.kgNec)}</td><td>${salFmt(p.prodKg)}</td><td>${salFmt(p.t)}</td><td>${salFmt(p.hN,1)}</td><td class="gd-bw"><div class="gd-b hoje" style="width:${(p.hHoje/mx*100).toFixed(1)}%"></div><div class="gd-b sug" style="width:${(p.hReal/mx*100).toFixed(1)}%"></div></td><td>${salFmt(p.hHoje,1)} → <b>${salFmt(p.hReal,1)}</b></td><td>${salFmt(p.hoje,1)}</td><td><b>${p.mas}</b></td><td>${(pl.D.porProd.get(p)||[]).join(' + ')||'—'}</td><td class="${d>=0.5?'gd-up':d<=-0.5?'gd-dn':''}">${ds}</td><td>${salPct(p.cobSug)}</td></tr>`;}).join('');
+  const cab=['Produto','Máquina','Venda média (kg/sem)','Estoque de segurança (kg)','Disponível hoje (kg)','Estoque na corrida (kg)','A produzir (kg)','Produção semanal (kg/sem)','Ritmo (kg/h)','Horas que o plano exige','Hoje (cinza) × sugerido (vermelho)','Horas: hoje → sugerido','Massas por semana hoje','Corrida sugerida (massas)','Dia da corrida','Ajuste','Cobre a venda'];
   const porFam=GIR_FAM_ORD.map(f=>{const h=pl.P.filter(p=>p.fam===f).reduce((s,p)=>s+p.hReal,0);return h>0?`<span>${GIR_FAM[f].maq} <b>${salFmt(h,1)} h</b></span>`:'';}).join('');
-  return ctl+`<div class="sd-mini"><span>Horas da semana <b>${salFmt(pl.cap,1)} h</b> (${GIR.hDia} h × ${GIR.dSem} dias)</span><span>Setup entre máquinas <b>${salFmt(pl.setupTotal,1)} h</b></span><span>O plano exige <b>${salFmt(pl.tot,1)} h</b> (${salPct(util)} do disponível)</span><span>Usamos hoje <b>${salFmt(pl.hHoje,1)} h</b></span><span>Plano sugerido <b>${salFmt(pl.totH,1)} h</b></span><span>Massas na semana <b>${pl.P.reduce((a,p)=>a+p.mas,0)}</b></span></div><div class="sd-mini">${porFam}</div><div class="gd-msg ${dif>=0?'ok':'ab'}">${msg}</div>`
-   +'<div class="sd-panel-t gd-sub">Quadro semanal sugerido: um dia de corrida por produto, uma máquina por dia. Em cada produto, o que a corrida rende embalado contra a venda da semana e o % da demanda atendida</div>'+girDiasHtml(pl.D)
+  return ctl+`<div class="sd-mini"><span>Horas da semana <b>${salFmt(pl.cap,1)} h</b> (${GIR.hDia} h × ${GIR.dSem} dias)</span><span>Setup entre máquinas <b>${salFmt(pl.setupTotal,1)} h</b></span><span>O plano exige <b>${salFmt(pl.tot,1)} h</b> (${salPct(util)} do disponível)</span><span>Usamos hoje <b>${salFmt(pl.hHoje,1)} h</b></span><span>Plano sugerido <b>${salFmt(pl.totH,1)} h</b></span><span>Massas na semana <b>${pl.P.reduce((a,p)=>a+p.mas,0)}</b></span><span>Fora do quadro (estoque cobre) <b>${(pl.semNec||[]).length}</b></span></div><div class="sd-mini">${porFam}</div><div class="gd-msg ${dif>=0?'ok':'ab'}">${msg}</div>`
+   +'<div class="sd-panel-t gd-sub">Quadro semanal sugerido: um dia de corrida por produto, uma máquina por dia. Em cada produto, o que a corrida rende embalado e quanto do estoque de segurança ela atinge</div>'+girDiasHtml(pl.D)
    +'<div class="sd-panel-t gd-sub">Detalhe por produto</div>'
    +`<div class="sd-tbl-wrap"><table class="sd-tbl gd-plano"><thead><tr>${cab.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${tr}</tbody></table></div>`;
 }
@@ -9837,8 +9858,7 @@ function girRender(){
    <input type="search" id="gdBusca" placeholder="Buscar produto..." value="${salEsc(GIR.busca)}"><button type="button" class="sd-btn" id="gdAtualizar">⟳ Atualizar</button><button type="button" class="sd-btn" id="gdExcel">Exportar Excel</button>
    <span class="sd-per">Apontamentos de ${salDd(c.ini)} a ${salDd(c.fim)} · ${salFmt(c.semanas,1)} semanas · comparação em kg</span></div>`;
   if(!c.vendaTem)h+='<div class="sd-aviso">Venda ainda não carregada. Se não aparecer em alguns segundos, suba o relatório de venda em PCP &amp; Estoque.</div>';
-  else if(c.vendaN<3)h+=`<div class="sd-aviso">Venda semanal de ${c.vendaN} semana. Com 3 ou mais semanas guardadas (gravadas a cada upload de venda), passa a ser a média das últimas 4.</div>`;
-  else h+=`<div class="sd-info">Venda semanal = média das últimas ${c.vendaN} semanas guardadas.</div>`;
+  else h+=salVendaAviso(c);
   if(c.fora.length)h+=`<div class="sd-info">Fora dos cálculos do Giro: ${c.fora.map(f=>salEsc(f.nome)+' ('+salEsc(f.motivo)+')').join('; ')}.</div>`;
   if(c.mapaOk){const nc=c.out.filter(r=>r.status==='nc').length;if(nc)h+=`<div class="sd-aviso">${nc} produto(s) sem rendimento no Mapa de Rendimentos ficaram sem conversão para kg (aparecem como "Sem conversão" na tabela).</div>`;}
   h+='<div class="sd-cards">';
@@ -9894,7 +9914,7 @@ function girExcel(c){
   const dados=girOrdena(c.out).map(r=>({Produto:r.nome,'Última produção':salDd(r.ult),'Ritmo da linha (kg/h)':r.taxa?Math.round(r.taxa):null,'Atendimento ao plano':r.atend===null?null:Math.round(r.atend*100)/100,'Massas por semana':Math.round(r.massasSem*10)/10,'Massas por dia de produção':r.massasDia===null?null:Math.round(r.massasDia*10)/10,'Semanas com produção':r.semProd,'Linhas não apontadas':r.nApt,'Produzimos (kg/sem)':r.prodSem===null?null:Math.round(r.prodSem),'Vendemos (kg/sem)':r.venda===null?null:Math.round(r.venda),'Produção cobre a venda?':r.ratio===null?null:Math.round(r.ratio*100)/100,'Horas de produção que a venda exige':r.hNec===null?null:Math.round(r.hNec*10)/10,'Horas de produção que usamos':r.hUs===null?null:Math.round(r.hUs*10)/10,'Diferença de horas (+ faltam / − sobram)':r.dif===null?null:Math.round(r.dif*10)/10,'Semanas que cobriu a venda':r.regul===null?'':r.cobriu+' de '+r.denomSem,'Estoque dura (dias)':r.cobDias===null?null:Math.round(r.cobDias*10)/10,'Próxima corrida (dias)':r.prox,'Ruptura antes da próxima corrida':r.risco?'sim':'',Status:r.status==='nc'?'Sem conversão':(SAL_STATUS[r.status]||'')}));
   const ws=XLSX.utils.json_to_sheet(dados),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Giro Dia');
   const pl=girPlano(c.out);
-  if(pl){const pd=pl.P.map(p=>({Produto:p.nome,'Venda (kg/sem)':Math.round(p.venda),'Estoque (kg)':Math.round(p.estKg),'A produzir (kg)':Math.round(p.kgNec),'Máquina':GIR_FAM[p.fam].maq,'Produção semanal (kg/sem)':Math.round(p.prodKg),'Ritmo (kg/h)':Math.round(p.t),'Ritmo estimado':p.est?'sim':'','Horas que o plano exige':Math.round(p.hN*10)/10,'Horas hoje':Math.round(p.hHoje*10)/10,'Horas sugeridas':Math.round(p.hReal*10)/10,'Massas/sem hoje':Math.round(p.hoje*10)/10,'Corrida sugerida (massas)':p.mas,'Dia(s) da corrida':(pl.D.porProd.get(p)||[]).join(' + '),'Ajuste (massas)':Math.round((p.mas-p.hoje)*10)/10,'Cobre a venda':p.cobSug===null?null:Math.round(p.cobSug*100)/100}));
+  if(pl){const pd=pl.P.map(p=>({Produto:p.nome,'Venda média (kg/sem)':Math.round(p.venda),'Estoque de segurança (kg)':Math.round(p.es),'Disponível hoje (kg)':Math.round(p.dispHoje),'Estoque na corrida (kg)':Math.round(p.estKg),'A produzir (kg)':Math.round(p.kgNec),'Máquina':GIR_FAM[p.fam].maq,'Produção semanal (kg/sem)':Math.round(p.prodKg),'Ritmo (kg/h)':Math.round(p.t),'Ritmo estimado':p.est?'sim':'','Horas que o plano exige':Math.round(p.hN*10)/10,'Horas hoje':Math.round(p.hHoje*10)/10,'Horas sugeridas':Math.round(p.hReal*10)/10,'Massas/sem hoje':Math.round(p.hoje*10)/10,'Corrida sugerida (massas)':p.mas,'Dia(s) da corrida':(pl.D.porProd.get(p)||[]).join(' + '),'Ajuste (massas)':Math.round((p.mas-p.hoje)*10)/10,'Cobre a venda':p.cobSug===null?null:Math.round(p.cobSug*100)/100}));
     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(pd),'Plano de horas ('+GIR.hDia+'h x '+GIR.dSem+'d)');
     const qd=[];pl.D.dias.forEach(d=>{d.itens.forEach(it=>qd.push({Dia:GIR_DIAS[d.i],'Máquina':GIR_FAM[it.fam].maq,Produto:it.p.nome,Parte:it.de>1?it.parte+'/'+it.de:'','Massas':it.mas,'Horas':Math.round(it.h*10)/10,'Projetado embalado':girEmbProj(it.p,it.mas).map(e=>e.lbl+': produz '+Math.round(e.proj)+' + estoque '+Math.round(e.est)+' '+e.un+' / venda '+Math.round(e.venda)+(e.pct===null?'':' ('+Math.round(e.pct*100)+'%)')).join(' | ')}));qd.push({Dia:GIR_DIAS[d.i],'Máquina':'',Produto:'TOTAL DO DIA',Parte:'','Massas':d.itens.reduce((a,it)=>a+it.mas,0),'Horas':Math.round(d.h*10)/10});if(d.setup>0)qd.push({Dia:GIR_DIAS[d.i],'Máquina':d.fams.map(f=>GIR_FAM[f].maq).join(' + '),Produto:'Setup entre máquinas',Parte:'','Massas':null,'Horas':Math.round(d.setup*10)/10});});
     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(qd),'Quadro semanal');}
@@ -18836,10 +18856,24 @@ function opImportar(file){
 const SB_CACHE_HEADERS={'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY,'Content-Type':'application/json','Prefer':'return=minimal'};
 // Guarda a foto semanal da venda (histórico para médias de várias semanas). Uma linha por semana e origem;
 // recarregar o relatório na mesma semana (segunda a domingo) substitui a foto daquela semana.
-async function sbSaveVendaHist(tipo,dados,arquivo){
+// Semana (segunda-feira, AAAA-MM-DD) a que o relatório de venda se refere. Usa o período escrito no cabeçalho do arquivo;
+// sem período, assume a semana anterior à do upload (o relatório é extraído sobre a semana que passou).
+function vendaSemanaDoArquivo(rows,headerIdx){
+  const seg=d=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x;};
+  const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  // Aceita o período na mesma linha ou na linha seguinte, em colunas separadas, com ano de 2 ou 4 dígitos.
+  for(let i=0;i<Math.max(0,headerIdx);i++){
+    const lin=k=>(rows[k]||[]).map(c=>c==null?'':String(c)).join(' ');
+    if(!/per[ií]odo/i.test(lin(i)))continue;
+    const txt=lin(i)+' '+lin(i+1);
+    const ds=[...txt.matchAll(/(\d{1,2})\/(\d{1,2})\/(\d{4}|\d{2})/g)].map(m=>new Date(m[3].length===2?2000+ +m[3]:+m[3],+m[2]-1,+m[1]));
+    if(ds.length>=2){const dias=(ds[1]-ds[0])/864e5;if(dias>=0&&dias<=7)return {semana:iso(seg(ds[0])),origem:'período do arquivo',ini:ds[0],fim:ds[1]};}
+  }
+  const h=new Date();h.setDate(h.getDate()-7);const m=seg(h),f=new Date(m);f.setDate(f.getDate()+6);
+  return {semana:iso(m),origem:'semana anterior ao upload',ini:m,fim:f};
+}
+async function sbSaveVendaHist(tipo,dados,arquivo,semana){
   try{
-    const d=new Date(); d.setDate(d.getDate()-((d.getDay()+6)%7));
-    const semana=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
     await getSupabaseClient().from('venda_semanal_historico').upsert(
       {semana,tipo,dados,arquivo:arquivo||null,carregado_em:new Date().toISOString()},{onConflict:'semana,tipo'});
   }catch(e){}
@@ -20779,13 +20813,13 @@ function processFile(file,tipo){
         if(isFab)vendaFabMap=map;
         else vendaLojaMap=map;
         lsSaveVendas(); // persiste no localStorage
-        sbSaveVendaHist(isFab?'FAB':'LOJA',map,file.name);
+        const per=vendaSemanaDoArquivo(rows,headerIdx);sbSaveVendaHist(isFab?'FAB':'LOJA',map,file.name,per.semana);
         const now=new Date();
         const ts=now.toLocaleDateString('pt-BR')+' · '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
         uploadHistory.unshift({tipo,ts,total,deficits:0,file:file.name,vendaOnly:false});
         renderUploadHistory();
         statusEl.style.color='var(--good)';
-        statusEl.textContent=`✅ ${total} produtos · ${now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+        statusEl.textContent=`✅ ${total} produtos · venda de ${per.ini.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})} a ${per.fim.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})} gravada no histórico (${per.origem})`;
         cardEl.style.borderColor='var(--good)';
         // Re-render tabelas com novos dados de vendas
         renderAlerts();renderFab();renderLoja();SAL.hist=null;salRenderAtivo();
