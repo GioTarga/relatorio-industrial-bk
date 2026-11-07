@@ -1869,7 +1869,12 @@ body{background:#fff;color:#000}
 .sd-card.ok .sd-card-l2{color:var(--sd-ok)}.sd-card.at .sd-card-l2{color:var(--sd-at)}.sd-card.ab .sd-card-l2{color:var(--sd-ab)}
 .sd-grid2{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:14px}
 .sd-grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
-.sd-end{grid-template-columns:minmax(0,2.4fr) minmax(0,1fr)}
+.sd-eq{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.sd-tbl td:not(:first-child){white-space:nowrap}.sd-tbl td:first-child{min-width:170px}
+.sd-qgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:6px 28px}
+.sd-fill{flex:1;display:flex;flex-direction:column}
+.sd-pri td{font-size:12px}.sd-pri td:first-child{max-width:180px}
+.sd-qgrid .sd-q-row{margin-bottom:6px}
 .sd-col{display:flex;flex-direction:column;gap:14px;min-width:0}
 @media(max-width:900px){.sd-grid2,.sd-end{grid-template-columns:1fr}}
 .sd-panel{background:var(--paper);border:1px solid var(--sd-line);border-radius:var(--radius-md,10px);padding:12px 14px;min-width:0}
@@ -1877,8 +1882,8 @@ body{background:#fff;color:#000}
 .sd-nota{font-size:11.5px;color:var(--ink-soft);margin-top:8px;line-height:1.45}
 .sd-vazio{padding:18px;text-align:center;color:var(--ink-soft);font-size:13px}
 .sd-svg{width:100%;height:auto;display:block}
-.sd-lbl{font:10px var(--font-body);fill:var(--ink-soft)}
-.sd-val{font:10px var(--font-body);fill:var(--ink);font-variant-numeric:tabular-nums}.sd-val.b{font-weight:700;fill:var(--red)}
+.sd-lbl{font:11px var(--font-body);fill:var(--ink-soft)}
+.sd-val{font:11px var(--font-body);fill:var(--ink);font-variant-numeric:tabular-nums}.sd-val.b{font-weight:700;fill:var(--red)}
 .sd-ref{stroke:var(--ink);stroke-width:1;stroke-dasharray:4 3;opacity:.7}.sd-ref.mut{stroke:var(--sd-mut);opacity:.9}
 .sd-grid{stroke:var(--sd-line);stroke-width:1}.sd-grid.meta{stroke:var(--ink);stroke-dasharray:4 3}
 .sd-bar.ok{fill:var(--sd-ok)}.sd-bar.at{fill:var(--sd-at)}.sd-bar.ab,.sd-bar.sem{fill:var(--sd-ab)}.sd-bar.brand{fill:var(--red)}.sd-bar.claro{fill:#dca4a4}
@@ -1890,7 +1895,7 @@ body{background:#fff;color:#000}
 .sd-pn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sd-pb{background:#f3ece4;border-radius:3px;height:12px;display:block}.sd-pb i{display:block;height:100%;background:var(--red);border-radius:3px}
 .sd-pv{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}.sd-pa{text-align:right;color:var(--ink-soft);font-variant-numeric:tabular-nums}
-.sd-tbl-wrap{overflow:auto;max-height:560px}
+.sd-tbl-wrap{overflow:auto;max-height:640px}
 .sd-tbl{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
 .sd-tbl th{position:sticky;top:0;background:var(--red);color:#fff;font:700 11px var(--font-body);padding:7px 8px;text-align:center;cursor:pointer;white-space:normal}
 .sd-tbl th:first-child,.sd-tbl td:first-child{text-align:left}.sd-tbl td{padding:6px 8px;border-bottom:1px solid var(--sd-line);text-align:center}
@@ -9311,12 +9316,12 @@ function salCalcular(){
 
 /* ---------- gráficos (SVG simples, sem biblioteca) ---------- */
 function salSvgBarrasH(items,opt){ // items: [{label,v,cls,tip}] · opt: max, refs:[{v,label}], fmt
-  const W=620,lh=17,padL=190,padR=46,H=items.length*lh+26,max=opt.max;
+  const W=620,lh=opt.lh||17,padL=190,padR=46,H=items.length*lh+26,max=opt.max;
   const x=v=>padL+(Math.min(v,max)/max)*(W-padL-padR);
   let s=`<svg viewBox="0 0 ${W} ${H}" class="sd-svg" role="img" aria-label="${salEsc(opt.aria||'')}">`;
   (opt.refs||[]).forEach(r=>{s+=`<line x1="${x(r.v)}" x2="${x(r.v)}" y1="14" y2="${H-4}" class="sd-ref ${r.cls||''}"/><text x="${x(r.v)}" y="10" text-anchor="middle" class="sd-lbl">${r.label}</text>`;});
   items.forEach((it,i)=>{const y=18+i*lh;
-    s+=`<text x="${padL-6}" y="${y+10}" text-anchor="end" class="sd-lbl">${salEsc(it.label)}</text><rect x="${padL}" y="${y}" width="${Math.max(2,x(it.v)-padL)}" height="12" rx="2" class="sd-bar ${it.cls}"><title>${salEsc(it.tip)}</title></rect><text x="${x(it.v)+4}" y="${y+10}" class="sd-val">${opt.fmt(it.v,it)}</text>`;});
+    s+=`<text x="${padL-6}" y="${y+10}" text-anchor="end" class="sd-lbl">${salEsc(it.label)}</text><rect x="${padL}" y="${y}" width="${Math.max(2,x(it.v)-padL)}" height="${Math.min(16,lh-5)}" rx="2" class="sd-bar ${it.cls}"><title>${salEsc(it.tip)}</title></rect><text x="${x(it.v)+4}" y="${y+10}" class="sd-val">${opt.fmt(it.v,it)}</text>`;});
   return s+'</svg>';
 }
 function salSvgDiverg(items,opt){ // barras para esquerda (sobram, verde) / direita (faltam, vermelho)
@@ -9347,7 +9352,7 @@ function salSvgColunas(items,fmt,aria){
   return s+'</svg>';
 }
 function salSvgLinha(pts){ // pts:[{label,v(0..1+),parcial}]
-  const W=620,H=210,pl=40,pr=14,pt=14,pb=28,mx=1.1,mn=0.4;
+  const W=430,H=230,pl=40,pr=16,pt=16,pb=30,mx=1.1,mn=0.4;
   const x=i=>pl+(pts.length>1?i/(pts.length-1):0.5)*(W-pl-pr),y=v=>H-pb-((Math.min(Math.max(v,mn),mx)-mn)/(mx-mn))*(H-pt-pb);
   let s=`<svg viewBox="0 0 ${W} ${H}" class="sd-svg" role="img" aria-label="Atendimento ao plano por semana">`;
   [0.5,0.7,0.9,1].forEach(t=>{s+=`<line x1="${pl}" x2="${W-pr}" y1="${y(t)}" y2="${y(t)}" class="sd-grid ${t===1?'meta':''}"/><text x="${pl-5}" y="${y(t)+3}" text-anchor="end" class="sd-lbl">${t*100}%</text>`;});
@@ -9358,9 +9363,9 @@ function salSvgLinha(pts){ // pts:[{label,v(0..1+),parcial}]
   return s+'</svg>';
 }
 function salSvgRecheio(items){
-  const W=620,lh=26,padL=190,H=items.length*lh+30,mx=Math.max(1,...items.map(i=>Math.max(i.a,i.b)))*1.1,x=v=>padL+(v/mx)*(W-padL-50);
-  let s=`<svg viewBox="0 0 ${W} ${H}" class="sd-svg" role="img" aria-label="Caixas de recheio por semana"><rect x="${padL}" y="2" width="10" height="9" class="sd-bar brand"/><text x="${padL+14}" y="10" class="sd-lbl">No ritmo atual</text><rect x="${padL+110}" y="2" width="10" height="9" class="sd-bar claro"/><text x="${padL+124}" y="10" class="sd-lbl">Para atender a venda</text>`;
-  items.forEach((it,i)=>{const y=22+i*lh;
+  const W=430,lh=30,padL=168,H=items.length*lh+34,mx=Math.max(1,...items.map(i=>Math.max(i.a,i.b)))*1.1,x=v=>padL+(v/mx)*(W-padL-40);
+  let s=`<svg viewBox="0 0 ${W} ${H}" class="sd-svg" role="img" aria-label="Caixas de recheio por semana"><rect x="${padL}" y="2" width="10" height="9" class="sd-bar brand"/><text x="${padL+14}" y="10" class="sd-lbl">Ritmo atual</text><rect x="${padL+90}" y="2" width="10" height="9" class="sd-bar claro"/><text x="${padL+104}" y="10" class="sd-lbl">Para a venda</text>`;
+  items.forEach((it,i)=>{const y=24+i*lh;
     s+=`<text x="${padL-6}" y="${y+12}" text-anchor="end" class="sd-lbl">${salEsc(it.label)}${it.baixa?' *':''}</text><rect x="${padL}" y="${y}" width="${Math.max(1,x(it.a)-padL)}" height="9" rx="2" class="sd-bar brand"><title>${salEsc(it.label)}: ${salFmt(it.a)} caixas/sem no ritmo atual</title></rect><text x="${x(it.a)+4}" y="${y+8}" class="sd-val">${salFmt(it.a)}</text><rect x="${padL}" y="${y+11}" width="${Math.max(1,x(it.b)-padL)}" height="9" rx="2" class="sd-bar claro"><title>${salEsc(it.label)}: ${salFmt(it.b)} caixas/sem para atender a venda</title></rect><text x="${x(it.b)+4}" y="${y+19}" class="sd-val">${salFmt(it.b)}</text>`;});
   return s+'</svg>';
 }
@@ -9368,6 +9373,13 @@ function salSvgRecheio(items){
 /* ---------- montagem da dashboard ---------- */
 function salCard(titulo,valor,l1,l2,cls){return `<div class="sd-card ${cls||''}"><div class="sd-card-t">${titulo}</div><div class="sd-card-v">${valor}</div><div class="sd-card-l">${l1}</div><div class="sd-card-l2">${l2}</div></div>`;}
 function salPainel(titulo,corpo,nota,cls){return `<div class="sd-panel ${cls||''}"><div class="sd-panel-t">${titulo}</div>${corpo}${nota?`<div class="sd-nota">${nota}</div>`:''}</div>`;}
+function salPrioridade(rows){
+  const ord={sem:0,ab:1,at:2,ok:3};
+  const L=rows.filter(r=>r.status==='sem'||r.status==='ab'||r.status==='at'||(r.cob!==null&&r.cob<1))
+    .sort((a,b)=>(ord[a.status]-ord[b.status])||((a.cob===null?9:a.cob)-(b.cob===null?9:b.cob))).slice(0,9);
+  if(!L.length)return '<div class="sd-vazio">Nenhum produto em risco no momento.</div>';
+  return '<table class="sd-tbl sd-pri"><thead><tr><th>Produto</th><th>Cobre</th><th>Estoque dura</th><th>Status</th></tr></thead><tbody>'+L.map(r=>`<tr data-sd-prod="${salEsc(r.nome)}" class="sd-lk"><td>${salEsc(r.nome)}</td><td>${salPct(r.ratio)}</td><td>${salFmt(r.cob,1)} sem.</td><td><span class="sd-tag ${r.status}">${SAL_STATUS[r.status]||'—'}</span></td></tr>`).join('')+'</tbody></table>';
+}
 function salOrdena(rows){
   const {col,dir}=SAL.ord;
   const val=r=>col==='nome'||col==='maq'?(r[col]||''):col==='status'?['ab','sem','at','ok'].indexOf(r.status):col==='ult'?(r.ult||''):(r[col]===null||r[col]===undefined?Infinity:r[col]);
@@ -9375,6 +9387,11 @@ function salOrdena(rows){
 }
 function salRender(){
   const el=document.getElementById('salgadoDash');if(!el)return;
+  // Venda e estoque só são carregados quando o módulo PCP & Estoque abre; aqui buscamos sozinhos na primeira vez.
+  if(!SAL.cacheTentado&&!Object.keys(vendaFabMap||{}).length&&!Object.keys(vendaLojaMap||{}).length){
+    SAL.cacheTentado=true;
+    sbRestoreCache().then(ok=>{if(!ok)lsRestore();}).catch(()=>{try{lsRestore();}catch(e){}}).then(()=>{if(selectedSector==='SALGADO')salRender();});
+  }
   const c=SAL.calc=salCalcular();
   if(SAL.hist===null)salCarregarHist();
   if(!c){el.innerHTML='<div class="sd-vazio">Sem apontamentos do Salgado carregados ainda.</div>';return;}
@@ -9398,8 +9415,8 @@ function salRender(){
    <input type="search" id="sdBusca" placeholder="Buscar produto..." value="${salEsc(SAL.busca)}">
    <button type="button" class="sd-btn" id="sdAtualizar">⟳ Atualizar</button><button type="button" class="sd-btn" id="sdExcel">Exportar Excel</button>
    <span class="sd-per">Apontamentos de ${salDd(c.ini)} a ${salDd(c.fim)} · ${salFmt(c.semanas,1)} semanas</span></div>`;
-  if(!c.vendaTem)h+='<div class="sd-aviso">Venda não carregada: suba o relatório de venda em PCP &amp; Estoque para ver cobertura, estoque e horas exigidas.</div>';
-  else if(c.vendaN<3)h+=`<div class="sd-aviso">A venda semanal usada é a de ${c.vendaN} semana carregada. A partir de 3 semanas guardadas, passa a ser a média das últimas 4 semanas (as semanas são gravadas ao carregar o relatório de venda).</div>`;
+  if(!c.vendaTem)h+='<div class="sd-aviso">Venda ainda não carregada. Se não aparecer em alguns segundos, suba o relatório de venda em PCP &amp; Estoque.</div>';
+  else if(c.vendaN<3)h+=`<div class="sd-aviso">Venda semanal de ${c.vendaN} semana. Com 3 ou mais semanas guardadas (gravadas a cada upload de venda), passa a ser a média das últimas 4.</div>`;
   else h+=`<div class="sd-info">Venda semanal = média das últimas ${c.vendaN} semanas guardadas.</div>`;
   // cards
   h+='<div class="sd-cards">';
@@ -9412,18 +9429,18 @@ function salRender(){
   h+='</div>';
   // B, C, D
   const ordB=comVenda.filter(r=>r.ratio!==null).sort((a,b)=>a.ratio-b.ratio);
-  const bB=salSvgBarrasH(ordB.map(r=>({label:r.nome.slice(0,32),v:r.ratio,cls:r.status,tip:`${r.nome}: cobre ${salPct(r.ratio)} da venda (produzimos ${salFmt(r.prodSem)} · vendemos ${salFmt(r.venda)} por semana)`})),{max:3.4,refs:[{v:0.7,label:'70%',cls:'mut'},{v:1,label:'100%'}],fmt:(v)=>salPct(v),aria:'Produção cobre a venda por produto'});
+  const bB=salSvgBarrasH(ordB.map(r=>({label:r.nome.slice(0,32),v:r.ratio,cls:r.status,tip:`${r.nome}: cobre ${salPct(r.ratio)} da venda (produzimos ${salFmt(r.prodSem)} · vendemos ${salFmt(r.venda)} por semana)`})),{max:3.4,refs:[{v:0.7,label:'70%',cls:'mut'},{v:1,label:'100%'}],lh:24,fmt:(v)=>salPct(v),aria:'Produção cobre a venda por produto'});
   h+='<div class="sd-grid2">'+salPainel('Cobertura da venda: produzimos o que vendemos?',bB,'Cada barra é um produto. Verde: 100% ou mais · amarelo: 70% a 99% · vermelho: abaixo de 70% ou sem produção nas últimas 4 semanas.','sd-w1')
-   +'<div class="sd-col">'+salPainel('Produção × estoque',salSvgQuadrante(comVenda),'Canto inferior esquerdo é prioridade: produz pouco e o estoque dura menos de 1 semana. Passe o mouse para ver o produto.')+'</div></div>';
+   +'<div class="sd-col">'+salPainel('Produção × estoque',salSvgQuadrante(comVenda),'Canto inferior esquerdo é prioridade: produz pouco e o estoque dura menos de 1 semana. Passe o mouse para ver o produto.')+salPainel('Prioridade de produção',salPrioridade(comVenda),'Produtos sem produção ou abaixo da venda, e os que têm menos de 1 semana de estoque. Ordem: pior primeiro.','sd-fill')+'</div></div>';
   const ordD=comVenda.filter(r=>r.dif!==null).sort((a,b)=>b.dif-a.dif);
-  h+='<div class="sd-grid2">'+salPainel('Horas de produção: faltam ou sobram por semana',salSvgDiverg(ordD.map(r=>({label:r.nome.slice(0,32),v:r.dif,tip:`${r.nome}: a venda exige ${salFmt(r.hNec,1)} h por semana e usamos ${salFmt(r.hUs,1)} h`})),{}),'Vermelho (direita): faltam horas de produção para repor a venda. Verde (esquerda): sobram horas.')
-   +salPainel('Ritmo da linha (peças por hora de produção)',salSvgColunas(rows.filter(r=>r.taxa).sort((a,b)=>b.taxa-a.taxa).slice(0,12).map(r=>({label:r.nome,v:r.taxa})),v=>salFmt(v),'Ritmo da linha'),'Peças por hora de produção, já descontadas as paradas apontadas. Só entram apontamentos com horário de início e fim.')+'</div>';
+  h+='<div class="sd-grid2 sd-eq">'+salPainel('Horas de produção: faltam ou sobram por semana',salSvgDiverg(ordD.map(r=>({label:r.nome.slice(0,32),v:r.dif,tip:`${r.nome}: a venda exige ${salFmt(r.hNec,1)} h por semana e usamos ${salFmt(r.hUs,1)} h`})),{}),'Vermelho (direita): faltam horas de produção para repor a venda. Verde (esquerda): sobram horas.')
+   +salPainel('Ritmo da linha (peças por hora de produção)',(()=>{const L=rows.filter(r=>r.taxa).sort((a,b)=>b.taxa-a.taxa);return L.length?salSvgBarrasH(L.map(r=>({label:r.nome.slice(0,32),v:r.taxa,cls:'brand',tip:`${r.nome}: ${salFmt(r.taxa)} peças por hora de produção`})),{max:L[0].taxa*1.12,refs:[],fmt:v=>salFmt(v),aria:'Ritmo da linha por produto'}):'<div class="sd-vazio">Sem apontamentos com horário.</div>';})(),'Peças por hora de produção, já descontadas as paradas apontadas. Só entram apontamentos com horário de início e fim.')+'</div>';
   // E, F, G
   const sem=Object.keys(c.semanasAt).sort().slice(-13),fimSemana=salIso(salMs(c.fim)-((new Date(salMs(c.fim)).getUTCDay()+6)%7)*864e5);
   const pts=sem.map(w=>({label:salDd(w),v:c.semanasAt[w].plan>0?c.semanasAt[w].real/c.semanasAt[w].plan:0,parcial:w===fimSemana&&new Date(salMs(c.fim)).getUTCDay()!==0}));
   const par=causas.slice(0,8),totC=causas.reduce((s,x)=>s+x[1],0);let ac=0;
   const parH=par.length?`<div class="sd-pareto">${par.map(x=>{ac+=x[1];return `<div class="sd-prow"><span class="sd-pn">${salEsc(x[0])}</span><span class="sd-pb"><i style="width:${(x[1]/par[0][1]*100).toFixed(1)}%"></i></span><span class="sd-pv">${x[1]}</span><span class="sd-pa">${Math.round(ac/totC*100)}%</span></div>`;}).join('')}</div>`:'<div class="sd-vazio">Sem causas de parada descritas no período.</div>';
-  const rec=rows.filter(r=>r.rcVenda!==null).sort((a,b)=>b.rcVenda-a.rcVenda).slice(0,10).map(r=>({label:r.nome.slice(0,32),a:r.rcAtual,b:r.rcVenda,baixa:r.nRc<3}));
+  const rec=rows.filter(r=>r.rcVenda!==null).sort((a,b)=>b.rcVenda-a.rcVenda).slice(0,6).map(r=>({label:r.nome.slice(0,26),a:r.rcAtual,b:r.rcVenda,baixa:r.nRc<3}));
   h+='<div class="sd-grid3">'+salPainel('Atendimento ao plano por semana',pts.length?salSvgLinha(pts):'<div class="sd-vazio">Sem semanas com meta.</div>','Real ÷ planejado por semana. Ponto vazado: semana incompleta. A linha forte marca 100%.')
    +salPainel('Paradas e desvios por causa',parH,'Ocorrências no período e % acumulado. Ex.: se as 2 primeiras causas somam 70%, são elas que valem atacar primeiro.')
    +salPainel('Recheio: caixas por semana',rec.length?salSvgRecheio(rec):'<div class="sd-vazio">Sem recheio apontado.</div>','* confiança baixa: menos de 3 apontamentos de recheio. Caixas = caixas de recheio por 1.000 peças produzidas × peças por semana.')+'</div>';
@@ -9432,8 +9449,8 @@ function salRender(){
   const tr=salOrdena(rows).map(r=>`<tr data-sd-prod="${salEsc(r.nome)}" class="sd-lk"><td>${salEsc(r.nome)}</td><td>${salDd(r.ult)}</td><td>${salEsc(r.maq)||'—'}</td><td>${salFmt(r.taxa)}</td><td>${salFmt(r.prodSem)}</td><td>${salFmt(r.venda)}</td><td>${salPct(r.ratio)}</td><td>${salFmt(r.hNec,1)}</td><td>${salFmt(r.hUs,1)}</td><td>${r.dif===null?'—':(r.dif>0.05?'faltam '+salFmt(r.dif,1)+' h':r.dif<-0.05?'sobram '+salFmt(-r.dif,1)+' h':'ok')}</td><td>${salFmt(r.cob,1)}</td><td><span class="sd-tag ${r.status}">${SAL_STATUS[r.status]||'—'}</span></td></tr>`).join('');
   const pc=(n)=>kp.linhas?Math.round(n/kp.linhas*100):0,cl=v=>v>=80?'ok':v>=50?'at':'ab';
   const qual=[['Linhas com horário de início e fim',pc(kp.comHor)],['Linhas com recheio apontado',pc(kp.comRec)],['Linhas com parada ou causa descrita',pc(kp.comPar)]].map(q=>`<div class="sd-q-row"><span>${q[0]}</span><span class="sd-q-bar"><i class="${cl(q[1])}" style="width:${q[1]}%"></i></span><b>${q[1]}%</b></div>`).join('');
-  h+='<div class="sd-grid2 sd-end">'+salPainel('Detalhe por produto','<div class="sd-tbl-wrap"><table class="sd-tbl"><thead><tr>'+cols.map(x=>`<th data-sd-ord="${x[0]}" class="${SAL.ord.col===x[0]?'on':''}">${x[1]}${SAL.ord.col===x[0]?(SAL.ord.dir>0?' ▲':' ▼'):''}</th>`).join('')+'</tr></thead><tbody>'+tr+'</tbody></table></div>','Clique no produto para ver a evolução semanal e os apontamentos. Clique no título da coluna para ordenar.','sd-w1')
-   +salPainel('Qualidade do dado',qual+(c.semGrupo.n?`<div class="sd-nota">${c.semGrupo.n} apontamentos de produtos sem venda cadastrada ficaram fora da comparação (ex.: ${salEsc(Object.keys(c.semGrupo.nomes).slice(0,2).join('; '))}).</div>`:''),'Percentual das linhas do período. Horário e recheio faltando reduzem a confiança do ritmo da linha e do consumo de recheio.')+'</div>';
+  h+=salPainel('Detalhe por produto','<div class="sd-tbl-wrap"><table class="sd-tbl"><thead><tr>'+cols.map(x=>`<th data-sd-ord="${x[0]}" class="${SAL.ord.col===x[0]?'on':''}">${x[1]}${SAL.ord.col===x[0]?(SAL.ord.dir>0?' ▲':' ▼'):''}</th>`).join('')+'</tr></thead><tbody>'+tr+'</tbody></table></div>','Clique no produto para ver a evolução semanal e os apontamentos. Clique no título da coluna para ordenar.','sd-w1');
+  h+=salPainel('Qualidade do dado','<div class="sd-qgrid">'+qual+'</div>'+(c.semGrupo.n?`<div class="sd-nota">${c.semGrupo.n} apontamentos de produtos sem venda cadastrada ficaram fora da comparação (ex.: ${salEsc(Object.keys(c.semGrupo.nomes).slice(0,2).join('; '))}).</div>`:''),'Percentual das linhas do período. Horário e recheio faltando reduzem a confiança do ritmo da linha e do consumo de recheio.','sd-qual');
   el.innerHTML=h;
   salLigar(el,c);
 }
