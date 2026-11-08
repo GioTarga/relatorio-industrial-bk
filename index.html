@@ -1911,7 +1911,7 @@ body{background:#fff;color:#000}
 .gd-ln{display:flex;align-items:center;gap:6px;font-size:12px;font-variant-numeric:tabular-nums}.gd-ln .n{flex:1;min-width:0;color:#4a4242}.gd-ln b{font-weight:800;white-space:nowrap}
 .gd-canal{display:inline-block;padding:1px 7px;border-radius:4px;font-size:9.5px;font-weight:800;letter-spacing:.6px;color:#fff;white-space:nowrap}
 .gd-dt summary{cursor:pointer;font-size:10.5px;font-weight:700;color:var(--sd-mut);list-style:none}.gd-dt summary::-webkit-details-marker{display:none}.gd-dt summary::before{content:'▸ '}.gd-dt[open] summary::before{content:'▾ '}
-.gd-dt-b{margin-top:6px;padding-top:6px;border-top:1px dashed var(--sd-line);display:flex;flex-direction:column;gap:3px;font-size:11px;color:#6b6262;font-variant-numeric:tabular-nums}.gd-dt-b b{color:#3a3a3a}.gd-dl{display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+.gd-dt-b{margin-top:6px;padding-top:6px;border-top:1px dashed var(--sd-line);display:flex;flex-direction:column;gap:3px;font-size:11px;color:#6b6262;font-variant-numeric:tabular-nums}.gd-dt-b b{color:#3a3a3a}.gd-dl{display:flex;justify-content:space-between;gap:8px}
 .gd-bw{min-width:150px}.gd-b{height:7px;border-radius:2px;margin:2px 0}.gd-b.hoje{background:#b9b0b0}.gd-b.sug{background:var(--red)}
 .gd-ok{color:var(--sd-ok);font-weight:700}.gd-up{color:var(--red);font-weight:700}.gd-dn{color:var(--sd-mut);font-weight:700}.gd-est{color:var(--sd-at);font-weight:700;cursor:help}
 .sd-tag.nc{background:#ece7e7;color:#6b5c5c}.sd-bar.nc{fill:var(--sd-mut)}
@@ -9874,8 +9874,8 @@ function girCardProd(it){
   const linhas=emb.map(e=>`<div class="gd-ln">${tag(e)}<span class="n">${salEsc(e.lbl)}</span><b>${salFmt(e.proj)} ${e.un}</b>${pill(e.pct)}</div>`).join('');
   const divisao=emb.length>1?`<div class="gd-div2" title="Divisão da massa entre os canais">${emb.map(e=>`<i class="${cn(e)}" style="width:${(e.parte*100).toFixed(1)}%"></i>`).join('')}</div>`:'';
   const bar=`<div class="gd-bar" title="Estoque no dia da produção + produção programada, contra o estoque de segurança (traço)"><i class="e" style="width:${wE.toFixed(1)}%"></i><i class="p" style="width:${wP.toFixed(1)}%"></i><u style="left:${mk.toFixed(1)}%"></u></div>`;
-  const det=`<div class="gd-dt-b"><div>Estoque de segurança <b>${salFmt(p.es)} kg</b></div><div>${p.porSaida?`Demanda <b>${salFmt(p.venda)}</b> (saída do estoque; CIGAM ${salFmt(p.vendaCig)})`:`Venda média <b>${salFmt(p.venda)}</b>`} kg</div><div>Disponível hoje <b>${salFmt(p.dispHoje)}</b> · No dia da produção <b>${salFmt(p.estKg)}</b> kg</div>`
-    +emb.map(e=>`<div class="gd-dl">${tag(e)} ${salEsc(e.lbl)}: seguro <b>${salFmt(e.es)} ${e.un}</b> · atinge <b>${e.pct===null?'—':salPct(e.pct)}</b> · ${salFmt(e.kgMassa)} kg da massa (${salPct(e.parte)})</div>`).join('')+'</div>';
+  const segL=emb.length?emb.map(e=>`<div class="gd-dl"><span>Est. Seg. ${e.canal==='Loja'?'Loja':'Fábrica'}</span><b>${salFmt(e.es)} ${e.un}</b></div>`).join(''):`<div class="gd-dl"><span>Est. Seg.</span><b>${salFmt(p.es)} kg</b></div>`;
+  const det=`<div class="gd-dt-b">${segL}<div class="gd-dl"><span>Est. Atual</span><b>${salFmt(p.dispHoje)} kg</b></div><div class="gd-dl"><span>Venda Média Semanal</span><b>${salFmt(p.venda)} kg</b></div></div>`;
   return `<div class="gd-pc ${cls}">`
    +`<div class="gd-pt"><div class="gd-pn">${salEsc(p.nome)}${it.de>1?` <em>(parte ${it.parte}/${it.de})</em>`:''}</div><div class="gd-mb"><b>${it.mas}</b><small>${it.mas===1?'massa':'massas'} · ${salFmt(it.h,1)} h</small></div></div>`
    +`<div class="gd-main"><span class="k">Produção programada</span><b>${salFmt(kgProd)} kg</b>${emb.length?'':pill(cob)}</div>`
