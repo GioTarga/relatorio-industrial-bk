@@ -9642,7 +9642,7 @@ function girCalcular(){
   rowsAll.forEach(r=>{
     const noPer=r.d>=ini&&r.d<=fim,k=girGrupoKey(r.produto),mp0=mapa[SAL_NORM(r.produto)]||null,grp=(GIR.grupos||{})[k]||null;
     const rkg=mp0&&mp0.kg?mp0.kg:(grp&&grp.kg?grp.kg:null),mp=rkg?{kg:rkg}:null;
-    const g=G[k]||(G[k]={nome:girNome(k),bruto:k,cods:new Set(grp?grp.cods:[]),kgM:grp&&grp.kg?grp.kg:(mp0?mp0.kg:null),rows:[],massasPer:0,massas28:0,hTot:0,kgT:0,ult:'',real:0,prev:0,nApt:0,dias:{},sems:{},semKg:{},semNA:{},dow:{}});
+    const g=G[k]||(G[k]={nome:girNome(k),bruto:k,cods:new Set(grp?grp.cods:[]),kgM:grp&&grp.kg?grp.kg:(mp0?mp0.kg:null),rows:[],massasPer:0,massas28:0,hTot:0,kgT:0,nH:0,ult:'',real:0,prev:0,nApt:0,dias:{},sems:{},semKg:{},semNA:{},dow:{}});
     const na=salNaoApont(r);if(!na&&r.d>g.ult)g.ult=r.d;
     if(noPer){
       kp.linhas++;if(r.inicio&&r.fim)kp.comHor++;if(r.equipe)kp.comEq++;if(mp&&mp.kg)kp.comConv++;
@@ -9655,7 +9655,7 @@ function girCalcular(){
     }else if(r.d>=prevIni&&r.d<=prevFim&&r.prev!=null&&r.prev>0&&!na){kp.planAnt+=r.prev;kp.realAnt+=r.real;}
     if(r.prev!=null&&r.prev>0&&!na){const wMs=salMs(r.d)-((new Date(salMs(r.d)).getUTCDay()+6)%7)*864e5,w=salIso(wMs),o=semanasAt[w]||(semanasAt[w]={plan:0,real:0});o.plan+=r.prev;o.real+=r.real;}
     if(r.d>=lim28&&r.d<=fim)g.massas28+=r.real||0;
-    const h=salDuracao(r);if(h!==null&&!na&&mp&&mp.kg){g.hTot+=h;g.kgT+=(r.real||0)*mp.kg;}
+    const h=salDuracao(r);if(h!==null&&!na&&mp&&mp.kg){g.hTot+=h;g.kgT+=(r.real||0)*mp.kg;g.nH++;}
   });
   // Semanas do período (segunda a segunda). A primeira e a última podem estar incompletas.
   const wks=[];for(let w=salSemana(ini);w<=salSemana(fim);w=salIso(salMs(w)+7*864e5))wks.push(w);
@@ -9692,7 +9692,7 @@ function girCalcular(){
     mem.forEach(m=>{m.dHoje=Math.max(0,m.eUn-m.rUn);m.dProj=Math.max(0,m.dHoje-m.vUn/7*pd);disp+=m.dHoje*m.f;dispProj+=m.dProj*m.f;});
     const cobDias=conv&&venda>0&&est!==null?est/venda*7:null,risco=cobDias!==null&&cobDias<(prox===null?7:prox);
     if(!g.massasPer&&!g.ult)return;
-    out.push({nome:g.nome,bruto:g.bruto,ult:g.ult,taxa,massasSem:semProd?g.massasPer/semProd:0,semProd,prodSem,venda,ratio,est,cob:conv&&venda>0?est/venda:null,hNec,hUs,dif:hNec!==null&&hUs!==null?hNec-hUs:null,status,atend:g.prev>0?g.real/g.prev:null,cobriu,denomSem,regul:denomSem&&venda>0&&conv?cobriu/denomSem:null,dowUsual,prox,cobDias,risco,mem,disp,dispProj,pd,nApt:g.nApt,diasProd:Object.keys(g.dias).length,massasDia:Object.keys(g.dias).length?g.massasPer/Object.keys(g.dias).length:null,rows:g.rows,kgM:g.kgM});
+    out.push({nome:g.nome,bruto:g.bruto,ult:g.ult,taxa,nH:g.nH,massasSem:semProd?g.massasPer/semProd:0,semProd,prodSem,venda,ratio,est,cob:conv&&venda>0?est/venda:null,hNec,hUs,dif:hNec!==null&&hUs!==null?hNec-hUs:null,status,atend:g.prev>0?g.real/g.prev:null,cobriu,denomSem,regul:denomSem&&venda>0&&conv?cobriu/denomSem:null,dowUsual,prox,cobDias,risco,mem,disp,dispProj,pd,nApt:g.nApt,diasProd:Object.keys(g.dias).length,massasDia:Object.keys(g.dias).length?g.massasPer/Object.keys(g.dias).length:null,rows:g.rows,kgM:g.kgM});
   });
   return {out,ini,fim,dias,semanas,kp,semanasAt,eq,fora:Object.values(fora),vendaN:Math.max(vF.n,vL.n),vendaSems:(vF.sems&&vF.sems.length>=(vL.sems||[]).length?vF.sems:vL.sems)||[],vendaTem:Object.keys(vendaFabMap||{}).length+Object.keys(vendaLojaMap||{}).length>0,mapaOk:!!GIR.mapa};
 }
@@ -9724,7 +9724,7 @@ function girPlanoCalc(rows,cap){
     if(mem.length)mem.forEach(m=>{const e=m.vUn*(1+mg);es+=e*m.f;estq+=m.dProj*m.f;estEf+=Math.min(m.dProj,e)*m.f;kg+=Math.max(0,e-m.dProj)*m.f;});
     else{es=r.venda*(1+mg);estq=Math.max(0,r.dispProj||0);estEf=Math.min(estq,es);kg=Math.max(0,es-estq);}
     const hN=kg/t;tot+=hN;
-    return {nome:r.nome,mem:r.mem||[],porSaida:(r.mem||[]).some(m=>m.vSai>m.vCig*1.1&&m.vSai>0),vendaCig:(r.mem||[]).reduce((a,m)=>a+m.vCig*m.f,0),fam:girFam(r.bruto||r.nome),prodKg:r.prodSem||0,nApt:r.nApt,bruto:r.bruto,kgM:r.kgM,t,est,venda:r.venda,es,estEf,estKg:estq,dispHoje:r.disp||0,pd:r.pd||0,kgNec:kg,hN,hoje:r.massasSem,hHoje:r.massasSem*r.kgM/t,cob:r.cob};
+    return {nome:r.nome,mem:r.mem||[],porSaida:(r.mem||[]).some(m=>m.vSai>m.vCig*1.1&&m.vSai>0),vendaCig:(r.mem||[]).reduce((a,m)=>a+m.vCig*m.f,0),fam:girFam(r.bruto||r.nome),prodKg:r.prodSem||0,nApt:r.nApt,bruto:r.bruto,kgM:r.kgM,t,est,venda:r.venda,es,estEf,estKg:estq,dispHoje:r.disp||0,pd:r.pd||0,kgNec:kg,hN,hoje:r.massasSem,hHoje:r.massasSem*r.kgM/t,cob:r.cob,nH:r.nH||0};
   });
   const P=P0.filter(p=>p.hN>0),semNec=P0.filter(p=>p.hN<=0);
   if(!P.length)return {P,semNec,tot:0,f:1,totH:0,hHoje:0,nEst:0};
@@ -9871,13 +9871,16 @@ function girDetLinhas(p,emb){
     :[['Est. Seg.',`${salFmt(p.es)} kg`],['Est. Atual',`${salFmt(p.dispHoje)} kg`]];
   return L.concat([['Venda Média Semanal',`${salFmt(p.venda)} kg`]]);
 }
+// Ritmo só é exibido quando há apontamentos com horário suficientes; com menos que isso o número vem de uma única produção e engana.
+const GIR_MIN_REG=3;
+function girRitmoOk(p){return !p.est&&(p.nH||0)>=GIR_MIN_REG;}
 // Dados do card (usados no quadro da tela e no PDF): produção, cobertura do seguro e embalagens fábrica/loja.
 function girCardDados(it){
   const p=it.p,kgProd=it.mas*p.kgM,embAll=girEmbProj(p,it.mas),pcs=embAll.map(e=>e.pct).filter(v=>v!==null),tot=kgProd+p.estEf;
   // "Atinge o seguro" = o pior canal (fábrica ou loja): uma sobra num canal não compensa a falta no outro.
   const cob=pcs.length?Math.min(...pcs):(p.es>0?tot/p.es:null),cls=cob===null?'':cob>=0.995?'green':cob>=0.7?'yellow':'red',exc=cob!==null&&cob<0.995;
   const emb=embAll.filter(e=>e.un!=='kg'||embAll.length>1).sort((a,b)=>(a.canal==='Loja')-(b.canal==='Loja'));
-  return {p,kgProd,embAll,emb,tot,cob,cls,exc,rit:it.h>0&&!p.est?Math.floor(it.mas/it.h+1e-9):null};
+  return {p,kgProd,embAll,emb,tot,cob,cls,exc,rit:it.h>0&&girRitmoOk(p)?Math.floor(it.mas/it.h+1e-9):null};
 }
 // Card de produto no quadro semanal, em leitura rápida: nome e massas, quanto produzir e, no pão de queijo e na chipa, a divisão fábrica/loja.
 // Estoque de segurança, venda e conta ficam recolhidos em "Detalhes". Percentual e barra só aparecem quando o seguro NÃO é atingido.
@@ -9906,7 +9909,7 @@ function girPlanoHtml(rows){
   const disp=`<b>${girHM(pl.capEf)}</b> disponíveis para produzir${desc.length?` (${girHM(pl.cap)} menos ${desc.join(' e ')})`:''}`;
   const msg=dif>=0?`O plano exige <b>${girHM(pl.tot)}</b> e há ${disp}: <b>sobram ${girHM(dif)}</b>. Dá para atender 100% da venda e ainda sobra tempo para produzir estoque ou absorver paradas.`:`O plano exige <b>${girHM(pl.tot)}</b> e há só ${disp}: <b>faltam ${girHM(-dif)}</b>. Com as horas disponíveis dá para cobrir cerca de <b>${salPct(pl.f)}</b> da venda de cada produto. O plano abaixo reparte a falta por igual entre eles.`;
   const tr=pl.P.map(p=>{const d=p.aj,ds=Math.abs(d)<0.5?'manter':(d>0?'+':'−')+salFmt(Math.abs(d),0)+' massas';
-    return `<tr data-sd-prod="${salEsc(p.nome)}" class="sd-lk"><td>${salEsc(p.nome)}${p.nApt?' <span class="gd-est" title="'+p.nApt+' linha(s) planejadas sem produção apontada no período: a média de hoje pode estar subestimada">⚠ '+p.nApt+'</span>':''}${p.est?' <span class="gd-est" title="Sem apontamento com horário: ritmo estimado pela mediana dos demais produtos">~</span>':''}</td><td><span class="gd-fam gd-f-${p.fam}">${GIR_FAM[p.fam].maq}</span></td><td>${salFmt(p.venda)}</td><td>${salFmt(p.es)}</td><td>${salFmt(p.dispHoje)}</td><td>${salFmt(p.estKg)}</td><td>${salFmt(p.kgNec)}</td><td>${salFmt(p.prodKg)}</td><td>${p.est?'Sem registro':salFmt(p.t)}</td><td>${girHM(p.hN)}</td><td class="gd-bw"><div class="gd-b hoje" style="width:${(p.hHoje/mx*100).toFixed(1)}%"></div><div class="gd-b sug" style="width:${(p.hReal/mx*100).toFixed(1)}%"></div></td><td>${girHM(p.hHoje)} → <b>${girHM(p.hReal)}</b></td><td>${salFmt(p.hoje,1)}</td><td><b>${p.mas}</b></td><td>${(pl.D.porProd.get(p)||[]).join(' + ')||'—'}</td><td class="${d>=0.5?'gd-up':d<=-0.5?'gd-dn':''}">${ds}</td><td>${salPct(p.cobSug)}</td></tr>`;}).join('');
+    return `<tr data-sd-prod="${salEsc(p.nome)}" class="sd-lk"><td>${salEsc(p.nome)}${p.nApt?' <span class="gd-est" title="'+p.nApt+' linha(s) planejadas sem produção apontada no período: a média de hoje pode estar subestimada">⚠ '+p.nApt+'</span>':''}${p.est?' <span class="gd-est" title="Sem apontamento com horário: ritmo estimado pela mediana dos demais produtos">~</span>':''}</td><td><span class="gd-fam gd-f-${p.fam}">${GIR_FAM[p.fam].maq}</span></td><td>${salFmt(p.venda)}</td><td>${salFmt(p.es)}</td><td>${salFmt(p.dispHoje)}</td><td>${salFmt(p.estKg)}</td><td>${salFmt(p.kgNec)}</td><td>${salFmt(p.prodKg)}</td><td>${girRitmoOk(p)?salFmt(p.t):'Sem registro'}</td><td>${girHM(p.hN)}</td><td class="gd-bw"><div class="gd-b hoje" style="width:${(p.hHoje/mx*100).toFixed(1)}%"></div><div class="gd-b sug" style="width:${(p.hReal/mx*100).toFixed(1)}%"></div></td><td>${girHM(p.hHoje)} → <b>${girHM(p.hReal)}</b></td><td>${salFmt(p.hoje,1)}</td><td><b>${p.mas}</b></td><td>${(pl.D.porProd.get(p)||[]).join(' + ')||'—'}</td><td class="${d>=0.5?'gd-up':d<=-0.5?'gd-dn':''}">${ds}</td><td>${salPct(p.cobSug)}</td></tr>`;}).join('');
   const cab=['Produto','Máquina','Venda média (kg/sem)','Estoque de segurança (kg)','Disponível hoje (kg)','Estoque no dia da produção (kg)','A produzir (kg)','Produção semanal (kg/sem)','Ritmo (kg/h)','Horas que o plano exige','Hoje (cinza) × sugerido (vermelho)','Horas: hoje → sugerido','Massas por semana hoje','Massas programadas','Dia da produção','Ajuste','Cobre a venda'];
   const porFam=GIR_FAM_ORD.map(f=>{const h=pl.P.filter(p=>p.fam===f).reduce((s,p)=>s+p.hReal,0);return h>0?`<span>${GIR_FAM[f].maq} <b>${girHM(h)}</b></span>`:'';}).join('');
   return ctl+`<div class="gd-msg ${dif>=0?'ok':'ab'}">${msg}</div>`
