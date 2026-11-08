@@ -9877,12 +9877,12 @@ function girCardDados(it){
   // "Atinge o seguro" = o pior canal (fábrica ou loja): uma sobra num canal não compensa a falta no outro.
   const cob=pcs.length?Math.min(...pcs):(p.es>0?tot/p.es:null),cls=cob===null?'':cob>=0.995?'green':cob>=0.7?'yellow':'red',exc=cob!==null&&cob<0.995;
   const emb=embAll.filter(e=>e.un!=='kg'||embAll.length>1).sort((a,b)=>(a.canal==='Loja')-(b.canal==='Loja'));
-  return {p,kgProd,embAll,emb,tot,cob,cls,exc,rit:it.h>0?Math.floor(it.mas/it.h+1e-9):null};
+  return {p,kgProd,embAll,emb,tot,cob,cls,exc,rit:it.h>0&&!p.est?Math.floor(it.mas/it.h+1e-9):null};
 }
 // Card de produto no quadro semanal, em leitura rápida: nome e massas, quanto produzir e, no pão de queijo e na chipa, a divisão fábrica/loja.
 // Estoque de segurança, venda e conta ficam recolhidos em "Detalhes". Percentual e barra só aparecem quando o seguro NÃO é atingido.
 function girCardProd(it){
-  const {p,kgProd,tot,cob,cls,exc,emb}=girCardDados(it);
+  const {p,kgProd,tot,cob,cls,exc,emb,rit}=girCardDados(it);
   const esc=Math.max(p.es,tot,1),wE=Math.min(100,p.estEf/esc*100),wP=Math.min(100-wE,kgProd/esc*100),mk=p.es/esc*100;
   const pill=v=>v===null||v>=0.995?'':`<span class="gd-pill ${v>=0.7?'yellow':'red'}">${salPct(v)} do seguro</span>`;
   const cn=e=>e.canal==='Loja'?'loja':'fab',tag=e=>`<span class="gd-canal ${cn(e)}">${e.canal==='Loja'?'LOJA':'FÁBRICA'}</span>`;
@@ -9893,7 +9893,7 @@ function girCardProd(it){
   return `<div class="gd-pc ${cls}">`
    +`<div class="gd-pt"><div class="gd-pn">${salEsc(p.nome)}${it.de>1?` <em>(parte ${it.parte}/${it.de})</em>`:''}</div><div class="gd-mb"><b>${it.mas}</b><small>${it.mas===1?'massa':'massas'} · ${girHM(it.h)}</small></div></div>`
    +`<div class="gd-main"><span class="k">Produção programada</span><b>${salFmt(kgProd)} kg</b>${emb.length?'':pill(cob)}</div>`
-   +(it.h>0?`<div class="gd-rit">Ritmo: <b>${Math.floor(it.mas/it.h+1e-9)} massa/hora</b></div>`:'')
+   +`<div class="gd-rit">Ritmo: <b>${rit===null?'Sem registro':rit+' massa/hora'}</b></div>`
    +divisao+linhas+(exc&&!emb.length?bar:'')
    +`<details class="gd-dt"><summary>Detalhes</summary>${det}</details></div>`;
 }
@@ -9961,7 +9961,7 @@ function girPdf(rows){
     T('PRODUÇÃO PROGRAMADA',x0,yy+2,{b:1,s:5.2,c:COR.mut});
     T(`${salFmt(D.kgProd)} kg`,x0,yy+7.8,{b:1,s:12.5});
     if(D.exc&&!D.emb.length)T(`${salPct(D.cob)} do seguro`,xr,yy+12,{b:1,s:6.8,c:D.cob>=0.7?COR.yellow:COR.red,a:'right'});
-    T('Ritmo:',x0,yy+12,{s:7.2,c:COR.mut});T(`${D.rit===null?'-':D.rit} massa/hora`,x0+8,yy+12,{b:1,s:7.2});
+    T('Ritmo:',x0,yy+12,{s:7.2,c:COR.mut});T(D.rit===null?'Sem registro':`${D.rit} massa/hora`,x0+8,yy+12,{b:1,s:7.2});
     yy+=14.5;
     if(D.emb.length){
       if(D.emb.length>1){let cx=x0;D.emb.forEach(e=>{const w=(cw-6.4-0.8*(D.emb.length-1))*e.parte;rr(cx,yy,w,1.3,COR[e.canal==='Loja'?'loja':'fab'],.5);cx+=w+0.8;});yy+=2.6;}
