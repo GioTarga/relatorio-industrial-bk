@@ -9715,6 +9715,8 @@ function girCalcular(){
 // Regras de máquina: cada família é modelada em uma máquina; trocar de máquina no mesmo dia custa o setup, então o plano evita misturar.
 // Regra de produção: chipa/pão de queijo e redondos rodam em UMA produção só (um dia), sem outros tipos no mix.
 const GIR_UNICO=['RED','QUE'];
+// Dias fixos da rotina da fábrica (0 = Segunda): chipa e pão de queijo na quinta; pães de cereais/integral/milho/preto na sexta.
+const GIR_DIA_FAM={QUE:3},GIR_SEXTA=/CEREAIS|INTEGRAL|MILHO|PRETO/i,GIR_DIA_SEXTA=4;
 const GIR_FAM={RED:{nome:'Redondos',maq:'Sotorriva'},QUE:{nome:'Chipa e pão de queijo',maq:'G.A P.queijo'},DEM:{nome:'Demais pães',maq:'G.A'}},GIR_FAM_ORD=['RED','QUE','DEM'];
 function girFam(nome){
   const n=(nome||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
@@ -9799,18 +9801,20 @@ function girDias(P){
   // 1) Cada máquina em dias só dela: menor número de dias que comporta as produções, com as horas equilibradas entre eles.
   let bins=[];
   GIR_FAM_ORD.forEach(f=>{
-    const its=itens.filter(i=>i.fam===f).sort((a,b)=>b.h-a.h);if(!its.length)return;
-    if(GIR.umDia&&GIR_UNICO.includes(f)){bins.push({fams:[f],itens:its.slice(),h:its.reduce((a,i)=>a+i.h,0),setup:0,fixo:true});return;}
-    const ffd=[];its.forEach(it=>{let b=ffd.find(b=>b.h+it.h<=cap+0.01&&!b.itens.some(x=>x.p===it.p));if(!b){b={itens:[],h:0};ffd.push(b);}b.itens.push(it);b.h+=it.h;});
-    const bs=ffd.map(()=>({fams:[f],itens:[],h:0,setup:0}));
-    its.forEach(it=>{const livres=bs.filter(b=>!b.itens.some(x=>x.p===it.p)),base=livres.length?livres:bs,cabem=base.filter(b=>b.h+it.h<=cap+0.01),pool=cabem.length?cabem:base;const b=pool.reduce((a,c)=>c.h<a.h?c:a);b.itens.push(it);b.h+=it.h;});
-    girBalance(bs,cap);bins.push(...bs);
+    const todos=itens.filter(i=>i.fam===f).sort((a,b)=>b.h-a.h),sexta=i=>f==='DEM'&&GIR_SEXTA.test(i.p.nome);
+    const grupos=f==='DEM'?[[todos.filter(sexta),GIR_DIA_SEXTA],[todos.filter(i=>!sexta(i)),undefined]]:[[todos,GIR_DIA_FAM[f]]];
+    grupos.forEach(([its,dia])=>{if(!its.length)return;
+      if(GIR.umDia&&GIR_UNICO.includes(f)){bins.push({fams:[f],itens:its.slice(),h:its.reduce((a,i)=>a+i.h,0),setup:0,fixo:true,dia});return;}
+      const ffd=[];its.forEach(it=>{let b=ffd.find(b=>b.h+it.h<=cap+0.01&&!b.itens.some(x=>x.p===it.p));if(!b){b={itens:[],h:0};ffd.push(b);}b.itens.push(it);b.h+=it.h;});
+      const bs=ffd.map(()=>({fams:[f],itens:[],h:0,setup:0,dia}));
+      its.forEach(it=>{const livres=bs.filter(b=>!b.itens.some(x=>x.p===it.p)),base=livres.length?livres:bs,cabem=base.filter(b=>b.h+it.h<=cap+0.01),pool=cabem.length?cabem:base;const b=pool.reduce((a,c)=>c.h<a.h?c:a);b.itens.push(it);b.h+=it.h;});
+      girBalance(bs,cap);bins.push(...bs);});
   });
   // 2) Se faltam dias, desmancha o dia menos carregado e redistribui as produções dele nos outros dias onde ainda cabem, preferindo quem não precisa de setup novo.
   while(bins.length>n){
-    const ord=bins.map((_,i)=>i).filter(i=>!bins[i].fixo).sort((a,c)=>(bins[a].h+bins[a].setup)-(bins[c].h+bins[c].setup));let feito=false;
+    const ord=bins.map((_,i)=>i).filter(i=>!bins[i].fixo&&bins[i].dia===undefined).sort((a,c)=>(bins[a].h+bins[a].setup)-(bins[c].h+bins[c].setup));let feito=false;
     for(const bi of ord){
-      const outros=bins.filter((_,k)=>k!==bi).map(b=>({fams:b.fams.slice(),itens:b.itens.slice(),h:b.h,setup:b.setup}));let ok=true;
+      const outros=bins.filter((_,k)=>k!==bi).map(b=>({fams:b.fams.slice(),itens:b.itens.slice(),h:b.h,setup:b.setup,dia:b.dia,fixo:b.fixo}));let ok=true;
       for(const it of bins[bi].itens.slice().sort((a,b)=>b.h-a.h)){
         let best=null;
         outros.forEach(b=>{if(b.itens.some(x=>x.p===it.p))return;const nova=!b.fams.includes(it.fam),add=nova?su:0,tot=b.h+b.setup+it.h+add;
@@ -9827,15 +9831,19 @@ function girDias(P){
   while(bins.length>n){
     let best=null;
     for(let i=0;i<bins.length;i++)for(let j=i+1;j<bins.length;j++){
-      const A=bins[i],B=bins[j],c=comb(A,B),dup=A.itens.some(x=>B.itens.some(y=>y.p===x.p)),over=Math.max(0,c.tot-cap)+(dup?100:0)+(A.fixo&&B.fixo?1000:0);
+      const A=bins[i],B=bins[j],c=comb(A,B),dup=A.itens.some(x=>B.itens.some(y=>y.p===x.p)),over=Math.max(0,c.tot-cap)+(dup?100:0)+(A.fixo&&B.fixo?1000:0)+(A.dia!==undefined&&B.dia!==undefined&&A.dia!==B.dia?1000:0);
       if(!best||over<best.over-1e-9||(Math.abs(over-best.over)<1e-9&&(c.setup<best.c.setup-1e-9||(Math.abs(c.setup-best.c.setup)<1e-9&&c.tot<best.c.tot)))){best={i,j,over,c};}
     }
-    const A=bins[best.i],B=bins[best.j],m={fams:best.c.fams,setup:best.c.setup,h:A.h+B.h,itens:A.itens.concat(B.itens),fixo:false};
+    const A=bins[best.i],B=bins[best.j],m={fams:best.c.fams,setup:best.c.setup,h:A.h+B.h,itens:A.itens.concat(B.itens),fixo:false,dia:A.dia!==undefined?A.dia:B.dia};
     bins=bins.filter((_,k)=>k!==best.i&&k!==best.j);bins.push(m);
   }
   bins.forEach(b=>{b.fams=GIR_FAM_ORD.filter(f=>b.fams.includes(f));});
   bins.sort((a,b)=>GIR_FAM_ORD.indexOf(a.fams[0])-GIR_FAM_ORD.indexOf(b.fams[0])||b.h-a.h);
-  while(bins.length<n)bins.push({fams:[],itens:[],h:0,setup:0});
+  // Dias fixos da rotina primeiro; as demais produções ocupam os dias que sobraram, na ordem de sempre.
+  const slots=new Array(Math.max(n,bins.length)).fill(null);
+  bins.forEach(b=>{if(b.dia!==undefined&&b.dia<n&&!slots[b.dia]){slots[b.dia]=b;b.colocado=true;}});
+  bins.filter(b=>!b.colocado).forEach(b=>{slots[slots.findIndex(x=>!x)]=b;});
+  bins=slots.map(b=>b||{fams:[],itens:[],h:0,setup:0});
   const dias=bins.map((b,i)=>({i,unico:!!b.fixo&&b.fams.length===1,hProd:b.h,setup:b.setup,h:b.h+b.setup,fams:b.fams,itens:b.itens.sort((x,y)=>GIR_FAM_ORD.indexOf(x.fam)-GIR_FAM_ORD.indexOf(y.fam)||y.h-x.h)}));
   const mistos=dias.filter(d=>d.fams.length>1);
   if(mistos.length)avisos.push(`Não há dias suficientes para separar as máquinas: ${mistos.map(d=>GIR_DIAS[d.i]+' ('+d.fams.map(f=>GIR_FAM[f].maq).join(' + ')+')').join('; ')} ficou com mistura, com ${salFmt(su*60,0)} min de setup por troca.`);
