@@ -9914,31 +9914,40 @@ function girPlanoHtml(rows){
    +'<div class="sd-panel-t gd-sub">Detalhe por produto</div>'
    +`<div class="sd-tbl-wrap"><table class="sd-tbl gd-plano"><thead><tr>${cab.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${tr}</tbody></table></div>`;
 }
-// PDF do plano semanal (A4 paisagem) para impressão e aprovação: mesma visão do quadro da tela, um bloco por dia com os cards dos produtos.
+// PDF do plano semanal para impressão e aprovação: mesma visão do quadro da tela (um bloco por dia, com os cards dos produtos),
+// sempre em UMA página. A folha (paisagem ou retrato) e a escala são escolhidas para caber tudo com a maior letra possível.
 function girPdf(rows){
   if(!window.jspdf||!window.jspdf.jsPDF){alert('Não foi possível carregar a biblioteca de PDF (sem conexão com a internet?). Tente novamente.');return;}
   const pl=girPlano(rows);if(!pl){alert('Sem plano para gerar.');return;}
-  const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'landscape'}),cap=GIR.hDia;
-  const mx=8,gap=3,PW=297,LIM=186,nCol=pl.D.dias.length,cw=(PW-mx*2-gap*(nCol-1))/nCol;
+  const cap=GIR.hDia,gap=3,HN=Math.max,nCol=pl.D.dias.length;
   const COR={green:[47,125,82],yellow:[200,150,0],red:[192,0,0],'':[150,150,150],fab:[184,118,20],loja:[139,0,0],brand:[161,1,1],mut:[110,100,100]};
   const agora=new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});
-  const massas=pl.P.reduce((a,p)=>a+p.mas,0),fill=c=>doc.setFillColor(...c),txt=c=>doc.setTextColor(...c);
+  const massas=pl.P.reduce((a,p)=>a+p.mas,0);
+  // Tamanhos em "unidades virtuais": o conteúdo é desenhado numa folha de (A4 ÷ k) e reduzido por k ao imprimir.
+  const doc0=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'landscape'});
+  const headH=D=>12.5+(D.d.fams.length?5.5:0)+(D.d.itens.length?8.5:14);
+  const medirTudo=(doc,cw)=>pl.D.dias.map(d=>({d,cards:d.itens.map(it=>{const c=girCardDados(it);doc.setFont('helvetica','bold');doc.setFontSize(8);c.nome=doc.splitTextToSize(it.p.nome+(it.de>1?` (parte ${it.parte}/${it.de})`:''),cw-27);
+    c.hTop=HN(12,c.nome.length*3.7+3);c.det=girDetLinhas(c.p,c.emb);
+    c.lin=c.emb.map(e=>{doc.setFont('helvetica','bold');doc.setFontSize(7.2);const vw=doc.getTextWidth(`${salFmt(e.proj)} ${e.un}`)+4;doc.setFont('helvetica','normal');doc.setFontSize(6.8);return doc.splitTextToSize(e.lbl,cw-3.2-13.5-3-vw);});
+    c.h=c.hTop+14.5+(c.emb.length?(c.emb.length>1?2.6:0)+c.lin.reduce((a,l,k)=>a+HN(5,l.length*3.1+2,c.emb[k].pct!==null&&c.emb[k].pct<0.995?6.8:0),0):0)+3.5+c.det.length*3.2+3;return c;})}));
+  const TOP=24,BOT=16;
+  const tenta=(orient,k)=>{const PW=(orient==='l'?297:210)/k,PH=(orient==='l'?210:297)/k,mx=7/k,cw=(PW-mx*2-gap*(nCol-1))/nCol;
+    const dias=medirTudo(doc0,cw),alt=HN(...dias.map(D=>headH(D)+D.cards.reduce((a,c)=>a+c.h+2.5,0)));
+    return {orient,k,PW,PH,mx,cw,dias,fit:cw>=50&&TOP+alt<=PH-BOT/k};};
+  let L=null;
+  ['l','p'].forEach(o=>{for(let k=1;k>=0.3;k-=0.02){const t=tenta(o,k);if(t.fit||k<0.31){if(!L||t.k>L.k+1e-6)L=t;break;}}});
+  const {orient,k,PW,PH,mx,cw,dias}=L;
+  const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:orient==='l'?'landscape':'portrait'}),HP=doc.internal.pageSize.getHeight()*72/25.4;
+  const fill=c=>doc.setFillColor(...c),txt=c=>doc.setTextColor(...c);
   const rr=(x,y,w,h,c,r=1)=>{fill(c);doc.roundedRect(x,y,w,h,r,r,'F');};
   const T=(t,x,y,o={})=>{doc.setFont('helvetica',o.b?'bold':'normal');doc.setFontSize(o.s||7);txt(o.c||[30,30,30]);doc.text(String(t),x,y,{align:o.a||'left'});};
-  // Altura de um card, para saber se cabe na página antes de desenhar
-  const HN=Math.max;
-  const medir=it=>{const d=girCardDados(it);doc.setFont('helvetica','bold');doc.setFontSize(8);d.nome=doc.splitTextToSize(it.p.nome+(it.de>1?` (parte ${it.parte}/${it.de})`:''),cw-27);
-    d.hTop=HN(12,d.nome.length*3.7+3);d.det=girDetLinhas(d.p,d.emb);
-    d.lin=d.emb.map(e=>{doc.setFontSize(6.8);const vw=doc.getTextWidth(`${salFmt(e.proj)} ${e.un}`)+4;return doc.splitTextToSize(e.lbl,cw-3.2-13-3-vw);});
-    d.h=d.hTop+14.5+(d.emb.length?(d.emb.length>1?2.6:0)+d.lin.reduce((a,l,k)=>a+HN(5,l.length*3.1+2,d.emb[k].pct!==null&&d.emb[k].pct<0.995?6.8:0),0):0)+3.5+d.det.length*3.2+3;return d;};
-  const dias=pl.D.dias.map(d=>({d,cards:d.itens.map(medir),i:0}));
-  const cabDia=(x,y,D,cont)=>{const d=D.d,ab=d.h>cap+0.05,c=ab?COR.red:COR.green,tot=d.itens.reduce((a,it)=>a+it.mas,0);
-    T(GIR_DIAS[d.i]+(cont?' (cont.)':''),x,y+3.5,{b:1,s:10});
+  const cabDia=(x,y,D)=>{const d=D.d,ab=d.h>cap+0.05,c=ab?COR.red:COR.green,tot=d.itens.reduce((a,it)=>a+it.mas,0);
+    T(GIR_DIAS[d.i],x,y+3.5,{b:1,s:10});
     T(`${girHM(d.h)} de ${girHM(cap)}${ab?' (+'+girHM(d.h-cap)+')':''}`,x,y+7.6,{b:1,s:7.5,c});
     rr(x,y+9.2,cw,1.6,[236,228,228],.8);rr(x,y+9.2,Math.max(.8,cw*Math.min(1,d.h/cap)),1.6,c,.8);
-    let yy=y+12.5;const chips=d.fams.map(f=>GIR_FAM[f].maq);let cx=x;
-    chips.forEach(m=>{doc.setFontSize(6.5);const w=doc.getTextWidth(m)+3.5;rr(cx,yy,w,4,[240,232,232],2);T(m,cx+1.75,yy+2.9,{s:6.5,c:COR.mut});cx+=w+1.5;});
-    if(chips.length)yy+=5.5;
+    let yy=y+12.5;let cx=x;
+    d.fams.map(f=>GIR_FAM[f].maq).forEach(m=>{doc.setFontSize(6.5);const w=doc.getTextWidth(m)+3.5;rr(cx,yy,w,4,[240,232,232],2);T(m,cx+1.75,yy+2.9,{s:6.5,c:COR.mut});cx+=w+1.5;});
+    if(d.fams.length)yy+=5.5;
     if(tot){rr(x,yy,cw,6.5,COR.brand,1);T('TOTAL DO DIA',x+2,yy+4.3,{b:1,s:6.8,c:[255,255,255]});T(`${tot} ${tot===1?'massa':'massas'}`,x+cw-2,yy+4.5,{b:1,s:8.5,c:[255,255,255],a:'right'});yy+=8.5;}
     else{T('Folga: sem produção',x+cw/2,yy+9,{s:7.5,c:COR.mut,a:'center'});yy+=14;}
     return yy;};
@@ -9951,7 +9960,7 @@ function girPdf(rows){
     let yy=y+D.hTop+1;
     T('PRODUÇÃO PROGRAMADA',x0,yy+2,{b:1,s:5.2,c:COR.mut});
     T(`${salFmt(D.kgProd)} kg`,x0,yy+7.8,{b:1,s:12.5});
-    if(D.exc&&!D.emb.length)T(`${salPct(D.cob)} do seguro`,xr,yy+7.6,{b:1,s:6.8,c:D.cob>=0.7?COR.yellow:COR.red,a:'right'});
+    if(D.exc&&!D.emb.length)T(`${salPct(D.cob)} do seguro`,xr,yy+12,{b:1,s:6.8,c:D.cob>=0.7?COR.yellow:COR.red,a:'right'});
     T('Ritmo:',x0,yy+12,{s:7.2,c:COR.mut});T(`${D.rit===null?'-':D.rit} massa/hora`,x0+8,yy+12,{b:1,s:7.2});
     yy+=14.5;
     if(D.emb.length){
@@ -9967,24 +9976,18 @@ function girPdf(rows){
     yy+=1;doc.setDrawColor(215,200,200);doc.setLineWidth(.2);doc.setLineDashPattern([.6,.6],0);doc.line(x0,yy,xr,yy);doc.setLineDashPattern([],0);yy+=1.5;
     D.det.forEach(([t,v],k)=>{const venda=k===D.det.length-1;T(t,x0,yy+2.2,{s:6.3,c:COR.mut});T(v,xr,yy+2.2,{b:1,s:6.5,a:'right'});yy+=3.2;});
   };
-  const rodape=(p,pg)=>{T(`Bread King - PCP - página ${p}/${pg}`,mx,205,{s:7.5,c:[130,130,130]});};
-  let first=true;
-  while(first||dias.some(D=>D.i<D.cards.length)){
-    if(!first)doc.addPage();
-    let top=10;
-    if(first){T('Plano Semanal de Produção - Giro Dia',mx,top+4,{b:1,s:15,c:COR.brand});
-      T(`Bread King - PCP - gerado em ${agora}   |   Horas por dia ${girHM(cap)} x ${GIR.dSem} dias = ${girHM(pl.cap)}   |   Plano exige ${girHM(pl.tot)}   |   ${massas} massas   |   Estoque de segurança = venda média + ${GIR.marg}%`,mx,top+9.5,{s:7.5,c:COR.mut});top+=14;}
-    dias.forEach((D,k)=>{
-      if(!first&&D.i>=D.cards.length)return;
-      const x=mx+k*(cw+gap);let y=cabDia(x,top,D,!first);
-      let n=0;while(D.i<D.cards.length&&(n===0||y+D.cards[D.i].h<=LIM)){n++;card(x,y,D.d.itens[D.i],D.cards[D.i]);y+=D.cards[D.i].h+2.5;D.i++;}
-    });
-    first=false;
-  }
-  // Aprovação na última página
-  doc.setDrawColor(120,120,120);doc.setLineWidth(.3);const W=PW-mx*2,ya=198;
+  // A escala k vira uma matriz de transformação da página: o topo esquerdo fica fixo e o resto encolhe
+  doc.internal.write(`q ${k.toFixed(4)} 0 0 ${k.toFixed(4)} 0 ${(HP*(1-k)).toFixed(3)} cm`);
+  let top=10;
+  T('Plano Semanal de Produção - Giro Dia',mx,top+4,{b:1,s:15,c:COR.brand});
+  T(`Bread King - PCP - gerado em ${agora}`,PW-mx,top+4,{s:7.5,c:COR.mut,a:'right'});
+  T(`Horas por dia ${girHM(cap)} x ${GIR.dSem} dias = ${girHM(pl.cap)}   |   Plano exige ${girHM(pl.tot)}   |   ${massas} massas   |   Estoque de segurança = venda média + ${GIR.marg}%`,mx,top+9.5,{s:7.5,c:COR.mut});top+=14;
+  dias.forEach((D,n)=>{const x=mx+n*(cw+gap);let y=cabDia(x,top,D);D.cards.forEach((c,m)=>{card(x,y,D.d.itens[m],c);y+=c.h+2.5;});});
+  // Aprovação e rodapé
+  const W=PW-mx*2,ya=PH-11/k*0.8;doc.setDrawColor(120,120,120);doc.setLineWidth(.3);
   [['Elaborado por (PCP)',mx],['Aprovado por',mx+W/3+4],['Data',mx+2*W/3+8]].forEach(([t,x])=>{doc.line(x,ya,x+W/3-8,ya);T(t,x,ya+3.6,{s:7,c:[60,60,60]});});
-  const pg=doc.getNumberOfPages();for(let p=1;p<=pg;p++){doc.setPage(p);rodape(p,pg);}
+  T('Bread King - PCP - página 1/1',mx,PH-3,{s:7,c:[130,130,130]});
+  doc.internal.write('Q');
   doc.save(`plano-semanal-giro-dia-${new Date().toISOString().slice(0,10)}.pdf`);
 }
 function girOrdena(rows){
