@@ -9621,7 +9621,7 @@ function girEmbLabel(nome){
   return r?r.toLowerCase().replace(/^./,c=>c.toUpperCase()):'Embalagem';
 }
 // Produtos lançados no setor Giro Dia que não fazem parte do plano do Giro: ficam fora de todos os cálculos.
-const GIR_FORA=[{re:/CASEIRINHO|SOVADINHO/i,nome:'Caseirinho/Sovadinho',motivo:'é produto do Croissant'},{re:/NUTRI/i,nome:'Pão francês Nutri',motivo:'passou para a linha 100, automatizada'},{re:/PRE ASSADO|PRÉ ASSADO|PRE-ASSADO/i,nome:'Pães pré-assados',motivo:'são do Padaria Noturno'},{re:/PASTEL/i,nome:'Mini pastel',motivo:'é produto do Salgado'},{re:/CHIPA.*(CHOCOLATE|GOTAS)/i,nome:'Chipa com chocolate',motivo:'é produto do Padaria Noturno'},{re:/QUEIJO C\/ ?BACON|BACON/i,nome:'Pão de queijo com bacon',motivo:'saiu de linha'}];
+const GIR_FORA=[{re:/(^|[^0-9])500\s?G(?![A-Z])/i,nome:'Pães de 500g',motivo:'não são produzidos no Giro'},{re:/CASEIRINHO|SOVADINHO/i,nome:'Caseirinho/Sovadinho',motivo:'é produto do Croissant'},{re:/NUTRI/i,nome:'Pão francês Nutri',motivo:'passou para a linha 100, automatizada'},{re:/PRE ASSADO|PRÉ ASSADO|PRE-ASSADO/i,nome:'Pães pré-assados',motivo:'são do Padaria Noturno'},{re:/PASTEL/i,nome:'Mini pastel',motivo:'é produto do Salgado'},{re:/CHIPA.*(CHOCOLATE|GOTAS)/i,nome:'Chipa com chocolate',motivo:'é produto do Padaria Noturno'},{re:/QUEIJO C\/ ?BACON|BACON/i,nome:'Pão de queijo com bacon',motivo:'saiu de linha'}];
 function girCalcular(){
   const rowsAll=[],fora={};
   Object.keys(DATA).forEach(d=>(DATA[d].rows||[]).forEach(r=>{if(r.setor!=='GIRO DIA')return;const f=GIR_FORA.find(x=>x.re.test(r.produto||''));if(f){fora[f.nome]=f;return;}rowsAll.push(Object.assign({d},r));}));
