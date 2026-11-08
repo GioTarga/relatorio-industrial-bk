@@ -1897,7 +1897,6 @@ body{background:#fff;color:#000}
 .gd-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}.gd-fam{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
 .gd-f-RED{background:#f7e2df;color:#8a1a10}.gd-f-QUE{background:#fbefcf;color:#7a5600}.gd-f-DEM{background:#e3eaee;color:#34454f}
 .gd-su{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fff;border:1px dashed var(--sd-ab);color:var(--sd-ab)}
-.gd-regra{font-size:11.5px;color:var(--sd-mut);align-self:center}
 .gd-tot{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin:0 0 8px;padding:5px 9px;background:var(--red);color:#fff;border-radius:6px}.gd-tot b{font-size:14px;letter-spacing:0;text-transform:none}
 .gd-pcs{display:flex;flex-direction:column;gap:10px}
 .gd-pc{background:#fff;border:1px solid var(--sd-line);border-left:5px solid #cfc6c6;border-radius:8px;padding:10px 11px 9px;display:flex;flex-direction:column;gap:8px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
@@ -9861,29 +9860,36 @@ function girDiasHtml(D){
     return `<div class="gd-dia"><div class="gd-dh"><b>${GIR_DIAS[d.i]}</b><span class="${cls}">${girHM(d.h)} de ${girHM(cap)}${d.h>cap+0.05?' (+'+girHM(d.h-cap)+')':''}</span></div><div class="gd-dbarra"><i class="${cls}" style="width:${pct.toFixed(1)}%"></i></div>`
      +(chips?`<div class="gd-chips">${chips}</div>`:'')
      +(tot?`<div class="gd-tot"><span>Total do dia</span><b>${tot} ${tot===1?'massa':'massas'}</b></div>`:'')
-     +(d.itens.length?'<div class="gd-pcs">'+d.itens.map(girCardProd).join('')+'</div>':'<div class="sd-vazio">Folga: sem produção</div>')+'</div>';}).join('')+'</div>'
-   +(D.avisos.length?'<div class="gd-msg ab">'+D.avisos.map(salEsc).join('<br>')+'</div>':'');
+     +(d.itens.length?'<div class="gd-pcs">'+d.itens.map(girCardProd).join('')+'</div>':'<div class="sd-vazio">Folga: sem produção</div>')+'</div>';}).join('')+'</div>';
+}
+// Linhas de "Detalhes" do card (tela e PDF): estoque de segurança e atual por canal/embalagem e venda média semanal.
+// Com mais de uma embalagem no mesmo canal (ex.: pacote 750 g e 400 g na loja) o nome da embalagem entra no rótulo.
+function girDetLinhas(p,emb){
+  const nCan=c=>emb.filter(e=>e.canal===c).length,rot=(t,e)=>`${t} ${e.canal==='Loja'?'Loja':'Fábrica'}${nCan(e.canal)>1?' · '+e.lbl:''}`;
+  const L=emb.length
+    ?emb.map(e=>[rot('Est. Seg.',e),`${salFmt(e.es)} ${e.un}`]).concat(emb.map(e=>[rot('Est. Atual',e),`${salFmt(e.hoje)} ${e.un}`]))
+    :[['Est. Seg.',`${salFmt(p.es)} kg`],['Est. Atual',`${salFmt(p.dispHoje)} kg`]];
+  return L.concat([['Venda Média Semanal',`${salFmt(p.venda)} kg`]]);
+}
+// Dados do card (usados no quadro da tela e no PDF): produção, cobertura do seguro e embalagens fábrica/loja.
+function girCardDados(it){
+  const p=it.p,kgProd=it.mas*p.kgM,embAll=girEmbProj(p,it.mas),pcs=embAll.map(e=>e.pct).filter(v=>v!==null),tot=kgProd+p.estEf;
+  // "Atinge o seguro" = o pior canal (fábrica ou loja): uma sobra num canal não compensa a falta no outro.
+  const cob=pcs.length?Math.min(...pcs):(p.es>0?tot/p.es:null),cls=cob===null?'':cob>=0.995?'green':cob>=0.7?'yellow':'red',exc=cob!==null&&cob<0.995;
+  const emb=embAll.filter(e=>e.un!=='kg'||embAll.length>1).sort((a,b)=>(a.canal==='Loja')-(b.canal==='Loja'));
+  return {p,kgProd,embAll,emb,tot,cob,cls,exc,rit:it.h>0?Math.floor(it.mas/it.h+1e-9):null};
 }
 // Card de produto no quadro semanal, em leitura rápida: nome e massas, quanto produzir e, no pão de queijo e na chipa, a divisão fábrica/loja.
 // Estoque de segurança, venda e conta ficam recolhidos em "Detalhes". Percentual e barra só aparecem quando o seguro NÃO é atingido.
 function girCardProd(it){
-  const p=it.p,kgProd=it.mas*p.kgM,embAll=girEmbProj(p,it.mas),pcs=embAll.map(e=>e.pct).filter(v=>v!==null),tot=kgProd+p.estEf;
-  // "Atinge o seguro" = o pior canal (fábrica ou loja): uma sobra num canal não compensa a falta no outro.
-  const cob=pcs.length?Math.min(...pcs):(p.es>0?tot/p.es:null),cls=cob===null?'':cob>=0.995?'green':cob>=0.7?'yellow':'red',exc=cob!==null&&cob<0.995;
+  const {p,kgProd,tot,cob,cls,exc,emb}=girCardDados(it);
   const esc=Math.max(p.es,tot,1),wE=Math.min(100,p.estEf/esc*100),wP=Math.min(100-wE,kgProd/esc*100),mk=p.es/esc*100;
   const pill=v=>v===null||v>=0.995?'':`<span class="gd-pill ${v>=0.7?'yellow':'red'}">${salPct(v)} do seguro</span>`;
-  const emb=embAll.filter(e=>e.un!=='kg'||embAll.length>1).sort((a,b)=>(a.canal==='Loja')-(b.canal==='Loja'));
   const cn=e=>e.canal==='Loja'?'loja':'fab',tag=e=>`<span class="gd-canal ${cn(e)}">${e.canal==='Loja'?'LOJA':'FÁBRICA'}</span>`;
   const linhas=emb.map(e=>`<div class="gd-ln">${tag(e)}<span class="n">${salEsc(e.lbl)}</span><b>${salFmt(e.proj)} ${e.un}</b>${pill(e.pct)}</div>`).join('');
   const divisao=emb.length>1?`<div class="gd-div2" title="Divisão da massa entre os canais">${emb.map(e=>`<i class="${cn(e)}" style="width:${(e.parte*100).toFixed(1)}%"></i>`).join('')}</div>`:'';
   const bar=`<div class="gd-bar" title="Estoque no dia da produção + produção programada, contra o estoque de segurança (traço)"><i class="e" style="width:${wE.toFixed(1)}%"></i><i class="p" style="width:${wP.toFixed(1)}%"></i><u style="left:${mk.toFixed(1)}%"></u></div>`;
-  // Com mais de uma embalagem no mesmo canal (ex.: pacote 750 g e 400 g na loja) o nome da embalagem entra no rótulo.
-  const nCan=c=>emb.filter(e=>e.canal===c).length,rot=(t,e)=>`${t} ${e.canal==='Loja'?'Loja':'Fábrica'}${nCan(e.canal)>1?' · '+salEsc(e.lbl):''}`;
-  const dl=(t,v)=>`<div class="gd-dl"><span>${t}</span><b>${v}</b></div>`;
-  const det=`<div class="gd-dt-b">`+(emb.length
-    ?emb.map(e=>dl(rot('Est. Seg.',e),`${salFmt(e.es)} ${e.un}`)).join('')+emb.map(e=>dl(rot('Est. Atual',e),`${salFmt(e.hoje)} ${e.un}`)).join('')
-    :dl('Est. Seg.',`${salFmt(p.es)} kg`)+dl('Est. Atual',`${salFmt(p.dispHoje)} kg`))
-    +dl('Venda Média Semanal',`${salFmt(p.venda)} kg`)+'</div>';
+  const det=`<div class="gd-dt-b">`+girDetLinhas(p,emb).map(([t,v])=>`<div class="gd-dl"><span>${salEsc(t)}</span><b>${v}</b></div>`).join('')+'</div>';
   return `<div class="gd-pc ${cls}">`
    +`<div class="gd-pt"><div class="gd-pn">${salEsc(p.nome)}${it.de>1?` <em>(parte ${it.parte}/${it.de})</em>`:''}</div><div class="gd-mb"><b>${it.mas}</b><small>${it.mas===1?'massa':'massas'} · ${girHM(it.h)}</small></div></div>`
    +`<div class="gd-main"><span class="k">Produção programada</span><b>${salFmt(kgProd)} kg</b>${emb.length?'':pill(cob)}</div>`
@@ -9893,7 +9899,7 @@ function girCardProd(it){
 }
 function girPlanoHtml(rows){
   const pl=girPlano(rows);
-  const ctl=`<div class="gd-ctl"><label>Horas líquidas por dia <input type="number" id="gdHDia" min="1" max="24" step="0.5" value="${GIR.hDia}"></label><label>Dias por semana <input type="number" id="gdDSem" min="1" max="7" step="1" value="${GIR.dSem}"></label><label>Setup entre máquinas (min) <input type="number" id="gdSetup" min="0" max="180" step="5" value="${GIR.setup}"></label><label class="gd-chk"><input type="checkbox" id="gdUmDia" ${GIR.umDia?'checked':''}> Produção única: chipa/pão de queijo e redondos em um dia só</label><label>Estoque de segurança = venda média + (%) <input type="number" id="gdMarg" min="0" max="100" step="5" value="${GIR.marg}"></label><span class="gd-regra">Estoque de segurança (ES) = venda média × ${salFmt(1+GIR.marg/100,2)}. Produzir = ES − estoque no dia da produção (estoque − reserva, menos a venda até o dia em que o produto costuma rodar). Se já alcança ES, o produto sai do quadro</span></div>`;
+  const ctl=`<div class="gd-ctl"><label>Horas líquidas por dia <input type="number" id="gdHDia" min="1" max="24" step="0.5" value="${GIR.hDia}"></label><label>Dias por semana <input type="number" id="gdDSem" min="1" max="7" step="1" value="${GIR.dSem}"></label><label>Setup entre máquinas (min) <input type="number" id="gdSetup" min="0" max="180" step="5" value="${GIR.setup}"></label><label class="gd-chk"><input type="checkbox" id="gdUmDia" ${GIR.umDia?'checked':''}> Produção única: chipa/pão de queijo e redondos em um dia só</label><label>Estoque de segurança = venda média + (%) <input type="number" id="gdMarg" min="0" max="100" step="5" value="${GIR.marg}"></label><button type="button" class="sd-btn" id="gdPdf">Gerar PDF</button></div>`;
   if(!pl)return ctl+'<div class="sd-vazio">Sem produtos com venda e rendimento para montar o plano.</div>';
   const util=pl.tot/pl.capEf,dif=pl.capEf-pl.tot,mx=Math.max(...pl.P.map(p=>Math.max(p.hReal,p.hHoje)),0.1);
   const desc=[];if(pl.setupTotal>0.05)desc.push(girHM(pl.setupTotal)+' de setup entre máquinas');if(pl.perda>0.05)desc.push(girHM(pl.perda)+' que não encaixam em dias inteiros, pois a produção não se parte');
@@ -9903,10 +9909,83 @@ function girPlanoHtml(rows){
     return `<tr data-sd-prod="${salEsc(p.nome)}" class="sd-lk"><td>${salEsc(p.nome)}${p.nApt?' <span class="gd-est" title="'+p.nApt+' linha(s) planejadas sem produção apontada no período: a média de hoje pode estar subestimada">⚠ '+p.nApt+'</span>':''}${p.est?' <span class="gd-est" title="Sem apontamento com horário: ritmo estimado pela mediana dos demais produtos">~</span>':''}</td><td><span class="gd-fam gd-f-${p.fam}">${GIR_FAM[p.fam].maq}</span></td><td>${salFmt(p.venda)}</td><td>${salFmt(p.es)}</td><td>${salFmt(p.dispHoje)}</td><td>${salFmt(p.estKg)}</td><td>${salFmt(p.kgNec)}</td><td>${salFmt(p.prodKg)}</td><td>${salFmt(p.t)}</td><td>${girHM(p.hN)}</td><td class="gd-bw"><div class="gd-b hoje" style="width:${(p.hHoje/mx*100).toFixed(1)}%"></div><div class="gd-b sug" style="width:${(p.hReal/mx*100).toFixed(1)}%"></div></td><td>${girHM(p.hHoje)} → <b>${salFmt(p.hReal,1)}</b></td><td>${salFmt(p.hoje,1)}</td><td><b>${p.mas}</b></td><td>${(pl.D.porProd.get(p)||[]).join(' + ')||'—'}</td><td class="${d>=0.5?'gd-up':d<=-0.5?'gd-dn':''}">${ds}</td><td>${salPct(p.cobSug)}</td></tr>`;}).join('');
   const cab=['Produto','Máquina','Venda média (kg/sem)','Estoque de segurança (kg)','Disponível hoje (kg)','Estoque no dia da produção (kg)','A produzir (kg)','Produção semanal (kg/sem)','Ritmo (kg/h)','Horas que o plano exige','Hoje (cinza) × sugerido (vermelho)','Horas: hoje → sugerido','Massas por semana hoje','Massas programadas','Dia da produção','Ajuste','Cobre a venda'];
   const porFam=GIR_FAM_ORD.map(f=>{const h=pl.P.filter(p=>p.fam===f).reduce((s,p)=>s+p.hReal,0);return h>0?`<span>${GIR_FAM[f].maq} <b>${girHM(h)}</b></span>`:'';}).join('');
-  return ctl+`<div class="sd-mini"><span>Horas da semana <b>${girHM(pl.cap)}</b> (${GIR.hDia} h × ${GIR.dSem} dias)</span><span>Setup entre máquinas <b>${girHM(pl.setupTotal)}</b></span><span>O plano exige <b>${girHM(pl.tot)}</b> (${salPct(util)} do disponível)</span><span>Usamos hoje <b>${girHM(pl.hHoje)}</b></span><span>Plano sugerido <b>${girHM(pl.totH)}</b></span><span>Massas na semana <b>${pl.P.reduce((a,p)=>a+p.mas,0)}</b></span><span>Fora do quadro (estoque cobre) <b>${(pl.semNec||[]).length}</b></span><span>Demanda pela saída do estoque <b>${pl.P.filter(p=>p.porSaida).length}</b> produtos</span></div><div class="sd-mini">${porFam}</div><div class="gd-msg ${dif>=0?'ok':'ab'}">${msg}</div>`
-   +'<div class="sd-panel-t gd-sub">Quadro semanal sugerido: um dia de produção por produto, uma máquina por dia. Em cada produto, o que a produção rende embalado e quanto do estoque de segurança ela atinge</div>'+girDiasHtml(pl.D)
+  return ctl+`<div class="gd-msg ${dif>=0?'ok':'ab'}">${msg}</div>`
+   +girDiasHtml(pl.D)
    +'<div class="sd-panel-t gd-sub">Detalhe por produto</div>'
    +`<div class="sd-tbl-wrap"><table class="sd-tbl gd-plano"><thead><tr>${cab.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${tr}</tbody></table></div>`;
+}
+// PDF do plano semanal (A4 paisagem) para impressão e aprovação: mesma visão do quadro da tela, um bloco por dia com os cards dos produtos.
+function girPdf(rows){
+  if(!window.jspdf||!window.jspdf.jsPDF){alert('Não foi possível carregar a biblioteca de PDF (sem conexão com a internet?). Tente novamente.');return;}
+  const pl=girPlano(rows);if(!pl){alert('Sem plano para gerar.');return;}
+  const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'landscape'}),cap=GIR.hDia;
+  const mx=8,gap=3,PW=297,LIM=186,nCol=pl.D.dias.length,cw=(PW-mx*2-gap*(nCol-1))/nCol;
+  const COR={green:[47,125,82],yellow:[200,150,0],red:[192,0,0],'':[150,150,150],fab:[184,118,20],loja:[139,0,0],brand:[161,1,1],mut:[110,100,100]};
+  const agora=new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});
+  const massas=pl.P.reduce((a,p)=>a+p.mas,0),fill=c=>doc.setFillColor(...c),txt=c=>doc.setTextColor(...c);
+  const rr=(x,y,w,h,c,r=1)=>{fill(c);doc.roundedRect(x,y,w,h,r,r,'F');};
+  const T=(t,x,y,o={})=>{doc.setFont('helvetica',o.b?'bold':'normal');doc.setFontSize(o.s||7);txt(o.c||[30,30,30]);doc.text(String(t),x,y,{align:o.a||'left'});};
+  // Altura de um card, para saber se cabe na página antes de desenhar
+  const HN=Math.max;
+  const medir=it=>{const d=girCardDados(it);doc.setFont('helvetica','bold');doc.setFontSize(8);d.nome=doc.splitTextToSize(it.p.nome+(it.de>1?` (parte ${it.parte}/${it.de})`:''),cw-27);
+    d.hTop=HN(12,d.nome.length*3.7+3);d.det=girDetLinhas(d.p,d.emb);
+    d.lin=d.emb.map(e=>{doc.setFontSize(6.8);const vw=doc.getTextWidth(`${salFmt(e.proj)} ${e.un}`)+4;return doc.splitTextToSize(e.lbl,cw-3.2-13-3-vw);});
+    d.h=d.hTop+14.5+(d.emb.length?(d.emb.length>1?2.6:0)+d.lin.reduce((a,l,k)=>a+HN(5,l.length*3.1+2,d.emb[k].pct!==null&&d.emb[k].pct<0.995?6.8:0),0):0)+3.5+d.det.length*3.2+3;return d;};
+  const dias=pl.D.dias.map(d=>({d,cards:d.itens.map(medir),i:0}));
+  const cabDia=(x,y,D,cont)=>{const d=D.d,ab=d.h>cap+0.05,c=ab?COR.red:COR.green,tot=d.itens.reduce((a,it)=>a+it.mas,0);
+    T(GIR_DIAS[d.i]+(cont?' (cont.)':''),x,y+3.5,{b:1,s:10});
+    T(`${girHM(d.h)} de ${girHM(cap)}${ab?' (+'+girHM(d.h-cap)+')':''}`,x,y+7.6,{b:1,s:7.5,c});
+    rr(x,y+9.2,cw,1.6,[236,228,228],.8);rr(x,y+9.2,Math.max(.8,cw*Math.min(1,d.h/cap)),1.6,c,.8);
+    let yy=y+12.5;const chips=d.fams.map(f=>GIR_FAM[f].maq);let cx=x;
+    chips.forEach(m=>{doc.setFontSize(6.5);const w=doc.getTextWidth(m)+3.5;rr(cx,yy,w,4,[240,232,232],2);T(m,cx+1.75,yy+2.9,{s:6.5,c:COR.mut});cx+=w+1.5;});
+    if(chips.length)yy+=5.5;
+    if(tot){rr(x,yy,cw,6.5,COR.brand,1);T('TOTAL DO DIA',x+2,yy+4.3,{b:1,s:6.8,c:[255,255,255]});T(`${tot} ${tot===1?'massa':'massas'}`,x+cw-2,yy+4.5,{b:1,s:8.5,c:[255,255,255],a:'right'});yy+=8.5;}
+    else{T('Folga: sem produção',x+cw/2,yy+9,{s:7.5,c:COR.mut,a:'center'});yy+=14;}
+    return yy;};
+  const card=(x,y,it,D)=>{const h=D.h;
+    doc.setDrawColor(228,214,190);doc.setLineWidth(.25);fill([255,255,255]);doc.roundedRect(x,y,cw,h,1.5,1.5,'FD');
+    rr(x,y,1.4,h,COR[D.cls],.7);
+    const x0=x+3.4,xr=x+cw-3;doc.setFont('helvetica','bold');doc.setFontSize(8);txt([30,30,30]);doc.text(D.nome,x0,y+4.3);
+    const bx=x+cw-22.5;rr(bx,y+2,20,10.5,COR.brand,1.6);T(it.mas,bx+10,y+7.6,{b:1,s:11.5,c:[255,255,255],a:'center'});
+    T(`${it.mas===1?'massa':'massas'} · ${girHM(it.h)}`,bx+10,y+11,{b:1,s:5.6,c:[255,255,255],a:'center'});
+    let yy=y+D.hTop+1;
+    T('PRODUÇÃO PROGRAMADA',x0,yy+2,{b:1,s:5.2,c:COR.mut});
+    T(`${salFmt(D.kgProd)} kg`,x0,yy+7.8,{b:1,s:12.5});
+    if(D.exc&&!D.emb.length)T(`${salPct(D.cob)} do seguro`,xr,yy+7.6,{b:1,s:6.8,c:D.cob>=0.7?COR.yellow:COR.red,a:'right'});
+    T('Ritmo:',x0,yy+12,{s:7.2,c:COR.mut});T(`${D.rit===null?'-':D.rit} massa/hora`,x0+8,yy+12,{b:1,s:7.2});
+    yy+=14.5;
+    if(D.emb.length){
+      if(D.emb.length>1){let cx=x0;D.emb.forEach(e=>{const w=(cw-6.4-0.8*(D.emb.length-1))*e.parte;rr(cx,yy,w,1.3,COR[e.canal==='Loja'?'loja':'fab'],.5);cx+=w+0.8;});yy+=2.6;}
+      D.emb.forEach((e,k)=>{const c=COR[e.canal==='Loja'?'loja':'fab'],n=D.lin[k].length,hh=HN(5,n*3.1+2),loja=e.canal==='Loja';
+        rr(x0,yy+.7,loja?8.5:12,3.5,c,.8);T(loja?'LOJA':'FÁBRICA',x0+(loja?4.25:6),yy+3.1,{b:1,s:5,c:[255,255,255],a:'center'});
+        D.lin[k].forEach((t,m)=>T(t,x0+13.5,yy+3.1+m*3.1,{s:6.8,c:[70,60,60]}));
+        T(`${salFmt(e.proj)} ${e.un}`,xr,yy+3.2,{b:1,s:7.2,a:'right'});
+        if(e.pct!==null&&e.pct<0.995)T(`${salPct(e.pct)} do seguro`,xr,yy+3.2+3.1,{b:1,s:5.6,c:e.pct>=0.7?COR.yellow:COR.red,a:'right'});
+        yy+=HN(hh,e.pct!==null&&e.pct<0.995?6.8:0);});
+    }
+    // Detalhes (na tela ficam recolhidos; no papel entram abertos para a aprovação)
+    yy+=1;doc.setDrawColor(215,200,200);doc.setLineWidth(.2);doc.setLineDashPattern([.6,.6],0);doc.line(x0,yy,xr,yy);doc.setLineDashPattern([],0);yy+=1.5;
+    D.det.forEach(([t,v],k)=>{const venda=k===D.det.length-1;T(t,x0,yy+2.2,{s:6.3,c:COR.mut});T(v,xr,yy+2.2,{b:1,s:6.5,a:'right'});yy+=3.2;});
+  };
+  const rodape=(p,pg)=>{T(`Bread King - PCP - página ${p}/${pg}`,mx,205,{s:7.5,c:[130,130,130]});};
+  let first=true;
+  while(first||dias.some(D=>D.i<D.cards.length)){
+    if(!first)doc.addPage();
+    let top=10;
+    if(first){T('Plano Semanal de Produção - Giro Dia',mx,top+4,{b:1,s:15,c:COR.brand});
+      T(`Bread King - PCP - gerado em ${agora}   |   Horas por dia ${girHM(cap)} x ${GIR.dSem} dias = ${girHM(pl.cap)}   |   Plano exige ${girHM(pl.tot)}   |   ${massas} massas   |   Estoque de segurança = venda média + ${GIR.marg}%`,mx,top+9.5,{s:7.5,c:COR.mut});top+=14;}
+    dias.forEach((D,k)=>{
+      if(!first&&D.i>=D.cards.length)return;
+      const x=mx+k*(cw+gap);let y=cabDia(x,top,D,!first);
+      let n=0;while(D.i<D.cards.length&&(n===0||y+D.cards[D.i].h<=LIM)){n++;card(x,y,D.d.itens[D.i],D.cards[D.i]);y+=D.cards[D.i].h+2.5;D.i++;}
+    });
+    first=false;
+  }
+  // Aprovação na última página
+  doc.setDrawColor(120,120,120);doc.setLineWidth(.3);const W=PW-mx*2,ya=198;
+  [['Elaborado por (PCP)',mx],['Aprovado por',mx+W/3+4],['Data',mx+2*W/3+8]].forEach(([t,x])=>{doc.line(x,ya,x+W/3-8,ya);T(t,x,ya+3.6,{s:7,c:[60,60,60]});});
+  const pg=doc.getNumberOfPages();for(let p=1;p<=pg;p++){doc.setPage(p);rodape(p,pg);}
+  doc.save(`plano-semanal-giro-dia-${new Date().toISOString().slice(0,10)}.pdf`);
 }
 function girOrdena(rows){
   const {col,dir}=GIR.ord;
@@ -9979,6 +10058,7 @@ function girRender(){
   const ud=el.querySelector('#gdUmDia');if(ud)ud.onchange=()=>{GIR.umDia=ud.checked;girRender();};
   const su2=el.querySelector('#gdSetup');if(su2)su2.onchange=()=>{GIR.setup=Math.min(180,Math.max(0,+su2.value||0));girRender();};
   const x=el.querySelector('#gdExcel');if(x)x.onclick=()=>girExcel(c);
+  const pdfB=el.querySelector('#gdPdf');if(pdfB)pdfB.onclick=()=>girPdf(rows);
   el.querySelectorAll('[data-gd-ord]').forEach(t=>t.onclick=()=>{const k=t.dataset.gdOrd;GIR.ord=GIR.ord.col===k?{col:k,dir:-GIR.ord.dir}:{col:k,dir:1};girRender();});
   el.querySelectorAll('[data-gd-prod]').forEach(t=>t.onclick=()=>girDetalhe(t.dataset.gdProd));
   el.querySelectorAll('[data-sd-prod]').forEach(t=>t.onclick=()=>girDetalhe(t.dataset.sdProd));
