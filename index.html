@@ -9838,7 +9838,7 @@ function girDias(P){
 function girEmbProj(p,mas){
   const mg=1+GIR.marg/100,mem=(p.mem||[]).filter(m=>m.vUn>0),falta=m=>Math.max(0,m.vUn*mg-m.dProj)*m.f,tot=mem.reduce((a,m)=>a+falta(m),0);if(!tot)return [];
   return mem.map(m=>{const ms=mas*falta(m)/tot,pc=m.un==='PCT'&&m.pct,proj=pc?ms*m.pct:ms*(m.kg||p.kgM);
-    return {lbl:girEmbNome(m),canal:m.canal,un:pc?'pct':'kg',kgMassa:ms*(m.kg||p.kgM),parte:mas>0?ms/mas:0,proj,est:m.dProj,venda:m.vUn,es:m.vUn*(1+GIR.marg/100),pct:m.vUn>0?(proj+m.dProj)/(m.vUn*(1+GIR.marg/100)):null};});
+    return {lbl:girEmbNome(m),canal:m.canal,un:pc?'pct':'kg',kgMassa:ms*(m.kg||p.kgM),parte:mas>0?ms/mas:0,proj,est:m.dProj,hoje:m.dHoje,venda:m.vUn,es:m.vUn*(1+GIR.marg/100),pct:m.vUn>0?(proj+m.dProj)/(m.vUn*(1+GIR.marg/100)):null};});
 }
 // Prioridade de produção do Giro: produtos cujo estoque disponível não alcança o estoque de segurança. Quanto maior a distância até o seguro, maior a prioridade.
 // A falta é calculada por embalagem (kg na fábrica, pacotes na loja) e somada em kg de massa.
@@ -9877,8 +9877,13 @@ function girCardProd(it){
   const linhas=emb.map(e=>`<div class="gd-ln">${tag(e)}<span class="n">${salEsc(e.lbl)}</span><b>${salFmt(e.proj)} ${e.un}</b>${pill(e.pct)}</div>`).join('');
   const divisao=emb.length>1?`<div class="gd-div2" title="Divisão da massa entre os canais">${emb.map(e=>`<i class="${cn(e)}" style="width:${(e.parte*100).toFixed(1)}%"></i>`).join('')}</div>`:'';
   const bar=`<div class="gd-bar" title="Estoque no dia da produção + produção programada, contra o estoque de segurança (traço)"><i class="e" style="width:${wE.toFixed(1)}%"></i><i class="p" style="width:${wP.toFixed(1)}%"></i><u style="left:${mk.toFixed(1)}%"></u></div>`;
-  const segL=emb.length?emb.map(e=>`<div class="gd-dl"><span>Est. Seg. ${e.canal==='Loja'?'Loja':'Fábrica'}</span><b>${salFmt(e.es)} ${e.un}</b></div>`).join(''):`<div class="gd-dl"><span>Est. Seg.</span><b>${salFmt(p.es)} kg</b></div>`;
-  const det=`<div class="gd-dt-b">${segL}<div class="gd-dl"><span>Est. Atual</span><b>${salFmt(p.dispHoje)} kg</b></div><div class="gd-dl"><span>Venda Média Semanal</span><b>${salFmt(p.venda)} kg</b></div></div>`;
+  // Com mais de uma embalagem no mesmo canal (ex.: pacote 750 g e 400 g na loja) o nome da embalagem entra no rótulo.
+  const nCan=c=>emb.filter(e=>e.canal===c).length,rot=(t,e)=>`${t} ${e.canal==='Loja'?'Loja':'Fábrica'}${nCan(e.canal)>1?' · '+salEsc(e.lbl):''}`;
+  const dl=(t,v)=>`<div class="gd-dl"><span>${t}</span><b>${v}</b></div>`;
+  const det=`<div class="gd-dt-b">`+(emb.length
+    ?emb.map(e=>dl(rot('Est. Seg.',e),`${salFmt(e.es)} ${e.un}`)).join('')+emb.map(e=>dl(rot('Est. Atual',e),`${salFmt(e.hoje)} ${e.un}`)).join('')
+    :dl('Est. Seg.',`${salFmt(p.es)} kg`)+dl('Est. Atual',`${salFmt(p.dispHoje)} kg`))
+    +dl('Venda Média Semanal',`${salFmt(p.venda)} kg`)+'</div>';
   return `<div class="gd-pc ${cls}">`
    +`<div class="gd-pt"><div class="gd-pn">${salEsc(p.nome)}${it.de>1?` <em>(parte ${it.parte}/${it.de})</em>`:''}</div><div class="gd-mb"><b>${it.mas}</b><small>${it.mas===1?'massa':'massas'} · ${girHM(it.h)}</small></div></div>`
    +`<div class="gd-main"><span class="k">Produção programada</span><b>${salFmt(kgProd)} kg</b>${emb.length?'':pill(cob)}</div>`
