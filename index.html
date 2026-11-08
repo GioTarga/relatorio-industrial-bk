@@ -1909,7 +1909,10 @@ body{background:#fff;color:#000}
 .gd-bar{position:relative;display:flex;height:8px;background:#ece4e4;border-radius:4px;overflow:visible}.gd-bar i{display:block;height:100%}.gd-bar i.e{background:#b9b0b0;border-radius:4px 0 0 4px}.gd-bar i.p{background:var(--red)}.gd-bar u{position:absolute;top:-3px;bottom:-3px;width:2px;background:#222;text-decoration:none}
 .gd-det{font-size:10.5px;color:var(--sd-mut);font-variant-numeric:tabular-nums}.gd-det span{opacity:.7}
 .gd-et{border-top:1px dashed var(--sd-line);padding-top:7px;display:flex;flex-direction:column;gap:7px}
-.gd-er{background:#f6efef;border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;gap:3px}.gd-er .l{font-size:10px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--sd-mut);overflow-wrap:anywhere}.gd-er .gd-kp{grid-template-columns:minmax(0,1fr) auto}.gd-er .gd-seg{margin-top:0}.gd-er .gd-kp b{font-size:13px}.gd-er .gd-kp b.mut{font-size:12px}.gd-er .gd-pill{justify-self:end;font-size:11px;padding:1px 7px}.gd-kp>div{min-width:0}
+.gd-er{background:#f6efef;border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;gap:3px}.gd-er .l{font-size:10px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--sd-mut);overflow-wrap:anywhere}.gd-er .gd-kp{grid-template-columns:minmax(0,1fr) auto}.gd-er .gd-seg{margin-top:0}.gd-div{font-size:10.5px}
+.gd-er{border-left:4px solid #b9b0b0}.gd-er.fab{border-left-color:var(--gold)}.gd-er.loja{border-left-color:#8B0000}
+.gd-er .l{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;text-transform:none;letter-spacing:0;color:#3a3a3a}
+.gd-canal{display:inline-block;padding:1px 7px;border-radius:4px;font-size:9.5px;font-weight:800;letter-spacing:.6px;color:#fff}.gd-canal.fab{background:var(--gold)}.gd-canal.loja{background:#8B0000}.gd-er .gd-kp b{font-size:13px}.gd-er .gd-kp b.mut{font-size:12px}.gd-er .gd-pill{justify-self:end;font-size:11px;padding:1px 7px}.gd-kp>div{min-width:0}
 .gd-bw{min-width:150px}.gd-b{height:7px;border-radius:2px;margin:2px 0}.gd-b.hoje{background:#b9b0b0}.gd-b.sug{background:var(--red)}
 .gd-ok{color:var(--sd-ok);font-weight:700}.gd-up{color:var(--red);font-weight:700}.gd-dn{color:var(--sd-mut);font-weight:700}.gd-est{color:var(--sd-at);font-weight:700;cursor:help}
 .sd-tag.nc{background:#ece7e7;color:#6b5c5c}.sd-bar.nc{fill:var(--sd-mut)}
@@ -9602,6 +9605,13 @@ async function girCarregarMapa(){
 function girUnMap(lista){const m={};(lista||[]).forEach(i=>{const c=normCod(String(i.codigo||''));if(c&&i.estoque_un)m[c]=String(i.estoque_un).toUpperCase();});return m;}
 // Reserva por código (pedidos já comprometidos): o estoque disponível é estoque − reserva, como no kanban de estoque.
 function girResMap(lista){const m={};(lista||[]).forEach(i=>{const c=normCod(String(i.codigo||''));if(c)m[c]=(m[c]||0)+(+i.reserva||0);});return m;}
+// Peso da embalagem a partir do rendimento do Mapa (kg de massa ÷ pacotes por massa): 0,8 kg vira "800g".
+function girPeso(kg){return kg<1?(Math.round(kg*1000/50)*50)+'g':(Math.round(kg*10)/10).toString().replace('.',',')+'kg';}
+function girEmbNome(m){
+  if(m.un==='PCT'&&m.kg&&m.pct)return 'Pacote '+girPeso(m.kg/m.pct);
+  const x=(m.nome||'').match(/C\/\s*(\d+(?:[.,]\d+)?)\s*KG/i);
+  return 'Caixa '+(x?x[1].replace('.',',')+'kg':(m.kg&&m.pct?girPeso(m.kg/m.pct):''));
+}
 // Rótulo da embalagem: o que vem depois da gramatura ("PCT 750G - C/15 PCT", "C/5KG").
 function girEmbLabel(nome){
   const n=(nome||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
@@ -9610,7 +9620,7 @@ function girEmbLabel(nome){
   return r?r.toLowerCase().replace(/^./,c=>c.toUpperCase()):'Embalagem';
 }
 // Produtos lançados no setor Giro Dia que não fazem parte do plano do Giro: ficam fora de todos os cálculos.
-const GIR_FORA=[{re:/CASEIRINHO|SOVADINHO/i,nome:'Caseirinho/Sovadinho',motivo:'é produto do Croissant'},{re:/NUTRI/i,nome:'Pão francês Nutri',motivo:'passou para a linha 100, automatizada'},{re:/PRE ASSADO|PRÉ ASSADO|PRE-ASSADO/i,nome:'Pães pré-assados',motivo:'são do Padaria Noturno'},{re:/PASTEL/i,nome:'Mini pastel',motivo:'é produto do Salgado'}];
+const GIR_FORA=[{re:/CASEIRINHO|SOVADINHO/i,nome:'Caseirinho/Sovadinho',motivo:'é produto do Croissant'},{re:/NUTRI/i,nome:'Pão francês Nutri',motivo:'passou para a linha 100, automatizada'},{re:/PRE ASSADO|PRÉ ASSADO|PRE-ASSADO/i,nome:'Pães pré-assados',motivo:'são do Padaria Noturno'},{re:/PASTEL/i,nome:'Mini pastel',motivo:'é produto do Salgado'},{re:/CHIPA.*(CHOCOLATE|GOTAS)/i,nome:'Chipa com chocolate',motivo:'é produto do Padaria Noturno'},{re:/QUEIJO C\/ ?BACON|BACON/i,nome:'Pão de queijo com bacon',motivo:'saiu de linha'}];
 function girCalcular(){
   const rowsAll=[],fora={};
   Object.keys(DATA).forEach(d=>(DATA[d].rows||[]).forEach(r=>{if(r.setor!=='GIRO DIA')return;const f=GIR_FORA.find(x=>x.re.test(r.produto||''));if(f){fora[f.nome]=f;return;}rowsAll.push(Object.assign({d},r));}));
@@ -9620,6 +9630,8 @@ function girCalcular(){
   const vF=salVendaMap('F'),vL=salVendaMap('L');
   const estF=salEstoqueMap(currentFab&&currentFab.length?currentFab:(typeof RAW!=='undefined'?RAW.fabrica:[]));
   const estL=salEstoqueMap(currentLoja&&currentLoja.length?currentLoja:(typeof RAW!=='undefined'?RAW.loja:[]));
+  const canalM={};(currentFab&&currentFab.length?currentFab:(typeof RAW!=='undefined'?RAW.fabrica:[])).forEach(i=>{const c=normCod(String(i.codigo||''));if(c)canalM[c]='Fábrica';});
+  (currentLoja&&currentLoja.length?currentLoja:(typeof RAW!=='undefined'?RAW.loja:[])).forEach(i=>{const c=normCod(String(i.codigo||''));if(c&&canalM[c]!=='Fábrica')canalM[c]='Loja';});
   const unM=Object.assign({},girUnMap(currentFab&&currentFab.length?currentFab:(typeof RAW!=='undefined'?RAW.fabrica:[])),girUnMap(currentLoja&&currentLoja.length?currentLoja:(typeof RAW!=='undefined'?RAW.loja:[])));
   const resF=girResMap(currentFab&&currentFab.length?currentFab:(typeof RAW!=='undefined'?RAW.fabrica:[])),resL=girResMap(currentLoja&&currentLoja.length?currentLoja:(typeof RAW!=='undefined'?RAW.loja:[]));
   const mapa=GIR.mapa||{};
@@ -9661,7 +9673,7 @@ function girCalcular(){
       lista.forEach(mb=>{const c=mb.cod,un=unM[c]||'KG',kgPct=un==='PCT'&&mb.kg&&mb.pct?mb.kg/mb.pct:null,f=kgPct||1;
         // Demanda semanal = o maior entre a venda do CIGAM (média das semanas guardadas) e a saída média do estoque.
         const vCig=(+vF.map[c]||0)+(+vL.map[c]||0),vSai=(GIR.saida&&GIR.saida[c])||0,vUn=Math.max(vCig,vSai),eUn=(+estF[c]||0)+(+estL[c]||0);
-        venda+=vUn*f;est+=eUn*f;mem.push({cod:c,nome:mb.nome,un:kgPct?'PCT':'KG',kg:mb.kg||g.kgM,pct:mb.pct,vUn,vCig,vSai,eUn,rUn:(+resF[c]||0)+(+resL[c]||0),f,vKg:vUn*f});});
+        venda+=vUn*f;est+=eUn*f;mem.push({cod:c,nome:mb.nome,un:kgPct?'PCT':'KG',kg:mb.kg||g.kgM,pct:mb.pct,canal:canalM[c]||(kgPct?'Loja':'Fábrica'),vUn,vCig,vSai,eUn,rUn:(+resF[c]||0)+(+resL[c]||0),f,vKg:vUn*f});});
     }
     const semProd=Object.keys(g.sems).length,prodSem=conv?(semProd?g.massasPer*g.kgM/semProd:0):null,taxa=conv&&g.hTot>0?g.kgT/g.hTot:null;
     const ratio=conv&&venda>0?prodSem/venda:null;
@@ -9824,7 +9836,7 @@ function girDias(P){
 function girEmbProj(p,mas){
   const mg=1+GIR.marg/100,mem=(p.mem||[]).filter(m=>m.vUn>0),falta=m=>Math.max(0,m.vUn*mg-m.dProj)*m.f,tot=mem.reduce((a,m)=>a+falta(m),0);if(!tot)return [];
   return mem.map(m=>{const ms=mas*falta(m)/tot,pc=m.un==='PCT'&&m.pct,proj=pc?ms*m.pct:ms*(m.kg||p.kgM);
-    return {lbl:girEmbLabel(m.nome),un:pc?'pct':'kg',proj,est:m.dProj,venda:m.vUn,es:m.vUn*(1+GIR.marg/100),pct:m.vUn>0?(proj+m.dProj)/(m.vUn*(1+GIR.marg/100)):null};});
+    return {lbl:girEmbNome(m),canal:m.canal,un:pc?'pct':'kg',kgMassa:ms*(m.kg||p.kgM),parte:mas>0?ms/mas:0,proj,est:m.dProj,venda:m.vUn,es:m.vUn*(1+GIR.marg/100),pct:m.vUn>0?(proj+m.dProj)/(m.vUn*(1+GIR.marg/100)):null};});
 }
 // Prioridade de produção do Giro: produtos cujo estoque disponível não alcança o estoque de segurança. Quanto maior a distância até o seguro, maior a prioridade.
 // A falta é calculada por embalagem (kg na fábrica, pacotes na loja) e somada em kg de massa.
@@ -9857,14 +9869,14 @@ function girCardProd(it){
   const cob=pcs.length?Math.min(...pcs):(p.es>0?tot/p.es:null),cls=cob===null?'':cob>=0.995?'green':cob>=0.7?'yellow':'red';
   const esc=Math.max(p.es,tot,1),wE=Math.min(100,p.estEf/esc*100),wP=Math.min(100-wE,kgProd/esc*100),mk=p.es/esc*100;
   const pill=(v)=>v===null?'':`<span class="gd-pill ${v>=0.995?'green':v>=0.7?'yellow':'red'}">${salPct(v)}</span>`;
-  const emb=embAll.filter(e=>e.un!=='kg'||embAll.length>1);
+  const emb=embAll.filter(e=>e.un!=='kg'||embAll.length>1).sort((a,b)=>(a.canal==='Loja')-(b.canal==='Loja'));
   return `<div class="gd-pc ${cls}">`
    +`<div class="gd-pt"><div class="gd-pn">${salEsc(p.nome)}${it.de>1?` <em>(parte ${it.parte}/${it.de})</em>`:''}</div><div class="gd-mb"><b>${it.mas}</b><small>${it.mas===1?'massa':'massas'} · ${salFmt(it.h,1)} h</small></div></div>`
    +`<div class="gd-kp"><div><small>Produção programada</small><b>${salFmt(kgProd)} kg</b></div>${pill(cob)}</div><div class="gd-seg">Estoque de segurança <b>${salFmt(p.es)} kg</b></div>`
    +`<div class="gd-bar" title="Estoque no dia da produção + produção programada, contra o estoque de segurança (traço)"><i class="e" style="width:${wE.toFixed(1)}%"></i><i class="p" style="width:${wP.toFixed(1)}%"></i><u style="left:${mk.toFixed(1)}%"></u></div>`
    +`<div class="gd-det">${p.porSaida?`Demanda <b>${salFmt(p.venda)}</b> (saída do estoque; CIGAM ${salFmt(p.vendaCig)})`:'Venda média '+salFmt(p.venda)} · Disponível hoje ${salFmt(p.dispHoje)} · No dia da produção ${salFmt(p.estKg)} <span>kg</span></div>`
    +(emb.length?`<div class="gd-et">`
-     +emb.map(e=>`<div class="gd-er"><div class="l">${salEsc(e.lbl)}</div><div class="gd-kp"><div><small>Produção programada</small><b>${salFmt(e.proj)} ${e.un}</b></div>${pill(e.pct)}</div><div class="gd-seg">Estoque de segurança <b>${salFmt(e.es)} ${e.un}</b></div></div>`).join('')+'</div>':'')
+     +emb.map(e=>`<div class="gd-er ${e.canal==='Loja'?'loja':'fab'}"><div class="l"><span class="gd-canal ${e.canal==='Loja'?'loja':'fab'}">${e.canal==='Loja'?'LOJA':'FÁBRICA'}</span>${salEsc(e.lbl)}</div><div class="gd-kp"><div><small>Produção programada</small><b>${salFmt(e.proj)} ${e.un}</b></div>${pill(e.pct)}</div><div class="gd-seg">Estoque de segurança <b>${salFmt(e.es)} ${e.un}</b></div><div class="gd-seg gd-div">Vem da mesma massa: <b>${salFmt(e.kgMassa)} kg</b> (${salPct(e.parte)} da produção)</div></div>`).join('')+'</div>':'')
    +'</div>';
 }
 function girPlanoHtml(rows){
