@@ -1886,8 +1886,22 @@ body{background:#fff;color:#000}
 .sd-val{font:11px var(--font-body);fill:var(--ink);font-variant-numeric:tabular-nums}.sd-val.b{font-weight:700;fill:var(--red)}
 .sd-ref{stroke:var(--ink);stroke-width:1;stroke-dasharray:4 3;opacity:.7}.sd-ref.mut{stroke:var(--sd-mut);opacity:.9}
 .sd-grid{stroke:var(--sd-line);stroke-width:1}.sd-grid.meta{stroke:var(--ink);stroke-dasharray:4 3}
-.gd-ctl{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-bottom:10px;font-size:13px}.gd-ctl label{display:flex;gap:6px;align-items:center}.gd-ctl input[type=number]{width:64px;padding:6px 8px;border:1px solid var(--sd-line);border-radius:var(--radius-sm);font:13px var(--font-body);background:var(--paper)}
-.gd-msg{padding:9px 12px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:12px;line-height:1.45}.gd-msg.ok{background:#e7f3ec}.gd-msg.ab{background:#fbe9e6}
+.gd-ctl{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end;padding:12px 14px;margin-bottom:12px;background:var(--sd-bg2,#faf6f4);border:1px solid var(--sd-line);border-radius:10px}
+.gd-f{display:flex;flex-direction:column;gap:4px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--sd-mut)}
+.gd-in{display:flex;align-items:center;background:#fff;border:1px solid var(--sd-line);border-radius:8px}.gd-in:focus-within{border-color:var(--red);box-shadow:0 0 0 2px rgba(161,1,1,.12)}
+.gd-in input{flex:1;min-width:0;width:58px;padding:7px 2px 7px 10px;border:0;outline:0;background:transparent;font:700 14px var(--font-body);color:#2b2323;letter-spacing:0;text-transform:none}
+.gd-in em{padding:0 10px 0 3px;font-style:normal;font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--sd-mut)}
+.gd-tg{display:flex;align-items:center;gap:9px;padding-bottom:3px;cursor:pointer;font-size:12.5px}.gd-tg span{display:flex;flex-direction:column}.gd-tg b{font-weight:700}.gd-tg small{font-size:11px;color:var(--sd-mut)}
+.gd-tg input{appearance:none;-webkit-appearance:none;position:relative;flex:none;width:34px;height:20px;border-radius:10px;background:#cfc6c6;cursor:pointer;transition:background .15s}
+.gd-tg input::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}.gd-tg input:checked{background:var(--red)}.gd-tg input:checked::after{left:16px}
+.sd-btn.gd-pdf{margin-left:auto;padding:9px 18px;background:var(--red);border-color:var(--red);color:#fff;font-weight:700}.sd-btn.gd-pdf:hover{filter:brightness(1.1)}
+.gd-res{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:8px}
+.gd-rt{display:flex;flex-direction:column;gap:2px;padding:10px 14px;background:#fff;border:1px solid var(--sd-line);border-radius:10px}.gd-rt .k{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--sd-mut)}
+.gd-rt b{font-size:24px;font-weight:800;line-height:1.15;font-variant-numeric:tabular-nums}.gd-rt small{font-size:11.5px;color:var(--sd-mut)}
+.gd-rt.ok{background:#f1f8f4;border-color:#cfe5d7}.gd-rt.ok b{color:#2f7d52}.gd-rt.ab{background:#fbeeec;border-color:#efcac5}.gd-rt.ab b{color:#c0392b}
+.gd-use{height:7px;margin-bottom:6px;background:#ece4e4;border-radius:4px;overflow:hidden}.gd-use i{display:block;height:100%;border-radius:4px}.gd-use i.ok{background:#2f7d52}.gd-use i.ab{background:#c0392b}
+.gd-nota{margin-bottom:14px;font-size:12.5px;color:var(--sd-mut)}
+@media(max-width:700px){.gd-res{grid-template-columns:1fr}.sd-btn.gd-pdf{margin-left:0}}
 .gd-sub{margin:14px 0 8px}
 .gd-dias{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-bottom:12px}
 .gd-dia{border:1px solid var(--sd-line);border-radius:var(--radius-md,10px);padding:10px 12px;background:var(--paper);min-width:0}
@@ -9902,17 +9916,23 @@ function girCardProd(it){
 }
 function girPlanoHtml(rows){
   const pl=girPlano(rows);
-  const ctl=`<div class="gd-ctl"><label>Horas líquidas por dia <input type="number" id="gdHDia" min="1" max="24" step="0.5" value="${GIR.hDia}"></label><label>Dias por semana <input type="number" id="gdDSem" min="1" max="7" step="1" value="${GIR.dSem}"></label><label>Setup entre máquinas (min) <input type="number" id="gdSetup" min="0" max="180" step="5" value="${GIR.setup}"></label><label class="gd-chk"><input type="checkbox" id="gdUmDia" ${GIR.umDia?'checked':''}> Produção única: chipa/pão de queijo e redondos em um dia só</label><label>Estoque de segurança = venda média + (%) <input type="number" id="gdMarg" min="0" max="100" step="5" value="${GIR.marg}"></label><button type="button" class="sd-btn" id="gdPdf">Gerar PDF</button></div>`;
+  const campo=(t,id,min,max,step,val,un)=>`<label class="gd-f"><span>${t}</span><span class="gd-in"><input type="number" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}"><em>${un}</em></span></label>`;
+  const ctl=`<div class="gd-ctl">${campo('Horas líquidas por dia','gdHDia',1,24,0.5,GIR.hDia,'h')}${campo('Dias por semana','gdDSem',1,7,1,GIR.dSem,'dias')}${campo('Setup entre máquinas','gdSetup',0,180,5,GIR.setup,'min')}${campo('Margem do estoque de segurança','gdMarg',0,100,5,GIR.marg,'%')}`
+    +`<label class="gd-tg"><input type="checkbox" id="gdUmDia" ${GIR.umDia?'checked':''}><span><b>Produção única</b><small>chipa, pão de queijo e redondos em um dia só</small></span></label>`
+    +`<button type="button" class="sd-btn gd-pdf" id="gdPdf">Gerar PDF</button></div>`;
   if(!pl)return ctl+'<div class="sd-vazio">Sem produtos com venda e rendimento para montar o plano.</div>';
   const util=pl.tot/pl.capEf,dif=pl.capEf-pl.tot,mx=Math.max(...pl.P.map(p=>Math.max(p.hReal,p.hHoje)),0.1);
   const desc=[];if(pl.setupTotal>0.05)desc.push(girHM(pl.setupTotal)+' de setup entre máquinas');if(pl.perda>0.05)desc.push(girHM(pl.perda)+' que não encaixam em dias inteiros, pois a produção não se parte');
-  const disp=`<b>${girHM(pl.capEf)}</b> disponíveis para produzir${desc.length?` (${girHM(pl.cap)} menos ${desc.join(' e ')})`:''}`;
-  const msg=dif>=0?`O plano exige <b>${girHM(pl.tot)}</b> e há ${disp}: <b>sobram ${girHM(dif)}</b>. Dá para atender 100% da venda e ainda sobra tempo para produzir estoque ou absorver paradas.`:`O plano exige <b>${girHM(pl.tot)}</b> e há só ${disp}: <b>faltam ${girHM(-dif)}</b>. Com as horas disponíveis dá para cobrir cerca de <b>${salPct(pl.f)}</b> da venda de cada produto. O plano abaixo reparte a falta por igual entre eles.`;
+  const nota=dif>=0?'Dá para atender 100% da venda e ainda sobra tempo para produzir estoque ou absorver paradas.':`Com as horas disponíveis dá para cobrir cerca de ${salPct(pl.f)} da venda de cada produto. O plano abaixo reparte a falta por igual entre eles.`;
+  const res=`<div class="gd-res"><div class="gd-rt"><span class="k">O plano exige</span><b>${girHM(pl.tot)}</b><small>${salPct(util)} das horas disponíveis</small></div>`
+    +`<div class="gd-rt"><span class="k">Disponível para produzir</span><b>${girHM(pl.capEf)}</b><small>${girHM(pl.cap)} da semana${desc.length?' menos '+desc.join(' e '):''}</small></div>`
+    +`<div class="gd-rt ${dif>=0?'ok':'ab'}"><span class="k">${dif>=0?'Sobram':'Faltam'}</span><b>${girHM(Math.abs(dif))}</b><small>${dif>=0?'folga na semana':'a menos do que a venda exige'}</small></div></div>`
+    +`<div class="gd-use" title="Horas que o plano exige contra as disponíveis"><i class="${dif>=0?'ok':'ab'}" style="width:${Math.min(100,util*100).toFixed(1)}%"></i></div><div class="gd-nota">${nota}</div>`;
   const tr=pl.P.map(p=>{const d=p.aj,ds=Math.abs(d)<0.5?'manter':(d>0?'+':'−')+salFmt(Math.abs(d),0)+' massas';
     return `<tr data-sd-prod="${salEsc(p.nome)}" class="sd-lk"><td>${salEsc(p.nome)}${p.nApt?' <span class="gd-est" title="'+p.nApt+' linha(s) planejadas sem produção apontada no período: a média de hoje pode estar subestimada">⚠ '+p.nApt+'</span>':''}${p.est?' <span class="gd-est" title="Sem apontamento com horário: ritmo estimado pela mediana dos demais produtos">~</span>':''}</td><td><span class="gd-fam gd-f-${p.fam}">${GIR_FAM[p.fam].maq}</span></td><td>${salFmt(p.venda)}</td><td>${salFmt(p.es)}</td><td>${salFmt(p.dispHoje)}</td><td>${salFmt(p.estKg)}</td><td>${salFmt(p.kgNec)}</td><td>${salFmt(p.prodKg)}</td><td>${girRitmoOk(p)?salFmt(p.t):'Sem registro'}</td><td>${girHM(p.hN)}</td><td class="gd-bw"><div class="gd-b hoje" style="width:${(p.hHoje/mx*100).toFixed(1)}%"></div><div class="gd-b sug" style="width:${(p.hReal/mx*100).toFixed(1)}%"></div></td><td>${girHM(p.hHoje)} → <b>${girHM(p.hReal)}</b></td><td>${salFmt(p.hoje,1)}</td><td><b>${p.mas}</b></td><td>${(pl.D.porProd.get(p)||[]).join(' + ')||'—'}</td><td class="${d>=0.5?'gd-up':d<=-0.5?'gd-dn':''}">${ds}</td><td>${salPct(p.cobSug)}</td></tr>`;}).join('');
   const cab=['Produto','Máquina','Venda média (kg/sem)','Estoque de segurança (kg)','Disponível hoje (kg)','Estoque no dia da produção (kg)','A produzir (kg)','Produção semanal (kg/sem)','Ritmo (kg/h)','Horas que o plano exige','Hoje (cinza) × sugerido (vermelho)','Horas: hoje → sugerido','Massas por semana hoje','Massas programadas','Dia da produção','Ajuste','Cobre a venda'];
   const porFam=GIR_FAM_ORD.map(f=>{const h=pl.P.filter(p=>p.fam===f).reduce((s,p)=>s+p.hReal,0);return h>0?`<span>${GIR_FAM[f].maq} <b>${girHM(h)}</b></span>`:'';}).join('');
-  return ctl+`<div class="gd-msg ${dif>=0?'ok':'ab'}">${msg}</div>`
+  return ctl+res
    +girDiasHtml(pl.D)
    +'<div class="sd-panel-t gd-sub">Detalhe por produto</div>'
    +`<div class="sd-tbl-wrap"><table class="sd-tbl gd-plano"><thead><tr>${cab.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${tr}</tbody></table></div>`;
