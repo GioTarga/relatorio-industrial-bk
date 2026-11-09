@@ -9590,7 +9590,7 @@ function salToggle(){
    apontamento em MASSAS, convertido para KG com o Mapa de Rendimentos (kg de massa por massa);
    venda e estoque do CIGAM já vêm em KG. Produtos sem rendimento cadastrado ficam "sem conversão".
    ═══════════════════════════════════════════════════════════ */
-const GIR={umDia:true,grupos:null,hDia:7,dSem:5,setup:30,marg:20,dias:90,busca:'',ord:{col:'ratio',dir:1},mapa:null,mapaCarregando:false,calc:null,saida:null,saidaCarregando:false,saidaDias:0};
+const GIR={umDia:true,trocaTQ:true,grupos:null,hDia:7,dSem:5,setup:30,marg:20,dias:90,busca:'',ord:{col:'ratio',dir:1},mapa:null,mapaCarregando:false,calc:null,saida:null,saidaCarregando:false,saidaDias:0};
 function girNome(raw){
   let s=(raw||'').replace(/\s+/g,' ').trim().replace(/^MASSA P\/ ?/i,'').replace(/\bBREAD KING\b|\bBK\b/gi,'').replace(/\s+-\s*(C\/|FD C\/|CX C\/)?[\d,.]+\s*(KG|G|UNID|PCT)\b.*$/i,'').replace(/\s+-\s*[\d,.]+\s*(KG|G)\b.*$/i,'').replace(/\s+/g,' ').trim();
   s=s.toLowerCase().replace(/(^|[\s\/])([a-zà-ú])/g,(m,a,b)=>a+b.toUpperCase()).replace(/\b(\d+)g\b/gi,'$1g').replace(/\bSs\b/,'SS').replace(/\bSesi\b/,'SESI').replace(/\bDe\b/g,'de').replace(/\bP\/\b/g,'p/');
@@ -9873,6 +9873,8 @@ function girDias(P){
   bins.forEach(b=>{if(b.dia!==undefined&&b.dia<n&&!slots[b.dia]){slots[b.dia]=b;b.colocado=true;}});
   bins.filter(b=>!b.colocado).forEach(b=>{slots[slots.findIndex(x=>!x)]=b;});
   bins=slots.map(b=>b||{fams:[],itens:[],h:0,setup:0});
+  // Troca manual pedida pelo PCP: o que o plano põe na terça vai para a quarta e vice-versa (só dias sem rotina fixa).
+  if(GIR.trocaTQ&&bins.length>=3&&bins[1].dia===undefined&&bins[2].dia===undefined){const t=bins[1];bins[1]=bins[2];bins[2]=t;}
   const dias=bins.map((b,i)=>({i,unico:!!b.fixo&&b.fams.length===1,hProd:b.h,setup:b.setup,h:b.h+b.setup,fams:b.fams,itens:b.itens.sort((x,y)=>GIR_FAM_ORD.indexOf(x.fam)-GIR_FAM_ORD.indexOf(y.fam)||y.h-x.h)}));
   const mistos=dias.filter(d=>d.fams.length>1);
   if(mistos.length)avisos.push(`Não há dias suficientes para separar as máquinas: ${mistos.map(d=>GIR_DIAS[d.i]+' ('+d.fams.map(f=>GIR_FAM[f].maq).join(' + ')+')').join('; ')} ficou com mistura, com ${salFmt(su*60,0)} min de setup por troca.`);
@@ -9955,6 +9957,7 @@ function girPlanoHtml(rows){
   const pl=girPlano(rows);
   const campo=(t,id,min,max,step,val,un)=>`<label class="gd-f"><span>${t}</span><span class="gd-in"><input type="number" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}"><em>${un}</em></span></label>`;
   const ctl=`<div class="gd-ctl">${campo('Horas líquidas por dia','gdHDia',1,24,0.5,GIR.hDia,'h')}${campo('Dias por semana','gdDSem',1,7,1,GIR.dSem,'dias')}${campo('Setup entre máquinas','gdSetup',0,180,5,GIR.setup,'min')}${campo('Margem do estoque de segurança','gdMarg',0,100,5,GIR.marg,'%')}`
+    +`<label class="gd-tg"><input type="checkbox" id="gdTroca" ${GIR.trocaTQ?'checked':''}><span><b>Trocar terça com quarta</b><small>a produção da terça vai para a quarta e a da quarta para a terça</small></span></label>`
     +`<label class="gd-tg"><input type="checkbox" id="gdUmDia" ${GIR.umDia?'checked':''}><span><b>Produção única</b><small>chipa, pão de queijo e redondos em um dia só</small></span></label>`
     +`<button type="button" class="sd-btn gd-pdf" id="gdPdf">Gerar PDF</button></div>`;
   if(!pl)return ctl+'<div class="sd-vazio">Sem produtos com venda e rendimento para montar o plano.</div>';
@@ -10118,6 +10121,7 @@ function girRender(){
   if(hd)hd.onchange=()=>{GIR.hDia=Math.min(24,Math.max(1,+hd.value||7));girRender();};
   if(ds)ds.onchange=()=>{GIR.dSem=Math.min(7,Math.max(1,Math.round(+ds.value)||5));girRender();};
   if(eq2)eq2.onchange=()=>{GIR.marg=Math.min(100,Math.max(0,+eq2.value||0));girRender();};
+  const tq=el.querySelector('#gdTroca');if(tq)tq.onchange=()=>{GIR.trocaTQ=tq.checked;girRender();};
   const ud=el.querySelector('#gdUmDia');if(ud)ud.onchange=()=>{GIR.umDia=ud.checked;girRender();};
   const su2=el.querySelector('#gdSetup');if(su2)su2.onchange=()=>{GIR.setup=Math.min(180,Math.max(0,+su2.value||0));girRender();};
   const x=el.querySelector('#gdExcel');if(x)x.onclick=()=>girExcel(c);
