@@ -6504,7 +6504,7 @@ const BK_MODULOS = [
   { id:'rascunho',                rotulo:'Máquinas',                  tabelas:['maquinas','produtos_producao'] },
   { id:'manutencao',              rotulo:'Manutenções',               tabelas:['chamados_manutencao','manutencoes','maquinas'] },
   { id:'estoque',                 rotulo:'Almoxarifado',              tabelas:['estoque_contagens','estoque_entradas','estoque_minimos','estoque_requisicoes','estoque_catalogo_insumos'] },
-  { id:'pcp-estoque',             rotulo:'PCP & Estoque',             tabelas:['pcp_cache','estoque_historico','ordens_producao','ordens_producao_itens','vendas_semanais','venda_semanal_historico','produtos_producao','familias','produtos'] },
+  { id:'pcp-estoque',             rotulo:'PCP & Estoque',             tabelas:['pcp_cache','estoque_historico','ordens_producao','ordens_producao_itens','vendas_semanais','venda_semanal_historico','venda_periodo_base','produtos_producao','familias','produtos'] },
   { id:'melhoria',                rotulo:'Melhoria Contínua',         tabelas:['melhoria_continua','pp_etapas_referencia'] },
   { id:'lancamento',              rotulo:'Lançamento',                tabelas:['producao_diaria','perdas_producao','produtos_producao','setores','maquinas','produtividade_corridas','produtividade_paradas','produtividade_tempos_massa','tempo_processo_bateladas','tempo_processo_etapas','pp_etapas_referencia','ocupacao','familias','estoque_requisicoes'] },
   { id:'expedicao',               rotulo:'Expedição',                 tabelas:['ocupacao','familias','produtos'] },
@@ -9261,7 +9261,7 @@ function refreshDaySelectOptions(filteredDates){
 const SAL_GRUPOS=[{"nome": "Doguinho salsicha e queijo", "f": 1, "prods": ["DOGUINHO SALSICHA E QUEIJO BREAD KING 170G - C/15UN", "DOGUINHO SALSICHA E REQUEIJAO BREAD KING 4X170G - CX C12 PCT"], "comps": [["F", "2209092", 1], ["L", "7064", 4]]}, {"nome": "Empada frango 130g", "f": 1, "prods": ["EMPADA FRANGO C/ REQ BREAD KING 130G - C/25UN", "EMPADA FRANGO C/ REQ BREAD KING 2X130G - CX C/25 UNID"], "comps": [["F", "2209353", 1], ["L", "5925", 2], ["L", "7069", 4]]}, {"nome": "Hambúrgão carne c/ cheddar", "f": 1, "prods": ["HAMBURGAO CARNE C/ CHEDDAR BREAD KING 170G - C/12UN"], "comps": [["F", "2209091", 1], ["L", "7065", 4]]}, {"nome": "Bauru sabor pizza 165g", "f": 1, "prods": ["BAURU SABOR PIZZA BREAD KING 165G - C/15UN", "BAURU SABOR PIZZA BREAD KING 4X165G - CX C/12 PCT"], "comps": [["F", "6670", 1], ["L", "7076", 4]]}, {"nome": "Pastel nata frango 130g", "f": 1, "prods": ["PASTEL NATA FRANGO C/REQ CONG BKING 130G - C/18UN", "PASTEL NATA FRANGO C/ REQ BREAD KING 130G - C/3 UN"], "comps": [["F", "7", 1], ["L", "7199", 3]]}, {"nome": "Empada palmito 130g", "f": 1, "prods": ["EMPADA PALMITO BREAD KING 130G - C/25UN", "EMPADA PALMITO BREAD KING 4X130G - CX C/12 PCT"], "comps": [["F", "100825", 1], ["L", "6118", 2], ["L", "7070", 4]]}, {"nome": "Bauru frango c/ req 165g", "f": 1, "prods": ["BAURU FRANGO C/ REQ BREAD KING 165G - CX C/15 UM", "BAURU FRANGO C/ REQUEIJAO BREAD KING 4X165G - CX C/12 PCT", "BAURU FRANGO C/ REQ BREAD KING 165G - CX C/15 UN"], "comps": [["F", "6672", 1], ["L", "7075", 4]]}, {"nome": "Bauru calabresa c/ req 165g", "f": 1, "prods": ["BAURU CALABRESA C/ REQ BREAD KING 165G - CX C/15 UM"], "comps": [["F", "6671", 1], ["L", "7074", 4]]}, {"nome": "Pastel de nata (Belém) 60g", "f": 1, "prods": ["PASTEL DE NATA (BELEM) BREAD KING 60G - C/36 UNID", "PASTEL BELEM VAREJO BREAD KING 60G - C/6 UN 360G"], "comps": [["F", "2209083", 1], ["L", "3439", 1]]}, {"nome": "Pastel p/ fritar carne", "f": 1, "prods": ["PASTEL P/ FRITAR CARNE BREAD KING 130G - C/15UN"], "comps": [["F", "2209297", 1]]}, {"nome": "Pastel nata carne 130g", "f": 1, "prods": ["PASTEL NATA CARNE C/REQ CONG BREAD KING 130G - C/18UN", "PASTEL NATA CARNE C/ REQ BREAD KING 130G - C/3 UN"], "comps": [["F", "6", 1], ["L", "7197", 3]]}, {"nome": "Pastel p/ fritar frango", "f": 1, "prods": ["PASTEL P/ FRITAR FRANGO E REQ BREAD KING 130G - C/15UN"], "comps": [["F", "2209306", 1]]}, {"nome": "Pastel p/ fritar queijo", "f": 1, "prods": ["PASTEL P/ FRITAR QUEIJO BREAD KING 130G - C/15UN"], "comps": [["F", "2209030", 1]]}, {"nome": "Pastel nata calabresa 130g", "f": 1, "prods": ["PASTEL NATA CALABRESA C/REQ CONG BKING 130G-C/18UN"], "comps": [["F", "196", 1]]}, {"nome": "Pastel nata filé c/ cheddar", "f": 1, "prods": ["PASTEL NATA FILE C/CHEDDAR CONG BKING 130G - C/18UN", "PASTEL NATA FILE C/ CHEDDAR BREAD KING 130G - C/3 UN"], "comps": [["F", "2209012", 1], ["L", "7198", 3]]}, {"nome": "Esfiha frango c/ req", "f": 1, "prods": ["ESFIHA FRANGO C/ REQ BREAD KING 4X150G - CX C/12 PCT", "ESFIHA FRANGO C/ REQ BREAD KING 130G - C/6 UN - CX C/8 PCT"], "comps": [["L", "7067", 4]]}, {"nome": "Esfiha carne c/ req", "f": 1, "prods": ["ESFIHA CARNE BREAD KING 4X150G - CX C/12 PCT", "ESFIHA CARNE BREAD KING 130G - C/6 UN - CX C/8 PCT"], "comps": [["L", "7066", 4]]}, {"nome": "Esfiha carne assado cong", "f": 1, "prods": ["ESFIHA CARNE ASSADO CONG BREAD KING 130 G - C/15 UNID"], "comps": [["F", "11", 1]]}, {"nome": "Esfiha frango assado cong", "f": 1, "prods": ["ESFIHA FRANGO ASSADO CONG BREAD KING 130G - C/15UN"], "comps": [["F", "12", 1]]}, {"nome": "Strudel folhado maçã", "f": 1, "prods": ["STRUDEL FOLHADO MACA BREAD KING 130G - C/6 UN"], "comps": [["L", "7190", 3]]}, {"nome": "Empada carne c/ req e azeitona", "f": 1, "prods": ["EMPADA CARNE C/ REQ. E AZEITONA BREAD KING 130G - C/25 UM", "EMPADA CARNE C/ REQ. E AZEITONA BREAD KING 6X130G - C/9 PCTS", "Empada Carne c/ Req BK 4x130g"], "comps": [["F", "7318", 1], ["L", "7319", 4]]}, {"nome": "Mini pastel nata/forno frango", "f": 42, "prods": ["MINI PASTEL NATA FRANGO BK 35G PCT 600G - CX C/18 UNID", "MINI PASTEL FORNO FRANGO BREAD KING 35G - C/2,5KG"], "comps": [["L", "7194", 17.142857], ["F", "8018", 28.571429]]}, {"nome": "Mini pastel nata/forno carne", "f": 42, "prods": ["MINI PASTEL NATA CARNE BK 35G PCT  600G - CX C/18 UNID", "MINI PASTEL FORNO CARNE BREAD KING 35G - C/2,5KG"], "comps": [["L", "7192", 17.142857], ["F", "8019", 28.571429]]}, {"nome": "Mini pastel nata/forno calabresa", "f": 42, "prods": ["MINI PASTEL NATA CALABRESA BK 35G PCT 600G - CX C/18 UNID", "MINI PASTEL FORNO CALABRESA BREAD KING 35G - C/2,5KG"], "comps": [["L", "7191", 17.142857], ["F", "8020", 28.571429]]}, {"nome": "Mini pastel nata/forno chocolate", "f": 42, "prods": ["MINI PASTEL NATA CHOCOLATE PTO BK 35G PCT 600G - CX C/18 UNID", "MINI PASTEL FORNO CHOCOLATE BREAD KING 35G - C/2,5KG"], "comps": [["L", "7193", 17.142857], ["F", "2209207", 28.571429]]}, {"nome": "Mini pastel nata/forno catupiry (requeijão)", "f": 42, "prods": ["MINI PASTEL NATA CATUPIRY BK 35G PCT 400G - CX C/18 UNID", "MINI PASTEL FORNO REQUEIJÃO BREAD KING 35G - C/2,5KG"], "comps": [["L", "7195", 11.428571], ["F", "8021", 28.571429]]}, {"nome": "Mini pastel bolha queijo", "f": 36, "prods": ["MINI PASTEL BOLHA QUEIJO FRITO BREAD KING 30G - C/500G"], "comps": [["L", "6322", 16.666667]]}, {"nome": "Mini pastel bolha carne frito", "f": 42, "prods": ["MINI PASTEL BOLHA CARNE FRITO BK 30G - C/500G"], "comps": [["L", "5863", 16.666667]]}, {"nome": "Mini pastel bolha carne c/ ovo", "f": 42, "prods": ["MINI PASTEL BOLHA CARNE C/ OVO BREAD KING 30G - C/2KG"], "comps": [["F", "2209115", 33.333333]]}];
 const SAL_NORM=s=>(s||'').toString().trim().toUpperCase().replace(/\s+/g,' ');
 const SAL_PROD2G={};SAL_GRUPOS.forEach((g,i)=>g.prods.forEach(p=>{SAL_PROD2G[SAL_NORM(p)]=i;}));
-const SAL={dias:90,maq:'',busca:'',ord:{col:'ratio',dir:1},hist:null,histCarregando:false,calc:null};
+const SAL={dias:90,maq:'',busca:'',ord:{col:'ratio',dir:1},hist:null,base:null,histCarregando:false,calc:null};
 const SAL_STATUS={ok:'Ok',at:'Atenção',ab:'Produzir mais',sem:'Sem produção'};
 const SAL_PERIODOS=[[7,'Última semana'],[28,'4 semanas'],[90,'90 dias']];
 
@@ -9283,10 +9283,19 @@ function salEsc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&am
 
 // Aviso sobre a base de venda: quantas semanas formam a média e se o relatório da semana anterior já foi carregado.
 function salVendaAviso(c){
-  const fm=w=>{const p=w.split('-');return p[2]+'/'+p[1];},sems=(c.vendaSems||[]).slice().sort(),n=c.vendaN;
+  const fm=w=>{const p=w.split('-');return p[2]+'/'+p[1];},fa=w=>{const p=w.split('-');return p[2]+'/'+p[1]+'/'+p[0];};
+  const inf=(c.vendaInfo&&(c.vendaInfo.F||c.vendaInfo.L))||{},bs=inf.base,sems=(c.vendaSems||[]).slice().sort(),n=c.vendaN;
   const d=new Date();d.setDate(d.getDate()-7-((d.getDay()+6)%7));const esperada=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const nv=(c.vendaInfo&&c.vendaInfo.F&&c.vendaInfo.F.novas||[]).slice().sort(),pt=x=>String(Math.round(x*10)/10).replace('.',',');
+  let h;
+  if(bs){
+    h=`<div class="sd-info">Venda semanal = média acumulada: histórico de ${fa(bs.ini)} a ${fa(bs.fim)} (${pt(bs.semanas)} semanas)${nv.length?` + ${nv.length} ${nv.length===1?'semana nova':'semanas novas'} (${nv.map(fm).join(', ')})`:''}. A cada relatório de venda carregado a média é recalculada. Produto novo usa só as semanas guardadas.</div>`;
+    const ult=sems.length?sems[sems.length-1]:null;
+    if(!ult||ult<esperada)h+=`<div class="sd-aviso">O relatório de venda da semana de ${fm(esperada)} ainda não foi carregado${ult?': a última semana guardada é a de '+fm(ult):''}.</div>`;
+    return h;
+  }
   const faixa=sems.length?` (semanas de ${sems.map(fm).join(', ')})`:'';
-  let h=`<div class="sd-info">Venda semanal = média das últimas ${n} ${n===1?'semana guardada':'semanas guardadas'}${faixa}. O estoque de segurança acompanha essa média a cada relatório de venda carregado.</div>`;
+  h=`<div class="sd-info">Venda semanal = média das últimas ${n} ${n===1?'semana guardada':'semanas guardadas'}${faixa}. O estoque de segurança acompanha essa média a cada relatório de venda carregado.</div>`;
   if(sems.length&&sems[sems.length-1]<esperada)h+=`<div class="sd-aviso">O relatório de venda da semana de ${fm(esperada)} ainda não foi carregado: a última semana guardada é a de ${fm(sems[sems.length-1])}.</div>`;
   if(n<4)h+=`<div class="sd-aviso">Só há ${n} ${n===1?'semana guardada':'semanas guardadas'}; com 4 a média fica estável.</div>`;
   return h;
@@ -9295,20 +9304,40 @@ async function salCarregarHist(){
   if(SAL.histCarregando)return;SAL.histCarregando=true;
   try{
     const {data,error}=await getSupabaseClient().from('venda_semanal_historico').select('semana,tipo,dados').order('semana',{ascending:false}).limit(60);
-    if(!error&&data){SAL.hist=data;salRenderAtivo();}
+    if(!error&&data){
+      // Base longa de venda (histórico do período inteiro): se a tabela não responder, a média cai no cálculo por semanas guardadas.
+      try{const b=await getSupabaseClient().from('venda_periodo_base').select('tipo,ini,fim,semanas,dados');
+        SAL.base=!b.error&&b.data&&b.data.length?Object.fromEntries(b.data.map(r=>[r.tipo,r])):{};}catch(e){SAL.base={};}
+      SAL.hist=data;salRenderAtivo();}
   }catch(e){}
   SAL.histCarregando=false;
 }
-// Venda semanal base: média das últimas 4 semanas guardadas (se houver 3 ou mais); senão a venda carregada hoje.
+// Venda semanal base = média acumulada: o histórico de vendas do período inteiro (venda_periodo_base) mais cada semana guardada depois dele.
+// A semana que já está dentro do período do histórico não entra de novo. Produto novo (a venda recente é muito maior que a média do ano,
+// ou ele nem existe no histórico) usa só as semanas guardadas, para não ser diluído pelos meses em que não vendia.
+// Sem a base carregada, cai para a média das últimas 4 semanas guardadas.
 function salVendaMap(tipo){
   const cur=tipo==='F'?vendaFabMap:vendaLojaMap,t=tipo==='F'?'FAB':'LOJA';
-  const sem=(SAL.hist||[]).filter(h=>h.tipo===t).sort((a,b)=>a.semana<b.semana?1:-1).slice(0,4);
-  // Cada upload semanal de venda grava uma semana; a base é a média das últimas 4 guardadas, então o estoque de segurança acompanha a demanda.
+  const hist=(SAL.hist||[]).filter(h=>h.tipo===t).sort((a,b)=>a.semana<b.semana?-1:1),base=(SAL.base||{})[t];
+  if(base&&base.dados){
+    const fimMs=salMs(base.fim),cobre=h=>salMs(h.semana)+6*864e5<=fimMs,cob=hist.filter(cobre),novas=hist.filter(h=>!cobre(h));
+    const bw=+base.semanas,out={},novos=[],ult=cob.length?cob[cob.length-1]:null;
+    const cods=new Set(Object.keys(base.dados));hist.forEach(h=>Object.keys(h.dados||{}).forEach(c=>cods.add(c)));cods.delete('Material');
+    cods.forEach(c=>{
+      const b=+base.dados[c]||0,sNov=novas.reduce((a,h)=>a+(+(h.dados||{})[c]||0),0),vu=ult?(+(ult.dados||{})[c]||0):0;
+      const recente=hist.reduce((a,h)=>a+(+(h.dados||{})[c]||0),0);
+      if(hist.length&&(recente>0&&(b===0||vu>5*b/bw))){out[c]=recente/hist.length;novos.push(c);}
+      else out[c]=(b+sNov)/(bw+novas.length);
+    });
+    return {map:out,n:bw+novas.length,sems:hist.map(h=>h.semana),novas:novas.map(h=>h.semana),base:{ini:base.ini,fim:base.fim,semanas:bw},novos};
+  }
+  const sem=hist.slice().reverse().slice(0,4);
+  // Sem a base: cada upload semanal de venda grava uma semana e a média é das últimas 4 guardadas.
   if(sem.length>=1){
     const out={};sem.forEach(h=>Object.keys(h.dados||{}).forEach(c=>{out[c]=(out[c]||0)+(+h.dados[c]||0)/sem.length;}));
-    return {map:out,n:sem.length,sems:sem.map(h=>h.semana)};
+    return {map:out,n:sem.length,sems:sem.map(h=>h.semana),novas:sem.map(h=>h.semana),base:null,novos:[]};
   }
-  return {map:cur||{},n:1,sems:[]};
+  return {map:cur||{},n:1,sems:[],novas:[],base:null,novos:[]};
 }
 function salEstoqueMap(lista){const m={};(lista||[]).forEach(i=>{const c=normCod(String(i.codigo||''));if(c)m[c]=(m[c]||0)+(+i.estoque||0);});return m;}
 
@@ -9371,7 +9400,7 @@ function salCalcular(){
     out.push({nome:g.nome,maq:maq.charAt(0)+maq.slice(1).toLowerCase(),ult:g.ult,taxa,prodSem,venda,ratio,est,cob:venda>0?est/venda:null,hNec,hUs,
       dif:hNec!==null&&hUs!==null?hNec-hUs:null,status,rcMil,nRc:g.nRc,rcAtual:rcMil!==null?rcMil*prodSem/1000:null,rcVenda:rcMil!==null&&venda>0?rcMil*venda/1000:null,nApt:g.nApt,semProd,diasProd:Object.keys(g.dias).length,pecasDia:Object.keys(g.dias).length?g.pecasPer/Object.keys(g.dias).length:null,rowsN:g.rows.length,rows:g.rows});
   });
-  return {out,ini,fim,dias,semanas,prevIni,prevFim,kp,semanasAt,vendaN:Math.max(vF.n,vL.n),vendaSems:(vF.sems&&vF.sems.length>=(vL.sems||[]).length?vF.sems:vL.sems)||[],semGrupo,vendaTem:Object.keys(vendaFabMap||{}).length+Object.keys(vendaLojaMap||{}).length>0};
+  return {out,ini,fim,dias,semanas,prevIni,prevFim,kp,semanasAt,vendaN:Math.max(vF.n,vL.n),vendaSems:(vF.sems&&vF.sems.length>=(vL.sems||[]).length?vF.sems:vL.sems)||[],vendaInfo:{F:vF,L:vL},semGrupo,vendaTem:Object.keys(vendaFabMap||{}).length+Object.keys(vendaLojaMap||{}).length>0};
 }
 
 /* ---------- gráficos (SVG simples, sem biblioteca) ---------- */
@@ -9708,7 +9737,7 @@ function girCalcular(){
     if(!g.massasPer&&!g.ult)return;
     out.push({nome:g.nome,bruto:g.bruto,ult:g.ult,taxa,nH:g.nH,massasSem:semProd?g.massasPer/semProd:0,semProd,prodSem,venda,ratio,est,cob:conv&&venda>0?est/venda:null,hNec,hUs,dif:hNec!==null&&hUs!==null?hNec-hUs:null,status,atend:g.prev>0?g.real/g.prev:null,cobriu,denomSem,regul:denomSem&&venda>0&&conv?cobriu/denomSem:null,dowUsual,prox,cobDias,risco,mem,disp,dispProj,pd,nApt:g.nApt,diasProd:Object.keys(g.dias).length,massasDia:Object.keys(g.dias).length?g.massasPer/Object.keys(g.dias).length:null,rows:g.rows,kgM:g.kgM});
   });
-  return {out,ini,fim,dias,semanas,kp,semanasAt,eq,fora:Object.values(fora),vendaN:Math.max(vF.n,vL.n),vendaSems:(vF.sems&&vF.sems.length>=(vL.sems||[]).length?vF.sems:vL.sems)||[],vendaTem:Object.keys(vendaFabMap||{}).length+Object.keys(vendaLojaMap||{}).length>0,mapaOk:!!GIR.mapa};
+  return {out,ini,fim,dias,semanas,kp,semanasAt,eq,fora:Object.values(fora),vendaN:Math.max(vF.n,vL.n),vendaSems:(vF.sems&&vF.sems.length>=(vL.sems||[]).length?vF.sems:vL.sems)||[],vendaInfo:{F:vF,L:vL},vendaTem:Object.keys(vendaFabMap||{}).length+Object.keys(vendaLojaMap||{}).length>0,mapaOk:!!GIR.mapa};
 }
 
 // Plano de horas da semana: reparte as horas líquidas disponíveis entre os produtos, na proporção do que a venda exige.
@@ -19693,7 +19722,6 @@ const EQUIV_GRUPOS=[
   ['6112','7339','9555','7348'], // Mini croissant frango (6112 só existe na OP)
   ['8000','3577'],            // Mini pão francês pré-assado
   ['3579','1194690-1'],       // Pão mini sovadinho
-  ['3860','1436011-1'],       // Pão mini massinha doce
   ['7197','6230'],            // Pastel nata carne 130g (Loja ↔ BK Café)
   ['7077','7134','6228']    // Mini 15g: PCT 750G ↔ PCT 400G ↔ assado café (mostra as massas da OP, sem conversão)
 ];
