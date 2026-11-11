@@ -4497,6 +4497,10 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
 </div>
 
 <div class="container">
+  <div class="pg-tabs no-print">
+    <button class="pg-tab active" data-aba="estoque" onclick="PG_aba('estoque')">Estoque &amp; Alertas</button>
+    <button class="pg-tab" data-aba="prog" onclick="PG_aba('prog')">Programação</button>
+  </div>
   <div class="stats-row no-print" id="statsRow"></div>
   <div class="pcp-container">
   <!-- Linha 1: Filtros (esq) + Título OP (dir) — ambos na mesma row do grid = alinhamento garantido -->
@@ -4817,6 +4821,28 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
   </div><!-- /tab-ordem -->
   </div><!-- /pcp-right -->
   </div><!-- /pcp-container -->
+  <div id="pcpProgView">
+    <div class="pg-bar no-print">
+      <label for="pgData">Data da produção</label>
+      <input type="date" id="pgData" onchange="PG_carregar()">
+      <span class="pg-status" id="pgStatus"></span>
+      <span class="pg-sp"></span>
+      <button class="pg-btn" onclick="PG_copiar()">Copiar de outro dia</button>
+      <button class="pg-btn good" onclick="PG_salvar()">Salvar programação</button>
+      <button class="pg-btn primary" onclick="PG_menuExport()">Exportar PDFs ▾</button>
+    </div>
+    <div class="pg-export no-print" id="pgExport">
+      <button class="pg-btn primary" onclick="PG_exportar('tudo')">Tudo em 1 PDF</button>
+      <button class="pg-btn" onclick="PG_exportar('setores')">Folhas dos setores</button>
+      <button class="pg-btn" onclick="PG_exportar('bate')">Bate Pão</button>
+      <button class="pg-btn" onclick="PG_exportar('emb')">Embalagem</button>
+      <button class="pg-btn" onclick="PG_exportar('qc')">Química e Cozinha</button>
+      <button class="pg-btn" onclick="PG_exportar('resumo')">Resumo da OP</button>
+    </div>
+    <p class="pg-hint no-print">Ao salvar, a programação de hoje em diante vira a OP do sistema (cards e alertas do PCP), sem importar planilha. O Bate Pão sai do Giro Dia, usando o destino de cada item.</p>
+    <datalist id="pgDatalist"></datalist>
+    <div id="pgSetores"></div>
+  </div>
 </div>
 
   </div> <!-- /page-pcp-estoque -->
@@ -6504,7 +6530,7 @@ const BK_MODULOS = [
   { id:'rascunho',                rotulo:'Máquinas',                  tabelas:['maquinas','produtos_producao'] },
   { id:'manutencao',              rotulo:'Manutenções',               tabelas:['chamados_manutencao','manutencoes','maquinas'] },
   { id:'estoque',                 rotulo:'Almoxarifado',              tabelas:['estoque_contagens','estoque_entradas','estoque_minimos','estoque_requisicoes','estoque_catalogo_insumos'] },
-  { id:'pcp-estoque',             rotulo:'PCP & Estoque',             tabelas:['pcp_cache','estoque_historico','ordens_producao','ordens_producao_itens','vendas_semanais','venda_semanal_historico','venda_periodo_base','produtos_producao','familias','produtos'] },
+  { id:'pcp-estoque',             rotulo:'PCP & Estoque',             tabelas:['pcp_cache','estoque_historico','ordens_producao','ordens_producao_itens','vendas_semanais','venda_semanal_historico','venda_periodo_base','produtos_producao','familias','produtos','programacao_producao'] },
   { id:'melhoria',                rotulo:'Melhoria Contínua',         tabelas:['melhoria_continua','pp_etapas_referencia'] },
   { id:'lancamento',              rotulo:'Lançamento',                tabelas:['producao_diaria','perdas_producao','produtos_producao','setores','maquinas','produtividade_corridas','produtividade_paradas','produtividade_tempos_massa','tempo_processo_bateladas','tempo_processo_etapas','pp_etapas_referencia','ocupacao','familias','estoque_requisicoes'] },
   { id:'expedicao',               rotulo:'Expedição',                 tabelas:['ocupacao','familias','produtos'] },
@@ -28015,5 +28041,406 @@ document.addEventListener('DOMContentLoaded', ()=>{
 });
 
 </script>
+<style>
+/* ─────────────────────────────────────────────
+   PCP — PROGRAMAÇÃO DE PRODUÇÃO
+   ───────────────────────────────────────────── */
+#page-pcp-estoque .pg-tabs{display:flex;gap:6px;margin-bottom:14px}
+#page-pcp-estoque .pg-tab{padding:8px 18px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;border:1px solid var(--line);background:var(--paper);color:var(--ink-soft);border-radius:var(--radius-md);cursor:pointer;font-family:inherit}
+#page-pcp-estoque .pg-tab.active{background:var(--red-dark);border-color:var(--red-dark);color:#fff}
+#pcpProgView{display:none}
+#pcpProgView .pg-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 14px;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);margin-bottom:14px}
+#pcpProgView .pg-bar label{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-soft)}
+#pcpProgView .pg-bar input[type=date]{padding:6px 8px;border:1.5px solid var(--line);border-radius:8px;font-family:inherit;font-size:12px;font-weight:700;background:var(--cream);color:var(--ink)}
+#pcpProgView .pg-sp{flex:1}
+#pcpProgView .pg-btn{padding:7px 14px;font-size:11px;font-weight:700;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);border-radius:8px;cursor:pointer;font-family:inherit}
+#pcpProgView .pg-btn:hover{background:var(--cream)}
+#pcpProgView .pg-btn.primary{background:var(--red-dark);border-color:var(--red-dark);color:#fff}
+#pcpProgView .pg-btn.good{border-color:var(--good);color:var(--good)}
+#pcpProgView .pg-status{font-size:11px;font-weight:700;color:var(--ink-soft)}
+#pcpProgView .pg-status.dirty{color:var(--warn)}
+#pcpProgView .pg-status.ok{color:var(--good)}
+#pcpProgView .pg-export{display:none;flex-wrap:wrap;gap:8px;padding:12px 14px;margin-bottom:14px;background:var(--cream);border:1px dashed var(--line);border-radius:var(--radius-md)}
+#pcpProgView .pg-export.open{display:flex}
+#pcpProgView .pg-setor{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);margin-bottom:12px;overflow:hidden}
+#pcpProgView .pg-setor-h{background:var(--red-dark);color:#fff;padding:8px 14px;font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;display:flex;justify-content:space-between}
+#pcpProgView .pg-setor-h span{font-weight:600;letter-spacing:.3px;color:rgba(255,255,255,.7)}
+#pcpProgView table{width:100%;border-collapse:collapse}
+#pcpProgView th{font-size:9.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-soft);text-align:left;padding:6px 8px;background:var(--cream);border-bottom:1px solid var(--line)}
+#pcpProgView td{padding:4px 6px;border-bottom:1px solid var(--line)}
+#pcpProgView td input,#pcpProgView td select{width:100%;box-sizing:border-box;padding:6px 7px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:12px;background:var(--paper);color:var(--ink)}
+#pcpProgView td input:focus,#pcpProgView td select:focus{outline:2px solid var(--red);border-color:var(--red)}
+#pcpProgView .pg-cod{font-size:11px;font-weight:700;color:var(--ink-soft);white-space:nowrap}
+#pcpProgView .pg-cod.pend{color:var(--warn)}
+#pcpProgView .pg-x{border:none;background:none;color:var(--ink-soft);font-size:15px;cursor:pointer;padding:2px 6px}
+#pcpProgView .pg-x:hover{color:var(--red)}
+#pcpProgView .pg-add{display:block;width:100%;padding:8px 14px;font-size:11px;font-weight:700;color:var(--red-dark);background:var(--cream);border:none;border-top:1px dashed var(--line);cursor:pointer;text-align:left;font-family:inherit}
+#pcpProgView .pg-hint{font-size:11px;color:var(--ink-soft);margin:0 0 12px}
+</style>
+
+<script>
+/* ─────────────────────────────────────────────
+   PCP — PROGRAMAÇÃO DE PRODUÇÃO (PG_)
+   Planejamento diário por setor → salva em programacao_producao,
+   alimenta a OP do sistema (opData) e exporta os PDFs.
+   ───────────────────────────────────────────── */
+const PG_SETORES = ['PADARIA NOTURNO','GIRO DIA','PADARIA','CROISSANT','PÃO BATATA','SALGADO','FRITADOR','CONFEITARIA'];
+const PG_UNIDADES = ['Massa','Carrinhos','Unid','Caixas','Kg','Blocos'];
+const PG_RECHEIO = ['SALGADO','FRITADOR'];
+const PG_VERMELHO = [161,1,1];
+const PG_CINZA = [242,242,242];
+const PG_LINHA = [154,154,154];
+const PG_TEXTO = [34,34,34];
+let PG_rows = [];
+let PG_catalog = [];
+let PG_ready = false;
+let PG_dirty = false;
+
+function PG_hojeMais(dias){
+  const d = new Date(); d.setDate(d.getDate() + dias);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function PG_esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function PG_fmt(n){ return Number(n).toLocaleString('pt-BR'); }
+function PG_dataBR(iso){ const p = String(iso).split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+function PG_semAcento(s){ return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g,''); }
+// Rótulo curto da unidade conforme a quantidade
+function PG_un(q, u){
+  const m = { 'Massa':['massa','massas'], 'Carrinhos':['carrinho','carrinhos'], 'Blocos':['bloco','blocos'], 'Unid':['un','un'], 'Caixas':['cx','cx'], 'Kg':['kg','kg'] };
+  const v = m[u] || [String(u || '').toLowerCase(), String(u || '').toLowerCase()];
+  return Number(q) === 1 ? v[0] : v[1];
+}
+function PG_qtdTxt(r){ return (r.quantidade == null || r.quantidade === '') ? '' : PG_fmt(r.quantidade) + ' ' + PG_un(r.quantidade, r.unidade); }
+
+function PG_aba(qual){
+  const pg = document.getElementById('page-pcp-estoque');
+  const prog = qual === 'prog';
+  document.getElementById('statsRow').style.display = prog ? 'none' : '';
+  pg.querySelector('.pcp-container').style.display = prog ? 'none' : '';
+  document.getElementById('pcpProgView').style.display = prog ? 'block' : 'none';
+  pg.querySelectorAll('.pg-tab').forEach(b => b.classList.toggle('active', b.dataset.aba === qual));
+  if(prog && !PG_ready) PG_init();
+}
+
+async function PG_init(){
+  PG_ready = true;
+  document.getElementById('pgData').value = PG_hojeMais(1);
+  try{
+    const { data, error } = await getSupabaseClient().from('produtos_producao').select('codigo, descricao, setor, unidade').order('descricao');
+    if(error) throw error;
+    PG_catalog = data || [];
+  }catch(e){ PG_catalog = []; }
+  document.getElementById('pgDatalist').innerHTML = PG_catalog.map(p => '<option value="' + PG_esc(p.descricao) + '">' + PG_esc(p.codigo) + '</option>').join('');
+  await PG_carregar();
+}
+
+function PG_status(txt, cls){
+  const el = document.getElementById('pgStatus');
+  el.textContent = txt; el.className = 'pg-status' + (cls ? ' ' + cls : '');
+}
+function PG_marcarSujo(){ PG_dirty = true; PG_status('Alterações não salvas', 'dirty'); }
+
+async function PG_carregar(){
+  const data = document.getElementById('pgData').value;
+  if(!data) return;
+  if(PG_dirty && !confirm('Há alterações não salvas. Trocar de data mesmo assim?')) return;
+  PG_status('Carregando…');
+  try{
+    const { data: rows, error } = await getSupabaseClient().from('programacao_producao').select('*').eq('data', data).order('setor').order('ordem');
+    if(error) throw error;
+    PG_rows = rows || [];
+    PG_dirty = false;
+    PG_status(PG_rows.length ? PG_rows.length + ' itens programados' : 'Sem programação para esta data', PG_rows.length ? 'ok' : '');
+  }catch(e){
+    PG_rows = [];
+    PG_status('Erro ao carregar: ' + (e.message || e), 'dirty');
+  }
+  PG_render();
+}
+
+function PG_render(){
+  const box = document.getElementById('pgSetores');
+  box.innerHTML = PG_SETORES.map(setor => {
+    const idxs = PG_rows.map((r, i) => r.setor === setor ? i : -1).filter(i => i >= 0);
+    const rec = PG_RECHEIO.includes(setor);
+    const linhas = idxs.map(i => {
+      const r = PG_rows[i];
+      return '<tr>' +
+        '<td style="width:78px"><span class="pg-cod' + (r.codigo ? '' : ' pend') + '">' + PG_esc(r.codigo || 'pendente') + '</span></td>' +
+        '<td><input list="pgDatalist" value="' + PG_esc(r.produto) + '" onchange="PG_prod(' + i + ',this.value)" placeholder="Produto (nome ou código)"></td>' +
+        '<td style="width:96px"><input type="number" min="0" step="any" value="' + (r.quantidade == null ? '' : r.quantidade) + '" oninput="PG_set(' + i + ',\'quantidade\',this.value===\'\'?null:Number(this.value))"></td>' +
+        '<td style="width:100px"><select onchange="PG_set(' + i + ',\'unidade\',this.value)">' + PG_UNIDADES.map(u => '<option' + (u === r.unidade ? ' selected' : '') + '>' + u + '</option>').join('') + '</select></td>' +
+        '<td style="width:150px"><input value="' + PG_esc(r.maquina) + '" oninput="PG_set(' + i + ',\'maquina\',this.value)" placeholder="Máquina / turno"></td>' +
+        '<td style="width:210px"><input value="' + PG_esc(r.destino) + '" oninput="PG_set(' + i + ',\'destino\',this.value)" placeholder="Destino (Embalagem)"></td>' +
+        '<td style="width:170px"><input value="' + PG_esc(r.observacao) + '" oninput="PG_set(' + i + ',\'observacao\',this.value)" placeholder="Observação"></td>' +
+        '<td style="width:30px"><button class="pg-x" title="Remover" onclick="PG_remover(' + i + ')">✕</button></td></tr>';
+    }).join('');
+    return '<div class="pg-setor"><div class="pg-setor-h">' + PG_esc(setor) + '<span>' + idxs.length + ' itens</span></div>' +
+      (idxs.length ? '<table><thead><tr><th>Código</th><th>Produto</th><th>Quantidade</th><th>Unidade</th><th>Máquina / turno</th><th>Destino</th><th>Observação</th><th></th></tr></thead><tbody>' + linhas + '</tbody></table>' : '') +
+      '<button class="pg-add" onclick="PG_add(\'' + setor + '\')">+ Adicionar produto' + (rec ? '' : '') + '</button></div>';
+  }).join('');
+}
+
+function PG_set(i, campo, valor){ PG_rows[i][campo] = valor; PG_marcarSujo(); }
+function PG_add(setor){
+  const ordem = PG_rows.filter(r => r.setor === setor).length;
+  PG_rows.push({ data: document.getElementById('pgData').value, setor, ordem, codigo: null, produto: '', quantidade: null, unidade: 'Massa', maquina: '', destino: '', observacao: '' });
+  PG_marcarSujo(); PG_render();
+}
+function PG_remover(i){ PG_rows.splice(i, 1); PG_marcarSujo(); PG_render(); }
+// Escolher produto do catálogo preenche código e unidade; texto livre fica sem código
+function PG_prod(i, txt){
+  const t = String(txt).trim();
+  const alvo = PG_semAcento(t).toLowerCase();
+  const hit = PG_catalog.find(p => PG_semAcento(p.descricao).toLowerCase() === alvo) ||
+              PG_catalog.find(p => normCod(String(p.codigo)) === normCod(t));
+  const r = PG_rows[i];
+  if(hit){
+    r.produto = hit.descricao; r.codigo = hit.codigo;
+    const u = PG_UNIDADES.find(x => PG_semAcento(x).toLowerCase() === PG_semAcento(hit.unidade || '').toLowerCase());
+    if(u) r.unidade = u;
+  }else{ r.produto = t; r.codigo = null; }
+  PG_marcarSujo(); PG_render();
+}
+
+async function PG_copiar(){
+  const origem = prompt('Copiar a programação de qual data? (AAAA-MM-DD)', PG_hojeMais(0));
+  if(!origem) return;
+  if(PG_rows.length && !confirm('Isso substitui a programação atual da tela. Continuar?')) return;
+  try{
+    const { data, error } = await getSupabaseClient().from('programacao_producao').select('*').eq('data', origem).order('setor').order('ordem');
+    if(error) throw error;
+    if(!data || !data.length){ alert('Não há programação em ' + origem + '.'); return; }
+    const destino = document.getElementById('pgData').value;
+    PG_rows = data.map(r => ({ data: destino, setor: r.setor, ordem: r.ordem, codigo: r.codigo, produto: r.produto, quantidade: r.quantidade, unidade: r.unidade, maquina: r.maquina || '', destino: r.destino || '', observacao: r.observacao || '' }));
+    PG_marcarSujo(); PG_render();
+  }catch(e){ alert('Erro ao copiar: ' + (e.message || e)); }
+}
+
+async function PG_salvar(){
+  const data = document.getElementById('pgData').value;
+  if(!data) return;
+  const validos = PG_rows.filter(r => String(r.produto).trim());
+  const semQtd = validos.filter(r => r.quantidade == null || r.quantidade === '');
+  if(semQtd.length && !confirm(semQtd.length + ' produto(s) sem quantidade. Salvar mesmo assim?')) return;
+  PG_status('Salvando…');
+  try{
+    const client = getSupabaseClient();
+    const del = await client.from('programacao_producao').delete().eq('data', data);
+    if(del && del.error) throw del.error;
+    const cont = {};
+    const novas = validos.map(r => {
+      cont[r.setor] = (cont[r.setor] || 0);
+      return { data, setor: r.setor, ordem: cont[r.setor]++, codigo: r.codigo || null, produto: String(r.produto).trim(), quantidade: r.quantidade, unidade: r.unidade, maquina: r.maquina || null, destino: r.destino || null, observacao: r.observacao || null };
+    });
+    if(novas.length){
+      const ins = await client.from('programacao_producao').insert(novas);
+      if(ins && ins.error) throw ins.error;
+    }
+    PG_rows = novas; PG_dirty = false;
+    PG_sincronizarOP(data, novas);
+    PG_status('Salvo · ' + novas.length + ' itens', 'ok');
+    PG_render();
+  }catch(e){
+    PG_status('Erro ao salvar: ' + (e.message || e), 'dirty');
+  }
+}
+
+// A programação salva (de hoje em diante) vira a OP do sistema — sem importar planilha
+function PG_sincronizarOP(data, itens){
+  if(data < PG_hojeMais(0)) return;
+  const un = { 'Massa':'MASSA','Carrinhos':'CARRINHO','Unid':'UNIDADE','Caixas':'CAIXA','Kg':'KG','Blocos':'BLOCOS' };
+  opData = { data, arquivo: 'Programação BK360', ts: new Date().toISOString(), itens: itens.filter(r => r.codigo || r.produto).map(r => ({
+    cod: r.codigo || '', setor: r.setor, desc: r.produto, qtd: r.quantidade || 0, un: un[r.unidade] || String(r.unidade || '').toUpperCase(), maq: r.maquina || '', destino: r.destino || ''
+  })) };
+  opIndexar(); opSalvar(); opAtualizarStatus();
+  if(typeof renderAlerts === 'function') try{ renderAlerts(); }catch(e){}
+}
+
+function PG_menuExport(){ document.getElementById('pgExport').classList.toggle('open'); }
+
+/* ── PDFs ─────────────────────────────────── */
+function PG_linhasValidas(){ return PG_rows.filter(r => String(r.produto).trim()); }
+function PG_porSetor(setor){ return PG_linhasValidas().filter(r => r.setor === setor); }
+function PG_novaPagina(doc, orient, titulo, subtitulo){
+  doc.addPage('a4', orient);
+  const W = doc.internal.pageSize.getWidth();
+  doc.setFillColor(...PG_VERMELHO); doc.rect(10, 10, W - 20, 11, 'F');
+  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(12);
+  doc.text(titulo, 15, 17.4);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  doc.text(subtitulo, W - 15, 17.4, { align: 'right' });
+  doc.setTextColor(...PG_TEXTO);
+  return W;
+}
+function PG_cabecalhoSetor(doc, W, nome, data){
+  doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor(...PG_TEXTO);
+  doc.text('1. ' + nome, 12, 31);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
+  doc.text('Data:', 75, 30.5); doc.setFont('helvetica','bold'); doc.text(PG_dataBR(data), 86, 30.5);
+  doc.setFont('helvetica','normal'); doc.text('Líder:', 112, 30.5);
+  doc.setDrawColor(...PG_LINHA); doc.line(124, 31, W - 12, 31);
+}
+function PG_estiloTabela(extra){
+  return Object.assign({
+    theme: 'grid',
+    styles: { font: 'helvetica', fontSize: 8, textColor: PG_TEXTO, lineColor: PG_LINHA, lineWidth: 0.2, cellPadding: 1.6, valign: 'middle' },
+    headStyles: { fillColor: PG_CINZA, textColor: PG_VERMELHO, fontStyle: 'bold', halign: 'center' }
+  }, extra);
+}
+function PG_rodape(doc, pag){
+  const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(102,102,102);
+  doc.text('Preencher a caneta, ao fim de cada produto. Entregar esta folha ao PCP ao final do turno.', 12, H - 8);
+  doc.text('Folha ' + pag + '  ·  Líder (assinatura): ______________________________', W - 12, H - 8, { align: 'right' });
+  doc.setTextColor(...PG_TEXTO);
+}
+function PG_paradasEObs(doc, W, y){
+  doc.setFont('helvetica','bold'); doc.setFontSize(10.5); doc.setTextColor(...PG_VERMELHO);
+  doc.text('2. PARADAS NÃO PROGRAMADAS', 12, y + 4);
+  doc.autoTable(PG_estiloTabela({
+    startY: y + 6, margin: { left: 12, right: 12 },
+    head: [['Produto / máquina','Motivo da parada','Início','Fim','Tempo (min)']],
+    body: [['','','','',''],['','','','',''],['','','','','']],
+    styles: { fontSize: 8, cellPadding: 2.6, lineColor: PG_LINHA, lineWidth: 0.2 },
+    columnStyles: { 0:{cellWidth:70}, 1:{cellWidth:'auto'}, 2:{cellWidth:20}, 3:{cellWidth:20}, 4:{cellWidth:26} }
+  }));
+  let y2 = doc.lastAutoTable.finalY + 6;
+  const H = doc.internal.pageSize.getHeight();
+  doc.setFont('helvetica','bold'); doc.setFontSize(10.5); doc.setTextColor(...PG_VERMELHO);
+  doc.text('3. OBSERVAÇÕES', 12, y2 + 3);
+  doc.setDrawColor(...PG_LINHA); doc.rect(12, y2 + 5, W - 24, Math.max(10, H - 15 - (y2 + 5)));
+  doc.setTextColor(...PG_TEXTO);
+}
+
+// Folha de apontamento de um setor (paisagem). modo 'destino' = Bate Pão (mostra destino no lugar da máquina)
+function PG_folhaSetor(doc, setor, nomeTela, modo, pag){
+  const linhas = PG_porSetor(setor); if(!linhas.length) return pag;
+  const data = document.getElementById('pgData').value;
+  const rec = PG_RECHEIO.includes(setor);
+  const W = PG_novaPagina(doc, 'l', 'BREAD KING  ·  FOLHA DE APONTAMENTO DE PRODUÇÃO', 'Programação de produção ' + PG_dataBR(data));
+  PG_cabecalhoSetor(doc, W, nomeTela, data);
+  const head = ['Cód.','Produto', modo === 'destino' ? 'Destino' : 'Máquina / turno', 'Planejado','Produzido','Pessoas','Início','Fim'];
+  if(rec) head.push('Recheio (cx)');
+  const body = linhas.map(r => {
+    const mq = modo === 'destino' ? (r.destino || '-') : ((r.maquina || '-') + (r.observacao ? '\nOBS: ' + r.observacao : ''));
+    const l = [r.codigo || '', r.produto, mq, PG_qtdTxt(r), '', '', ':', ':'];
+    if(rec) l.push('');
+    return l;
+  });
+  const cs = { 0:{cellWidth:20,fontStyle:'bold'}, 1:{cellWidth:'auto',fontStyle:'bold'}, 2:{cellWidth:38,textColor:[85,85,85],fontSize:7.2}, 3:{cellWidth:24,halign:'center',fontStyle:'bold',fontSize:9}, 4:{cellWidth:24}, 5:{cellWidth:16}, 6:{cellWidth:15,halign:'center',textColor:[136,136,136]}, 7:{cellWidth:15,halign:'center',textColor:[136,136,136]} };
+  if(rec) cs[8] = { cellWidth:18 };
+  doc.autoTable(PG_estiloTabela({ startY: 35, margin: { left: 12, right: 12 }, head: [head], body, columnStyles: cs, bodyStyles: { minCellHeight: Math.max(7, Math.min(9, (210 - 35 - 9 - 62) / linhas.length)) } }));
+  PG_paradasEObs(doc, W, doc.lastAutoTable.finalY + 4);
+  PG_rodape(doc, pag);
+  return pag + 1;
+}
+
+// Página vertical única com todos os itens agrupados por setor. colunas: 'embalagem' | 'apontamento'
+function PG_paginaTodos(doc, titulo, nome, tipo, pag){
+  const data = document.getElementById('pgData').value;
+  const W = PG_novaPagina(doc, 'p', titulo, 'Programação de produção ' + PG_dataBR(data));
+  doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor(...PG_TEXTO);
+  doc.text('1. ' + nome, 12, 31);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
+  const xd = tipo === 'embalagem' ? 150 : 82;
+  doc.text('Data:', xd, 30.5); doc.setFont('helvetica','bold'); doc.text(PG_dataBR(data), xd + 11, 30.5);
+  if(tipo === 'apontamento'){ doc.setFont('helvetica','normal'); doc.text('Líder:', 125, 30.5); doc.setDrawColor(...PG_LINHA); doc.line(137, 31, W - 12, 31); }
+  const body = []; let nLinhas = 0;
+  PG_SETORES.forEach(s => {
+    const l = PG_porSetor(s); if(!l.length) return;
+    body.push([{ content: s, colSpan: tipo === 'embalagem' ? 4 : 7, styles: { fillColor: [34,34,34], textColor: [255,255,255], fontStyle: 'bold', fontSize: 8, cellPadding: 1.2 } }]);
+    l.forEach(r => {
+      nLinhas++;
+      body.push(tipo === 'embalagem' ? [r.codigo || '', r.produto, PG_qtdTxt(r), r.destino || '-'] : [r.codigo || '', r.produto, PG_qtdTxt(r), '', '', ':', ':']);
+    });
+  });
+  const disp = 297 - 38 - 16; const cell = Math.max(3.6, Math.min(7.5, disp / (body.length + 3)));
+  const fs = cell < 4.6 ? 5.8 : (cell < 5.4 ? 6.4 : (cell < 6.4 ? 7 : 7.6));
+  const head = tipo === 'embalagem' ? ['Cód.','Produto','Planejado','Destino / instrução'] : ['Cód.','Produto','Planejado','Produzido','Pessoas','Início','Fim'];
+  const cs = tipo === 'embalagem'
+    ? { 0:{cellWidth:16}, 1:{cellWidth:'auto',fontStyle:'bold'}, 2:{cellWidth:23}, 3:{cellWidth:56,fontStyle:'bold'} }
+    : { 0:{cellWidth:16}, 1:{cellWidth:'auto',fontStyle:'bold'}, 2:{cellWidth:23,halign:'center'}, 3:{cellWidth:20}, 4:{cellWidth:14}, 5:{cellWidth:12,halign:'center',textColor:[136,136,136]}, 6:{cellWidth:12,halign:'center',textColor:[136,136,136]} };
+  doc.autoTable(PG_estiloTabela({
+    startY: 35, margin: { left: 12, right: 12, bottom: 12 }, head: [head], body, columnStyles: cs,
+    styles: { font:'helvetica', fontSize: fs, textColor: PG_TEXTO, lineColor: PG_LINHA, lineWidth: 0.2, cellPadding: { top: Math.max(0.5, (cell - fs * 0.42) / 2), bottom: Math.max(0.5, (cell - fs * 0.42) / 2), left: 1.6, right: 1.6 }, valign: 'middle' },
+    didParseCell: h => {
+      if(tipo !== 'embalagem' || h.section !== 'body' || h.column.index !== 3 || h.row.cells[0].colSpan > 1) return;
+      const tem = h.cell.raw && h.cell.raw !== '-';
+      h.cell.styles.textColor = tem ? PG_VERMELHO : [136,136,136];
+      if(tem) Object.values(h.row.cells).forEach(c => { c.styles.fillColor = [255,241,241]; });
+    }
+  }));
+  if(tipo === 'embalagem'){
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(102,102,102);
+    doc.text('Linhas destacadas trazem instrução de destino (loja / fábrica) para a Embalagem.', 12, 297 - 8);
+  }else PG_rodape(doc, pag);
+  return pag + 1;
+}
+
+// Resumo da OP (1 página vertical) para enviar por e-mail
+function PG_paginaResumo(doc, pag){
+  const data = document.getElementById('pgData').value;
+  const W = PG_novaPagina(doc, 'p', 'BREAD KING  ·  RESUMO DA ORDEM DE PRODUÇÃO', 'Data: ' + PG_dataBR(data));
+  doc.setFont('helvetica','bold'); doc.setFontSize(10.5); doc.setTextColor(...PG_VERMELHO); doc.text('1. TOTAIS POR SETOR', 12, 30);
+  const tot = [];
+  PG_SETORES.forEach(s => {
+    const l = PG_porSetor(s); if(!l.length) return;
+    const t = {}; l.forEach(r => { t[r.unidade] = (t[r.unidade] || 0) + (Number(r.quantidade) || 0); });
+    tot.push([s, String(l.length), Object.keys(t).map(u => PG_fmt(t[u]) + ' ' + PG_un(t[u], u)).join('  ·  ')]);
+  });
+  doc.autoTable(PG_estiloTabela({ startY: 32, margin: { left: 12, right: 12 }, head: [['Setor','Itens','Total programado']], body: tot,
+    columnStyles: { 0:{cellWidth:48,fontStyle:'bold'}, 1:{cellWidth:14,halign:'center'}, 2:{cellWidth:'auto'} },
+    headStyles: { fillColor: PG_CINZA, textColor: PG_VERMELHO, fontStyle: 'bold', halign: 'left' } }));
+  let y = doc.lastAutoTable.finalY + 8;
+  doc.setFont('helvetica','bold'); doc.setFontSize(10.5); doc.setTextColor(...PG_VERMELHO); doc.text('2. PROGRAMAÇÃO DETALHADA', 12, y);
+  const body = [];
+  PG_SETORES.forEach(s => {
+    const l = PG_porSetor(s); if(!l.length) return;
+    body.push([{ content: s, colSpan: 3, styles: { fillColor: [34,34,34], textColor: [255,255,255], fontStyle: 'bold', fontSize: 7.4, cellPadding: 1 } }]);
+    l.forEach(r => body.push([r.produto, PG_qtdTxt(r), [r.maquina, r.observacao ? 'OBS: ' + r.observacao : '', r.destino].filter(Boolean).join(' · ') || '-']));
+  });
+  const disp = 297 - (y + 3) - 18; const cell = Math.max(3.4, Math.min(6.2, disp / (body.length + 2)));
+  const fs = cell < 4.4 ? 5.6 : (cell < 5 ? 6.2 : 7);
+  doc.autoTable(PG_estiloTabela({ startY: y + 2, margin: { left: 12, right: 12, bottom: 10 }, head: [['Produto','Planejado','Máquina / destino']], body,
+    columnStyles: { 0:{cellWidth:92,fontStyle:'bold'}, 1:{cellWidth:24}, 2:{cellWidth:'auto'} },
+    headStyles: { fillColor: PG_CINZA, textColor: PG_VERMELHO, fontStyle: 'bold', halign: 'left' },
+    styles: { font:'helvetica', fontSize: fs, textColor: PG_TEXTO, lineColor: PG_LINHA, lineWidth: 0.2, cellPadding: { top: Math.max(0.4, (cell - fs * 0.42) / 2), bottom: Math.max(0.4, (cell - fs * 0.42) / 2), left: 1.4, right: 1.4 }, valign: 'middle' } }));
+  return pag + 1;
+}
+
+const PG_VERSOES = {
+  setores: { rotulo: 'Folhas dos setores', arq: 'folhas-setores' },
+  bate:    { rotulo: 'Bate Pão',            arq: 'bate-pao' },
+  emb:     { rotulo: 'Embalagem',           arq: 'embalagem' },
+  qc:      { rotulo: 'Química e Cozinha',   arq: 'quimica-cozinha' },
+  resumo:  { rotulo: 'Resumo da OP',        arq: 'resumo-op' }
+};
+function PG_montar(doc, chave, pag){
+  if(chave === 'setores') PG_SETORES.forEach(s => { pag = PG_folhaSetor(doc, s, s, 'maquina', pag); });
+  if(chave === 'bate') pag = PG_folhaSetor(doc, 'GIRO DIA', 'BATE PÃO', 'destino', pag);
+  if(chave === 'emb') pag = PG_paginaTodos(doc, 'BREAD KING  ·  ORDEM DE PRODUÇÃO - EMBALAGEM', 'EMBALAGEM - DESTINO E INSTRUÇÕES', 'embalagem', pag);
+  if(chave === 'qc'){ pag = PG_paginaTodos(doc, 'BREAD KING  ·  FOLHA DE APONTAMENTO DE PRODUÇÃO', 'QUÍMICA', 'apontamento', pag); pag = PG_paginaTodos(doc, 'BREAD KING  ·  FOLHA DE APONTAMENTO DE PRODUÇÃO', 'COZINHA', 'apontamento', pag); }
+  if(chave === 'resumo') pag = PG_paginaResumo(doc, pag);
+  return pag;
+}
+// Ordem do PDF completo: setores (com Bate Pão logo após o Giro Dia), Embalagem, Química/Cozinha e Resumo
+function PG_exportar(chave){
+  if(!window.jspdf || !window.jspdf.jsPDF){ alert('Não foi possível carregar a biblioteca de PDF (sem conexão com a internet?). Tente novamente.'); return; }
+  if(PG_dirty && !confirm('Há alterações não salvas. Exportar mesmo assim com o que está na tela?')) return;
+  if(!PG_linhasValidas().length){ alert('Não há produtos programados nesta data.'); return; }
+  const data = document.getElementById('pgData').value;
+  const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
+  let pag = 1;
+  if(chave === 'tudo'){
+    PG_SETORES.forEach(s => { pag = PG_folhaSetor(doc, s, s, 'maquina', pag); if(s === 'GIRO DIA') pag = PG_folhaSetor(doc, 'GIRO DIA', 'BATE PÃO', 'destino', pag); });
+    ['emb','qc','resumo'].forEach(k => { pag = PG_montar(doc, k, pag); });
+  }else pag = PG_montar(doc, chave, pag);
+  doc.deletePage(1);
+  const nome = chave === 'tudo' ? 'programacao-producao' : PG_VERSOES[chave].arq;
+  doc.save(nome + '-' + data + '.pdf');
+}
+</script>
+
 </body>
 </html>
