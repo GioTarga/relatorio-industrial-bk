@@ -4838,7 +4838,20 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
       <button class="pg-btn" onclick="PG_exportar('emb')">Embalagem</button>
       <button class="pg-btn" onclick="PG_exportar('qc')">Química e Cozinha</button>
       <button class="pg-btn" onclick="PG_exportar('resumo')">Resumo da OP</button>
-      <button class="pg-btn" onclick="PG_exportar('prio')">Prioridades da Embalagem</button>
+      <button class="pg-btn" onclick="PG_prioAbrir()">Prioridades da Embalagem</button>
+    </div>
+    <div class="pg-prio no-print" id="pgPrio">
+      <div class="pg-prio-h">Prioridades da Embalagem <span id="pgPrioInfo"></span></div>
+      <p class="pg-hint">Lista montada com os produtos da programação que estão com saldo negativo. Reordene, remova ou adicione produtos antes de gerar o PDF.</p>
+      <div id="pgPrioTabela"></div>
+      <div class="pg-prio-add">
+        <input list="pgDatalist" id="pgPrioBusca" placeholder="Adicionar produto (nome ou código)">
+        <button class="pg-btn" onclick="PG_prioAdd()">+ Adicionar</button>
+        <span class="pg-sp"></span>
+        <button class="pg-btn" onclick="PG_prioAbrir()">Recalcular</button>
+        <button class="pg-btn primary" onclick="PG_prioGerar()">Gerar PDF</button>
+        <button class="pg-btn" onclick="PG_prioFechar()">Fechar</button>
+      </div>
     </div>
     <p class="pg-hint no-print">Ao salvar, a programação de hoje em diante vira a OP do sistema (cards e alertas do PCP), sem importar planilha. O Bate Pão sai do Giro Dia, usando o destino de cada item.</p>
     <datalist id="pgDatalist"></datalist>
@@ -28079,6 +28092,14 @@ document.addEventListener('DOMContentLoaded', ()=>{
 #pcpProgView .pg-est{font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap}
 #pcpProgView .pg-est.vazio{color:var(--ink-soft);font-weight:500}
 #pcpProgView .pg-est.zero{color:var(--red)}
+#pcpProgView .pg-prio{display:none;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);margin-bottom:14px;overflow:hidden}
+#pcpProgView .pg-prio.open{display:block}
+#pcpProgView .pg-prio-h{background:var(--red-dark);color:#fff;padding:8px 14px;font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;display:flex;justify-content:space-between}
+#pcpProgView .pg-prio-h span{font-weight:600;letter-spacing:.3px;color:rgba(255,255,255,.7)}
+#pcpProgView .pg-prio .pg-hint{padding:10px 14px 0;margin:0}
+#pcpProgView .pg-prio-add{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;background:var(--cream);border-top:1px dashed var(--line)}
+#pcpProgView .pg-prio-add input{flex:1;min-width:260px;max-width:480px;padding:7px 9px;border:1.5px solid var(--line);border-radius:8px;font-family:inherit;font-size:12px;background:var(--paper);color:var(--ink)}
+#pcpProgView .pg-saldo{font-weight:800;color:var(--red);white-space:nowrap}
 #pcpProgView .pg-hint{font-size:11px;color:var(--ink-soft);margin:0 0 12px}
 </style>
 
@@ -28447,20 +28468,6 @@ function PG_paginaResumo(doc, pag){
 }
 
 // Fila de prioridade da Embalagem: itens da programação com saldo negativo (estoque - reserva) na última posição de estoque.
-// "Produzido" = apontado em producao_diaria na data; sem apontamento, vale a quantidade programada.
-let PG_real = {};
-async function PG_carregarReal(data){
-  PG_real = {};
-  try{
-    const { data: rows } = await getSupabaseClient().from('producao_diaria').select('codigo_produto, produto, producao_real, unidade').eq('data', data);
-    (rows || []).forEach(r => {
-      const v = Number(r.producao_real) || 0; if(v <= 0) return;
-      const k = r.codigo_produto ? normCod(String(r.codigo_produto).trim()) : 'D:' + PG_semAcento(r.produto).toUpperCase().trim();
-      const o = PG_real[k] = PG_real[k] || { q: 0, un: r.unidade };
-      o.q += v;
-    });
-  }catch(e){ PG_real = {}; }
-}
 function PG_prioridades(){
   const mapa = {};
   PG_linhasValidas().forEach(r => {
@@ -28474,27 +28481,72 @@ function PG_prioridades(){
   });
   return Object.keys(mapa).map(c => {
     const it = mapa[c];
-    const real = PG_real[c] || PG_real['D:' + PG_semAcento(it.produto).toUpperCase().trim()];
-    it.produzido = real ? PG_fmt(real.q) + ' ' + PG_un(real.q, real.un) : (it.qtd ? PG_fmt(it.qtd) + ' ' + PG_un(it.qtd, it.unidade) + ' (prog.)' : '-');
     return it;
   }).sort((a, b) => a.saldo - b.saldo);
 }
+let PG_prioLista = [];
+function PG_prioInfo(txt){ document.getElementById('pgPrioInfo').textContent = txt || ''; }
+async function PG_prioAbrir(){
+  const data = document.getElementById('pgData').value;
+  if(!PG_linhasValidas().length){ alert('Não há produtos programados nesta data.'); return; }
+  if(!Object.keys(PG_estoque).length){ alert('Não há posição de estoque carregada.'); return; }
+  PG_prioLista = PG_prioridades();
+  document.getElementById('pgPrio').classList.add('open');
+  PG_prioRender();
+  document.getElementById('pgPrio').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function PG_prioFechar(){ document.getElementById('pgPrio').classList.remove('open'); }
+function PG_prioRender(){
+  PG_prioInfo(PG_prioLista.length + ' itens · estoque de ' + (PG_estoqueData ? PG_dataBR(PG_estoqueData) : '-'));
+  const el = document.getElementById('pgPrioTabela');
+  if(!PG_prioLista.length){ el.innerHTML = '<p class="pg-hint">Nenhum item na lista. Adicione produtos abaixo.</p>'; return; }
+  el.innerHTML = '<table><thead><tr><th style="width:60px">Prio.</th><th style="width:90px">Código</th><th>Produto</th><th style="width:90px">Estoque</th><th style="width:120px">Saldo</th><th style="width:30px"></th></tr></thead><tbody>' +
+    PG_prioLista.map((it, i) => '<tr><td><b>' + (i + 1) + '</b> <button class="pg-x" title="Subir" onclick="PG_prioMover(' + i + ',-1)">▲</button><button class="pg-x" title="Descer" onclick="PG_prioMover(' + i + ',1)">▼</button></td>' +
+      '<td class="pg-cod">' + PG_esc(it.codigo || '') + '</td><td><b>' + PG_esc(it.produto) + '</b></td>' +
+      '<td>' + (it.estoque == null ? '-' : PG_fmt(it.estoque)) + '</td>' +
+      '<td class="pg-saldo">' + (it.saldo == null ? '-' : PG_fmt(it.saldo) + ' ' + PG_esc(String(it.un || '').toLowerCase())) + '</td>' +
+      '<td><button class="pg-x" title="Remover" onclick="PG_prioRemover(' + i + ')">✕</button></td></tr>').join('') + '</tbody></table>';
+}
+function PG_prioMover(i, d){
+  const j = i + d; if(j < 0 || j >= PG_prioLista.length) return;
+  const t = PG_prioLista[i]; PG_prioLista[i] = PG_prioLista[j]; PG_prioLista[j] = t; PG_prioRender();
+}
+function PG_prioRemover(i){ PG_prioLista.splice(i, 1); PG_prioRender(); }
+function PG_prioAdd(){
+  const inp = document.getElementById('pgPrioBusca');
+  const t = inp.value.trim(); if(!t) return;
+  const alvo = PG_semAcento(t).toLowerCase();
+  const hit = PG_catalog.find(p => PG_semAcento(p.descricao).toLowerCase() === alvo) || PG_catalog.find(p => normCod(String(p.codigo)) === normCod(t));
+  if(!hit){ alert('Produto não encontrado no catálogo. Escolha um item da lista de sugestões.'); return; }
+  const c = normCod(String(hit.codigo).trim());
+  if(PG_prioLista.some(x => normCod(String(x.codigo || '').trim()) === c)){ alert('Este produto já está na lista.'); return; }
+  const e = PG_estoque[c];
+  const pior = e ? Object.values(e).sort((a, b) => a.saldo - b.saldo)[0] : null;
+  PG_prioLista.push({
+    codigo: hit.codigo, produto: hit.descricao,
+    estoque: pior ? pior.estoque : null, saldo: pior ? pior.saldo : null, un: pior ? pior.un : ''
+  });
+  inp.value = ''; PG_prioRender();
+}
+function PG_prioGerar(){ PG_exportar('prio'); }
+
 function PG_paginaPrioridades(doc, pag){
   const data = document.getElementById('pgData').value;
-  const itens = PG_prioridades();
+  const itens = PG_prioLista;
   const W = PG_novaPagina(doc, 'l', 'BREAD KING  ·  PRIORIDADES DA FILA DE EMBALAGEM', 'Estoque de ' + PG_dataBR(PG_estoqueData) + '  ·  produção de ' + PG_dataBR(data));
   doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor(...PG_TEXTO);
-  doc.text('1. PRODUTOS COM SALDO NEGATIVO PRODUZIDOS', 12, 31);
+  doc.text('1. PRODUTOS PRIORITÁRIOS PARA EMBALAR', 12, 31);
   doc.setFont('helvetica','normal'); doc.setFontSize(9);
-  doc.text('Estes itens estão cortando venda (reserva maior que o estoque). Embalar nesta ordem, antes dos demais. Saldo = estoque - reserva. Ordem pelo saldo mais negativo.', 12, 37);
-  const body = itens.map((it, i) => [String(i + 1), it.codigo, it.produto, PG_fmt(it.estoque), PG_fmt(it.saldo) + ' ' + String(it.un).toLowerCase(), it.produzido]);
+  doc.text('Itens prioritários na fila de embalagem: embalar nesta ordem, antes dos demais. Saldo negativo = reserva maior que o estoque (cortando venda). Saldo = estoque - reserva.', 12, 37);
+  const body = itens.map((it, i) => [String(i + 1), it.codigo, it.produto, it.estoque == null ? '-' : PG_fmt(it.estoque), it.saldo == null ? '-' : PG_fmt(it.saldo) + ' ' + String(it.un || '').toLowerCase()]);
   doc.autoTable(PG_estiloTabela({
-    startY: 41, margin: { left: 12, right: 12 }, head: [['Prio.','Cód.','Produto','Estoque','Saldo','Produzido']], body,
+    startY: 41, margin: { left: 12, right: 12 }, head: [['Prio.','Cód.','Produto','Estoque','Saldo']], body,
     bodyStyles: { minCellHeight: 10 },
-    columnStyles: { 0:{cellWidth:14,halign:'center',fontStyle:'bold',fontSize:11,textColor:PG_VERMELHO}, 1:{cellWidth:22,halign:'center',fontStyle:'bold'}, 2:{cellWidth:'auto',fontStyle:'bold'}, 3:{cellWidth:24,halign:'center'}, 4:{cellWidth:30,halign:'center',fontStyle:'bold',textColor:PG_VERMELHO}, 5:{cellWidth:44,halign:'center'} }
+    columnStyles: { 0:{cellWidth:14,halign:'center',fontStyle:'bold',fontSize:11,textColor:PG_VERMELHO}, 1:{cellWidth:22,halign:'center',fontStyle:'bold'}, 2:{cellWidth:'auto',fontStyle:'bold'}, 3:{cellWidth:24,halign:'center'}, 4:{cellWidth:36,halign:'center',fontStyle:'bold'} },
+    didParseCell: h => { if(h.section === 'body' && h.column.index === 4) h.cell.styles.textColor = String(h.cell.raw).startsWith('-') && String(h.cell.raw).length > 1 && /\d/.test(String(h.cell.raw)) ? PG_VERMELHO : PG_TEXTO; }
   }));
   doc.setFont('helvetica','normal'); doc.setFontSize(7.6); doc.setTextColor(85,85,85);
-  doc.text('Produzido = apontado no dia; sem apontamento, mostra a quantidade programada (prog.). Estoque e saldo na unidade do CIGAM.', 12, doc.lastAutoTable.finalY + 6);
+  doc.text('Estoque e saldo na unidade do CIGAM.', 12, doc.lastAutoTable.finalY + 6);
   doc.text('PCP · Bread King', 12, 210 - 8);
   return pag + 1;
 }
@@ -28522,11 +28574,7 @@ async function PG_exportar(chave){
   if(PG_dirty && !confirm('Há alterações não salvas. Exportar mesmo assim com o que está na tela?')) return;
   if(!PG_linhasValidas().length){ alert('Não há produtos programados nesta data.'); return; }
   const data = document.getElementById('pgData').value;
-  if(chave === 'prio'){
-    if(!Object.keys(PG_estoque).length){ alert('Não há posição de estoque carregada.'); return; }
-    await PG_carregarReal(data);
-    if(!PG_prioridades().length){ alert('Nenhum produto desta programação está com saldo negativo.'); return; }
-  }
+  if(chave === 'prio' && !PG_prioLista.length){ alert('A lista de prioridades está vazia.'); return; }
   const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
   let pag = 1;
   if(chave === 'tudo'){
