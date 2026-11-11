@@ -4838,6 +4838,7 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
       <button class="pg-btn" onclick="PG_exportar('emb')">Embalagem</button>
       <button class="pg-btn" onclick="PG_exportar('qc')">Química e Cozinha</button>
       <button class="pg-btn" onclick="PG_exportar('resumo')">Resumo da OP</button>
+      <button class="pg-btn" onclick="PG_exportar('prio')">Prioridades da Embalagem</button>
     </div>
     <p class="pg-hint no-print">Ao salvar, a programação de hoje em diante vira a OP do sistema (cards e alertas do PCP), sem importar planilha. O Bate Pão sai do Giro Dia, usando o destino de cada item.</p>
     <datalist id="pgDatalist"></datalist>
@@ -28075,6 +28076,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
 #pcpProgView .pg-x{border:none;background:none;color:var(--ink-soft);font-size:15px;cursor:pointer;padding:2px 6px}
 #pcpProgView .pg-x:hover{color:var(--red)}
 #pcpProgView .pg-add{display:block;width:100%;padding:8px 14px;font-size:11px;font-weight:700;color:var(--red-dark);background:var(--cream);border:none;border-top:1px dashed var(--line);cursor:pointer;text-align:left;font-family:inherit}
+#pcpProgView .pg-est{font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap}
+#pcpProgView .pg-est.vazio{color:var(--ink-soft);font-weight:500}
+#pcpProgView .pg-est.zero{color:var(--red)}
 #pcpProgView .pg-hint{font-size:11px;color:var(--ink-soft);margin:0 0 12px}
 </style>
 
@@ -28095,6 +28099,8 @@ let PG_rows = [];
 let PG_catalog = [];
 let PG_ready = false;
 let PG_dirty = false;
+let PG_estoque = {};      // normCod(código) → { FABRICA:{estoque,un}, LOJA:{...} } da última posição importada
+let PG_estoqueData = '';
 
 function PG_hojeMais(dias){
   const d = new Date(); d.setDate(d.getDate() + dias);
@@ -28130,8 +28136,38 @@ async function PG_init(){
     if(error) throw error;
     PG_catalog = data || [];
   }catch(e){ PG_catalog = []; }
+  await PG_carregarEstoque();
   document.getElementById('pgDatalist').innerHTML = PG_catalog.map(p => '<option value="' + PG_esc(p.descricao) + '">' + PG_esc(p.codigo) + '</option>').join('');
   await PG_carregar();
+}
+
+// Última posição de estoque (estoque_historico) para mostrar ao lado de cada produto escolhido
+async function PG_carregarEstoque(){
+  PG_estoque = {}; PG_estoqueData = '';
+  try{
+    const client = getSupabaseClient();
+    const ult = await client.from('estoque_historico').select('data').order('data', { ascending: false }).limit(1);
+    if(ult.error || !ult.data || !ult.data.length) return;
+    PG_estoqueData = ult.data[0].data;
+    const { data, error } = await client.from('estoque_historico').select('codigo, tipo, estoque, reserva, saldo, un').eq('data', PG_estoqueData).range(0, 4999);
+    if(error) return;
+    (data || []).forEach(r => {
+      const c = normCod(String(r.codigo || '').trim());
+      if(!c) return;
+      (PG_estoque[c] = PG_estoque[c] || {})[r.tipo] = { estoque: Number(r.estoque) || 0, reserva: Number(r.reserva) || 0, saldo: Number(r.saldo) || 0, un: r.un || '' };
+    });
+  }catch(e){ PG_estoque = {}; }
+}
+function PG_estoqueTxt(r){
+  if(!r.codigo) return '<span class="pg-est vazio">sem código</span>';
+  const e = PG_estoque[normCod(String(r.codigo).trim())];
+  if(!e) return '<span class="pg-est vazio">sem estoque</span>';
+  const f = e.FABRICA, l = e.LOJA;
+  const partes = [];
+  if(f) partes.push('Fáb ' + PG_fmt(f.estoque) + ' ' + String(f.un).toLowerCase());
+  if(l) partes.push('Loja ' + PG_fmt(l.estoque) + ' ' + String(l.un).toLowerCase());
+  const zero = (!f || f.estoque <= 0) && (!l || l.estoque <= 0);
+  return '<span class="pg-est' + (zero ? ' zero' : '') + '" title="Posição de ' + PG_dataBR(PG_estoqueData) + '">' + partes.join(' · ') + '</span>';
 }
 
 function PG_status(txt, cls){
@@ -28168,6 +28204,7 @@ function PG_render(){
       return '<tr>' +
         '<td style="width:78px"><span class="pg-cod' + (r.codigo ? '' : ' pend') + '">' + PG_esc(r.codigo || 'pendente') + '</span></td>' +
         '<td><input list="pgDatalist" value="' + PG_esc(r.produto) + '" onchange="PG_prod(' + i + ',this.value)" placeholder="Produto (nome ou código)"></td>' +
+        '<td style="width:170px">' + PG_estoqueTxt(r) + '</td>' +
         '<td style="width:96px"><input type="number" min="0" step="any" value="' + (r.quantidade == null ? '' : r.quantidade) + '" oninput="PG_set(' + i + ',\'quantidade\',this.value===\'\'?null:Number(this.value))"></td>' +
         '<td style="width:100px"><select onchange="PG_set(' + i + ',\'unidade\',this.value)">' + PG_UNIDADES.map(u => '<option' + (u === r.unidade ? ' selected' : '') + '>' + u + '</option>').join('') + '</select></td>' +
         '<td style="width:150px"><input value="' + PG_esc(r.maquina) + '" oninput="PG_set(' + i + ',\'maquina\',this.value)" placeholder="Máquina / turno"></td>' +
@@ -28176,7 +28213,7 @@ function PG_render(){
         '<td style="width:30px"><button class="pg-x" title="Remover" onclick="PG_remover(' + i + ')">✕</button></td></tr>';
     }).join('');
     return '<div class="pg-setor"><div class="pg-setor-h">' + PG_esc(setor) + '<span>' + idxs.length + ' itens</span></div>' +
-      (idxs.length ? '<table><thead><tr><th>Código</th><th>Produto</th><th>Quantidade</th><th>Unidade</th><th>Máquina / turno</th><th>Destino</th><th>Observação</th><th></th></tr></thead><tbody>' + linhas + '</tbody></table>' : '') +
+      (idxs.length ? '<table><thead><tr><th>Código</th><th>Produto</th><th>Estoque</th><th>Quantidade</th><th>Unidade</th><th>Máquina / turno</th><th>Destino</th><th>Observação</th><th></th></tr></thead><tbody>' + linhas + '</tbody></table>' : '') +
       '<button class="pg-add" onclick="PG_add(\'' + setor + '\')">+ Adicionar produto' + (rec ? '' : '') + '</button></div>';
   }).join('');
 }
@@ -28409,12 +28446,66 @@ function PG_paginaResumo(doc, pag){
   return pag + 1;
 }
 
+// Fila de prioridade da Embalagem: itens da programação com saldo negativo (estoque - reserva) na última posição de estoque.
+// "Produzido" = apontado em producao_diaria na data; sem apontamento, vale a quantidade programada.
+let PG_real = {};
+async function PG_carregarReal(data){
+  PG_real = {};
+  try{
+    const { data: rows } = await getSupabaseClient().from('producao_diaria').select('codigo_produto, produto, producao_real, unidade').eq('data', data);
+    (rows || []).forEach(r => {
+      const v = Number(r.producao_real) || 0; if(v <= 0) return;
+      const k = r.codigo_produto ? normCod(String(r.codigo_produto).trim()) : 'D:' + PG_semAcento(r.produto).toUpperCase().trim();
+      const o = PG_real[k] = PG_real[k] || { q: 0, un: r.unidade };
+      o.q += v;
+    });
+  }catch(e){ PG_real = {}; }
+}
+function PG_prioridades(){
+  const mapa = {};
+  PG_linhasValidas().forEach(r => {
+    if(!r.codigo) return;
+    const c = normCod(String(r.codigo).trim());
+    const e = PG_estoque[c]; if(!e) return;
+    const pior = Object.values(e).filter(x => x.saldo < 0).sort((a, b) => a.saldo - b.saldo)[0];
+    if(!pior) return;
+    const it = mapa[c] = mapa[c] || { codigo: r.codigo, produto: r.produto, estoque: pior.estoque, saldo: pior.saldo, un: pior.un, qtd: 0, unidade: r.unidade };
+    it.qtd += Number(r.quantidade) || 0;
+  });
+  return Object.keys(mapa).map(c => {
+    const it = mapa[c];
+    const real = PG_real[c] || PG_real['D:' + PG_semAcento(it.produto).toUpperCase().trim()];
+    it.produzido = real ? PG_fmt(real.q) + ' ' + PG_un(real.q, real.un) : (it.qtd ? PG_fmt(it.qtd) + ' ' + PG_un(it.qtd, it.unidade) + ' (prog.)' : '-');
+    return it;
+  }).sort((a, b) => a.saldo - b.saldo);
+}
+function PG_paginaPrioridades(doc, pag){
+  const data = document.getElementById('pgData').value;
+  const itens = PG_prioridades();
+  const W = PG_novaPagina(doc, 'l', 'BREAD KING  ·  PRIORIDADES DA FILA DE EMBALAGEM', 'Estoque de ' + PG_dataBR(PG_estoqueData) + '  ·  produção de ' + PG_dataBR(data));
+  doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor(...PG_TEXTO);
+  doc.text('1. PRODUTOS COM SALDO NEGATIVO PRODUZIDOS', 12, 31);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.text('Estes itens estão cortando venda (reserva maior que o estoque). Embalar nesta ordem, antes dos demais. Saldo = estoque - reserva. Ordem pelo saldo mais negativo.', 12, 37);
+  const body = itens.map((it, i) => [String(i + 1), it.codigo, it.produto, PG_fmt(it.estoque), PG_fmt(it.saldo) + ' ' + String(it.un).toLowerCase(), it.produzido]);
+  doc.autoTable(PG_estiloTabela({
+    startY: 41, margin: { left: 12, right: 12 }, head: [['Prio.','Cód.','Produto','Estoque','Saldo','Produzido']], body,
+    bodyStyles: { minCellHeight: 10 },
+    columnStyles: { 0:{cellWidth:14,halign:'center',fontStyle:'bold',fontSize:11,textColor:PG_VERMELHO}, 1:{cellWidth:22,halign:'center',fontStyle:'bold'}, 2:{cellWidth:'auto',fontStyle:'bold'}, 3:{cellWidth:24,halign:'center'}, 4:{cellWidth:30,halign:'center',fontStyle:'bold',textColor:PG_VERMELHO}, 5:{cellWidth:44,halign:'center'} }
+  }));
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.6); doc.setTextColor(85,85,85);
+  doc.text('Produzido = apontado no dia; sem apontamento, mostra a quantidade programada (prog.). Estoque e saldo na unidade do CIGAM.', 12, doc.lastAutoTable.finalY + 6);
+  doc.text('PCP · Bread King', 12, 210 - 8);
+  return pag + 1;
+}
+
 const PG_VERSOES = {
   setores: { rotulo: 'Folhas dos setores', arq: 'folhas-setores' },
   bate:    { rotulo: 'Bate Pão',            arq: 'bate-pao' },
   emb:     { rotulo: 'Embalagem',           arq: 'embalagem' },
   qc:      { rotulo: 'Química e Cozinha',   arq: 'quimica-cozinha' },
-  resumo:  { rotulo: 'Resumo da OP',        arq: 'resumo-op' }
+  resumo:  { rotulo: 'Resumo da OP',        arq: 'resumo-op' },
+  prio:    { rotulo: 'Prioridades da Embalagem', arq: 'prioridades-embalagem' }
 };
 function PG_montar(doc, chave, pag){
   if(chave === 'setores') PG_SETORES.forEach(s => { pag = PG_folhaSetor(doc, s, s, 'maquina', pag); });
@@ -28422,14 +28513,20 @@ function PG_montar(doc, chave, pag){
   if(chave === 'emb') pag = PG_paginaTodos(doc, 'BREAD KING  ·  ORDEM DE PRODUÇÃO - EMBALAGEM', 'EMBALAGEM - DESTINO E INSTRUÇÕES', 'embalagem', pag);
   if(chave === 'qc'){ pag = PG_paginaTodos(doc, 'BREAD KING  ·  FOLHA DE APONTAMENTO DE PRODUÇÃO', 'QUÍMICA', 'apontamento', pag); pag = PG_paginaTodos(doc, 'BREAD KING  ·  FOLHA DE APONTAMENTO DE PRODUÇÃO', 'COZINHA', 'apontamento', pag); }
   if(chave === 'resumo') pag = PG_paginaResumo(doc, pag);
+  if(chave === 'prio') pag = PG_paginaPrioridades(doc, pag);
   return pag;
 }
 // Ordem do PDF completo: setores (com Bate Pão logo após o Giro Dia), Embalagem, Química/Cozinha e Resumo
-function PG_exportar(chave){
+async function PG_exportar(chave){
   if(!window.jspdf || !window.jspdf.jsPDF){ alert('Não foi possível carregar a biblioteca de PDF (sem conexão com a internet?). Tente novamente.'); return; }
   if(PG_dirty && !confirm('Há alterações não salvas. Exportar mesmo assim com o que está na tela?')) return;
   if(!PG_linhasValidas().length){ alert('Não há produtos programados nesta data.'); return; }
   const data = document.getElementById('pgData').value;
+  if(chave === 'prio'){
+    if(!Object.keys(PG_estoque).length){ alert('Não há posição de estoque carregada.'); return; }
+    await PG_carregarReal(data);
+    if(!PG_prioridades().length){ alert('Nenhum produto desta programação está com saldo negativo.'); return; }
+  }
   const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
   let pag = 1;
   if(chave === 'tudo'){
