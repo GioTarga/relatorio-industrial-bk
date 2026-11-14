@@ -28093,7 +28093,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
 #pcpProgView .pg-est.vazio{color:var(--ink-soft);font-weight:500}
 #pcpProgView .pg-est.zero{color:var(--red)}
 #pcpProgView .pg-proj{display:flex;flex-direction:column;gap:3px;min-width:190px}
-#pcpProgView .pg-proj-l{display:grid;grid-template-columns:30px 1fr 64px;align-items:center;gap:6px;font-size:10px;font-weight:700;color:var(--ink-soft)}
+#pcpProgView .pg-proj-l{display:grid;grid-template-columns:30px 1fr 86px;align-items:center;gap:6px;font-size:10px;font-weight:700;color:var(--ink-soft)}
 #pcpProgView .pg-proj-t{height:7px;background:var(--cream);border-radius:4px;overflow:hidden}
 #pcpProgView .pg-proj-b{display:block;height:100%;border-radius:4px}
 #pcpProgView .pg-proj-b.real{background:var(--ink-soft)}
@@ -28228,9 +28228,9 @@ function PG_projHtml(r){
   const abaixo = p.seg != null && p.proj < p.seg;
   const nota = p.q > 0 && !p.conv ? '<div class="pg-proj-nota">sem rendimento no Mapa: projetado = real</div>' : '';
   return '<div class="pg-proj" title="Real ' + PG_n0(p.real) + ' · Seg. ' + (p.seg == null ? 's/ venda' : PG_n0(p.seg)) + ' · Projetado ' + PG_n0(p.proj) + ' ' + PG_esc(p.un) + '">' +
-    linha('Real', p.real, 'real', PG_n0(p.real)) +
-    linha('Seg.', p.seg || 0, 'seg', p.seg == null ? 's/ venda' : PG_n0(p.seg)) +
-    linha('Proj.', p.proj, abaixo ? 'abaixo' : 'ok', PG_n0(p.proj)) + nota + '</div>';
+    linha('Real', p.real, 'real', PG_n0(p.real) + ' ' + PG_esc(p.un)) +
+    linha('Seg.', p.seg || 0, 'seg', p.seg == null ? 's/ venda' : PG_n0(p.seg) + ' ' + PG_esc(p.un)) +
+    linha('Proj.', p.proj, abaixo ? 'abaixo' : 'ok', PG_n0(p.proj) + ' ' + PG_esc(p.un)) + nota + '</div>';
 }
 
 function PG_status(txt, cls){
