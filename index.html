@@ -28106,7 +28106,11 @@ document.addEventListener('DOMContentLoaded', ()=>{
 #pcpProgView .pg-tempo span{font-weight:600;color:var(--ink-soft);font-size:10px}
 #pcpProgView .pg-tempo-t{display:block;height:5px;background:var(--cream);border-radius:3px;overflow:hidden}
 #pcpProgView .pg-tempo-b{display:block;height:100%;background:var(--red-dark);border-radius:3px}
-#pcpProgView .pg-setor-h .pg-tt{margin-left:10px;font-weight:700;color:#fff}
+#pcpProgView .pg-setor-h .pg-tt{margin-left:14px;display:inline-flex;align-items:center;gap:8px;font-weight:700;color:#fff;letter-spacing:.3px;text-transform:none}
+#pcpProgView .pg-oc-t{display:inline-block;width:150px;height:9px;background:rgba(255,255,255,.25);border-radius:5px;overflow:hidden}
+#pcpProgView .pg-oc-b{display:block;height:100%;background:#fff;border-radius:5px}
+#pcpProgView .pg-oc.over .pg-oc-b{background:var(--warn)}
+#pcpProgView .pg-oc{display:inline-flex;align-items:center;gap:8px}
 #pcpProgView .pg-proj-nota{font-size:10px;color:var(--ink-soft);font-weight:500}
 #pcpProgView .pg-prio{display:none;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);margin-bottom:14px;overflow:hidden}
 #pcpProgView .pg-prio.open{display:block}
@@ -28138,6 +28142,8 @@ let PG_ready = false;
 let PG_dirty = false;
 let PG_estoque = {};      // normCod(código) → { FABRICA:{estoque,un}, LOJA:{...} } da última posição importada
 let PG_estoqueData = '';
+const PG_HORAS_DIA = 7;   // horas disponíveis por dia em cada setor (ajustar por setor em PG_HORAS_SETOR)
+const PG_HORAS_SETOR = {};
 let PG_taxas = {};        // 'cod|un' e 'p:nome|un' → { qtd, horas, n }: produção real ÷ horas (Fim − Início) dos últimos 90 dias
 
 function PG_hojeMais(dias){
@@ -28297,7 +28303,11 @@ function PG_atualizaTempos(){
     });
     const sem = tem.filter(x => x.t && x.t.semHist).length;
     const h = document.getElementById('pgTT' + si);
-    if(h) h.textContent = total > 0 ? PG_hhmm(total) + ' h estimadas' + (sem ? ' (+' + sem + ' sem histórico)' : '') : '';
+    if(h){
+      const cap = PG_HORAS_SETOR[setor] || PG_HORAS_DIA;
+      const pct = total / cap * 100;
+      h.innerHTML = total > 0 ? '<span class="pg-oc' + (pct > 100 ? ' over' : '') + '" title="' + PG_hhmm(total) + ' h estimadas de ' + PG_hhmm(cap) + ' h disponíveis"><span>Ocupação</span><span class="pg-oc-t"><span class="pg-oc-b" style="width:' + Math.min(100, pct).toFixed(1) + '%"></span></span><span>' + Math.round(pct) + '% · ' + PG_hhmm(total) + ' / ' + PG_hhmm(cap) + ' h' + (sem ? ' (+' + sem + ' sem histórico)' : '') + '</span></span>' : '';
+    }
   });
 }
 
