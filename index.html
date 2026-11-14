@@ -28092,6 +28092,16 @@ document.addEventListener('DOMContentLoaded', ()=>{
 #pcpProgView .pg-est{font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap}
 #pcpProgView .pg-est.vazio{color:var(--ink-soft);font-weight:500}
 #pcpProgView .pg-est.zero{color:var(--red)}
+#pcpProgView .pg-proj{display:flex;flex-direction:column;gap:3px;min-width:190px}
+#pcpProgView .pg-proj-l{display:grid;grid-template-columns:30px 1fr 64px;align-items:center;gap:6px;font-size:10px;font-weight:700;color:var(--ink-soft)}
+#pcpProgView .pg-proj-t{height:7px;background:var(--cream);border-radius:4px;overflow:hidden}
+#pcpProgView .pg-proj-b{display:block;height:100%;border-radius:4px}
+#pcpProgView .pg-proj-b.real{background:var(--ink-soft)}
+#pcpProgView .pg-proj-b.seg{background:var(--warn)}
+#pcpProgView .pg-proj-b.ok{background:var(--good)}
+#pcpProgView .pg-proj-b.abaixo{background:var(--red)}
+#pcpProgView .pg-proj-v{text-align:right;color:var(--ink);white-space:nowrap}
+#pcpProgView .pg-proj-nota{font-size:10px;color:var(--ink-soft);font-weight:500}
 #pcpProgView .pg-prio{display:none;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);margin-bottom:14px;overflow:hidden}
 #pcpProgView .pg-prio.open{display:block}
 #pcpProgView .pg-prio-h{background:var(--red-dark);color:#fff;padding:8px 14px;font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;display:flex;justify-content:space-between}
@@ -28158,6 +28168,7 @@ async function PG_init(){
     PG_catalog = data || [];
   }catch(e){ PG_catalog = []; }
   await PG_carregarEstoque();
+  if(typeof FALTA_carregarMapa === 'function' && !Object.keys(FALTA.mapa).length) await FALTA_carregarMapa();
   document.getElementById('pgDatalist').innerHTML = PG_catalog.map(p => '<option value="' + PG_esc(p.descricao) + '">' + PG_esc(p.codigo) + '</option>').join('');
   await PG_carregar();
 }
@@ -28189,6 +28200,37 @@ function PG_estoqueTxt(r){
   if(l) partes.push('Loja ' + PG_fmt(l.estoque) + ' ' + String(l.un).toLowerCase());
   const zero = (!f || f.estoque <= 0) && (!l || l.estoque <= 0);
   return '<span class="pg-est' + (zero ? ' zero' : '') + '" title="Posição de ' + PG_dataBR(PG_estoqueData) + '">' + partes.join(' · ') + '</span>';
+}
+
+// Projeção do estoque após a produção: Estoque real (Fábrica), Estoque Seg. e Projetado (real + quantidade programada,
+// convertida para a unidade do estoque pelo rendimento do Mapa — a mesma conversão da coluna "Em produção" do PCP).
+function PG_n0(n){ return Number(n).toLocaleString('pt-BR', { maximumFractionDigits: 0 }); }
+function PG_projecao(r){
+  if(!r.codigo) return null;
+  const e = PG_estoque[normCod(String(r.codigo).trim())];
+  const f = e && e.FABRICA;
+  if(!f) return null;
+  const seg = (typeof calculateSafetyStock === 'function') ? calculateSafetyStock({ codigo: r.codigo, tipo: 'FABRICA' }) : null;
+  const q = Number(r.quantidade) || 0;
+  let add = 0, conv = true;
+  if(q > 0){
+    const cat = PG_catalog.find(p => normCod(String(p.codigo)) === normCod(String(r.codigo)));
+    const c = FALTA_opQtd({ codigo: r.codigo, descricao: (cat && cat.descricao) || r.produto, un: f.un, op: { qtd: q, un: r.unidade } });
+    if(c.conv) add = c.q; else conv = false;
+  }
+  return { real: f.estoque, seg, proj: f.estoque + add, un: String(f.un || '').toLowerCase(), conv, q };
+}
+function PG_projHtml(r){
+  const p = PG_projecao(r);
+  if(!p) return '<span class="pg-est vazio">sem estoque</span>';
+  const max = Math.max(p.real, p.seg || 0, p.proj, 1);
+  const linha = (rot, val, cls, txt) => '<div class="pg-proj-l"><span>' + rot + '</span><span class="pg-proj-t"><span class="pg-proj-b ' + cls + '" style="width:' + Math.max(0, val / max * 100).toFixed(1) + '%"></span></span><span class="pg-proj-v">' + txt + '</span></div>';
+  const abaixo = p.seg != null && p.proj < p.seg;
+  const nota = p.q > 0 && !p.conv ? '<div class="pg-proj-nota">sem rendimento no Mapa: projetado = real</div>' : '';
+  return '<div class="pg-proj" title="Real ' + PG_n0(p.real) + ' · Seg. ' + (p.seg == null ? 's/ venda' : PG_n0(p.seg)) + ' · Projetado ' + PG_n0(p.proj) + ' ' + PG_esc(p.un) + '">' +
+    linha('Real', p.real, 'real', PG_n0(p.real)) +
+    linha('Seg.', p.seg || 0, 'seg', p.seg == null ? 's/ venda' : PG_n0(p.seg)) +
+    linha('Proj.', p.proj, abaixo ? 'abaixo' : 'ok', PG_n0(p.proj)) + nota + '</div>';
 }
 
 function PG_status(txt, cls){
@@ -28228,18 +28270,22 @@ function PG_render(){
         '<td style="width:170px">' + PG_estoqueTxt(r) + '</td>' +
         '<td style="width:96px"><input type="number" min="0" step="any" value="' + (r.quantidade == null ? '' : r.quantidade) + '" oninput="PG_set(' + i + ',\'quantidade\',this.value===\'\'?null:Number(this.value))"></td>' +
         '<td style="width:100px"><select onchange="PG_set(' + i + ',\'unidade\',this.value)">' + PG_UNIDADES.map(u => '<option' + (u === r.unidade ? ' selected' : '') + '>' + u + '</option>').join('') + '</select></td>' +
+        '<td style="width:200px" id="pgProj' + i + '">' + PG_projHtml(r) + '</td>' +
         '<td style="width:150px"><input value="' + PG_esc(r.maquina) + '" oninput="PG_set(' + i + ',\'maquina\',this.value)" placeholder="Máquina / turno"></td>' +
         '<td style="width:210px"><input value="' + PG_esc(r.destino) + '" oninput="PG_set(' + i + ',\'destino\',this.value)" placeholder="Destino (Embalagem)"></td>' +
         '<td style="width:170px"><input value="' + PG_esc(r.observacao) + '" oninput="PG_set(' + i + ',\'observacao\',this.value)" placeholder="Observação"></td>' +
         '<td style="width:30px"><button class="pg-x" title="Remover" onclick="PG_remover(' + i + ')">✕</button></td></tr>';
     }).join('');
     return '<div class="pg-setor"><div class="pg-setor-h">' + PG_esc(setor) + '<span>' + idxs.length + ' itens</span></div>' +
-      (idxs.length ? '<table><thead><tr><th>Código</th><th>Produto</th><th>Estoque</th><th>Quantidade</th><th>Unidade</th><th>Máquina / turno</th><th>Destino</th><th>Observação</th><th></th></tr></thead><tbody>' + linhas + '</tbody></table>' : '') +
+      (idxs.length ? '<table><thead><tr><th>Código</th><th>Produto</th><th>Estoque</th><th>Quantidade</th><th>Unidade</th><th>Projeção do estoque</th><th>Máquina / turno</th><th>Destino</th><th>Observação</th><th></th></tr></thead><tbody>' + linhas + '</tbody></table>' : '') +
       '<button class="pg-add" onclick="PG_add(\'' + setor + '\')">+ Adicionar produto' + (rec ? '' : '') + '</button></div>';
   }).join('');
 }
 
-function PG_set(i, campo, valor){ PG_rows[i][campo] = valor; PG_marcarSujo(); }
+function PG_set(i, campo, valor){
+  PG_rows[i][campo] = valor; PG_marcarSujo();
+  if(campo === 'quantidade' || campo === 'unidade'){ const c = document.getElementById('pgProj' + i); if(c) c.innerHTML = PG_projHtml(PG_rows[i]); }
+}
 function PG_add(setor){
   const ordem = PG_rows.filter(r => r.setor === setor).length;
   PG_rows.push({ data: document.getElementById('pgData').value, setor, ordem, codigo: null, produto: '', quantidade: null, unidade: 'Massa', maquina: '', destino: '', observacao: '' });
