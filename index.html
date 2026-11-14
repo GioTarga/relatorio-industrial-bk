@@ -28107,9 +28107,12 @@ document.addEventListener('DOMContentLoaded', ()=>{
 #pcpProgView .pg-tempo-t{display:block;height:5px;background:var(--cream);border-radius:3px;overflow:hidden}
 #pcpProgView .pg-tempo-b{display:block;height:100%;background:var(--red-dark);border-radius:3px}
 #pcpProgView .pg-setor-h .pg-tt{margin-left:14px;display:inline-flex;align-items:center;gap:8px;font-weight:700;color:#fff;letter-spacing:.3px;text-transform:none}
-#pcpProgView .pg-oc-t{display:inline-block;width:150px;height:9px;background:rgba(255,255,255,.25);border-radius:5px;overflow:hidden}
-#pcpProgView .pg-oc-b{display:block;height:100%;background:#fff;border-radius:5px}
-#pcpProgView .pg-oc.over .pg-oc-b{background:var(--warn)}
+#pcpProgView .pg-oc-t{display:inline-flex;width:150px;height:9px;background:rgba(255,255,255,.25);border-radius:5px;overflow:hidden}
+#pcpProgView .pg-oc-b{display:block;height:100%;background:#fff}
+#pcpProgView .pg-oc-s{display:block;height:100%;background:var(--warn)}
+#pcpProgView .pg-oc-k{display:inline-block;width:8px;height:8px;border-radius:2px;background:#fff;margin-right:4px}
+#pcpProgView .pg-oc-k.s{background:var(--warn)}
+#pcpProgView .pg-oc.over .pg-oc-p{color:var(--warn)}
 #pcpProgView .pg-oc{display:inline-flex;align-items:center;gap:8px}
 #pcpProgView .pg-proj-nota{font-size:10px;color:var(--ink-soft);font-weight:500}
 #pcpProgView .pg-prio{display:none;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);margin-bottom:14px;overflow:hidden}
@@ -28323,7 +28326,8 @@ function PG_atualizaTempos(){
     if(h){
       const cap = PG_HORAS_SETOR[setor] || PG_HORAS_DIA;
       const pct = total / cap * 100;
-      h.innerHTML = total > 0 ? '<span class="pg-oc' + (pct > 100 ? ' over' : '') + '" title="' + PG_hhmm(total) + ' h estimadas de ' + PG_hhmm(cap) + ' h disponíveis"><span>Ocupação</span><span class="pg-oc-t"><span class="pg-oc-b" style="width:' + Math.min(100, pct).toFixed(1) + '%"></span></span><span>' + Math.round(pct) + '% · ' + PG_hhmm(total) + ' / ' + PG_hhmm(cap) + ' h' + (setups ? ' (inclui ' + setups * 30 + ' min de setup)' : '') + (sem ? ' (+' + sem + ' sem histórico)' : '') + '</span></span>' : '';
+      const hSetup = setups * PG_SETUP_H, hProd = total - hSetup, esc = Math.max(total, cap);
+      h.innerHTML = total > 0 ? '<span class="pg-oc' + (pct > 100 ? ' over' : '') + '" title="' + PG_hhmm(total) + ' h estimadas de ' + PG_hhmm(cap) + ' h disponíveis"><span>Ocupação</span><span class="pg-oc-t"><span class="pg-oc-b" style="width:' + (hProd / esc * 100).toFixed(1) + '%"></span><span class="pg-oc-s" style="width:' + (hSetup / esc * 100).toFixed(1) + '%"></span></span><span class="pg-oc-p">' + Math.round(pct) + '% · ' + PG_hhmm(total) + ' / ' + PG_hhmm(cap) + ' h</span><span><i class="pg-oc-k"></i>Produção ' + PG_hhmm(hProd) + '</span>' + (setups ? '<span><i class="pg-oc-k s"></i>Setup ' + PG_hhmm(hSetup) + '</span>' : '') + '<span>' + (sem ? ' (+' + sem + ' sem histórico)' : '') + '</span></span>' : '';
     }
   });
 }
