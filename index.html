@@ -28286,19 +28286,36 @@ function PG_tempoH(r){
   if(!t || !(t.qtd > 0) || !(t.horas > 0)) return { semHist: true };
   return { h: q / (t.qtd / t.horas), n: t.n };
 }
+// Giro Dia: pães redondos (bilha, hambúrguer, sonho, superfofo) rodam na Sotorriva; pão de queijo e chipa na GA Pão de Queijo; o resto na GA.
+// Cada troca de máquina entre itens consecutivos da lista soma PG_SETUP_H de setup (o primeiro item não leva setup).
+const PG_SETUP_H = 0.5;
+function PG_maqGiro(r){
+  const n = histNorm(r.produto);
+  if(/bilha|cervejinha|hamburguer|sonho|superfofo/.test(n)) return 'Sotorriva';
+  if(/queijo|chipa/.test(n)) return 'GA Pão de Queijo';
+  return 'GA';
+}
 function PG_atualizaTempos(){
   PG_SETORES.forEach((setor, si) => {
     const idxs = PG_rows.map((r, i) => r.setor === setor ? i : -1).filter(i => i >= 0);
     const tem = idxs.map(i => ({ i, t: PG_tempoH(PG_rows[i]) }));
-    const total = tem.reduce((a, x) => a + (x.t && x.t.h ? x.t.h : 0), 0);
+    let setups = 0, anterior = null;
+    if(setor === 'GIRO DIA') tem.forEach(x => {
+      if(!(Number(PG_rows[x.i].quantidade) > 0)) return;
+      x.maq = PG_maqGiro(PG_rows[x.i]);
+      if(anterior && anterior !== x.maq){ x.setup = true; setups++; }
+      anterior = x.maq;
+    });
+    const total = tem.reduce((a, x) => a + (x.t && x.t.h ? x.t.h : 0), 0) + setups * PG_SETUP_H;
     tem.forEach(x => {
       const c = document.getElementById('pgTempo' + x.i);
       if(!c) return;
+      const maq = x.maq ? '<span>' + x.maq + (x.setup ? ' · +30 min setup' : '') + '</span>' : '';
       if(!x.t) c.innerHTML = '<span class="pg-est vazio">—</span>';
-      else if(x.t.semHist) c.innerHTML = '<span class="pg-est vazio">sem histórico</span>';
+      else if(x.t.semHist) c.innerHTML = '<div class="pg-tempo"><span class="pg-est vazio">sem histórico</span>' + maq + '</div>';
       else{
         const pct = total > 0 ? x.t.h / total * 100 : 0;
-        c.innerHTML = '<div class="pg-tempo" title="Ritmo médio de ' + x.t.n + ' produções dos últimos 90 dias"><b>' + PG_hhmm(x.t.h) + ' h</b><span>' + Math.round(pct) + '% do setor</span><span class="pg-tempo-t"><span class="pg-tempo-b" style="width:' + pct.toFixed(1) + '%"></span></span></div>';
+        c.innerHTML = '<div class="pg-tempo" title="Ritmo médio de ' + x.t.n + ' produções dos últimos 90 dias"><b>' + PG_hhmm(x.t.h) + ' h</b><span>' + Math.round(pct) + '% do setor</span><span class="pg-tempo-t"><span class="pg-tempo-b" style="width:' + pct.toFixed(1) + '%"></span></span>' + maq + '</div>';
       }
     });
     const sem = tem.filter(x => x.t && x.t.semHist).length;
@@ -28306,7 +28323,7 @@ function PG_atualizaTempos(){
     if(h){
       const cap = PG_HORAS_SETOR[setor] || PG_HORAS_DIA;
       const pct = total / cap * 100;
-      h.innerHTML = total > 0 ? '<span class="pg-oc' + (pct > 100 ? ' over' : '') + '" title="' + PG_hhmm(total) + ' h estimadas de ' + PG_hhmm(cap) + ' h disponíveis"><span>Ocupação</span><span class="pg-oc-t"><span class="pg-oc-b" style="width:' + Math.min(100, pct).toFixed(1) + '%"></span></span><span>' + Math.round(pct) + '% · ' + PG_hhmm(total) + ' / ' + PG_hhmm(cap) + ' h' + (sem ? ' (+' + sem + ' sem histórico)' : '') + '</span></span>' : '';
+      h.innerHTML = total > 0 ? '<span class="pg-oc' + (pct > 100 ? ' over' : '') + '" title="' + PG_hhmm(total) + ' h estimadas de ' + PG_hhmm(cap) + ' h disponíveis"><span>Ocupação</span><span class="pg-oc-t"><span class="pg-oc-b" style="width:' + Math.min(100, pct).toFixed(1) + '%"></span></span><span>' + Math.round(pct) + '% · ' + PG_hhmm(total) + ' / ' + PG_hhmm(cap) + ' h' + (setups ? ' (inclui ' + setups * 30 + ' min de setup)' : '') + (sem ? ' (+' + sem + ' sem histórico)' : '') + '</span></span>' : '';
     }
   });
 }
@@ -28349,7 +28366,7 @@ function PG_render(){
         '<td style="width:96px"><input type="number" min="0" step="any" value="' + (r.quantidade == null ? '' : r.quantidade) + '" oninput="PG_set(' + i + ',\'quantidade\',this.value===\'\'?null:Number(this.value))"></td>' +
         '<td style="width:100px"><select onchange="PG_set(' + i + ',\'unidade\',this.value)">' + PG_UNIDADES.map(u => '<option' + (u === r.unidade ? ' selected' : '') + '>' + u + '</option>').join('') + '</select></td>' +
         '<td style="width:200px" id="pgProj' + i + '">' + PG_projHtml(r) + '</td>' +
-        '<td style="width:110px" id="pgTempo' + i + '"></td>' +
+        '<td style="width:130px" id="pgTempo' + i + '"></td>' +
         '<td style="width:150px"><input value="' + PG_esc(r.maquina) + '" oninput="PG_set(' + i + ',\'maquina\',this.value)" placeholder="Máquina / turno"></td>' +
         '<td style="width:210px"><input value="' + PG_esc(r.destino) + '" oninput="PG_set(' + i + ',\'destino\',this.value)" placeholder="Destino (Embalagem)"></td>' +
         '<td style="width:170px"><input value="' + PG_esc(r.observacao) + '" oninput="PG_set(' + i + ',\'observacao\',this.value)" placeholder="Observação"></td>' +
