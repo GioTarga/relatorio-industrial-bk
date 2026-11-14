@@ -28101,6 +28101,12 @@ document.addEventListener('DOMContentLoaded', ()=>{
 #pcpProgView .pg-proj-b.ok{background:var(--good)}
 #pcpProgView .pg-proj-b.abaixo{background:var(--red)}
 #pcpProgView .pg-proj-v{text-align:right;color:var(--ink);white-space:nowrap}
+#pcpProgView .pg-tempo{display:flex;flex-direction:column;gap:2px;min-width:96px;font-size:11px}
+#pcpProgView .pg-tempo b{font-size:13px;font-weight:800;color:var(--ink)}
+#pcpProgView .pg-tempo span{font-weight:600;color:var(--ink-soft);font-size:10px}
+#pcpProgView .pg-tempo-t{display:block;height:5px;background:var(--cream);border-radius:3px;overflow:hidden}
+#pcpProgView .pg-tempo-b{display:block;height:100%;background:var(--red-dark);border-radius:3px}
+#pcpProgView .pg-setor-h .pg-tt{margin-left:10px;font-weight:700;color:#fff}
 #pcpProgView .pg-proj-nota{font-size:10px;color:var(--ink-soft);font-weight:500}
 #pcpProgView .pg-prio{display:none;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);margin-bottom:14px;overflow:hidden}
 #pcpProgView .pg-prio.open{display:block}
@@ -28132,6 +28138,7 @@ let PG_ready = false;
 let PG_dirty = false;
 let PG_estoque = {};      // normCod(código) → { FABRICA:{estoque,un}, LOJA:{...} } da última posição importada
 let PG_estoqueData = '';
+let PG_taxas = {};        // 'cod|un' e 'p:nome|un' → { qtd, horas, n }: produção real ÷ horas (Fim − Início) dos últimos 90 dias
 
 function PG_hojeMais(dias){
   const d = new Date(); d.setDate(d.getDate() + dias);
@@ -28168,6 +28175,7 @@ async function PG_init(){
     PG_catalog = data || [];
   }catch(e){ PG_catalog = []; }
   await PG_carregarEstoque();
+  await PG_carregarTempos();
   if(typeof FALTA_carregarMapa === 'function' && !Object.keys(FALTA.mapa).length) await FALTA_carregarMapa();
   document.getElementById('pgDatalist').innerHTML = PG_catalog.map(p => '<option value="' + PG_esc(p.descricao) + '">' + PG_esc(p.codigo) + '</option>').join('');
   await PG_carregar();
@@ -28233,6 +28241,66 @@ function PG_projHtml(r){
     linha('Proj.', p.proj, abaixo ? 'abaixo' : 'ok', PG_n0(p.proj) + ' ' + PG_esc(p.un)) + nota + '</div>';
 }
 
+// Tempo estimado de cada item = quantidade ÷ ritmo histórico (produção real ÷ horas de produção apontadas, últimos 90 dias)
+function PG_unKey(u){ const t = histNorm(u); return /^un/.test(t) ? 'un' : /^(cx|caix)/.test(t) ? 'cx' : t; }
+function PG_horas(ini, fim){
+  const m = x => { const p = String(x || '').split(':'); return p.length >= 2 ? Number(p[0]) + Number(p[1]) / 60 : NaN; };
+  const h = m(fim) - m(ini);
+  return h > 0 ? h : 0;
+}
+function PG_hhmm(h){ const t = Math.round(h * 60); return String(Math.floor(t / 60)).padStart(2,'0') + ':' + String(t % 60).padStart(2,'0'); }
+async function PG_carregarTempos(){
+  PG_taxas = {};
+  try{
+    const client = getSupabaseClient();
+    const desde = PG_hojeMais(-90);
+    for(let off = 0; ; off += 1000){
+      const { data, error } = await client.from('producao_diaria').select('codigo_produto, produto, producao_real, unidade, inicio_producao, fim_producao')
+        .gte('data', desde).not('inicio_producao','is',null).not('fim_producao','is',null).gt('producao_real', 0).range(off, off + 999);
+      if(error) throw error;
+      (data || []).forEach(r => {
+        const h = PG_horas(r.inicio_producao, r.fim_producao);
+        if(!(h > 0)) return;
+        const un = PG_unKey(r.unidade);
+        const chaves = [];
+        if(r.codigo_produto) chaves.push(normCod(String(r.codigo_produto).trim()) + '|' + un);
+        if(r.produto) chaves.push('p:' + histNorm(r.produto) + '|' + un);
+        chaves.forEach(k => { const t = PG_taxas[k] || (PG_taxas[k] = { qtd: 0, horas: 0, n: 0 }); t.qtd += Number(r.producao_real) || 0; t.horas += h; t.n++; });
+      });
+      if(!data || data.length < 1000) break;
+    }
+  }catch(e){ PG_taxas = {}; }
+}
+// Horas que a linha demanda; null = sem quantidade; semHist = produto sem produção apontada com horário
+function PG_tempoH(r){
+  const q = Number(r.quantidade);
+  if(!(q > 0)) return null;
+  const un = PG_unKey(r.unidade);
+  const t = (r.codigo && PG_taxas[normCod(String(r.codigo).trim()) + '|' + un]) || PG_taxas['p:' + histNorm(r.produto) + '|' + un];
+  if(!t || !(t.qtd > 0) || !(t.horas > 0)) return { semHist: true };
+  return { h: q / (t.qtd / t.horas), n: t.n };
+}
+function PG_atualizaTempos(){
+  PG_SETORES.forEach((setor, si) => {
+    const idxs = PG_rows.map((r, i) => r.setor === setor ? i : -1).filter(i => i >= 0);
+    const tem = idxs.map(i => ({ i, t: PG_tempoH(PG_rows[i]) }));
+    const total = tem.reduce((a, x) => a + (x.t && x.t.h ? x.t.h : 0), 0);
+    tem.forEach(x => {
+      const c = document.getElementById('pgTempo' + x.i);
+      if(!c) return;
+      if(!x.t) c.innerHTML = '<span class="pg-est vazio">—</span>';
+      else if(x.t.semHist) c.innerHTML = '<span class="pg-est vazio">sem histórico</span>';
+      else{
+        const pct = total > 0 ? x.t.h / total * 100 : 0;
+        c.innerHTML = '<div class="pg-tempo" title="Ritmo médio de ' + x.t.n + ' produções dos últimos 90 dias"><b>' + PG_hhmm(x.t.h) + ' h</b><span>' + Math.round(pct) + '% do setor</span><span class="pg-tempo-t"><span class="pg-tempo-b" style="width:' + pct.toFixed(1) + '%"></span></span></div>';
+      }
+    });
+    const sem = tem.filter(x => x.t && x.t.semHist).length;
+    const h = document.getElementById('pgTT' + si);
+    if(h) h.textContent = total > 0 ? PG_hhmm(total) + ' h estimadas' + (sem ? ' (+' + sem + ' sem histórico)' : '') : '';
+  });
+}
+
 function PG_status(txt, cls){
   const el = document.getElementById('pgStatus');
   el.textContent = txt; el.className = 'pg-status' + (cls ? ' ' + cls : '');
@@ -28259,7 +28327,7 @@ async function PG_carregar(){
 
 function PG_render(){
   const box = document.getElementById('pgSetores');
-  box.innerHTML = PG_SETORES.map(setor => {
+  box.innerHTML = PG_SETORES.map((setor, si) => {
     const idxs = PG_rows.map((r, i) => r.setor === setor ? i : -1).filter(i => i >= 0);
     const rec = PG_RECHEIO.includes(setor);
     const linhas = idxs.map(i => {
@@ -28271,20 +28339,22 @@ function PG_render(){
         '<td style="width:96px"><input type="number" min="0" step="any" value="' + (r.quantidade == null ? '' : r.quantidade) + '" oninput="PG_set(' + i + ',\'quantidade\',this.value===\'\'?null:Number(this.value))"></td>' +
         '<td style="width:100px"><select onchange="PG_set(' + i + ',\'unidade\',this.value)">' + PG_UNIDADES.map(u => '<option' + (u === r.unidade ? ' selected' : '') + '>' + u + '</option>').join('') + '</select></td>' +
         '<td style="width:200px" id="pgProj' + i + '">' + PG_projHtml(r) + '</td>' +
+        '<td style="width:110px" id="pgTempo' + i + '"></td>' +
         '<td style="width:150px"><input value="' + PG_esc(r.maquina) + '" oninput="PG_set(' + i + ',\'maquina\',this.value)" placeholder="Máquina / turno"></td>' +
         '<td style="width:210px"><input value="' + PG_esc(r.destino) + '" oninput="PG_set(' + i + ',\'destino\',this.value)" placeholder="Destino (Embalagem)"></td>' +
         '<td style="width:170px"><input value="' + PG_esc(r.observacao) + '" oninput="PG_set(' + i + ',\'observacao\',this.value)" placeholder="Observação"></td>' +
         '<td style="width:30px"><button class="pg-x" title="Remover" onclick="PG_remover(' + i + ')">✕</button></td></tr>';
     }).join('');
-    return '<div class="pg-setor"><div class="pg-setor-h">' + PG_esc(setor) + '<span>' + idxs.length + ' itens</span></div>' +
-      (idxs.length ? '<table><thead><tr><th>Código</th><th>Produto</th><th>Estoque</th><th>Quantidade</th><th>Unidade</th><th>Projeção do estoque</th><th>Máquina / turno</th><th>Destino</th><th>Observação</th><th></th></tr></thead><tbody>' + linhas + '</tbody></table>' : '') +
+    return '<div class="pg-setor"><div class="pg-setor-h">' + PG_esc(setor) + '<span>' + idxs.length + ' itens<span class="pg-tt" id="pgTT' + si + '"></span></span></div>' +
+      (idxs.length ? '<table><thead><tr><th>Código</th><th>Produto</th><th>Estoque</th><th>Quantidade</th><th>Unidade</th><th>Projeção do estoque</th><th>Tempo estimado</th><th>Máquina / turno</th><th>Destino</th><th>Observação</th><th></th></tr></thead><tbody>' + linhas + '</tbody></table>' : '') +
       '<button class="pg-add" onclick="PG_add(\'' + setor + '\')">+ Adicionar produto' + (rec ? '' : '') + '</button></div>';
   }).join('');
+  PG_atualizaTempos();
 }
 
 function PG_set(i, campo, valor){
   PG_rows[i][campo] = valor; PG_marcarSujo();
-  if(campo === 'quantidade' || campo === 'unidade'){ const c = document.getElementById('pgProj' + i); if(c) c.innerHTML = PG_projHtml(PG_rows[i]); }
+  if(campo === 'quantidade' || campo === 'unidade'){ const c = document.getElementById('pgProj' + i); if(c) c.innerHTML = PG_projHtml(PG_rows[i]); PG_atualizaTempos(); }
 }
 function PG_add(setor){
   const ordem = PG_rows.filter(r => r.setor === setor).length;
