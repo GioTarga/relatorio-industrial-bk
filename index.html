@@ -28242,6 +28242,11 @@ async function PG_carregarMapa(){
     });
   }catch(e){ PG_mapa = {}; }
 }
+// Loja: estoque em pacotes → caixas (nº de pacotes por caixa vem do nome: "CX C/18 PCTS")
+function PG_pctPorCx(cod){
+  const cat = PG_catalog.find(p => normCod(String(p.codigo)) === normCod(String(cod)));
+  return Number((String((cat && cat.descricao) || '').match(/CX\s*C\/\s*(\d+)/i) || [])[1]) || 0;
+}
 function PG_projecao(r, opt){
   opt = opt || {};
   const codR = opt.cod || r.codigo;
@@ -28284,6 +28289,8 @@ function PG_projecao(r, opt){
       if(c.conv) add = c.q; else conv = false;
     }
   }
+  const nCx = (tipo === 'LOJA' && unEst === 'PCT') ? PG_pctPorCx(codR) : 0;
+  if(nCx > 0){ real /= nCx; add /= nCx; if(seg != null) seg /= nCx; un = 'cx'; }   // extra (Embalar p/ loja) já vem em caixas
   return { real, seg, proj: real + add + (Number(opt.extra) || 0), un, conv, q, tipo };
 }
 // Mini pastel: Forno (fábrica) e Nata (loja) são o mesmo produto/sabor; ao escolher um, a projeção mostra o estoque dos dois
@@ -28315,7 +28322,8 @@ function PG_lados(r){
 function PG_lojaInfo(r){
   const l = PG_lados(r);
   const cod = r.codigo ? normCod(String(r.codigo).trim()) : '';
-  return l.FABRICA && l.FABRICA.cod === cod && l.LOJA ? { un: l.LOJA.un } : null;   // só quando o item escolhido é o de fábrica
+  if(!(l.FABRICA && l.FABRICA.cod === cod && l.LOJA)) return null;
+  return { un: l.LOJA.un === 'pct' && PG_pctPorCx(l.LOJA.cod) > 0 ? 'cx' : l.LOJA.un };   // só quando o item escolhido é o de fábrica
 }
 function PG_projHtml(r){
   const l = PG_lados(r);
