@@ -28347,14 +28347,26 @@ function PG_projHtml(r){
   const cod = normCod(String(r.codigo).trim());
   const temFab = !!(l.FABRICA && l.FABRICA.cod === cod);   // item escolhido é o de fábrica (o de loja puro soma a quantidade na loja)
   const blocos = [];
+  // O embalado p/ loja sai da produção programada: não pode passar dela (o projetado nunca fica abaixo do real)
+  let menos = 0, lojaQtd = Number(r.qtd_loja) || 0, avisoLoja = '';
+  if(l.FABRICA && l.LOJA && l.FABRICA.cod === cod && lojaQtd > 0){
+    const p0 = PG_projecao(r, { cod: l.FABRICA.cod, tipo: 'FABRICA' });
+    const prod = p0 ? p0.proj - p0.real : 0;           // produção programada na unidade da fábrica
+    const eq = PG_lojaEmFabrica(r, l);
+    if(eq === null) menos = null;
+    else if(eq > prod){
+      const f = prod > 0 ? prod / eq : 0;
+      avisoLoja = 'maior que a produção: limitado a ' + PG_n0(lojaQtd * f) + ' ' + PG_esc(l.LOJA.un === 'pct' && PG_pctPorCx(l.LOJA.cod) > 0 ? 'cx' : l.LOJA.un);
+      menos = prod; lojaQtd = lojaQtd * f;
+    }else menos = eq;
+  }
   if(l.FABRICA){
-    const menos = l.LOJA && l.FABRICA.cod === cod ? PG_lojaEmFabrica(r, l) : 0;
-    const p = PG_projecao(r, { cod: l.FABRICA.cod, tipo: 'FABRICA', semQtd: l.FABRICA.cod !== cod, menos, nota: menos === null ? 'sem conversão: embalado p/ loja não foi abatido' : '' });
+    const p = PG_projecao(r, { cod: l.FABRICA.cod, tipo: 'FABRICA', semQtd: l.FABRICA.cod !== cod, menos, nota: menos === null ? 'sem conversão: embalado p/ loja não foi abatido' : (avisoLoja ? 'Embalar p/ loja ' + avisoLoja : '') });
     if(p) blocos.push(PG_projBloco(p, 'Fábrica'));
   }
   if(l.LOJA){
     // Se o produto tem fábrica, a quantidade programada vai para a fábrica e a loja soma o que será embalado p/ loja
-    const p = PG_projecao(r, temFab ? { cod: l.LOJA.cod, tipo: 'LOJA', semQtd: true, extra: r.qtd_loja } : { cod: l.LOJA.cod, tipo: 'LOJA', semQtd: l.LOJA.cod !== cod });
+    const p = PG_projecao(r, temFab ? { cod: l.LOJA.cod, tipo: 'LOJA', semQtd: true, extra: lojaQtd } : { cod: l.LOJA.cod, tipo: 'LOJA', semQtd: l.LOJA.cod !== cod });
     if(p) blocos.push(PG_projBloco(p, 'Loja'));
   }
   return blocos.length > 1 ? '<div class="pg-duo">' + blocos.join('') + '</div>' : (blocos[0] || '<span class="pg-est vazio">sem estoque</span>');
