@@ -28234,7 +28234,7 @@ function PG_estoqueTxt(r){
   if(!e) return '<span class="pg-est vazio">sem estoque</span>';
   const f = e.FABRICA, l = e.LOJA;
   const partes = [];
-  if(f) partes.push('Fáb ' + PG_fmt(f.estoque) + ' ' + String(f.un).toLowerCase());
+  if(f) partes.push(PG_cxFab(cod) > 0 && String(f.un).toUpperCase() === 'UN' ? 'Fáb ' + PG_n0(f.estoque / PG_cxFab(cod)) + ' cx' : 'Fáb ' + PG_fmt(f.estoque) + ' ' + String(f.un).toLowerCase());
   if(l) partes.push('Loja ' + PG_fmt(l.estoque) + ' ' + String(l.un).toLowerCase());
   const zero = (!f || f.estoque <= 0) && (!l || l.estoque <= 0);
   return '<span class="pg-est' + (zero ? ' zero' : '') + '" title="Posição de ' + PG_dataBR(PG_estoqueData) + '">' + partes.join(' · ') + '</span>';
@@ -28300,6 +28300,8 @@ function PG_projecao(r, opt){
     else if(/^un/.test(unQ) && g && pctG) add = q * g / pctG;
     else if(/^un/.test(unQ) && PG_pecasLoja(codR, 'pct') > 0) add = q / PG_pecasLoja(codR, 'pct');   // pacote "C/3 UN" / "4X130G": unidades ÷ peças por pacote
     if(!add) conv = false;
+  }else if(q > 0 && PG_cxFab(codR) > 0 && unEst === 'UN' && /^caix/.test(unQ)){
+    add = q * PG_cxFab(codR);   // caixa de produção = caixa do produto (unidades por caixa)
   }else if(q > 0){
     if(/^caix/.test(unQ) && /^(CX|CAIXA)/.test(unEst)) add = q;
     else{
@@ -28309,7 +28311,10 @@ function PG_projecao(r, opt){
   }
   const nCx = (tipo === 'LOJA' && unEst === 'PCT') ? PG_pctPorCx(codR) : 0;
   if(nCx > 0){ real /= nCx; add /= nCx; if(seg != null) seg /= nCx; un = 'cx'; }   // extra (Embalar p/ loja) já vem em caixas
-  return { real, seg, proj: real + add + (Number(opt.extra) || 0) - (Number(opt.menos) || 0), un, conv, q, tipo, nota: opt.nota || '' };
+  let ex = Number(opt.extra) || 0, mn = Number(opt.menos) || 0;
+  const cxF = (tipo === 'FABRICA' && unEst === 'UN') ? PG_cxFab(codR) : 0;
+  if(cxF > 0){ real /= cxF; add /= cxF; ex /= cxF; mn /= cxF; if(seg != null) seg /= cxF; un = 'cx'; }
+  return { real, seg, proj: real + add + ex - mn, un, conv, q, tipo, nota: opt.nota || '' };
 }
 // Mini pastel: Forno (fábrica) e Nata (loja) são o mesmo produto/sabor; ao escolher um, a projeção mostra o estoque dos dois
 // Fábrica → produtos de loja que saem dele (até 2). Mini pastel: Forno ↔ Nata. Demais: pacote da loja com N unidades do produto de fábrica
@@ -28320,6 +28325,9 @@ const PG_FAB_LOJAS = {
   '11':['3396'], '12':['3397']   // lojas 3391/3396/3397 não vêm no estoque do CIGAM: só o Embalar p/ loja, sem barras de estoque
 };
 const PG_LOJA2FAB = {}, PG_PARES = {};
+// Produtos só de fábrica controlados em caixas: unidades por caixa (nome "C/15UN"). Estoque, projeção e quantidade em caixas
+const PG_CX_FAB = { '2209297':15, '2209306':15, '2209030':15 };
+function PG_cxFab(cod){ return PG_CX_FAB[normCod(String(cod || '').trim())] || 0; }
 // Pacotes por caixa que o nome do catálogo não traz (vem do nome nos relatórios de venda: "3X130G - CX C/18PCTS")
 const PG_CX_PCT = { '7197':18, '7198':18, '7199':18 };
 function PG_codEf(r){
@@ -28495,21 +28503,27 @@ async function PG_carregarTempos(){
 function PG_tempoH(r){
   const q = Number(r.quantidade);
   if(!(q > 0)) return null;
-  const un = PG_unKey(r.unidade);
-  const kc = r.codigo ? normCod(String(r.codigo).trim()) + '|' + un : '', kn = 'p:' + histNorm(r.produto) + '|' + un;
-  // Máquina escolhida: usa o ritmo dela neste produto; sem histórico nela, cai no ritmo geral do produto
   const mk = r.maquina ? PG_maqKey(r.maquina) : '';
-  const tm = mk ? ((kc && PG_taxasMaq[mk + '|' + kc]) || PG_taxasMaq[mk + '|' + kn]) : null;
-  const usaMaq = !!(tm && tm.qtd > 0 && tm.horas > 0);
-  const t = usaMaq ? tm : ((kc && PG_taxas[kc]) || PG_taxas[kn]);
-  if(!t || !(t.qtd > 0) || !(t.horas > 0)) return { semHist: true };
-  return { h: q / (t.qtd / t.horas), n: t.n, maq: usaMaq ? r.maquina : '' };
+  // Procura o ritmo na unidade da linha; caixa sem histórico em caixas usa o histórico em unidades (× unidades por caixa)
+  const busca = (un, qq) => {
+    const kc = r.codigo ? normCod(String(r.codigo).trim()) + '|' + un : '', kn = 'p:' + histNorm(r.produto) + '|' + un;
+    // Máquina escolhida: usa o ritmo dela neste produto; sem histórico nela, cai no ritmo geral do produto
+    const tm = mk ? ((kc && PG_taxasMaq[mk + '|' + kc]) || PG_taxasMaq[mk + '|' + kn]) : null;
+    const usaMaq = !!(tm && tm.qtd > 0 && tm.horas > 0);
+    const t = usaMaq ? tm : ((kc && PG_taxas[kc]) || PG_taxas[kn]);
+    return (t && t.qtd > 0 && t.horas > 0) ? { h: qq / (t.qtd / t.horas), n: t.n, maq: usaMaq ? r.maquina : '' } : null;
+  };
+  const un = PG_unKey(r.unidade);
+  let res = busca(un, q);
+  if(!res && un === 'cx' && PG_pecasPorUn(r) > 1) res = busca('un', q * PG_pecasPorUn(r));
+  return res || { semHist: true };
 }
 // Peças por unidade de produção (para comparar com a capacidade nominal em un/h); 0 = sem conversão conhecida
 function PG_pecasPorUn(r){
   const u = PG_unKey(r.unidade);
   if(u === 'un') return 1;
   if(u === 'cx'){
+    if(PG_cxFab(r.codigo) > 0) return PG_cxFab(r.codigo);
     const mp = PG_mapa[normCod(String(r.codigo || '').trim())] || {};
     if(mp['Unidades'] > 0) return mp['Unidades'];
     const gi = typeof SAL_PROD2G !== 'undefined' ? SAL_PROD2G[SAL_NORM(r.produto)] : undefined;
@@ -28532,10 +28546,12 @@ function PG_maqCampo(i){
 // Ritmo médio da máquina para o produto × capacidade nominal cadastrada
 function PG_maqInfoHtml(r){
   if(!r.maquina) return '';
-  const mk = PG_maqKey(r.maquina), un = PG_unKey(r.unidade);
-  const t = (r.codigo && PG_taxasMaq[mk + '|' + normCod(String(r.codigo).trim()) + '|' + un]) || PG_taxasMaq[mk + '|p:' + histNorm(r.produto) + '|' + un];
+  const mk = PG_maqKey(r.maquina);
+  const achaT = u => (r.codigo && PG_taxasMaq[mk + '|' + normCod(String(r.codigo).trim()) + '|' + u]) || PG_taxasMaq[mk + '|p:' + histNorm(r.produto) + '|' + u];
+  let un = PG_unKey(r.unidade), t = achaT(un);
+  let pecas = PG_pecasPorUn(r);
+  if(!(t && t.qtd > 0) && un === 'cx' && pecas > 1){ t = achaT('un'); un = 'un'; pecas = 1; }   // histórico em unidades
   const m = PG_maqs.find(x => PG_maqKey(x.identificacao) === mk);
-  const pecas = PG_pecasPorUn(r);
   const capOk = m && /^un/i.test(String(m.capacidade_unidade || '')) && Number(m.capacidade_nominal) > 0 && pecas > 0;
   const cap = capOk ? Number(m.capacidade_nominal) : 0;
   if(!t || !(t.qtd > 0) || !(t.horas > 0)){
@@ -28693,6 +28709,7 @@ function PG_prod(i, txt){
     const uk = PG_unKey((fabCat || hit).unidade);   // item de loja programa o produto de fábrica: unidade da fábrica. Catálogo diz "Unidade"/"Caixa": a lista usa "Unid"/"Caixas"
     const u = uk === 'un' ? 'Unid' : uk === 'cx' ? 'Caixas' : PG_UNIDADES.find(x => PG_semAcento(x).toLowerCase() === PG_semAcento(hit.unidade || '').toLowerCase());
     if(u) r.unidade = u;
+    if(PG_cxFab(hit.codigo) > 0) r.unidade = 'Caixas';
   }else{ r.produto = t; r.codigo = null; }
   PG_marcarSujo(); PG_render();
 }
