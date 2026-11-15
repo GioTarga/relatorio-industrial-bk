@@ -28106,6 +28106,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
 #pcpProgView .pg-tempo span{font-weight:600;color:var(--ink-soft);font-size:10px}
 #pcpProgView .pg-tempo-t{display:block;height:5px;background:var(--cream);border-radius:3px;overflow:hidden}
 #pcpProgView .pg-tempo-b{display:block;height:100%;background:var(--red-dark);border-radius:3px}
+#pcpProgView .pg-prodc{min-width:250px}
+#pcpProgView .pg-pnome{font-size:12px;font-weight:700;line-height:1.25;color:var(--ink);white-space:normal;word-break:break-word}
+#pcpProgView .pg-pnome:not(:empty){margin-bottom:4px}
 #pcpProgView .pg-maq select,#pcpProgView .pg-maq input{width:100%}
 #pcpProgView .pg-maq-i{display:flex;flex-direction:column;gap:2px;margin-top:6px;font-size:10px;color:var(--ink-soft)}
 #pcpProgView .pg-maq-l{display:flex;justify-content:space-between;gap:6px;font-weight:600}
@@ -28257,7 +28260,8 @@ async function PG_carregarMapa(){
 // Loja: estoque em pacotes → caixas (nº de pacotes por caixa vem do nome: "CX C/18 PCTS")
 function PG_pctPorCx(cod){
   const cat = PG_catalog.find(p => normCod(String(p.codigo)) === normCod(String(cod)));
-  return Number((String((cat && cat.descricao) || '').match(/CX\s*C\/\s*(\d+)/i) || [])[1]) || 0;
+  const d = String((cat && cat.descricao) || '');
+  return Number((d.match(/CX\s*C\s*\/?\s*(\d+)/i) || d.match(/C\/\s*(\d+)\s*PCTS?/i) || [])[1]) || 0;
 }
 function PG_projecao(r, opt){
   opt = opt || {};
@@ -28306,8 +28310,21 @@ function PG_projecao(r, opt){
   return { real, seg, proj: real + add + (Number(opt.extra) || 0) - (Number(opt.menos) || 0), un, conv, q, tipo, nota: opt.nota || '' };
 }
 // Mini pastel: Forno (fábrica) e Nata (loja) são o mesmo produto/sabor; ao escolher um, a projeção mostra o estoque dos dois
-const PG_PARES = { '8018':'7194', '8019':'7192', '8020':'7191', '8021':'7195', '2209207':'7193' };
-Object.keys(PG_PARES).forEach(k => { PG_PARES[PG_PARES[k]] = k; });
+// Fábrica → produtos de loja que saem dele (até 2). Mini pastel: Forno ↔ Nata. Demais: pacote da loja com N unidades do produto de fábrica
+const PG_FAB_LOJAS = {
+  '8018':['7194'], '8019':['7192'], '8020':['7191'], '8021':['7195'], '2209207':['7193'],
+  '2209092':['7064'], '2209353':['7069','5925'], '2209091':['7065'], '6670':['7076'], '7':['7199'],
+  '100825':['7070','6118'], '6672':['7075'], '6671':['7074'], '2209083':['3439'], '6':['7197'], '2209012':['7198'], '7318':['7319','3391'],
+  '11':['3396'], '12':['3397']   // lojas 3391/3396/3397 não vêm no estoque do CIGAM: só o Embalar p/ loja, sem barras de estoque
+};
+const PG_LOJA2FAB = {}, PG_PARES = {};
+Object.keys(PG_FAB_LOJAS).forEach(f => { PG_PARES[f] = PG_FAB_LOJAS[f][0]; PG_FAB_LOJAS[f].forEach(l => { PG_LOJA2FAB[l] = f; PG_PARES[l] = f; }); });
+// Unidades do produto de fábrica dentro de 1 unidade de estoque da loja: pacote "4X165G" = 4, "C/3 UN" = 3; estoque da loja em UN = 1
+function PG_pecasLoja(cod, un){
+  if(String(un).toLowerCase() === 'un') return 1;
+  const d = (PG_catalog.find(p => normCod(String(p.codigo)) === normCod(String(cod))) || {}).descricao || '';
+  return Number((d.match(/(\d+)\s*X\s*\d+\s*G/i) || d.match(/C\/\s*(\d+)\s*UN/i) || [])[1]) || 0;
+}
 function PG_projBloco(p, rotulo){
   const max = Math.max(p.real, p.seg || 0, p.proj, 1);
   const linha = (rot, val, cls, txt) => '<div class="pg-proj-l"><span>' + rot + '</span><span class="pg-proj-t"><span class="pg-proj-b ' + cls + '" style="width:' + Math.max(0, val / max * 100).toFixed(1) + '%"></span></span><span class="pg-proj-v">' + txt + '</span></div>';
@@ -28322,35 +28339,59 @@ function PG_projBloco(p, rotulo){
 }
 // Estoque de fábrica e de loja do produto (próprio código ou o par Forno/Nata). Devolve { FABRICA:{cod,un}, LOJA:{cod,un} }
 function PG_lados(r){
-  const out = {};
+  const out = { LOJAS: [] };
   const cod = r.codigo ? normCod(String(r.codigo).trim()) : '';
-  [cod, PG_PARES[cod]].forEach(c => {
+  // item de fábrica: junta todas as lojas dele; item de loja: só ele e a fábrica de origem
+  const cands = PG_FAB_LOJAS[cod] ? [cod].concat(PG_FAB_LOJAS[cod]) : [cod, PG_PARES[cod]];
+  cands.forEach(c => {
     const e = c && PG_estoque[c]; if(!e) return;
-    ['FABRICA','LOJA'].forEach(t => { if(e[t] && !out[t]) out[t] = { cod: c, un: String(e[t].un || '').toLowerCase() }; });
+    const un = t => String(e[t].un || '').toLowerCase();
+    if(e.FABRICA && !out.FABRICA) out.FABRICA = { cod: c, un: un('FABRICA') };
+    if(e.LOJA) out.LOJAS.push({ cod: c, un: un('LOJA') });
   });
+  // loja sem posição no CIGAM: continua valendo para o Embalar p/ loja (pacote)
+  (PG_FAB_LOJAS[cod] || []).forEach(c => { if(!out.LOJAS.some(x => x.cod === c)) out.LOJAS.push({ cod: c, un: 'pct', semEst: true }); });
+  out.LOJA = out.LOJAS[0];
   return out;
 }
 // Produto com estoque de fábrica e de loja: o usuário informa quanto embalar para a loja (vai para a OP da Embalagem)
-function PG_lojaInfo(r){
+function PG_lojasInfo(r){
   const l = PG_lados(r);
   const cod = r.codigo ? normCod(String(r.codigo).trim()) : '';
-  if(!(l.FABRICA && l.FABRICA.cod === cod && l.LOJA)) return null;
-  return { un: l.LOJA.un === 'pct' && PG_pctPorCx(l.LOJA.cod) > 0 ? 'cx' : l.LOJA.un };   // só quando o item escolhido é o de fábrica
+  if(!(l.FABRICA && l.FABRICA.cod === cod && l.LOJAS.length)) return [];
+  return l.LOJAS.slice(0, 2).map((lj, k) => {
+    const cx = lj.un === 'pct' && PG_pctPorCx(lj.cod) > 0;
+    const pc = PG_pecasLoja(lj.cod, lj.un);
+    return { k: k + 1, cod: lj.cod, un: cx ? 'cx' : lj.un, pecas: pc, rot: l.LOJAS.length > 1 && pc ? 'pct c/' + pc : '' };
+  });
+}
+function PG_lojaInfo(r){ return PG_lojasInfo(r)[0] || null; }   // só quando o item escolhido é o de fábrica
+// Quantidade embalada p/ loja k (1 ou 2) e a unidade dela
+function PG_qLoja(r, k){ return Number(k === 2 ? r.qtd_loja2 : r.qtd_loja) || 0; }
+function PG_unLoja(r, k){ return (k === 2 ? r.un_loja2 : r.un_loja) || ((PG_lojasInfo(r)[k - 1]) || {}).un || ''; }
+function PG_lojaTxt(r){
+  return [1, 2].filter(k => PG_qLoja(r, k) > 0).map(k => PG_fmt(PG_qLoja(r, k)) + ' ' + PG_unLoja(r, k) + ((PG_lojasInfo(r)[k - 1] || {}).rot ? ' (' + PG_lojasInfo(r)[k - 1].rot + ')' : '')).join(' + ');
 }
 // O que foi embalado para a loja, na unidade da fábrica (caixa de 5 kg): sai da produção total, o resto fica na fábrica.
 // Conversão pelo peso: caixa/pacote da loja (nome: "CX C/18", "PCT600G") → kg → caixas da fábrica ("C/5KG"). null = sem como converter.
-function PG_lojaEmFabrica(r, l){
-  const q = Number(r.qtd_loja) || 0;
-  if(!q) return 0;
+function PG_lojaEmFabrica(r, l, k){
+  const lj = l.LOJAS[k - 1], q = PG_qLoja(r, k);
+  if(!q || !lj) return 0;
   const fab = PG_estoque[l.FABRICA.cod] && PG_estoque[l.FABRICA.cod].FABRICA;
-  if(!fab || String(fab.un).toUpperCase() !== 'KG') return null;
+  if(!fab) return null;
+  const nCx = lj.un === 'pct' ? PG_pctPorCx(lj.cod) : 0;
+  // Fábrica em unidades: pacote/caixa da loja × peças por pacote
+  if(String(fab.un).toUpperCase() === 'UN'){
+    const pc = PG_pecasLoja(lj.cod, lj.un);
+    return pc > 0 ? q * (nCx > 0 ? nCx : 1) * pc : null;
+  }
+  if(String(fab.un).toUpperCase() !== 'KG') return null;
   const dF = (PG_catalog.find(p => normCod(String(p.codigo)) === l.FABRICA.cod) || {}).descricao || r.produto;
-  const dL = (PG_catalog.find(p => normCod(String(p.codigo)) === l.LOJA.cod) || {}).descricao || '';
+  const dL = (PG_catalog.find(p => normCod(String(p.codigo)) === lj.cod) || {}).descricao || '';
   const pesoCx = FALTA_pesoPacote(dF);
   const pctG = Number((String(dL).match(/PCT\s*(\d+)\s*G/i) || [])[1]) || 0;
-  const nCx = l.LOJA.un === 'pct' ? PG_pctPorCx(l.LOJA.cod) : 0;
   if(!(pesoCx > 0 && pctG > 0)) return null;
-  const gramas = (l.LOJA.un === 'pct' && nCx > 0) ? nCx * pctG : pctG;   // g por unidade digitada (caixa de 18 pacotes ou pacote)
+  const gramas = (lj.un === 'pct' && nCx > 0) ? nCx * pctG : pctG;   // g por unidade digitada (caixa de 18 pacotes ou pacote)
   return q * gramas / 1000 / pesoCx;
 }
 function PG_projHtml(r){
@@ -28360,27 +28401,32 @@ function PG_projHtml(r){
   const temFab = !!(l.FABRICA && l.FABRICA.cod === cod);   // item escolhido é o de fábrica (o de loja puro soma a quantidade na loja)
   const blocos = [];
   // O embalado p/ loja sai da produção programada: não pode passar dela (o projetado nunca fica abaixo do real)
-  let menos = 0, lojaQtd = Number(r.qtd_loja) || 0, avisoLoja = '';
-  if(l.FABRICA && l.LOJA && l.FABRICA.cod === cod && lojaQtd > 0){
+  let menos = 0, avisoLoja = '';
+  const lojaQ = [PG_qLoja(r, 1), PG_qLoja(r, 2)];
+  const infos = PG_lojasInfo(r);
+  if(temFab && l.LOJAS.length && (lojaQ[0] > 0 || lojaQ[1] > 0)){
     const p0 = PG_projecao(r, { cod: l.FABRICA.cod, tipo: 'FABRICA' });
     const prod = p0 ? p0.proj - p0.real : 0;           // produção programada na unidade da fábrica
-    const eq = PG_lojaEmFabrica(r, l);
-    if(eq === null) menos = null;
-    else if(eq > prod){
-      const f = prod > 0 ? prod / eq : 0;
-      avisoLoja = 'maior que a produção: limitado a ' + PG_n0(lojaQtd * f) + ' ' + PG_esc(l.LOJA.un === 'pct' && PG_pctPorCx(l.LOJA.cod) > 0 ? 'cx' : l.LOJA.un);
-      menos = prod; lojaQtd = lojaQtd * f;
-    }else menos = eq;
+    const eqs = [1, 2].map(k => PG_lojaEmFabrica(r, l, k));
+    if(eqs.some(e => e === null)) menos = null;
+    else{
+      const eq = eqs[0] + eqs[1];
+      if(eq > prod){
+        const f = prod > 0 ? prod / eq : 0;
+        avisoLoja = 'maior que a produção: limitado a ' + [0, 1].filter(k => lojaQ[k] > 0).map(k => PG_n0(lojaQ[k] * f) + ' ' + PG_esc((infos[k] || {}).un || '')).join(' + ');
+        menos = prod; lojaQ[0] *= f; lojaQ[1] *= f;
+      }else menos = eq;
+    }
   }
   if(l.FABRICA){
     const p = PG_projecao(r, { cod: l.FABRICA.cod, tipo: 'FABRICA', semQtd: l.FABRICA.cod !== cod, menos, nota: menos === null ? 'sem conversão: embalado p/ loja não foi abatido' : (avisoLoja ? 'Embalar p/ loja ' + avisoLoja : '') });
     if(p) blocos.push(PG_projBloco(p, 'Fábrica'));
   }
-  if(l.LOJA){
+  l.LOJAS.slice(0, 2).forEach((lj, k) => {
     // Se o produto tem fábrica, a quantidade programada vai para a fábrica e a loja soma o que será embalado p/ loja
-    const p = PG_projecao(r, temFab ? { cod: l.LOJA.cod, tipo: 'LOJA', semQtd: true, extra: lojaQtd } : { cod: l.LOJA.cod, tipo: 'LOJA', semQtd: l.LOJA.cod !== cod });
-    if(p) blocos.push(PG_projBloco(p, 'Loja'));
-  }
+    const p = PG_projecao(r, temFab ? { cod: lj.cod, tipo: 'LOJA', semQtd: true, extra: lojaQ[k] } : { cod: lj.cod, tipo: 'LOJA', semQtd: lj.cod !== cod });
+    if(p) blocos.push(PG_projBloco(p, 'Loja' + ((infos[k] || {}).rot ? ' · ' + infos[k].rot : '')));
+  });
   return blocos.length > 1 ? '<div class="pg-duo">' + blocos.join('') + '</div>' : (blocos[0] || '<span class="pg-est vazio">sem estoque</span>');
 }
 
@@ -28575,11 +28621,11 @@ function PG_render(){
       const r = PG_rows[i];
       return '<tr>' +
         '<td style="width:78px"><span class="pg-cod' + (r.codigo ? '' : ' pend') + '">' + PG_esc(r.codigo || 'pendente') + '</span></td>' +
-        '<td><input list="pgDatalist" value="' + PG_esc(r.produto) + '" onchange="PG_prod(' + i + ',this.value)" placeholder="Produto (nome ou código)"></td>' +
+        '<td class="pg-prodc"><div class="pg-pnome">' + PG_esc(r.produto) + '</div><input list="pgDatalist" value="" onchange="PG_prod(' + i + ',this.value)" placeholder="' + (r.produto ? 'Trocar produto…' : 'Produto (nome ou código)') + '"></td>' +
         '<td style="width:170px">' + PG_estoqueTxt(r) + '</td>' +
         '<td style="width:96px"><input type="number" min="0" step="any" value="' + (r.quantidade == null ? '' : r.quantidade) + '" oninput="PG_set(' + i + ',\'quantidade\',this.value===\'\'?null:Number(this.value))"></td>' +
         '<td style="width:100px"><select onchange="PG_set(' + i + ',\'unidade\',this.value)">' + PG_UNIDADES.map(u => '<option' + (u === r.unidade ? ' selected' : '') + '>' + u + '</option>').join('') + '</select></td>' +
-        '<td style="width:96px">' + (PG_lojaInfo(r) ? '<input type="number" min="0" step="any" value="' + (r.qtd_loja == null ? '' : r.qtd_loja) + '" title="Quantidade a embalar para a loja (' + PG_esc(PG_lojaInfo(r).un) + ')" oninput="PG_setLoja(' + i + ',this.value)" placeholder="' + PG_esc(PG_lojaInfo(r).un) + '">' : '<span class="pg-est vazio">—</span>') + '</td>' +
+        '<td style="width:96px">' + (PG_lojasInfo(r).length ? PG_lojasInfo(r).map(x => (x.rot ? '<div class="pg-est vazio">' + PG_esc(x.rot) + '</div>' : '') + '<input type="number" min="0" step="any" value="' + (PG_qLoja(r, x.k) || '') + '" title="Quantidade a embalar para a loja (' + PG_esc(x.un) + ')" oninput="PG_setLoja(' + i + ',this.value,' + x.k + ')" placeholder="' + PG_esc(x.un) + '">').join('') : '<span class="pg-est vazio">—</span>') + '</td>' +
         '<td id="pgProj' + i + '">' + PG_projHtml(r) + '</td>' +
         '<td style="width:130px" id="pgTempo' + i + '"></td>' +
         '<td class="pg-maq" style="width:190px">' + PG_maqCampo(i) + '<div id="pgMaq' + i + '">' + PG_maqInfoHtml(r) + '</div></td>' +
@@ -28596,15 +28642,15 @@ function PG_render(){
 
 // Destino final: o que foi digitado + a divisão loja/fábrica montada a partir do "Embalar p/ loja" (não precisa escrever a quantidade)
 function PG_destinoAuto(r){
-  const q = Number(r.qtd_loja) || 0;
-  if(!(q > 0)) return '';
-  const un = r.un_loja || (PG_lojaInfo(r) || {}).un || '';
-  return 'LOJA ' + PG_fmt(q) + ' ' + un + ' · resto FÁBRICA';
+  const t = [1, 2].filter(k => PG_qLoja(r, k) > 0).map(k => PG_fmt(PG_qLoja(r, k)) + ' ' + PG_unLoja(r, k) + ((PG_lojasInfo(r)[k - 1] || {}).rot ? ' (' + PG_lojasInfo(r)[k - 1].rot + ')' : '')).join(' + ');
+  return t ? 'LOJA ' + t + ' · resto FÁBRICA' : '';
 }
 function PG_destinoFinal(r){ return [PG_destinoAuto(r), r.destino].filter(Boolean).join(' | '); }
-function PG_setLoja(i, v){
-  const r = PG_rows[i], info = PG_lojaInfo(r);
-  r.qtd_loja = v === '' ? null : Number(v); r.un_loja = info ? info.un : null;
+function PG_setLoja(i, v, k){
+  k = k || 1;
+  const r = PG_rows[i], info = PG_lojasInfo(r)[k - 1];
+  const q = v === '' ? null : Number(v), un = info ? info.un : null;
+  if(k === 2){ r.qtd_loja2 = q; r.un_loja2 = un; } else { r.qtd_loja = q; r.un_loja = un; }
   PG_marcarSujo();
   const c = document.getElementById('pgProj' + i); if(c) c.innerHTML = PG_projHtml(r);
   const d = document.getElementById('pgDest' + i); if(d) d.placeholder = PG_destinoAuto(r) || 'Destino (Embalagem)';
@@ -28616,7 +28662,7 @@ function PG_set(i, campo, valor){
 }
 function PG_add(setor){
   const ordem = PG_rows.filter(r => r.setor === setor).length;
-  PG_rows.push({ data: document.getElementById('pgData').value, setor, ordem, codigo: null, produto: '', quantidade: null, unidade: 'Massa', maquina: '', destino: '', observacao: '', qtd_loja: null, un_loja: null });
+  PG_rows.push({ data: document.getElementById('pgData').value, setor, ordem, codigo: null, produto: '', quantidade: null, unidade: 'Massa', maquina: '', destino: '', observacao: '', qtd_loja: null, un_loja: null, qtd_loja2: null, un_loja2: null });
   PG_marcarSujo(); PG_render();
 }
 function PG_remover(i){ PG_rows.splice(i, 1); PG_marcarSujo(); PG_render(); }
@@ -28627,9 +28673,11 @@ function PG_prod(i, txt){
   const hit = PG_catalog.find(p => PG_semAcento(p.descricao).toLowerCase() === alvo) ||
               PG_catalog.find(p => normCod(String(p.codigo)) === normCod(t));
   const r = PG_rows[i];
+  r.qtd_loja = r.qtd_loja2 = r.un_loja = r.un_loja2 = null;   // trocou o produto: o que estava embalado p/ loja não vale mais
   if(hit){
     r.produto = hit.descricao; r.codigo = hit.codigo;
-    const u = PG_UNIDADES.find(x => PG_semAcento(x).toLowerCase() === PG_semAcento(hit.unidade || '').toLowerCase());
+    const uk = PG_unKey(hit.unidade);   // catálogo diz "Unidade"/"Caixa": a lista usa "Unid"/"Caixas"
+    const u = uk === 'un' ? 'Unid' : uk === 'cx' ? 'Caixas' : PG_UNIDADES.find(x => PG_semAcento(x).toLowerCase() === PG_semAcento(hit.unidade || '').toLowerCase());
     if(u) r.unidade = u;
   }else{ r.produto = t; r.codigo = null; }
   PG_marcarSujo(); PG_render();
@@ -28663,7 +28711,7 @@ async function PG_salvar(){
     const cont = {};
     const novas = validos.map(r => {
       cont[r.setor] = (cont[r.setor] || 0);
-      return { data, setor: r.setor, ordem: cont[r.setor]++, codigo: r.codigo || null, produto: String(r.produto).trim(), quantidade: r.quantidade, unidade: r.unidade, maquina: r.maquina || null, destino: r.destino || null, observacao: r.observacao || null, qtd_loja: r.qtd_loja > 0 ? r.qtd_loja : null, un_loja: r.qtd_loja > 0 ? (r.un_loja || (PG_lojaInfo(r) || {}).un || null) : null };
+      return { data, setor: r.setor, ordem: cont[r.setor]++, codigo: r.codigo || null, produto: String(r.produto).trim(), quantidade: r.quantidade, unidade: r.unidade, maquina: r.maquina || null, destino: r.destino || null, observacao: r.observacao || null, qtd_loja: r.qtd_loja > 0 ? r.qtd_loja : null, un_loja: r.qtd_loja > 0 ? (r.un_loja || (PG_lojaInfo(r) || {}).un || null) : null, qtd_loja2: r.qtd_loja2 > 0 ? r.qtd_loja2 : null, un_loja2: r.qtd_loja2 > 0 ? (r.un_loja2 || ((PG_lojasInfo(r)[1]) || {}).un || null) : null };
     });
     if(novas.length){
       const ins = await client.from('programacao_producao').insert(novas);
@@ -28784,7 +28832,7 @@ function PG_paginaTodos(doc, titulo, nome, tipo, pag){
     body.push([{ content: s, colSpan: tipo === 'embalagem' ? 5 : 7, styles: { fillColor: [34,34,34], textColor: [255,255,255], fontStyle: 'bold', fontSize: 8, cellPadding: 1.2 } }]);
     l.forEach(r => {
       nLinhas++;
-      body.push(tipo === 'embalagem' ? [r.codigo || '', r.produto, PG_qtdTxt(r), r.qtd_loja > 0 ? PG_fmt(r.qtd_loja) + ' ' + (r.un_loja || '') : '-', r.destino || '-'] : [r.codigo || '', r.produto, PG_qtdTxt(r), '', '', ':', ':']);
+      body.push(tipo === 'embalagem' ? [r.codigo || '', r.produto, PG_qtdTxt(r), PG_lojaTxt(r) || '-', r.destino || '-'] : [r.codigo || '', r.produto, PG_qtdTxt(r), '', '', ':', ':']);
     });
   });
   const disp = 297 - 38 - 16; const cell = Math.max(3.6, Math.min(7.5, disp / (body.length + 3)));
@@ -28831,7 +28879,7 @@ function PG_paginaResumo(doc, pag){
   PG_SETORES.forEach(s => {
     const l = PG_porSetor(s); if(!l.length) return;
     body.push([{ content: s, colSpan: 3, styles: { fillColor: [34,34,34], textColor: [255,255,255], fontStyle: 'bold', fontSize: 7.4, cellPadding: 1 } }]);
-    l.forEach(r => body.push([r.produto, PG_qtdTxt(r), [r.maquina, r.observacao ? 'OBS: ' + r.observacao : '', r.destino, r.qtd_loja > 0 ? 'Embalar loja: ' + PG_fmt(r.qtd_loja) + ' ' + (r.un_loja || '') : ''].filter(Boolean).join(' · ') || '-']));
+    l.forEach(r => body.push([r.produto, PG_qtdTxt(r), [r.maquina, r.observacao ? 'OBS: ' + r.observacao : '', r.destino, PG_lojaTxt(r) ? 'Embalar loja: ' + PG_lojaTxt(r) : ''].filter(Boolean).join(' · ') || '-']));
   });
   const disp = 297 - (y + 3) - 18; const cell = Math.max(3.4, Math.min(6.2, disp / (body.length + 2)));
   const fs = cell < 4.4 ? 5.6 : (cell < 5 ? 6.2 : 7);
