@@ -28495,7 +28495,7 @@ function PG_render(){
         '<td id="pgProj' + i + '">' + PG_projHtml(r) + '</td>' +
         '<td style="width:130px" id="pgTempo' + i + '"></td>' +
         '<td style="width:150px"><input value="' + PG_esc(r.maquina) + '" oninput="PG_set(' + i + ',\'maquina\',this.value)" placeholder="Máquina / turno"></td>' +
-        '<td style="width:210px"><input value="' + PG_esc(r.destino) + '" oninput="PG_set(' + i + ',\'destino\',this.value)" placeholder="Destino (Embalagem)"></td>' +
+        '<td style="width:210px"><input id="pgDest' + i + '" value="' + PG_esc(r.destino) + '" oninput="PG_set(' + i + ',\'destino\',this.value)" placeholder="' + PG_esc(PG_destinoAuto(r) || 'Destino (Embalagem)') + '"></td>' +
         '<td style="width:170px"><input value="' + PG_esc(r.observacao) + '" oninput="PG_set(' + i + ',\'observacao\',this.value)" placeholder="Observação"></td>' +
         '<td style="width:30px"><button class="pg-x" title="Remover" onclick="PG_remover(' + i + ')">✕</button></td></tr>';
     }).join('');
@@ -28506,11 +28506,20 @@ function PG_render(){
   PG_atualizaTempos();
 }
 
+// Destino final: o que foi digitado + a divisão loja/fábrica montada a partir do "Embalar p/ loja" (não precisa escrever a quantidade)
+function PG_destinoAuto(r){
+  const q = Number(r.qtd_loja) || 0;
+  if(!(q > 0)) return '';
+  const un = r.un_loja || (PG_lojaInfo(r) || {}).un || '';
+  return 'LOJA ' + PG_fmt(q) + ' ' + un + ' · resto FÁBRICA';
+}
+function PG_destinoFinal(r){ return [PG_destinoAuto(r), r.destino].filter(Boolean).join(' | '); }
 function PG_setLoja(i, v){
   const r = PG_rows[i], info = PG_lojaInfo(r);
   r.qtd_loja = v === '' ? null : Number(v); r.un_loja = info ? info.un : null;
   PG_marcarSujo();
   const c = document.getElementById('pgProj' + i); if(c) c.innerHTML = PG_projHtml(r);
+  const d = document.getElementById('pgDest' + i); if(d) d.placeholder = PG_destinoAuto(r) || 'Destino (Embalagem)';
 }
 function PG_set(i, campo, valor){
   PG_rows[i][campo] = valor; PG_marcarSujo();
@@ -28585,7 +28594,7 @@ function PG_sincronizarOP(data, itens){
   if(data < PG_hojeMais(0)) return;
   const un = { 'Massa':'MASSA','Carrinhos':'CARRINHO','Unid':'UNIDADE','Caixas':'CAIXA','Kg':'KG','Blocos':'BLOCOS' };
   opData = { data, arquivo: 'Programação BK360', ts: new Date().toISOString(), itens: itens.filter(r => r.codigo || r.produto).map(r => ({
-    cod: r.codigo || '', setor: r.setor, desc: r.produto, qtd: r.quantidade || 0, un: un[r.unidade] || String(r.unidade || '').toUpperCase(), maq: r.maquina || '', destino: r.destino || ''
+    cod: r.codigo || '', setor: r.setor, desc: r.produto, qtd: r.quantidade || 0, un: un[r.unidade] || String(r.unidade || '').toUpperCase(), maq: r.maquina || '', destino: PG_destinoFinal(r)
   })) };
   opIndexar(); opSalvar(); opAtualizarStatus();
   if(typeof renderAlerts === 'function') try{ renderAlerts(); }catch(e){}
@@ -28657,7 +28666,7 @@ function PG_folhaSetor(doc, setor, nomeTela, modo, pag){
   const head = ['Cód.','Produto', modo === 'destino' ? 'Destino' : 'Máquina / turno', 'Planejado','Produzido','Pessoas','Início','Fim'];
   if(rec) head.push('Recheio (cx)');
   const body = linhas.map(r => {
-    const mq = modo === 'destino' ? (r.destino || '-') : ((r.maquina || '-') + (r.observacao ? '\nOBS: ' + r.observacao : ''));
+    const mq = modo === 'destino' ? (PG_destinoFinal(r) || '-') : ((r.maquina || '-') + (r.observacao ? '\nOBS: ' + r.observacao : ''));
     const l = [r.codigo || '', r.produto, mq, PG_qtdTxt(r), '', '', ':', ':'];
     if(rec) l.push('');
     return l;
