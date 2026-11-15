@@ -28380,8 +28380,12 @@ function PG_horas(ini, fim){
   return h > 0 ? h : 0;
 }
 function PG_hhmm(h){ const t = Math.round(h * 60); return String(Math.floor(t / 60)).padStart(2,'0') + ':' + String(t % 60).padStart(2,'0'); }
+// Nome sem a embalagem ("- C/2,5KG", "- CX C/12 UNID") para ligar apontamentos antigos, sem código, ao produto do catálogo
+function PG_nomeBase(d){ return histNorm(d).replace(/\s*-?\s*(cx|fd|pct)?\s*c\/.*$/, '').replace(/\s+/g, ' ').trim(); }
 async function PG_carregarTempos(){
   PG_taxas = {};
+  const porNome = {};
+  PG_catalog.forEach(c => { const b = PG_nomeBase(c.descricao); porNome[b] = porNome[b] === undefined ? normCod(String(c.codigo).trim()) : null; });   // null = nome ambíguo
   try{
     const client = getSupabaseClient();
     const desde = PG_hojeMais(-90);
@@ -28394,8 +28398,9 @@ async function PG_carregarTempos(){
         if(!(h > 0)) return;
         const un = PG_unKey(r.unidade);
         const chaves = [];
-        if(r.codigo_produto) chaves.push(normCod(String(r.codigo_produto).trim()) + '|' + un);
-        if(r.produto) chaves.push('p:' + histNorm(r.produto) + '|' + un);
+        const cod = r.codigo_produto ? normCod(String(r.codigo_produto).trim()) : (r.produto ? porNome[PG_nomeBase(r.produto)] : '');
+        if(cod) chaves.push(cod + '|' + un);
+        else if(r.produto) chaves.push('p:' + histNorm(r.produto) + '|' + un);
         chaves.forEach(k => { const t = PG_taxas[k] || (PG_taxas[k] = { qtd: 0, horas: 0, n: 0 }); t.qtd += Number(r.producao_real) || 0; t.horas += h; t.n++; });
       });
       if(!data || data.length < 1000) break;
