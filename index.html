@@ -28185,6 +28185,7 @@ async function PG_init(){
   }catch(e){ PG_catalog = []; }
   await PG_carregarEstoque();
   await PG_carregarTempos();
+  await PG_carregarMapa();
   if(typeof FALTA_carregarMapa === 'function' && !Object.keys(FALTA.mapa).length) await FALTA_carregarMapa();
   document.getElementById('pgDatalist').innerHTML = PG_catalog.map(p => '<option value="' + PG_esc(p.descricao) + '">' + PG_esc(p.codigo) + '</option>').join('');
   await PG_carregar();
@@ -28222,20 +28223,61 @@ function PG_estoqueTxt(r){
 // Projeção do estoque após a produção: Estoque real (Fábrica), Estoque Seg. e Projetado (real + quantidade programada,
 // convertida para a unidade do estoque pelo rendimento do Mapa — a mesma conversão da coluna "Em produção" do PCP).
 function PG_n0(n){ return Number(n).toLocaleString('pt-BR', { maximumFractionDigits: 0 }); }
+// Mapa de Rendimentos (codigo → etapas por nome) para converter caixa de produção em caixa de 5 kg / pacote
+let PG_mapa = {};
+async function PG_carregarMapa(){
+  PG_mapa = {};
+  try{
+    const { data, error } = await getSupabaseClient().from('mapa_rendimentos').select('codigo, etapas');
+    if(error || !data) return;
+    data.forEach(m => {
+      const o = {};
+      (Array.isArray(m.etapas) ? m.etapas : []).forEach(e => { if(e && Number(e.qtd) > 0) o[e.nome] = Number(e.qtd); });
+      PG_mapa[normCod(String(m.codigo).trim())] = o;
+    });
+  }catch(e){ PG_mapa = {}; }
+}
 function PG_projecao(r){
   if(!r.codigo) return null;
   const e = PG_estoque[normCod(String(r.codigo).trim())];
-  const f = e && e.FABRICA;
-  if(!f) return null;
-  const seg = (typeof calculateSafetyStock === 'function') ? calculateSafetyStock({ codigo: r.codigo, tipo: 'FABRICA' }) : null;
+  // Fábrica; produtos só de loja (ex.: mini pastel nata) usam o estoque da loja
+  const tipo = e && e.FABRICA ? 'FABRICA' : (e && e.LOJA ? 'LOJA' : '');
+  if(!tipo) return null;
+  const f = e[tipo];
+  let seg = (typeof calculateSafetyStock === 'function') ? calculateSafetyStock({ codigo: r.codigo, tipo }) : null;
   const q = Number(r.quantidade) || 0;
-  let add = 0, conv = true;
-  if(q > 0){
-    const cat = PG_catalog.find(p => normCod(String(p.codigo)) === normCod(String(r.codigo)));
-    const c = FALTA_opQtd({ codigo: r.codigo, descricao: (cat && cat.descricao) || r.produto, un: f.un, op: { qtd: q, un: r.unidade } });
-    if(c.conv) add = c.q; else conv = false;
+  const cat = PG_catalog.find(p => normCod(String(p.codigo)) === normCod(String(r.codigo)));
+  const desc = (cat && cat.descricao) || r.produto;
+  const unEst = String(f.un || '').toUpperCase();
+  const unQ = histNorm(r.unidade);
+  const mp = PG_mapa[normCod(String(r.codigo).trim())] || {};
+  const g = Number((String(desc).match(/(\d+)\s*G\b/i) || [])[1]) || 0;
+  let real = f.estoque, un = String(f.un || '').toLowerCase(), add = 0, conv = true;
+  const pesoCx = (r.setor === 'SALGADO' && unEst === 'KG') ? FALTA_pesoPacote(desc) : 0;
+  const pctG = Number((String(desc).match(/PCT\s*(\d+)\s*G/i) || [])[1]) || 0;
+  if(pesoCx > 0){
+    // Salgado fábrica: estoque em kg → caixas de 5 kg (peso no nome). Caixa de produção = Mapa ("Caixas" = caixas de 5 kg por caixa de produção)
+    real = f.estoque / pesoCx; un = 'cx';
+    if(seg != null) seg = seg / pesoCx;
+    if(q > 0){
+      if(/^caix/.test(unQ)) add = mp['Caixas'] ? q * mp['Caixas'] : (mp['Unidades'] && g ? q * mp['Unidades'] * g / 1000 / pesoCx : 0);
+      else if(/^kg/.test(unQ)) add = q / pesoCx;
+      else if(/^un/.test(unQ) && g) add = q * g / 1000 / pesoCx;
+      if(!add) conv = false;
+    }
+  }else if(r.setor === 'SALGADO' && unEst === 'PCT' && q > 0){
+    // Salgado loja (mini pastel nata): estoque em pacotes. Caixa de produção = Mapa ("Pacotes" por caixa de produção)
+    if(/^caix/.test(unQ) && mp['Pacotes']) add = q * mp['Pacotes'];
+    else if(/^un/.test(unQ) && g && pctG) add = q * g / pctG;
+    if(!add) conv = false;
+  }else if(q > 0){
+    if(/^caix/.test(unQ) && /^(CX|CAIXA)/.test(unEst)) add = q;
+    else{
+      const c = FALTA_opQtd({ codigo: r.codigo, descricao: desc, un: f.un, op: { qtd: q, un: r.unidade } });
+      if(c.conv) add = c.q; else conv = false;
+    }
   }
-  return { real: f.estoque, seg, proj: f.estoque + add, un: String(f.un || '').toLowerCase(), conv, q };
+  return { real, seg, proj: real + add, un, conv, q };
 }
 function PG_projHtml(r){
   const p = PG_projecao(r);
