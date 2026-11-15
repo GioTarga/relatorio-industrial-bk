@@ -28105,15 +28105,21 @@ document.addEventListener('DOMContentLoaded', ()=>{
 #pcpProgView .pg-est{font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap}
 #pcpProgView .pg-est.vazio{color:var(--ink-soft);font-weight:500}
 #pcpProgView .pg-est.zero{color:var(--red)}
-#pcpProgView .pg-proj{display:flex;flex-direction:column;gap:3px;min-width:135px;flex:1 1 135px}
-#pcpProgView .pg-proj-l{display:grid;grid-template-columns:28px 1fr 66px;align-items:center;gap:6px;font-size:10px;font-weight:700;color:var(--ink-soft)}
-#pcpProgView .pg-proj-t{height:7px;background:var(--cream);border-radius:4px;overflow:hidden}
-#pcpProgView .pg-proj-b{display:block;height:100%;border-radius:4px}
-#pcpProgView .pg-proj-b.real{background:var(--ink-soft)}
-#pcpProgView .pg-proj-b.seg{background:var(--warn)}
-#pcpProgView .pg-proj-b.ok{background:var(--good)}
-#pcpProgView .pg-proj-b.abaixo{background:var(--red)}
-#pcpProgView .pg-proj-v{text-align:right;color:var(--ink);white-space:nowrap}
+#pcpProgView .pg-proj{display:flex;flex-direction:column;gap:2px;min-width:0}
+#pcpProgView .pg-pb{display:grid;grid-template-columns:62px minmax(40px,1fr) auto;align-items:center;gap:6px;font-size:10px;font-weight:700;color:var(--ink-soft)}
+#pcpProgView .pg-pb-l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#pcpProgView .pg-pb-t{position:relative;display:block;height:10px;background:var(--cream);border-radius:5px;overflow:hidden}
+#pcpProgView .pg-pb-r,#pcpProgView .pg-pb-d{position:absolute;top:0;bottom:0}
+#pcpProgView .pg-pb-r{left:0;background:var(--ink-soft);opacity:.7}
+#pcpProgView .pg-pb-d.ok{background:var(--good)}
+#pcpProgView .pg-pb-d.abaixo{background:var(--red)}
+#pcpProgView .pg-pb-d.neg{background:#d9b3b3}
+#pcpProgView .pg-pb-s{position:absolute;top:0;bottom:0;width:2px;background:var(--warn);z-index:1}
+#pcpProgView .pg-pb-v{font-size:11px;font-weight:800;white-space:nowrap;color:var(--ink);font-variant-numeric:tabular-nums}
+#pcpProgView .pg-pb-v.ok{color:var(--good)}
+#pcpProgView .pg-pb-v.abaixo{color:var(--red)}
+#pcpProgView tr.pg-st-ruim td:first-child{box-shadow:inset 4px 0 0 var(--red)}
+#pcpProgView tr.pg-st-ok td:first-child{box-shadow:inset 4px 0 0 var(--good)}
 #pcpProgView .pg-tempo{display:flex;flex-direction:column;gap:2px;font-size:11px}
 #pcpProgView .pg-tempo b{font-size:13px;font-weight:800;color:var(--ink)}
 #pcpProgView .pg-tempo span{font-weight:600;color:var(--ink-soft);font-size:10px}
@@ -28123,14 +28129,14 @@ document.addEventListener('DOMContentLoaded', ()=>{
 #pcpProgView .pg-pnome{font-size:12px;font-weight:700;line-height:1.25;color:var(--ink);white-space:normal;word-break:break-word}
 #pcpProgView .pg-pnome:not(:empty){margin-bottom:4px}
 #pcpProgView .pg-maq select,#pcpProgView .pg-maq input{width:100%}
-#pcpProgView .pg-maq-i{display:flex;flex-direction:column;gap:2px;margin-top:6px;font-size:10px;color:var(--ink-soft)}
-#pcpProgView .pg-maq-l{display:flex;justify-content:space-between;gap:6px;font-weight:600}
-#pcpProgView .pg-maq-l b{color:var(--ink);font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
-#pcpProgView .pg-maq-t{display:block;height:6px;background:var(--cream);border-radius:3px;overflow:hidden}
+#pcpProgView .pg-maq-i{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:10px;color:var(--ink-soft);font-weight:700}
+#pcpProgView .pg-maq-t{flex:1;display:block;height:6px;background:var(--cream);border-radius:3px;overflow:hidden;min-width:30px}
 #pcpProgView .pg-maq-f{display:block;height:100%;background:var(--red-dark);border-radius:3px}
 #pcpProgView .pg-maq-f.ok{background:#2f7d4f}
-#pcpProgView .pg-maq-c{display:block;height:100%;width:100%;background:var(--ink-soft);opacity:.4;border-radius:3px}
-#pcpProgView .pg-maq-n{font-weight:700;color:var(--ink)}
+#pcpProgView .pg-maq-n{white-space:nowrap;color:var(--ink)}
+#pcpProgView .pg-obs-b{background:none;border:1px dashed var(--line);border-radius:6px;color:var(--ink-soft);font-size:10px;font-weight:700;padding:2px 8px;cursor:pointer}
+#pcpProgView .pg-obs-b:hover{border-color:var(--red);color:var(--red)}
+#pcpProgView .pg-dauto{font-size:10px;font-weight:700;color:var(--ink);margin-bottom:3px;line-height:1.25}
 #pcpProgView .pg-setor-h .pg-tt{margin-left:14px;display:inline-flex;align-items:center;gap:8px;font-weight:700;color:#fff;letter-spacing:.3px;text-transform:none}
 #pcpProgView .pg-oc-t{display:inline-flex;width:150px;height:9px;background:rgba(255,255,255,.25);border-radius:5px;overflow:hidden}
 #pcpProgView .pg-oc-b{display:block;height:100%;background:#fff}
@@ -28139,8 +28145,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
 #pcpProgView .pg-oc-k.s{background:var(--warn)}
 #pcpProgView .pg-oc.over .pg-oc-p{color:var(--warn)}
 #pcpProgView .pg-oc{display:inline-flex;align-items:center;gap:8px}
-#pcpProgView .pg-duo{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-start}
-#pcpProgView .pg-duo .pg-proj+.pg-proj{padding-left:12px;border-left:1px solid var(--line)}
+#pcpProgView .pg-duo{display:flex;flex-direction:column;gap:4px}
 #pcpProgView .pg-proj-nota{font-size:10px;color:var(--ink-soft);font-weight:500}
 #pcpProgView .pg-prio{display:none;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);margin-bottom:14px;overflow:hidden}
 #pcpProgView .pg-prio.open{display:block}
@@ -28360,17 +28365,27 @@ function PG_pecasLoja(cod, un){
   const d = (PG_catalog.find(p => normCod(String(p.codigo)) === normCod(String(cod))) || {}).descricao || '';
   return Number((d.match(/(\d+)\s*X\s*\d+\s*G/i) || d.match(/C\/\s*(\d+)\s*UN/i) || [])[1]) || 0;
 }
+// Sinalizador da linha: 0 sem dado, 1 ok, 2 algum bloco projetado abaixo do estoque de segurança (zerado em PG_projHtml)
+let PG_flag = 0;
+// Uma barra por lado: cinza = estoque atual, cor = produção programada, risco dourado = estoque de segurança
 function PG_projBloco(p, rotulo){
-  const max = Math.max(p.real, p.seg || 0, p.proj, 1);
-  const linha = (rot, val, cls, txt) => '<div class="pg-proj-l"><span>' + rot + '</span><span class="pg-proj-t"><span class="pg-proj-b ' + cls + '" style="width:' + Math.max(0, val / max * 100).toFixed(1) + '%"></span></span><span class="pg-proj-v">' + txt + '</span></div>';
-  const abaixo = p.seg != null && p.proj < p.seg;
+  const max = Math.max(p.real, p.seg || 0, p.proj, 1) * 1.04;
+  const pc = v => (Math.max(0, v) / max * 100).toFixed(1);
+  const abaixo = p.proj < 0 || (p.seg != null && p.proj < p.seg);
+  PG_flag = Math.max(PG_flag, abaixo ? 2 : 1);
+  const cls = abaixo ? 'abaixo' : 'ok';
   const u = ' ' + PG_esc(p.un);
+  const base = Math.min(p.real, Math.max(p.proj, 0));
+  const dif = p.proj - p.real;
+  const delta = Math.abs(dif) > 1e-9
+    ? '<span class="pg-pb-d ' + (dif > 0 ? cls : 'neg') + '" style="left:' + pc(Math.min(p.real, p.proj)) + '%;width:' + (pc(Math.max(p.real, Math.max(p.proj, 0))) - pc(Math.min(p.real, Math.max(p.proj, 0)))).toFixed(1) + '%"></span>' : '';
+  const seg = p.seg ? '<span class="pg-pb-s" style="left:' + pc(p.seg) + '%"></span>' : '';
+  const txt = Math.abs(dif) > 1e-9 ? PG_n0(p.real) + ' → ' + PG_n0(p.proj) + u : PG_n0(p.real) + u;
+  const tip = 'Real ' + PG_n0(p.real) + ' · Seg. ' + (p.seg == null ? 's/ venda' : PG_n0(p.seg)) + ' · Projetado ' + PG_n0(p.proj) + u + ' (cinza = estoque atual, cor = produção, risco = segurança)';
   const nota = (p.q > 0 && !p.conv ? '<div class="pg-proj-nota">sem rendimento no Mapa: projetado = real</div>' : '') + (p.nota ? '<div class="pg-proj-nota">' + PG_esc(p.nota) + '</div>' : '');
-  return '<div class="pg-proj" title="Real ' + PG_n0(p.real) + ' · Seg. ' + (p.seg == null ? 's/ venda' : PG_n0(p.seg)) + ' · Projetado ' + PG_n0(p.proj) + u + '">' +
-    (rotulo ? '<div class="pg-proj-nota"><b>' + rotulo + '</b></div>' : '') +
-    linha('Real', p.real, 'real', PG_n0(p.real) + u) +
-    linha('Seg.', p.seg || 0, 'seg', p.seg == null ? 's/ venda' : PG_n0(p.seg) + u) +
-    linha('Proj.', p.proj, abaixo ? 'abaixo' : 'ok', PG_n0(p.proj) + u) + nota + '</div>';
+  return '<div class="pg-proj" title="' + tip + '"><div class="pg-pb"><span class="pg-pb-l" title="' + PG_esc(rotulo || '') + '">' + PG_esc(rotulo || '') + '</span>' +
+    '<span class="pg-pb-t"><span class="pg-pb-r" style="width:' + pc(base) + '%"></span>' + delta + seg + '</span>' +
+    '<span class="pg-pb-v ' + cls + '">' + txt + '</span></div>' + nota + '</div>';
 }
 // Estoque de fábrica e de loja do produto (próprio código ou o par Forno/Nata). Devolve { FABRICA:{cod,un}, LOJA:{cod,un} }
 function PG_lados(r){
@@ -28436,6 +28451,7 @@ function PG_lojaEmFabrica(r, l, k){
   return q * gramas / 1000 / pesoCx;
 }
 function PG_projHtml(r){
+  PG_flag = 0;
   const l = PG_lados(r);
   if(!l.FABRICA && !l.LOJA) return '<span class="pg-est vazio">sem estoque</span>';
   const cod = PG_codEf(r);
@@ -28574,25 +28590,15 @@ function PG_maqInfoHtml(r){
   const m = PG_maqs.find(x => PG_maqKey(x.identificacao) === mk);
   const capOk = m && /^un/i.test(String(m.capacidade_unidade || '')) && Number(m.capacidade_nominal) > 0 && pecas > 0;
   const cap = capOk ? Number(m.capacidade_nominal) : 0;
-  if(!t || !(t.qtd > 0) || !(t.horas > 0)){
-    return '<div class="pg-maq-i"><span>Sem histórico deste produto nesta máquina</span>' + (cap ? '<span class="pg-maq-l"><span>Capacidade</span><b>' + PG_fmt(cap) + ' un/h</b></span>' : '') + '</div>';
-  }
+  const lin = (txt, tip, pct) => '<div class="pg-maq-i" title="' + PG_esc(tip) + '">' + (pct == null ? '' : '<span class="pg-maq-t"><span class="pg-maq-f' + (pct >= 85 ? ' ok' : '') + '" style="width:' + Math.min(pct, 100).toFixed(1) + '%"></span></span>') + '<span class="pg-maq-n">' + txt + '</span></div>';
+  if(!t || !(t.qtd > 0) || !(t.horas > 0)) return lin('sem histórico aqui', 'Sem produção deste produto nesta máquina nos últimos 90 dias.' + (cap ? ' Capacidade: ' + PG_fmt(cap) + ' un/h.' : ''));
   const taxa = t.qtd / t.horas;
-  if(!pecas){
-    return '<div class="pg-maq-i"><span class="pg-maq-l"><span>Ritmo médio</span><b>' + PG_fmt(Math.round(taxa * 10) / 10) + ' ' + PG_un(2, r.unidade) + '/h</b></span><span>' + t.n + ' produções · sem conversão para un/h</span></div>';
-  }
+  const base = 'Ritmo = produção real ÷ horas (início a fim) desta máquina neste produto, últimos 90 dias · ' + t.n + ' produções.';
+  if(!pecas) return lin('ritmo ' + PG_fmt(Math.round(taxa * 10) / 10) + ' ' + PG_un(2, r.unidade) + '/h', base + ' Sem conversão para un/h.');
   const ritmo = taxa * pecas;
-  if(!cap){
-    return '<div class="pg-maq-i"><span class="pg-maq-l"><span>Ritmo médio</span><b>' + PG_fmt(Math.round(ritmo)) + ' un/h</b></span><span>' + t.n + ' produções · capacidade não cadastrada</span></div>';
-  }
+  if(!cap) return lin('ritmo ' + PG_fmt(Math.round(ritmo)) + ' un/h · sem capacidade cadastrada', base);
   const pct = ritmo / cap * 100;
-  return '<div class="pg-maq-i" title="Ritmo = produção real ÷ horas (início a fim) desta máquina neste produto, últimos 90 dias. Capacidade nominal do cadastro de máquinas.">' +
-    '<span class="pg-maq-l"><span>Ritmo médio</span><b>' + PG_fmt(Math.round(ritmo)) + ' un/h</b></span>' +
-    '<span class="pg-maq-t"><span class="pg-maq-f' + (pct >= 85 ? ' ok' : '') + '" style="width:' + Math.min(pct, 100).toFixed(1) + '%"></span></span>' +
-    '<span class="pg-maq-l"><span>Capacidade</span><b>' + PG_fmt(cap) + ' un/h</b></span>' +
-    '<span class="pg-maq-t"><span class="pg-maq-c"></span></span>' +
-    '<span class="pg-maq-n">' + Math.round(pct) + '% da capacidade · faltam ' + PG_fmt(Math.max(0, Math.round(cap - ritmo))) + ' un/h</span>' +
-    '<span>' + t.n + ' produções</span></div>';
+  return lin(Math.round(pct) + '% da capacidade', base + ' Ritmo médio ' + PG_fmt(Math.round(ritmo)) + ' un/h · capacidade ' + PG_fmt(cap) + ' un/h · faltam ' + PG_fmt(Math.max(0, Math.round(cap - ritmo))) + ' un/h.', pct);
 }
 // Giro Dia: pães redondos (bilha, hambúrguer, sonho, superfofo) rodam na Sotorriva; pão de queijo e chipa na GA Pão de Queijo; o resto na GA.
 // Cada troca de máquina entre itens consecutivos da lista soma PG_SETUP_H de setup (o primeiro item não leva setup).
@@ -28669,13 +28675,15 @@ function PG_render(){
     const linhas = idxs.map(i => {
       const r = PG_rows[i];
       const lojas = PG_lojasInfo(r).map(x => (x.rot ? '<div class="pg-est vazio">' + PG_esc(x.rot) + '</div>' : '') + '<input type="number" min="0" step="any" value="' + (PG_qLoja(r, x.k) || '') + '" title="Quantidade a embalar para a loja (' + PG_esc(x.un) + ')" oninput="PG_setLoja(' + i + ',this.value,' + x.k + ')" placeholder="' + PG_esc(x.un) + '">').join('');
-      return '<tr>' +
+      const ph = PG_projHtml(r);
+      const st = PG_flag === 2 ? 'pg-st-ruim' : PG_flag === 1 ? 'pg-st-ok' : '';
+      return '<tr class="' + st + '">' +
         '<td class="pg-prodc"><span class="pg-cod' + (r.codigo ? '' : ' pend') + '">' + PG_esc(r.codigo || 'pendente') + '</span><div class="pg-pnome">' + PG_esc(r.produto) + '</div><input list="pgDatalist" value="" onchange="PG_prod(' + i + ',this.value)" placeholder="' + (r.produto ? 'Trocar produto…' : 'Produto (nome ou código)') + '"><div class="pg-estl">' + PG_estoqueTxt(r) + '</div></td>' +
         '<td class="pg-qtdc"><div class="pg-qrow"><input type="number" min="0" step="any" value="' + (r.quantidade == null ? '' : r.quantidade) + '" oninput="PG_set(' + i + ',\'quantidade\',this.value===\'\'?null:Number(this.value))"><select onchange="PG_set(' + i + ',\'unidade\',this.value)">' + PG_UNIDADES.map(u => '<option' + (u === r.unidade ? ' selected' : '') + '>' + u + '</option>').join('') + '</select></div>' + (PG_lojasInfo(r).length ? '<div class="pg-est vazio pg-ll">Embalar p/ loja</div>' + lojas : '') + '</td>' +
-        '<td id="pgProj' + i + '">' + PG_projHtml(r) + '</td>' +
+        '<td id="pgProj' + i + '">' + ph + '</td>' +
         '<td id="pgTempo' + i + '"></td>' +
         '<td class="pg-maq">' + PG_maqCampo(i) + '<div id="pgMaq' + i + '">' + PG_maqInfoHtml(r) + '</div></td>' +
-        '<td class="pg-dobs"><input id="pgDest' + i + '" value="' + PG_esc(r.destino) + '" oninput="PG_set(' + i + ',\'destino\',this.value)" placeholder="' + PG_esc(PG_destinoAuto(r) || 'Destino (Embalagem)') + '"><input value="' + PG_esc(r.observacao) + '" oninput="PG_set(' + i + ',\'observacao\',this.value)" placeholder="Observação"></td>' +
+        '<td class="pg-dobs" id="pgDobs' + i + '">' + PG_dobsHtml(i) + '</td>' +
         '<td><button class="pg-x" title="Remover" onclick="PG_remover(' + i + ')">✕</button></td></tr>';
     }).join('');
     return '<div class="pg-setor"><div class="pg-setor-h">' + PG_esc(setor) + '<span>' + idxs.length + ' itens<span class="pg-tt" id="pgTT' + si + '"></span></span></div>' +
@@ -28691,19 +28699,39 @@ function PG_destinoAuto(r){
   return t ? t + ' · resto FÁBRICA' : '';
 }
 function PG_destinoFinal(r){ return [PG_destinoAuto(r), r.destino].filter(Boolean).join(' | '); }
+// Destino/Observação ficam escondidos atrás de "+ obs" até serem usados; o texto automático do destino aparece sempre
+const PG_obsAberto = new WeakSet();
+function PG_dobsHtml(i){
+  const r = PG_rows[i], auto = PG_destinoAuto(r);
+  const aberto = PG_obsAberto.has(r) || r.destino || r.observacao;
+  return '<div class="pg-dauto" id="pgDestAuto' + i + '">' + PG_esc(auto) + '</div>' + (aberto
+    ? '<input id="pgDest' + i + '" value="' + PG_esc(r.destino) + '" oninput="PG_set(' + i + ',\'destino\',this.value)" placeholder="Destino (Embalagem)"><input value="' + PG_esc(r.observacao) + '" oninput="PG_set(' + i + ',\'observacao\',this.value)" placeholder="Observação">'
+    : '<button class="pg-obs-b" onclick="PG_abreObs(' + i + ')">+ obs</button>');
+}
+function PG_abreObs(i){
+  PG_obsAberto.add(PG_rows[i]);
+  const c = document.getElementById('pgDobs' + i); if(c) c.innerHTML = PG_dobsHtml(i);
+  const d = document.getElementById('pgDest' + i); if(d) d.focus();
+}
+// Reescreve a projeção da linha e a faixa de cor da esquerda
+function PG_atualizaProj(i){
+  const c = document.getElementById('pgProj' + i); if(!c) return;
+  c.innerHTML = PG_projHtml(PG_rows[i]);
+  c.parentNode.className = PG_flag === 2 ? 'pg-st-ruim' : PG_flag === 1 ? 'pg-st-ok' : '';
+}
 function PG_setLoja(i, v, k){
   k = k || 1;
   const r = PG_rows[i], info = PG_lojasInfo(r)[k - 1];
   const q = v === '' ? null : Number(v), un = info ? info.un : null;
   if(k === 2){ r.qtd_loja2 = q; r.un_loja2 = un; } else { r.qtd_loja = q; r.un_loja = un; }
   PG_marcarSujo();
-  const c = document.getElementById('pgProj' + i); if(c) c.innerHTML = PG_projHtml(r);
-  const d = document.getElementById('pgDest' + i); if(d) d.placeholder = PG_destinoAuto(r) || 'Destino (Embalagem)';
+  PG_atualizaProj(i);
+  const d = document.getElementById('pgDestAuto' + i); if(d) d.textContent = PG_destinoAuto(r);
 }
 function PG_set(i, campo, valor){
   PG_rows[i][campo] = valor; PG_marcarSujo();
   if(campo === 'maquina' || campo === 'unidade'){ const m = document.getElementById('pgMaq' + i); if(m) m.innerHTML = PG_maqInfoHtml(PG_rows[i]); if(campo === 'maquina') PG_atualizaTempos(); }
-  if(campo === 'quantidade' || campo === 'unidade'){ const c = document.getElementById('pgProj' + i); if(c) c.innerHTML = PG_projHtml(PG_rows[i]); PG_atualizaTempos(); }
+  if(campo === 'quantidade' || campo === 'unidade'){ PG_atualizaProj(i); PG_atualizaTempos(); }
 }
 function PG_add(setor){
   const ordem = PG_rows.filter(r => r.setor === setor).length;
