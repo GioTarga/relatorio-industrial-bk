@@ -28236,8 +28236,9 @@ function PG_estoqueTxt(r){
   if(!e) return '<span class="pg-est vazio">sem estoque</span>';
   const f = e.FABRICA, l = e.LOJA;
   const partes = [];
-  if(f) partes.push(PG_cxFab(cod) > 0 && String(f.un).toUpperCase() === 'UN' ? 'Fáb ' + PG_n0(f.estoque / PG_cxFab(cod)) + ' cx' : 'Fáb ' + PG_fmt(f.estoque) + ' ' + String(f.un).toLowerCase());
-  if(l) partes.push('Loja ' + PG_fmt(l.estoque) + ' ' + String(l.un).toLowerCase());
+  if(f) partes.push(PG_cxFab(PG_codEf(r)) > 0 && String(f.un).toUpperCase() === 'UN' ? 'Fáb ' + PG_n0(f.estoque / PG_cxFab(PG_codEf(r))) + ' cx' : 'Fáb ' + PG_fmt(f.estoque) + ' ' + String(f.un).toLowerCase());
+  const codL = (PG_estoque[cod] && PG_estoque[cod].LOJA) ? cod : PG_PARES[cod], cxL = PG_cxLojaUn(codL);
+  if(l) partes.push(cxL > 0 && String(l.un).toUpperCase() === 'UN' ? 'Loja ' + PG_n0(l.estoque / cxL) + ' cx' : 'Loja ' + PG_fmt(l.estoque) + ' ' + String(l.un).toLowerCase());
   const zero = (!f || f.estoque <= 0) && (!l || l.estoque <= 0);
   return '<span class="pg-est' + (zero ? ' zero' : '') + '" title="Posição de ' + PG_dataBR(PG_estoqueData) + '">' + partes.join(' · ') + '</span>';
 }
@@ -28313,6 +28314,8 @@ function PG_projecao(r, opt){
   }
   const nCx = (tipo === 'LOJA' && unEst === 'PCT') ? PG_pctPorCx(codR) : 0;
   if(nCx > 0){ real /= nCx; add /= nCx; if(seg != null) seg /= nCx; un = 'cx'; }   // extra (Embalar p/ loja) já vem em caixas
+  const cxL = (tipo === 'LOJA' && unEst === 'UN') ? PG_cxLojaUn(codR) : 0;
+  if(cxL > 0){ real /= cxL; add /= cxL; if(seg != null) seg /= cxL; un = 'cx'; }
   let ex = Number(opt.extra) || 0, mn = Number(opt.menos) || 0;
   const cxF = (tipo === 'FABRICA' && unEst === 'UN') ? PG_cxFab(codR) : 0;
   if(cxF > 0){ real /= cxF; add /= cxF; ex /= cxF; mn /= cxF; if(seg != null) seg /= cxF; un = 'cx'; }
@@ -28328,7 +28331,10 @@ const PG_FAB_LOJAS = {
 };
 const PG_LOJA2FAB = {}, PG_PARES = {};
 // Produtos só de fábrica controlados em caixas: unidades por caixa (nome "C/15UN"). Estoque, projeção e quantidade em caixas
-const PG_CX_FAB = { '2209297':15, '2209306':15, '2209030':15 };
+const PG_CX_FAB = { '2209297':15, '2209306':15, '2209030':15, '2209083':36 };
+// Loja com estoque em unidades (pastéis soltos) controlada em caixas: unidades por caixa. Belém: caixa de 36
+const PG_CX_LOJA_UN = { '3439':36 };
+function PG_cxLojaUn(cod){ return PG_CX_LOJA_UN[normCod(String(cod || '').trim())] || 0; }
 function PG_cxFab(cod){ return PG_CX_FAB[normCod(String(cod || '').trim())] || 0; }
 // Pacotes por caixa que o nome do catálogo não traz (vem do nome nos relatórios de venda: "3X130G - CX C/18PCTS")
 const PG_CX_PCT = { '7197':18, '7198':18, '7199':18 };
@@ -28378,7 +28384,7 @@ function PG_lojasInfo(r){
   const cod = PG_codEf(r);
   if(!(l.FABRICA && l.FABRICA.cod === cod && l.LOJAS.length)) return [];
   return l.LOJAS.slice(0, 2).map((lj, k) => {
-    const cx = lj.un === 'pct' && PG_pctPorCx(lj.cod) > 0;
+    const cx = (lj.un === 'pct' && PG_pctPorCx(lj.cod) > 0) || (lj.un === 'un' && PG_cxLojaUn(lj.cod) > 0);
     const pc = PG_pecasLoja(lj.cod, lj.un);
     return { k: k + 1, cod: lj.cod, un: cx ? 'cx' : lj.un, pecas: pc, rot: l.LOJAS.length > 1 && pc ? 'pct c/' + pc : '' };
   });
@@ -28406,7 +28412,8 @@ function PG_lojaEmFabrica(r, l, k){
   // Fábrica em unidades: pacote/caixa da loja × peças por pacote
   if(String(fab.un).toUpperCase() === 'UN'){
     const pc = PG_pecasLoja(lj.cod, lj.un);
-    return pc > 0 ? q * (nCx > 0 ? nCx : 1) * pc : null;
+    const cxU = lj.un === 'un' ? PG_cxLojaUn(lj.cod) : 0;   // caixa da loja em unidades (Belém: 36)
+    return pc > 0 ? q * (cxU > 0 ? cxU : (nCx > 0 ? nCx : 1)) * pc : null;
   }
   if(String(fab.un).toUpperCase() !== 'KG') return null;
   const dF = (PG_catalog.find(p => normCod(String(p.codigo)) === l.FABRICA.cod) || {}).descricao || r.produto;
@@ -28429,7 +28436,7 @@ function PG_projHtml(r){
   const infos = PG_lojasInfo(r);
   if(temFab && l.LOJAS.length && (lojaQ[0] > 0 || lojaQ[1] > 0)){
     const p0 = PG_projecao(r, { cod: l.FABRICA.cod, tipo: 'FABRICA' });
-    const prod = p0 ? p0.proj - p0.real : 0;           // produção programada na unidade da fábrica
+    const prod = p0 ? (p0.proj - p0.real) * (p0.un === 'cx' && PG_cxFab(l.FABRICA.cod) > 0 ? PG_cxFab(l.FABRICA.cod) : 1) : 0;   // produção programada na unidade de estoque da fábrica (em caixas de 36, volta para unidades)
     const eqs = [1, 2].map(k => PG_lojaEmFabrica(r, l, k));
     if(eqs.some(e => e === null)) menos = null;
     else{
@@ -28711,7 +28718,7 @@ function PG_prod(i, txt){
     const uk = PG_unKey((fabCat || hit).unidade);   // item de loja programa o produto de fábrica: unidade da fábrica. Catálogo diz "Unidade"/"Caixa": a lista usa "Unid"/"Caixas"
     const u = uk === 'un' ? 'Unid' : uk === 'cx' ? 'Caixas' : PG_UNIDADES.find(x => PG_semAcento(x).toLowerCase() === PG_semAcento(hit.unidade || '').toLowerCase());
     if(u) r.unidade = u;
-    if(PG_cxFab(hit.codigo) > 0) r.unidade = 'Caixas';
+    if(PG_cxFab(PG_LOJA2FAB[normCod(String(hit.codigo))] || hit.codigo) > 0) r.unidade = 'Caixas';
   }else{ r.produto = t; r.codigo = null; }
   PG_marcarSujo(); PG_render();
 }
