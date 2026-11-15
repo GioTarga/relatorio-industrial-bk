@@ -28320,13 +28320,11 @@ const PG_FAB_LOJAS = {
   '11':['3396'], '12':['3397']   // lojas 3391/3396/3397 não vêm no estoque do CIGAM: só o Embalar p/ loja, sem barras de estoque
 };
 const PG_LOJA2FAB = {}, PG_PARES = {};
-// Pastel Nata: escolher o pacote de loja (C/3 UN) conta como programar o produto de fábrica — a quantidade soma na fábrica e o Embalar p/ loja divide
-const PG_LOJA_COMO_FAB = { '7197':1, '7198':1, '7199':1 };
 // Pacotes por caixa que o nome do catálogo não traz (vem do nome nos relatórios de venda: "3X130G - CX C/18PCTS")
 const PG_CX_PCT = { '7197':18, '7198':18, '7199':18 };
 function PG_codEf(r){
   const c = r.codigo ? normCod(String(r.codigo).trim()) : '';
-  return PG_LOJA_COMO_FAB[c] && PG_LOJA2FAB[c] ? PG_LOJA2FAB[c] : c;
+  return PG_LOJA2FAB[c] || c;   // escolher o item de loja conta como programar o produto de fábrica: a quantidade soma na fábrica e o Embalar p/ loja divide
 }
 Object.keys(PG_FAB_LOJAS).forEach(f => { PG_PARES[f] = PG_FAB_LOJAS[f][0]; PG_FAB_LOJAS[f].forEach(l => { PG_LOJA2FAB[l] = f; PG_PARES[l] = f; }); });
 // Unidades do produto de fábrica dentro de 1 unidade de estoque da loja: pacote "4X165G" = 4, "C/3 UN" = 3; estoque da loja em UN = 1
@@ -28691,7 +28689,8 @@ function PG_prod(i, txt){
   r.qtd_loja = r.qtd_loja2 = r.un_loja = r.un_loja2 = null;   // trocou o produto: o que estava embalado p/ loja não vale mais
   if(hit){
     r.produto = hit.descricao; r.codigo = hit.codigo;
-    const uk = PG_unKey(hit.unidade);   // catálogo diz "Unidade"/"Caixa": a lista usa "Unid"/"Caixas"
+    const fabCat = PG_LOJA2FAB[normCod(String(hit.codigo))] && PG_catalog.find(p => normCod(String(p.codigo)) === PG_LOJA2FAB[normCod(String(hit.codigo))]);
+    const uk = PG_unKey((fabCat || hit).unidade);   // item de loja programa o produto de fábrica: unidade da fábrica. Catálogo diz "Unidade"/"Caixa": a lista usa "Unid"/"Caixas"
     const u = uk === 'un' ? 'Unid' : uk === 'cx' ? 'Caixas' : PG_UNIDADES.find(x => PG_semAcento(x).toLowerCase() === PG_semAcento(hit.unidade || '').toLowerCase());
     if(u) r.unidade = u;
   }else{ r.produto = t; r.codigo = null; }
