@@ -28291,7 +28291,7 @@ function PG_projecao(r, opt){
   }
   const nCx = (tipo === 'LOJA' && unEst === 'PCT') ? PG_pctPorCx(codR) : 0;
   if(nCx > 0){ real /= nCx; add /= nCx; if(seg != null) seg /= nCx; un = 'cx'; }   // extra (Embalar p/ loja) já vem em caixas
-  return { real, seg, proj: real + add + (Number(opt.extra) || 0), un, conv, q, tipo };
+  return { real, seg, proj: real + add + (Number(opt.extra) || 0) - (Number(opt.menos) || 0), un, conv, q, tipo, nota: opt.nota || '' };
 }
 // Mini pastel: Forno (fábrica) e Nata (loja) são o mesmo produto/sabor; ao escolher um, a projeção mostra o estoque dos dois
 const PG_PARES = { '8018':'7194', '8019':'7192', '8020':'7191', '8021':'7195', '2209207':'7193' };
@@ -28301,7 +28301,7 @@ function PG_projBloco(p, rotulo){
   const linha = (rot, val, cls, txt) => '<div class="pg-proj-l"><span>' + rot + '</span><span class="pg-proj-t"><span class="pg-proj-b ' + cls + '" style="width:' + Math.max(0, val / max * 100).toFixed(1) + '%"></span></span><span class="pg-proj-v">' + txt + '</span></div>';
   const abaixo = p.seg != null && p.proj < p.seg;
   const u = ' ' + PG_esc(p.un);
-  const nota = p.q > 0 && !p.conv ? '<div class="pg-proj-nota">sem rendimento no Mapa: projetado = real</div>' : '';
+  const nota = (p.q > 0 && !p.conv ? '<div class="pg-proj-nota">sem rendimento no Mapa: projetado = real</div>' : '') + (p.nota ? '<div class="pg-proj-nota">' + PG_esc(p.nota) + '</div>' : '');
   return '<div class="pg-proj" title="Real ' + PG_n0(p.real) + ' · Seg. ' + (p.seg == null ? 's/ venda' : PG_n0(p.seg)) + ' · Projetado ' + PG_n0(p.proj) + u + '">' +
     (rotulo ? '<div class="pg-proj-nota"><b>' + rotulo + '</b></div>' : '') +
     linha('Real', p.real, 'real', PG_n0(p.real) + u) +
@@ -28325,6 +28325,22 @@ function PG_lojaInfo(r){
   if(!(l.FABRICA && l.FABRICA.cod === cod && l.LOJA)) return null;
   return { un: l.LOJA.un === 'pct' && PG_pctPorCx(l.LOJA.cod) > 0 ? 'cx' : l.LOJA.un };   // só quando o item escolhido é o de fábrica
 }
+// O que foi embalado para a loja, na unidade da fábrica (caixa de 5 kg): sai da produção total, o resto fica na fábrica.
+// Conversão pelo peso: caixa/pacote da loja (nome: "CX C/18", "PCT600G") → kg → caixas da fábrica ("C/5KG"). null = sem como converter.
+function PG_lojaEmFabrica(r, l){
+  const q = Number(r.qtd_loja) || 0;
+  if(!q) return 0;
+  const fab = PG_estoque[l.FABRICA.cod] && PG_estoque[l.FABRICA.cod].FABRICA;
+  if(!fab || String(fab.un).toUpperCase() !== 'KG') return null;
+  const dF = (PG_catalog.find(p => normCod(String(p.codigo)) === l.FABRICA.cod) || {}).descricao || r.produto;
+  const dL = (PG_catalog.find(p => normCod(String(p.codigo)) === l.LOJA.cod) || {}).descricao || '';
+  const pesoCx = FALTA_pesoPacote(dF);
+  const pctG = Number((String(dL).match(/PCT\s*(\d+)\s*G/i) || [])[1]) || 0;
+  const nCx = l.LOJA.un === 'pct' ? PG_pctPorCx(l.LOJA.cod) : 0;
+  if(!(pesoCx > 0 && pctG > 0)) return null;
+  const gramas = (l.LOJA.un === 'pct' && nCx > 0) ? nCx * pctG : pctG;   // g por unidade digitada (caixa de 18 pacotes ou pacote)
+  return q * gramas / 1000 / pesoCx;
+}
 function PG_projHtml(r){
   const l = PG_lados(r);
   if(!l.FABRICA && !l.LOJA) return '<span class="pg-est vazio">sem estoque</span>';
@@ -28332,7 +28348,8 @@ function PG_projHtml(r){
   const temFab = !!(l.FABRICA && l.FABRICA.cod === cod);   // item escolhido é o de fábrica (o de loja puro soma a quantidade na loja)
   const blocos = [];
   if(l.FABRICA){
-    const p = PG_projecao(r, { cod: l.FABRICA.cod, tipo: 'FABRICA', semQtd: l.FABRICA.cod !== cod });
+    const menos = l.LOJA && l.FABRICA.cod === cod ? PG_lojaEmFabrica(r, l) : 0;
+    const p = PG_projecao(r, { cod: l.FABRICA.cod, tipo: 'FABRICA', semQtd: l.FABRICA.cod !== cod, menos, nota: menos === null ? 'sem conversão: embalado p/ loja não foi abatido' : '' });
     if(p) blocos.push(PG_projBloco(p, 'Fábrica'));
   }
   if(l.LOJA){
