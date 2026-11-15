@@ -28081,7 +28081,18 @@ document.addEventListener('DOMContentLoaded', ()=>{
 #pcpProgView .pg-setor-h span{font-weight:600;letter-spacing:.3px;color:rgba(255,255,255,.7)}
 #pcpProgView .pg-tw{overflow-x:auto}
 #pcpProgView table{width:100%;border-collapse:collapse}
-#pcpProgView .pg-tw table{min-width:1500px}
+#pcpProgView .pg-tw table{table-layout:fixed}
+#pcpProgView .c-prod{width:16%}#pcpProgView .c-qtd{width:12%}#pcpProgView .c-tempo{width:7%}#pcpProgView .c-maq{width:13%}#pcpProgView .c-dobs{width:10%}#pcpProgView .c-x{width:24px}
+#pcpProgView td{vertical-align:top;overflow-wrap:anywhere}
+#pcpProgView .pg-qrow{display:flex;gap:4px}
+#pcpProgView .pg-qrow input{flex:1 1 0;min-width:52px}
+#pcpProgView .pg-qrow select{flex:0 0 58px;width:58px;padding-left:3px;padding-right:2px}
+#pcpProgView .pg-qtdc input{margin-top:3px}
+#pcpProgView .pg-qrow input{margin-top:0}
+#pcpProgView .pg-ll{margin-top:6px;white-space:normal}
+#pcpProgView .pg-estl{margin-top:4px}
+#pcpProgView .pg-estl .pg-est{white-space:normal}
+#pcpProgView .pg-dobs input+input{margin-top:4px}
 #pcpProgView th{font-size:9.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-soft);text-align:left;padding:6px 8px;background:var(--cream);border-bottom:1px solid var(--line)}
 #pcpProgView td{padding:4px 6px;border-bottom:1px solid var(--line)}
 #pcpProgView td input,#pcpProgView td select{width:100%;box-sizing:border-box;padding:6px 7px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:12px;background:var(--paper);color:var(--ink)}
@@ -28094,8 +28105,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
 #pcpProgView .pg-est{font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap}
 #pcpProgView .pg-est.vazio{color:var(--ink-soft);font-weight:500}
 #pcpProgView .pg-est.zero{color:var(--red)}
-#pcpProgView .pg-proj{display:flex;flex-direction:column;gap:3px;min-width:190px}
-#pcpProgView .pg-proj-l{display:grid;grid-template-columns:30px 1fr 86px;align-items:center;gap:6px;font-size:10px;font-weight:700;color:var(--ink-soft)}
+#pcpProgView .pg-proj{display:flex;flex-direction:column;gap:3px;min-width:135px;flex:1 1 135px}
+#pcpProgView .pg-proj-l{display:grid;grid-template-columns:28px 1fr 66px;align-items:center;gap:6px;font-size:10px;font-weight:700;color:var(--ink-soft)}
 #pcpProgView .pg-proj-t{height:7px;background:var(--cream);border-radius:4px;overflow:hidden}
 #pcpProgView .pg-proj-b{display:block;height:100%;border-radius:4px}
 #pcpProgView .pg-proj-b.real{background:var(--ink-soft)}
@@ -28103,12 +28114,12 @@ document.addEventListener('DOMContentLoaded', ()=>{
 #pcpProgView .pg-proj-b.ok{background:var(--good)}
 #pcpProgView .pg-proj-b.abaixo{background:var(--red)}
 #pcpProgView .pg-proj-v{text-align:right;color:var(--ink);white-space:nowrap}
-#pcpProgView .pg-tempo{display:flex;flex-direction:column;gap:2px;min-width:96px;font-size:11px}
+#pcpProgView .pg-tempo{display:flex;flex-direction:column;gap:2px;font-size:11px}
 #pcpProgView .pg-tempo b{font-size:13px;font-weight:800;color:var(--ink)}
 #pcpProgView .pg-tempo span{font-weight:600;color:var(--ink-soft);font-size:10px}
 #pcpProgView .pg-tempo-t{display:block;height:5px;background:var(--cream);border-radius:3px;overflow:hidden}
 #pcpProgView .pg-tempo-b{display:block;height:100%;background:var(--red-dark);border-radius:3px}
-#pcpProgView .pg-prodc{min-width:250px}
+#pcpProgView .pg-prodc .pg-cod{display:block;margin-bottom:2px}
 #pcpProgView .pg-pnome{font-size:12px;font-weight:700;line-height:1.25;color:var(--ink);white-space:normal;word-break:break-word}
 #pcpProgView .pg-pnome:not(:empty){margin-bottom:4px}
 #pcpProgView .pg-maq select,#pcpProgView .pg-maq input{width:100%}
@@ -28128,8 +28139,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
 #pcpProgView .pg-oc-k.s{background:var(--warn)}
 #pcpProgView .pg-oc.over .pg-oc-p{color:var(--warn)}
 #pcpProgView .pg-oc{display:inline-flex;align-items:center;gap:8px}
-#pcpProgView .pg-duo{display:flex;gap:16px;align-items:flex-start}
-#pcpProgView .pg-duo .pg-proj+.pg-proj{padding-left:14px;border-left:1px solid var(--line)}
+#pcpProgView .pg-duo{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-start}
+#pcpProgView .pg-duo .pg-proj+.pg-proj{padding-left:12px;border-left:1px solid var(--line)}
 #pcpProgView .pg-proj-nota{font-size:10px;color:var(--ink-soft);font-weight:500}
 #pcpProgView .pg-prio{display:none;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);margin-bottom:14px;overflow:hidden}
 #pcpProgView .pg-prio.open{display:block}
@@ -28657,22 +28668,18 @@ function PG_render(){
     const rec = PG_RECHEIO.includes(setor);
     const linhas = idxs.map(i => {
       const r = PG_rows[i];
+      const lojas = PG_lojasInfo(r).map(x => (x.rot ? '<div class="pg-est vazio">' + PG_esc(x.rot) + '</div>' : '') + '<input type="number" min="0" step="any" value="' + (PG_qLoja(r, x.k) || '') + '" title="Quantidade a embalar para a loja (' + PG_esc(x.un) + ')" oninput="PG_setLoja(' + i + ',this.value,' + x.k + ')" placeholder="' + PG_esc(x.un) + '">').join('');
       return '<tr>' +
-        '<td style="width:78px"><span class="pg-cod' + (r.codigo ? '' : ' pend') + '">' + PG_esc(r.codigo || 'pendente') + '</span></td>' +
-        '<td class="pg-prodc"><div class="pg-pnome">' + PG_esc(r.produto) + '</div><input list="pgDatalist" value="" onchange="PG_prod(' + i + ',this.value)" placeholder="' + (r.produto ? 'Trocar produto…' : 'Produto (nome ou código)') + '"></td>' +
-        '<td style="width:150px">' + PG_estoqueTxt(r) + '</td>' +
-        '<td style="width:96px"><input type="number" min="0" step="any" value="' + (r.quantidade == null ? '' : r.quantidade) + '" oninput="PG_set(' + i + ',\'quantidade\',this.value===\'\'?null:Number(this.value))"></td>' +
-        '<td style="width:100px"><select onchange="PG_set(' + i + ',\'unidade\',this.value)">' + PG_UNIDADES.map(u => '<option' + (u === r.unidade ? ' selected' : '') + '>' + u + '</option>').join('') + '</select></td>' +
-        '<td style="width:96px">' + (PG_lojasInfo(r).length ? PG_lojasInfo(r).map(x => (x.rot ? '<div class="pg-est vazio">' + PG_esc(x.rot) + '</div>' : '') + '<input type="number" min="0" step="any" value="' + (PG_qLoja(r, x.k) || '') + '" title="Quantidade a embalar para a loja (' + PG_esc(x.un) + ')" oninput="PG_setLoja(' + i + ',this.value,' + x.k + ')" placeholder="' + PG_esc(x.un) + '">').join('') : '<span class="pg-est vazio">—</span>') + '</td>' +
+        '<td class="pg-prodc"><span class="pg-cod' + (r.codigo ? '' : ' pend') + '">' + PG_esc(r.codigo || 'pendente') + '</span><div class="pg-pnome">' + PG_esc(r.produto) + '</div><input list="pgDatalist" value="" onchange="PG_prod(' + i + ',this.value)" placeholder="' + (r.produto ? 'Trocar produto…' : 'Produto (nome ou código)') + '"><div class="pg-estl">' + PG_estoqueTxt(r) + '</div></td>' +
+        '<td class="pg-qtdc"><div class="pg-qrow"><input type="number" min="0" step="any" value="' + (r.quantidade == null ? '' : r.quantidade) + '" oninput="PG_set(' + i + ',\'quantidade\',this.value===\'\'?null:Number(this.value))"><select onchange="PG_set(' + i + ',\'unidade\',this.value)">' + PG_UNIDADES.map(u => '<option' + (u === r.unidade ? ' selected' : '') + '>' + u + '</option>').join('') + '</select></div>' + (PG_lojasInfo(r).length ? '<div class="pg-est vazio pg-ll">Embalar p/ loja</div>' + lojas : '') + '</td>' +
         '<td id="pgProj' + i + '">' + PG_projHtml(r) + '</td>' +
-        '<td style="width:130px" id="pgTempo' + i + '"></td>' +
-        '<td class="pg-maq" style="width:190px">' + PG_maqCampo(i) + '<div id="pgMaq' + i + '">' + PG_maqInfoHtml(r) + '</div></td>' +
-        '<td style="width:170px"><input id="pgDest' + i + '" value="' + PG_esc(r.destino) + '" oninput="PG_set(' + i + ',\'destino\',this.value)" placeholder="' + PG_esc(PG_destinoAuto(r) || 'Destino (Embalagem)') + '"></td>' +
-        '<td style="width:130px"><input value="' + PG_esc(r.observacao) + '" oninput="PG_set(' + i + ',\'observacao\',this.value)" placeholder="Observação"></td>' +
-        '<td style="width:30px"><button class="pg-x" title="Remover" onclick="PG_remover(' + i + ')">✕</button></td></tr>';
+        '<td id="pgTempo' + i + '"></td>' +
+        '<td class="pg-maq">' + PG_maqCampo(i) + '<div id="pgMaq' + i + '">' + PG_maqInfoHtml(r) + '</div></td>' +
+        '<td class="pg-dobs"><input id="pgDest' + i + '" value="' + PG_esc(r.destino) + '" oninput="PG_set(' + i + ',\'destino\',this.value)" placeholder="' + PG_esc(PG_destinoAuto(r) || 'Destino (Embalagem)') + '"><input value="' + PG_esc(r.observacao) + '" oninput="PG_set(' + i + ',\'observacao\',this.value)" placeholder="Observação"></td>' +
+        '<td><button class="pg-x" title="Remover" onclick="PG_remover(' + i + ')">✕</button></td></tr>';
     }).join('');
     return '<div class="pg-setor"><div class="pg-setor-h">' + PG_esc(setor) + '<span>' + idxs.length + ' itens<span class="pg-tt" id="pgTT' + si + '"></span></span></div>' +
-      (idxs.length ? '<div class="pg-tw"><table><thead><tr><th>Código</th><th>Produto</th><th>Estoque</th><th>Quantidade</th><th>Unidade</th><th>Embalar p/ loja</th><th>Projeção do estoque</th><th>Tempo estimado</th><th>Máquina / turno</th><th>Destino</th><th>Observação</th><th></th></tr></thead><tbody>' + linhas + '</tbody></table></div>' : '') +
+      (idxs.length ? '<div class="pg-tw"><table><thead><tr><th class="c-prod">Produto</th><th class="c-qtd">Quantidade</th><th>Projeção do estoque</th><th class="c-tempo">Tempo estimado</th><th class="c-maq">Máquina / turno</th><th class="c-dobs">Destino / Observação</th><th class="c-x"></th></tr></thead><tbody>' + linhas + '</tbody></table></div>' : '') +
       '<button class="pg-add" onclick="PG_add(\'' + setor + '\')">+ Adicionar produto' + (rec ? '' : '') + '</button></div>';
   }).join('');
   PG_atualizaTempos();
