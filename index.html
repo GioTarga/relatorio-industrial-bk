@@ -28106,6 +28106,15 @@ document.addEventListener('DOMContentLoaded', ()=>{
 #pcpProgView .pg-tempo span{font-weight:600;color:var(--ink-soft);font-size:10px}
 #pcpProgView .pg-tempo-t{display:block;height:5px;background:var(--cream);border-radius:3px;overflow:hidden}
 #pcpProgView .pg-tempo-b{display:block;height:100%;background:var(--red-dark);border-radius:3px}
+#pcpProgView .pg-maq select,#pcpProgView .pg-maq input{width:100%}
+#pcpProgView .pg-maq-i{display:flex;flex-direction:column;gap:2px;margin-top:6px;font-size:10px;color:var(--ink-soft)}
+#pcpProgView .pg-maq-l{display:flex;justify-content:space-between;gap:6px;font-weight:600}
+#pcpProgView .pg-maq-l b{color:var(--ink);font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+#pcpProgView .pg-maq-t{display:block;height:6px;background:var(--cream);border-radius:3px;overflow:hidden}
+#pcpProgView .pg-maq-f{display:block;height:100%;background:var(--red-dark);border-radius:3px}
+#pcpProgView .pg-maq-f.ok{background:#2f7d4f}
+#pcpProgView .pg-maq-c{display:block;height:100%;width:100%;background:var(--ink-soft);opacity:.4;border-radius:3px}
+#pcpProgView .pg-maq-n{font-weight:700;color:var(--ink)}
 #pcpProgView .pg-setor-h .pg-tt{margin-left:14px;display:inline-flex;align-items:center;gap:8px;font-weight:700;color:#fff;letter-spacing:.3px;text-transform:none}
 #pcpProgView .pg-oc-t{display:inline-flex;width:150px;height:9px;background:rgba(255,255,255,.25);border-radius:5px;overflow:hidden}
 #pcpProgView .pg-oc-b{display:block;height:100%;background:#fff}
@@ -28149,6 +28158,8 @@ let PG_estoque = {};      // normCod(código) → { FABRICA:{estoque,un}, LOJA:{
 let PG_estoqueData = '';
 const PG_HORAS_DIA = 7;   // horas disponíveis por dia em cada setor (ajustar por setor em PG_HORAS_SETOR)
 const PG_HORAS_SETOR = {};
+let PG_taxasMaq = {};     // 'maquina|cod|un' → { qtd, horas, n }: mesmo ritmo, separado por máquina
+let PG_maqs = [];         // cadastro de máquinas (maquinas): identificacao, setor, capacidade_nominal, capacidade_unidade
 let PG_taxas = {};        // 'cod|un' e 'p:nome|un' → { qtd, horas, n }: produção real ÷ horas (Fim − Início) dos últimos 90 dias
 
 function PG_hojeMais(dias){
@@ -28186,6 +28197,7 @@ async function PG_init(){
     PG_catalog = data || [];
   }catch(e){ PG_catalog = []; }
   await PG_carregarEstoque();
+  await PG_carregarMaquinas();
   await PG_carregarTempos();
   await PG_carregarMapa();
   if(typeof FALTA_carregarMapa === 'function' && !Object.keys(FALTA.mapa).length) await FALTA_carregarMapa();
@@ -28382,15 +28394,26 @@ function PG_horas(ini, fim){
 function PG_hhmm(h){ const t = Math.round(h * 60); return String(Math.floor(t / 60)).padStart(2,'0') + ':' + String(t % 60).padStart(2,'0'); }
 // Nome sem a embalagem ("- C/2,5KG", "- CX C/12 UNID") para ligar apontamentos antigos, sem código, ao produto do catálogo
 function PG_nomeBase(d){ return histNorm(d).replace(/\s*-?\s*(cx|fd|pct)?\s*c\/.*$/, '').replace(/\s+/g, ' ').trim(); }
+// Máquinas cadastradas (aba Máquinas): alimenta o menu de escolha e a capacidade nominal
+async function PG_carregarMaquinas(){
+  PG_maqs = [];
+  try{
+    const { data, error } = await getSupabaseClient().from('maquinas').select('identificacao, setor, capacidade_nominal, capacidade_unidade').order('identificacao');
+    if(error) throw error;
+    PG_maqs = data || [];
+  }catch(e){ PG_maqs = []; }
+}
+// "Panitec 4", "PANITEC 4" e "Fritador 01" / "FRITADOR #1" caem na mesma chave
+function PG_maqKey(s){ return histNorm(s).replace(/[^a-z0-9]/g, '').replace(/0+(\d)/g, '$1'); }
 async function PG_carregarTempos(){
-  PG_taxas = {};
+  PG_taxas = {}; PG_taxasMaq = {};
   const porNome = {};
   PG_catalog.forEach(c => { const b = PG_nomeBase(c.descricao); porNome[b] = porNome[b] === undefined ? normCod(String(c.codigo).trim()) : null; });   // null = nome ambíguo
   try{
     const client = getSupabaseClient();
     const desde = PG_hojeMais(-90);
     for(let off = 0; ; off += 1000){
-      const { data, error } = await client.from('producao_diaria').select('codigo_produto, produto, producao_real, unidade, inicio_producao, fim_producao')
+      const { data, error } = await client.from('producao_diaria').select('codigo_produto, produto, producao_real, unidade, inicio_producao, fim_producao, maquina')
         .gte('data', desde).not('inicio_producao','is',null).not('fim_producao','is',null).gt('producao_real', 0).range(off, off + 999);
       if(error) throw error;
       (data || []).forEach(r => {
@@ -28401,20 +28424,80 @@ async function PG_carregarTempos(){
         const cod = r.codigo_produto ? normCod(String(r.codigo_produto).trim()) : (r.produto ? porNome[PG_nomeBase(r.produto)] : '');
         if(cod) chaves.push(cod + '|' + un);
         else if(r.produto) chaves.push('p:' + histNorm(r.produto) + '|' + un);
+        const mk = r.maquina ? PG_maqKey(r.maquina) : '';
+        if(mk) chaves.forEach(k => { const t = PG_taxasMaq[mk + '|' + k] || (PG_taxasMaq[mk + '|' + k] = { qtd: 0, horas: 0, n: 0 }); t.qtd += Number(r.producao_real) || 0; t.horas += h; t.n++; });
         chaves.forEach(k => { const t = PG_taxas[k] || (PG_taxas[k] = { qtd: 0, horas: 0, n: 0 }); t.qtd += Number(r.producao_real) || 0; t.horas += h; t.n++; });
       });
       if(!data || data.length < 1000) break;
     }
-  }catch(e){ PG_taxas = {}; }
+  }catch(e){ PG_taxas = {}; PG_taxasMaq = {}; }
 }
 // Horas que a linha demanda; null = sem quantidade; semHist = produto sem produção apontada com horário
 function PG_tempoH(r){
   const q = Number(r.quantidade);
   if(!(q > 0)) return null;
   const un = PG_unKey(r.unidade);
-  const t = (r.codigo && PG_taxas[normCod(String(r.codigo).trim()) + '|' + un]) || PG_taxas['p:' + histNorm(r.produto) + '|' + un];
+  const kc = r.codigo ? normCod(String(r.codigo).trim()) + '|' + un : '', kn = 'p:' + histNorm(r.produto) + '|' + un;
+  // Máquina escolhida: usa o ritmo dela neste produto; sem histórico nela, cai no ritmo geral do produto
+  const mk = r.maquina ? PG_maqKey(r.maquina) : '';
+  const tm = mk ? ((kc && PG_taxasMaq[mk + '|' + kc]) || PG_taxasMaq[mk + '|' + kn]) : null;
+  const usaMaq = !!(tm && tm.qtd > 0 && tm.horas > 0);
+  const t = usaMaq ? tm : ((kc && PG_taxas[kc]) || PG_taxas[kn]);
   if(!t || !(t.qtd > 0) || !(t.horas > 0)) return { semHist: true };
-  return { h: q / (t.qtd / t.horas), n: t.n };
+  return { h: q / (t.qtd / t.horas), n: t.n, maq: usaMaq ? r.maquina : '' };
+}
+// Peças por unidade de produção (para comparar com a capacidade nominal em un/h); 0 = sem conversão conhecida
+function PG_pecasPorUn(r){
+  const u = PG_unKey(r.unidade);
+  if(u === 'un') return 1;
+  if(u === 'cx'){
+    const mp = PG_mapa[normCod(String(r.codigo || '').trim())] || {};
+    if(mp['Unidades'] > 0) return mp['Unidades'];
+    const gi = typeof SAL_PROD2G !== 'undefined' ? SAL_PROD2G[SAL_NORM(r.produto)] : undefined;
+    const f = gi != null ? SAL_GRUPOS[gi].f : 0;
+    return f > 1 ? f : 0;
+  }
+  return 0;
+}
+function PG_maqLista(setor){ return PG_maqs.filter(m => String(m.setor).toUpperCase() === String(setor).toUpperCase()); }
+// Menu de máquinas do setor (cadastro); setor sem máquina cadastrada continua com texto livre
+function PG_maqCampo(i){
+  const r = PG_rows[i], lista = PG_maqLista(r.setor);
+  if(!lista.length) return '<input value="' + PG_esc(r.maquina) + '" oninput="PG_set(' + i + ',\'maquina\',this.value)" placeholder="Máquina / turno">';
+  const k = PG_maqKey(r.maquina);
+  const hit = lista.find(m => PG_maqKey(m.identificacao) === k);
+  let o = '<option value="">— Selecione —</option>' + lista.map(m => '<option' + (hit === m ? ' selected' : '') + ' value="' + PG_esc(m.identificacao) + '">' + PG_esc(m.identificacao) + '</option>').join('');
+  if(r.maquina && !hit) o += '<option selected value="' + PG_esc(r.maquina) + '">' + PG_esc(r.maquina) + '</option>';
+  return '<select onchange="PG_set(' + i + ',\'maquina\',this.value)">' + o + '</select>';
+}
+// Ritmo médio da máquina para o produto × capacidade nominal cadastrada
+function PG_maqInfoHtml(r){
+  if(!r.maquina) return '';
+  const mk = PG_maqKey(r.maquina), un = PG_unKey(r.unidade);
+  const t = (r.codigo && PG_taxasMaq[mk + '|' + normCod(String(r.codigo).trim()) + '|' + un]) || PG_taxasMaq[mk + '|p:' + histNorm(r.produto) + '|' + un];
+  const m = PG_maqs.find(x => PG_maqKey(x.identificacao) === mk);
+  const pecas = PG_pecasPorUn(r);
+  const capOk = m && /^un/i.test(String(m.capacidade_unidade || '')) && Number(m.capacidade_nominal) > 0 && pecas > 0;
+  const cap = capOk ? Number(m.capacidade_nominal) : 0;
+  if(!t || !(t.qtd > 0) || !(t.horas > 0)){
+    return '<div class="pg-maq-i"><span>Sem histórico deste produto nesta máquina</span>' + (cap ? '<span class="pg-maq-l"><span>Capacidade</span><b>' + PG_fmt(cap) + ' un/h</b></span>' : '') + '</div>';
+  }
+  const taxa = t.qtd / t.horas;
+  if(!pecas){
+    return '<div class="pg-maq-i"><span class="pg-maq-l"><span>Ritmo médio</span><b>' + PG_fmt(Math.round(taxa * 10) / 10) + ' ' + PG_un(2, r.unidade) + '/h</b></span><span>' + t.n + ' produções · sem conversão para un/h</span></div>';
+  }
+  const ritmo = taxa * pecas;
+  if(!cap){
+    return '<div class="pg-maq-i"><span class="pg-maq-l"><span>Ritmo médio</span><b>' + PG_fmt(Math.round(ritmo)) + ' un/h</b></span><span>' + t.n + ' produções · capacidade não cadastrada</span></div>';
+  }
+  const pct = ritmo / cap * 100;
+  return '<div class="pg-maq-i" title="Ritmo = produção real ÷ horas (início a fim) desta máquina neste produto, últimos 90 dias. Capacidade nominal do cadastro de máquinas.">' +
+    '<span class="pg-maq-l"><span>Ritmo médio</span><b>' + PG_fmt(Math.round(ritmo)) + ' un/h</b></span>' +
+    '<span class="pg-maq-t"><span class="pg-maq-f' + (pct >= 85 ? ' ok' : '') + '" style="width:' + Math.min(pct, 100).toFixed(1) + '%"></span></span>' +
+    '<span class="pg-maq-l"><span>Capacidade</span><b>' + PG_fmt(cap) + ' un/h</b></span>' +
+    '<span class="pg-maq-t"><span class="pg-maq-c"></span></span>' +
+    '<span class="pg-maq-n">' + Math.round(pct) + '% da capacidade · faltam ' + PG_fmt(Math.max(0, Math.round(cap - ritmo))) + ' un/h</span>' +
+    '<span>' + t.n + ' produções</span></div>';
 }
 // Giro Dia: pães redondos (bilha, hambúrguer, sonho, superfofo) rodam na Sotorriva; pão de queijo e chipa na GA Pão de Queijo; o resto na GA.
 // Cada troca de máquina entre itens consecutivos da lista soma PG_SETUP_H de setup (o primeiro item não leva setup).
@@ -28445,7 +28528,7 @@ function PG_atualizaTempos(){
       else if(x.t.semHist) c.innerHTML = '<div class="pg-tempo"><span class="pg-est vazio">sem histórico</span>' + maq + '</div>';
       else{
         const pct = total > 0 ? x.t.h / total * 100 : 0;
-        c.innerHTML = '<div class="pg-tempo" title="Ritmo médio de ' + x.t.n + ' produções dos últimos 90 dias"><b>' + PG_hhmm(x.t.h) + ' h</b><span>' + Math.round(pct) + '% do setor</span><span class="pg-tempo-t"><span class="pg-tempo-b" style="width:' + pct.toFixed(1) + '%"></span></span>' + maq + '</div>';
+        c.innerHTML = '<div class="pg-tempo" title="Ritmo médio de ' + x.t.n + ' produções dos últimos 90 dias' + (x.t.maq ? ' na máquina ' + x.t.maq : ' (todas as máquinas)') + '"><b>' + PG_hhmm(x.t.h) + ' h</b><span>' + Math.round(pct) + '% do setor</span><span class="pg-tempo-t"><span class="pg-tempo-b" style="width:' + pct.toFixed(1) + '%"></span></span>' + (x.t.maq ? '<span>ritmo ' + x.t.maq + '</span>' : '') + maq + '</div>';
       }
     });
     const sem = tem.filter(x => x.t && x.t.semHist).length;
@@ -28499,7 +28582,7 @@ function PG_render(){
         '<td style="width:96px">' + (PG_lojaInfo(r) ? '<input type="number" min="0" step="any" value="' + (r.qtd_loja == null ? '' : r.qtd_loja) + '" title="Quantidade a embalar para a loja (' + PG_esc(PG_lojaInfo(r).un) + ')" oninput="PG_setLoja(' + i + ',this.value)" placeholder="' + PG_esc(PG_lojaInfo(r).un) + '">' : '<span class="pg-est vazio">—</span>') + '</td>' +
         '<td id="pgProj' + i + '">' + PG_projHtml(r) + '</td>' +
         '<td style="width:130px" id="pgTempo' + i + '"></td>' +
-        '<td style="width:150px"><input value="' + PG_esc(r.maquina) + '" oninput="PG_set(' + i + ',\'maquina\',this.value)" placeholder="Máquina / turno"></td>' +
+        '<td class="pg-maq" style="width:190px">' + PG_maqCampo(i) + '<div id="pgMaq' + i + '">' + PG_maqInfoHtml(r) + '</div></td>' +
         '<td style="width:210px"><input id="pgDest' + i + '" value="' + PG_esc(r.destino) + '" oninput="PG_set(' + i + ',\'destino\',this.value)" placeholder="' + PG_esc(PG_destinoAuto(r) || 'Destino (Embalagem)') + '"></td>' +
         '<td style="width:170px"><input value="' + PG_esc(r.observacao) + '" oninput="PG_set(' + i + ',\'observacao\',this.value)" placeholder="Observação"></td>' +
         '<td style="width:30px"><button class="pg-x" title="Remover" onclick="PG_remover(' + i + ')">✕</button></td></tr>';
@@ -28528,6 +28611,7 @@ function PG_setLoja(i, v){
 }
 function PG_set(i, campo, valor){
   PG_rows[i][campo] = valor; PG_marcarSujo();
+  if(campo === 'maquina' || campo === 'unidade'){ const m = document.getElementById('pgMaq' + i); if(m) m.innerHTML = PG_maqInfoHtml(PG_rows[i]); if(campo === 'maquina') PG_atualizaTempos(); }
   if(campo === 'quantidade' || campo === 'unidade'){ const c = document.getElementById('pgProj' + i); if(c) c.innerHTML = PG_projHtml(PG_rows[i]); PG_atualizaTempos(); }
 }
 function PG_add(setor){
