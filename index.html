@@ -28210,7 +28210,10 @@ async function PG_carregarEstoque(){
 }
 function PG_estoqueTxt(r){
   if(!r.codigo) return '<span class="pg-est vazio">sem código</span>';
-  const e = PG_estoque[normCod(String(r.codigo).trim())];
+  const cod = normCod(String(r.codigo).trim());
+  let e = PG_estoque[cod];
+  const par = PG_estoque[PG_PARES[cod]];
+  if(par) e = Object.assign({}, par, e);   // mini pastel: junta Fábrica (Forno) e Loja (Nata)
   if(!e) return '<span class="pg-est vazio">sem estoque</span>';
   const f = e.FABRICA, l = e.LOJA;
   const partes = [];
@@ -28277,19 +28280,31 @@ function PG_projecao(r){
       if(c.conv) add = c.q; else conv = false;
     }
   }
-  return { real, seg, proj: real + add, un, conv, q };
+  return { real, seg, proj: real + add, un, conv, q, tipo };
 }
-function PG_projHtml(r){
-  const p = PG_projecao(r);
-  if(!p) return '<span class="pg-est vazio">sem estoque</span>';
+// Mini pastel: Forno (fábrica) e Nata (loja) são o mesmo produto/sabor; ao escolher um, a projeção mostra o estoque dos dois
+const PG_PARES = { '8018':'7194', '8019':'7192', '8020':'7191', '8021':'7195', '2209207':'7193' };
+Object.keys(PG_PARES).forEach(k => { PG_PARES[PG_PARES[k]] = k; });
+function PG_projBloco(p, rotulo){
   const max = Math.max(p.real, p.seg || 0, p.proj, 1);
   const linha = (rot, val, cls, txt) => '<div class="pg-proj-l"><span>' + rot + '</span><span class="pg-proj-t"><span class="pg-proj-b ' + cls + '" style="width:' + Math.max(0, val / max * 100).toFixed(1) + '%"></span></span><span class="pg-proj-v">' + txt + '</span></div>';
   const abaixo = p.seg != null && p.proj < p.seg;
+  const u = ' ' + PG_esc(p.un);
   const nota = p.q > 0 && !p.conv ? '<div class="pg-proj-nota">sem rendimento no Mapa: projetado = real</div>' : '';
-  return '<div class="pg-proj" title="Real ' + PG_n0(p.real) + ' · Seg. ' + (p.seg == null ? 's/ venda' : PG_n0(p.seg)) + ' · Projetado ' + PG_n0(p.proj) + ' ' + PG_esc(p.un) + '">' +
-    linha('Real', p.real, 'real', PG_n0(p.real) + ' ' + PG_esc(p.un)) +
-    linha('Seg.', p.seg || 0, 'seg', p.seg == null ? 's/ venda' : PG_n0(p.seg) + ' ' + PG_esc(p.un)) +
-    linha('Proj.', p.proj, abaixo ? 'abaixo' : 'ok', PG_n0(p.proj) + ' ' + PG_esc(p.un)) + nota + '</div>';
+  return '<div class="pg-proj" title="Real ' + PG_n0(p.real) + ' · Seg. ' + (p.seg == null ? 's/ venda' : PG_n0(p.seg)) + ' · Projetado ' + PG_n0(p.proj) + u + '">' +
+    (rotulo ? '<div class="pg-proj-nota"><b>' + rotulo + '</b></div>' : '') +
+    linha('Real', p.real, 'real', PG_n0(p.real) + u) +
+    linha('Seg.', p.seg || 0, 'seg', p.seg == null ? 's/ venda' : PG_n0(p.seg) + u) +
+    linha('Proj.', p.proj, abaixo ? 'abaixo' : 'ok', PG_n0(p.proj) + u) + nota + '</div>';
+}
+function PG_projHtml(r){
+  const p = PG_projecao(r);
+  const cod = r.codigo ? normCod(String(r.codigo).trim()) : '';
+  const par = PG_PARES[cod] ? PG_projecao({ codigo: PG_PARES[cod], setor: r.setor, produto: '', quantidade: null, unidade: r.unidade }) : null;
+  if(!p && !par) return '<span class="pg-est vazio">sem estoque</span>';
+  const rot = x => x.tipo === 'LOJA' ? 'Loja (Nata)' : 'Fábrica (Forno)';
+  if(!par) return PG_projBloco(p);
+  return (p ? PG_projBloco(p, rot(p)) : '') + PG_projBloco(par, rot(par) + ' · não programado');
 }
 
 // Tempo estimado de cada item = quantidade ÷ ritmo histórico (produção real ÷ horas de produção apontadas, últimos 90 dias)
