@@ -28297,6 +28297,7 @@ function PG_projecao(r, opt){
     // Salgado loja (mini pastel nata): estoque em pacotes. Caixa de produção = Mapa ("Pacotes" por caixa de produção)
     if(/^caix/.test(unQ) && mp['Pacotes']) add = q * mp['Pacotes'];
     else if(/^un/.test(unQ) && g && pctG) add = q * g / pctG;
+    else if(/^un/.test(unQ) && PG_pecasLoja(codR, 'pct') > 0) add = q / PG_pecasLoja(codR, 'pct');   // pacote "C/3 UN" / "4X130G": unidades ÷ peças por pacote
     if(!add) conv = false;
   }else if(q > 0){
     if(/^caix/.test(unQ) && /^(CX|CAIXA)/.test(unEst)) add = q;
