@@ -28261,6 +28261,7 @@ async function PG_carregarMapa(){
 function PG_pctPorCx(cod){
   const cat = PG_catalog.find(p => normCod(String(p.codigo)) === normCod(String(cod)));
   const d = String((cat && cat.descricao) || '');
+  if(PG_CX_PCT[normCod(String(cod))]) return PG_CX_PCT[normCod(String(cod))];
   return Number((d.match(/CX\s*C\s*\/?\s*(\d+)/i) || d.match(/C\/\s*(\d+)\s*PCTS?/i) || [])[1]) || 0;
 }
 function PG_projecao(r, opt){
@@ -28319,6 +28320,14 @@ const PG_FAB_LOJAS = {
   '11':['3396'], '12':['3397']   // lojas 3391/3396/3397 não vêm no estoque do CIGAM: só o Embalar p/ loja, sem barras de estoque
 };
 const PG_LOJA2FAB = {}, PG_PARES = {};
+// Pastel Nata: escolher o pacote de loja (C/3 UN) conta como programar o produto de fábrica — a quantidade soma na fábrica e o Embalar p/ loja divide
+const PG_LOJA_COMO_FAB = { '7197':1, '7198':1, '7199':1 };
+// Pacotes por caixa que o nome do catálogo não traz (vem do nome nos relatórios de venda: "3X130G - CX C/18PCTS")
+const PG_CX_PCT = { '7197':18, '7198':18, '7199':18 };
+function PG_codEf(r){
+  const c = r.codigo ? normCod(String(r.codigo).trim()) : '';
+  return PG_LOJA_COMO_FAB[c] && PG_LOJA2FAB[c] ? PG_LOJA2FAB[c] : c;
+}
 Object.keys(PG_FAB_LOJAS).forEach(f => { PG_PARES[f] = PG_FAB_LOJAS[f][0]; PG_FAB_LOJAS[f].forEach(l => { PG_LOJA2FAB[l] = f; PG_PARES[l] = f; }); });
 // Unidades do produto de fábrica dentro de 1 unidade de estoque da loja: pacote "4X165G" = 4, "C/3 UN" = 3; estoque da loja em UN = 1
 function PG_pecasLoja(cod, un){
@@ -28341,7 +28350,7 @@ function PG_projBloco(p, rotulo){
 // Estoque de fábrica e de loja do produto (próprio código ou o par Forno/Nata). Devolve { FABRICA:{cod,un}, LOJA:{cod,un} }
 function PG_lados(r){
   const out = { LOJAS: [] };
-  const cod = r.codigo ? normCod(String(r.codigo).trim()) : '';
+  const cod = PG_codEf(r);
   // item de fábrica: junta todas as lojas dele; item de loja: só ele e a fábrica de origem
   const cands = PG_FAB_LOJAS[cod] ? [cod].concat(PG_FAB_LOJAS[cod]) : [cod, PG_PARES[cod]];
   cands.forEach(c => {
@@ -28358,7 +28367,7 @@ function PG_lados(r){
 // Produto com estoque de fábrica e de loja: o usuário informa quanto embalar para a loja (vai para a OP da Embalagem)
 function PG_lojasInfo(r){
   const l = PG_lados(r);
-  const cod = r.codigo ? normCod(String(r.codigo).trim()) : '';
+  const cod = PG_codEf(r);
   if(!(l.FABRICA && l.FABRICA.cod === cod && l.LOJAS.length)) return [];
   return l.LOJAS.slice(0, 2).map((lj, k) => {
     const cx = lj.un === 'pct' && PG_pctPorCx(lj.cod) > 0;
@@ -28370,8 +28379,13 @@ function PG_lojaInfo(r){ return PG_lojasInfo(r)[0] || null; }   // só quando o 
 // Quantidade embalada p/ loja k (1 ou 2) e a unidade dela
 function PG_qLoja(r, k){ return Number(k === 2 ? r.qtd_loja2 : r.qtd_loja) || 0; }
 function PG_unLoja(r, k){ return (k === 2 ? r.un_loja2 : r.un_loja) || ((PG_lojasInfo(r)[k - 1]) || {}).un || ''; }
+// Texto do pedido da Embalagem: "20 CAIXAS P/ LOJA" (com duas lojas: "20 CAIXAS P/ LOJA (pct c/4) + 5 CAIXAS P/ LOJA (pct c/2)")
+function PG_lojaUnTxt(q, un){
+  const u = String(un || '').toLowerCase(), um = Number(q) === 1;
+  return u === 'cx' ? (um ? 'CAIXA' : 'CAIXAS') : u === 'pct' ? (um ? 'PACOTE' : 'PACOTES') : u.toUpperCase();
+}
 function PG_lojaTxt(r){
-  return [1, 2].filter(k => PG_qLoja(r, k) > 0).map(k => PG_fmt(PG_qLoja(r, k)) + ' ' + PG_unLoja(r, k) + ((PG_lojasInfo(r)[k - 1] || {}).rot ? ' (' + PG_lojasInfo(r)[k - 1].rot + ')' : '')).join(' + ');
+  return [1, 2].filter(k => PG_qLoja(r, k) > 0).map(k => PG_fmt(PG_qLoja(r, k)) + ' ' + PG_lojaUnTxt(PG_qLoja(r, k), PG_unLoja(r, k)) + ' P/ LOJA' + ((PG_lojasInfo(r)[k - 1] || {}).rot ? ' (' + PG_lojasInfo(r)[k - 1].rot + ')' : '')).join(' + ');
 }
 // O que foi embalado para a loja, na unidade da fábrica (caixa de 5 kg): sai da produção total, o resto fica na fábrica.
 // Conversão pelo peso: caixa/pacote da loja (nome: "CX C/18", "PCT600G") → kg → caixas da fábrica ("C/5KG"). null = sem como converter.
@@ -28398,7 +28412,7 @@ function PG_lojaEmFabrica(r, l, k){
 function PG_projHtml(r){
   const l = PG_lados(r);
   if(!l.FABRICA && !l.LOJA) return '<span class="pg-est vazio">sem estoque</span>';
-  const cod = normCod(String(r.codigo).trim());
+  const cod = PG_codEf(r);
   const temFab = !!(l.FABRICA && l.FABRICA.cod === cod);   // item escolhido é o de fábrica (o de loja puro soma a quantidade na loja)
   const blocos = [];
   // O embalado p/ loja sai da produção programada: não pode passar dela (o projetado nunca fica abaixo do real)
@@ -28643,8 +28657,8 @@ function PG_render(){
 
 // Destino final: o que foi digitado + a divisão loja/fábrica montada a partir do "Embalar p/ loja" (não precisa escrever a quantidade)
 function PG_destinoAuto(r){
-  const t = [1, 2].filter(k => PG_qLoja(r, k) > 0).map(k => PG_fmt(PG_qLoja(r, k)) + ' ' + PG_unLoja(r, k) + ((PG_lojasInfo(r)[k - 1] || {}).rot ? ' (' + PG_lojasInfo(r)[k - 1].rot + ')' : '')).join(' + ');
-  return t ? 'LOJA ' + t + ' · resto FÁBRICA' : '';
+  const t = PG_lojaTxt(r);
+  return t ? t + ' · resto FÁBRICA' : '';
 }
 function PG_destinoFinal(r){ return [PG_destinoAuto(r), r.destino].filter(Boolean).join(' | '); }
 function PG_setLoja(i, v, k){
@@ -28880,7 +28894,7 @@ function PG_paginaResumo(doc, pag){
   PG_SETORES.forEach(s => {
     const l = PG_porSetor(s); if(!l.length) return;
     body.push([{ content: s, colSpan: 3, styles: { fillColor: [34,34,34], textColor: [255,255,255], fontStyle: 'bold', fontSize: 7.4, cellPadding: 1 } }]);
-    l.forEach(r => body.push([r.produto, PG_qtdTxt(r), [r.maquina, r.observacao ? 'OBS: ' + r.observacao : '', r.destino, PG_lojaTxt(r) ? 'Embalar loja: ' + PG_lojaTxt(r) : ''].filter(Boolean).join(' · ') || '-']));
+    l.forEach(r => body.push([r.produto, PG_qtdTxt(r), [r.maquina, r.observacao ? 'OBS: ' + r.observacao : '', r.destino, PG_lojaTxt(r)].filter(Boolean).join(' · ') || '-']));
   });
   const disp = 297 - (y + 3) - 18; const cell = Math.max(3.4, Math.min(6.2, disp / (body.length + 2)));
   const fs = cell < 4.4 ? 5.6 : (cell < 5 ? 6.2 : 7);
