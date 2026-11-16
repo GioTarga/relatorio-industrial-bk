@@ -28105,19 +28105,15 @@ document.addEventListener('DOMContentLoaded', ()=>{
 #pcpProgView .pg-est{font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap}
 #pcpProgView .pg-est.vazio{color:var(--ink-soft);font-weight:500}
 #pcpProgView .pg-est.zero{color:var(--red)}
-#pcpProgView .pg-proj{display:flex;flex-direction:column;gap:2px;min-width:0}
-#pcpProgView .pg-pb{display:grid;grid-template-columns:62px minmax(40px,1fr) auto;align-items:center;gap:6px;font-size:10px;font-weight:700;color:var(--ink-soft)}
-#pcpProgView .pg-pb-l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#pcpProgView .pg-pb-t{position:relative;display:block;height:10px;background:var(--cream);border-radius:5px;overflow:hidden}
-#pcpProgView .pg-pb-r,#pcpProgView .pg-pb-d{position:absolute;top:0;bottom:0}
-#pcpProgView .pg-pb-r{left:0;background:var(--ink-soft);opacity:.7}
-#pcpProgView .pg-pb-d.ok{background:var(--good)}
-#pcpProgView .pg-pb-d.abaixo{background:var(--red)}
-#pcpProgView .pg-pb-d.neg{background:#d9b3b3}
-#pcpProgView .pg-pb-s{position:absolute;top:0;bottom:0;width:2px;background:var(--warn);z-index:1}
-#pcpProgView .pg-pb-v{font-size:11px;font-weight:800;white-space:nowrap;color:var(--ink);font-variant-numeric:tabular-nums}
-#pcpProgView .pg-pb-v.ok{color:var(--good)}
-#pcpProgView .pg-pb-v.abaixo{color:var(--red)}
+#pcpProgView .pg-proj{display:flex;flex-direction:column;gap:3px;min-width:0}
+#pcpProgView .pg-proj-l{display:grid;grid-template-columns:28px minmax(30px,1fr) 66px;align-items:center;gap:6px;font-size:10px;font-weight:700;color:var(--ink-soft)}
+#pcpProgView .pg-proj-t{height:7px;background:var(--cream);border-radius:4px;overflow:hidden}
+#pcpProgView .pg-proj-b{display:block;height:100%;border-radius:4px}
+#pcpProgView .pg-proj-b.real{background:var(--ink-soft)}
+#pcpProgView .pg-proj-b.seg{background:var(--warn)}
+#pcpProgView .pg-proj-b.ok{background:var(--good)}
+#pcpProgView .pg-proj-b.abaixo{background:var(--red)}
+#pcpProgView .pg-proj-v{text-align:right;color:var(--ink);white-space:nowrap}
 #pcpProgView tr.pg-st-ruim td:first-child{box-shadow:inset 4px 0 0 var(--red)}
 #pcpProgView tr.pg-st-ok td:first-child{box-shadow:inset 4px 0 0 var(--good)}
 #pcpProgView .pg-tempo{display:flex;flex-direction:column;gap:2px;font-size:11px}
@@ -28369,23 +28365,17 @@ function PG_pecasLoja(cod, un){
 let PG_flag = 0;
 // Uma barra por lado: cinza = estoque atual, cor = produção programada, risco dourado = estoque de segurança
 function PG_projBloco(p, rotulo){
-  const max = Math.max(p.real, p.seg || 0, p.proj, 1) * 1.04;
-  const pc = v => (Math.max(0, v) / max * 100).toFixed(1);
+  const max = Math.max(p.real, p.seg || 0, p.proj, 1);
+  const linha = (rot, val, cls, txt) => '<div class="pg-proj-l"><span>' + rot + '</span><span class="pg-proj-t"><span class="pg-proj-b ' + cls + '" style="width:' + Math.max(0, val / max * 100).toFixed(1) + '%"></span></span><span class="pg-proj-v">' + txt + '</span></div>';
   const abaixo = p.proj < 0 || (p.seg != null && p.proj < p.seg);
   PG_flag = Math.max(PG_flag, abaixo ? 2 : 1);
-  const cls = abaixo ? 'abaixo' : 'ok';
   const u = ' ' + PG_esc(p.un);
-  const base = Math.min(p.real, Math.max(p.proj, 0));
-  const dif = p.proj - p.real;
-  const delta = Math.abs(dif) > 1e-9
-    ? '<span class="pg-pb-d ' + (dif > 0 ? cls : 'neg') + '" style="left:' + pc(Math.min(p.real, p.proj)) + '%;width:' + (pc(Math.max(p.real, Math.max(p.proj, 0))) - pc(Math.min(p.real, Math.max(p.proj, 0)))).toFixed(1) + '%"></span>' : '';
-  const seg = p.seg ? '<span class="pg-pb-s" style="left:' + pc(p.seg) + '%"></span>' : '';
-  const txt = Math.abs(dif) > 1e-9 ? PG_n0(p.real) + ' → ' + PG_n0(p.proj) + u : PG_n0(p.real) + u;
-  const tip = 'Real ' + PG_n0(p.real) + ' · Seg. ' + (p.seg == null ? 's/ venda' : PG_n0(p.seg)) + ' · Projetado ' + PG_n0(p.proj) + u + ' (cinza = estoque atual, cor = produção, risco = segurança)';
   const nota = (p.q > 0 && !p.conv ? '<div class="pg-proj-nota">sem rendimento no Mapa: projetado = real</div>' : '') + (p.nota ? '<div class="pg-proj-nota">' + PG_esc(p.nota) + '</div>' : '');
-  return '<div class="pg-proj" title="' + tip + '"><div class="pg-pb"><span class="pg-pb-l" title="' + PG_esc(rotulo || '') + '">' + PG_esc(rotulo || '') + '</span>' +
-    '<span class="pg-pb-t"><span class="pg-pb-r" style="width:' + pc(base) + '%"></span>' + delta + seg + '</span>' +
-    '<span class="pg-pb-v ' + cls + '">' + txt + '</span></div>' + nota + '</div>';
+  return '<div class="pg-proj">' +
+    (rotulo ? '<div class="pg-proj-nota"><b>' + rotulo + '</b></div>' : '') +
+    linha('Real', p.real, 'real', PG_n0(p.real) + u) +
+    linha('Seg.', p.seg || 0, 'seg', p.seg == null ? 's/ venda' : PG_n0(p.seg) + u) +
+    linha('Proj.', p.proj, abaixo ? 'abaixo' : 'ok', PG_n0(p.proj) + u) + nota + '</div>';
 }
 // Estoque de fábrica e de loja do produto (próprio código ou o par Forno/Nata). Devolve { FABRICA:{cod,un}, LOJA:{cod,un} }
 function PG_lados(r){
