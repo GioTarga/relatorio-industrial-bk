@@ -28953,13 +28953,26 @@ function PG_paginaResumo(doc, pag){
   const body = [];
   PG_SETORES.forEach(s => {
     const l = PG_porSetor(s); if(!l.length) return;
-    body.push([{ content: s, colSpan: 3, styles: { fillColor: [34,34,34], textColor: [255,255,255], fontStyle: 'bold', fontSize: 7.4, cellPadding: 1 } }]);
-    l.forEach(r => body.push([r.produto, PG_qtdTxt(r), [r.maquina, r.observacao ? 'OBS: ' + r.observacao : '', r.destino, PG_lojaTxt(r)].filter(Boolean).join(' · ') || '-']));
+    // Tempo estimado de produção (ritmo médio dos últimos 90 dias): só no Giro Dia por enquanto; cada troca de máquina soma o setup
+    const giro = s === 'GIRO DIA';
+    let totH = 0, setups = 0, ant = null;
+    const tempos = l.map(r => {
+      if(!giro) return '';
+      const t = PG_tempoH(r);
+      if(!(Number(r.quantidade) > 0)) return '-';
+      const mq = PG_maqGiro(r); if(ant && ant !== mq) setups++; ant = mq;
+      if(t && t.h) totH += t.h;
+      return t && t.h ? PG_hhmm(t.h) + ' h' : 's/ histórico';
+    });
+    const semH = tempos.filter(x => x === 's/ histórico').length;
+    const tot = giro ? totH + setups * PG_SETUP_H : 0;
+    body.push([{ content: s + (giro && totH > 0 ? '   ·   tempo estimado total ' + PG_hhmm(tot) + ' h' + (setups ? ' (inclui ' + setups * 30 + ' min de setup)' : '') + (semH ? ' · ' + semH + ' sem histórico, não somado' : '') : ''), colSpan: 4, styles: { fillColor: [34,34,34], textColor: [255,255,255], fontStyle: 'bold', fontSize: 7.4, cellPadding: 1 } }]);
+    l.forEach((r, i) => body.push([r.produto, PG_qtdTxt(r), tempos[i], [r.maquina, r.observacao ? 'OBS: ' + r.observacao : '', r.destino, PG_lojaTxt(r)].filter(Boolean).join(' · ') || '-']));
   });
   const disp = 297 - (y + 3) - 18; const cell = Math.max(3.4, Math.min(6.2, disp / (body.length + 2)));
   const fs = cell < 4.4 ? 5.6 : (cell < 5 ? 6.2 : 7);
-  doc.autoTable(PG_estiloTabela({ startY: y + 2, margin: { left: 12, right: 12, bottom: 10 }, head: [['Produto','Planejado','Máquina / destino']], body,
-    columnStyles: { 0:{cellWidth:92,fontStyle:'bold'}, 1:{cellWidth:24}, 2:{cellWidth:'auto'} },
+  doc.autoTable(PG_estiloTabela({ startY: y + 2, margin: { left: 12, right: 12, bottom: 10 }, head: [['Produto','Planejado','Tempo est.','Máquina / destino']], body,
+    columnStyles: { 0:{cellWidth:84,fontStyle:'bold'}, 1:{cellWidth:22}, 2:{cellWidth:20}, 3:{cellWidth:'auto'} },
     headStyles: { fillColor: PG_CINZA, textColor: PG_VERMELHO, fontStyle: 'bold', halign: 'left' },
     styles: { font:'helvetica', fontSize: fs, textColor: PG_TEXTO, lineColor: PG_LINHA, lineWidth: 0.2, cellPadding: { top: Math.max(0.4, (cell - fs * 0.42) / 2), bottom: Math.max(0.4, (cell - fs * 0.42) / 2), left: 1.4, right: 1.4 }, valign: 'middle' } }));
   return pag + 1;
