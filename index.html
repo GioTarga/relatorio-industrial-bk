@@ -28130,6 +28130,11 @@ document.addEventListener('DOMContentLoaded', ()=>{
 #pcpProgView .pg-maq-f{display:block;height:100%;background:var(--red-dark);border-radius:3px}
 #pcpProgView .pg-maq-f.ok{background:#2f7d4f}
 #pcpProgView .pg-maq-n{white-space:nowrap;color:var(--ink)}
+#pcpProgView .pg-tempo span b{font-size:inherit;font-weight:800;color:var(--ink)}
+#pcpProgView .pg-maq-bl{display:flex;flex-direction:column;gap:3px;margin-top:6px;font-size:10px;font-weight:700;color:var(--ink-soft)}
+#pcpProgView .pg-maq-r{display:grid;grid-template-columns:34px minmax(30px,1fr) auto;align-items:center;gap:6px}
+#pcpProgView .pg-maq-rv{color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums}
+#pcpProgView .pg-maq-f.cap{background:var(--ink-soft);opacity:.45}
 #pcpProgView .pg-obs-b{background:none;border:1px dashed var(--line);border-radius:6px;color:var(--ink-soft);font-size:10px;font-weight:700;padding:2px 8px;cursor:pointer}
 #pcpProgView .pg-obs-b:hover{border-color:var(--red);color:var(--red)}
 #pcpProgView .pg-dauto{font-size:10px;font-weight:700;color:var(--ink);margin-bottom:3px;line-height:1.25}
@@ -28537,7 +28542,7 @@ function PG_tempoH(r){
     const tm = mk ? ((kc && PG_taxasMaq[mk + '|' + kc]) || PG_taxasMaq[mk + '|' + kn]) : null;
     const usaMaq = !!(tm && tm.qtd > 0 && tm.horas > 0);
     const t = usaMaq ? tm : ((kc && PG_taxas[kc]) || PG_taxas[kn]);
-    return (t && t.qtd > 0 && t.horas > 0) ? { h: qq / (t.qtd / t.horas), n: t.n, maq: usaMaq ? r.maquina : '' } : null;
+    return (t && t.qtd > 0 && t.horas > 0) ? { h: qq / (t.qtd / t.horas), n: t.n, maq: usaMaq ? r.maquina : '', rit: t.qtd / t.horas, ru: un } : null;
   };
   const un = PG_unKey(r.unidade);
   let res = busca(un, q);
@@ -28588,7 +28593,12 @@ function PG_maqInfoHtml(r){
   const ritmo = taxa * pecas;
   if(!cap) return lin('ritmo ' + PG_fmt(Math.round(ritmo)) + ' un/h · sem capacidade cadastrada', base);
   const pct = ritmo / cap * 100;
-  return lin(Math.round(pct) + '% da capacidade', base + ' Ritmo médio ' + PG_fmt(Math.round(ritmo)) + ' un/h · capacidade ' + PG_fmt(cap) + ' un/h · faltam ' + PG_fmt(Math.max(0, Math.round(cap - ritmo))) + ' un/h.', pct);
+  const tip = base + ' Ritmo médio ' + PG_fmt(Math.round(ritmo)) + ' un/h · capacidade ' + PG_fmt(cap) + ' un/h · faltam ' + PG_fmt(Math.max(0, Math.round(cap - ritmo))) + ' un/h.';
+  const brr = (rot, cls, w, v) => '<div class="pg-maq-r"><span class="pg-maq-rl">' + rot + '</span><span class="pg-maq-t"><span class="pg-maq-f' + cls + '" style="width:' + w.toFixed(1) + '%"></span></span><span class="pg-maq-rv">' + v + '</span></div>';
+  return '<div class="pg-maq-bl" title="' + PG_esc(tip) + '">' +
+    brr('Ritmo', pct >= 85 ? ' ok' : '', Math.min(pct, 100), PG_fmt(Math.round(ritmo)) + ' un/h') +
+    brr('Cap.', ' cap', 100, PG_fmt(cap) + ' un/h') +
+    '<div class="pg-maq-n">' + Math.round(pct) + '% da capacidade</div></div>';
 }
 // Giro Dia: pães redondos (bilha, hambúrguer, sonho, superfofo) rodam na Sotorriva; pão de queijo e chipa na GA Pão de Queijo; o resto na GA.
 // Cada troca de máquina entre itens consecutivos da lista soma PG_SETUP_H de setup (o primeiro item não leva setup).
@@ -28619,7 +28629,7 @@ function PG_atualizaTempos(){
       else if(x.t.semHist) c.innerHTML = '<div class="pg-tempo"><span class="pg-est vazio">sem histórico</span>' + maq + '</div>';
       else{
         const pct = total > 0 ? x.t.h / total * 100 : 0;
-        c.innerHTML = '<div class="pg-tempo" title="Ritmo médio de ' + x.t.n + ' produções dos últimos 90 dias' + (x.t.maq ? ' na máquina ' + x.t.maq : ' (todas as máquinas)') + '"><b>' + PG_hhmm(x.t.h) + ' h</b><span>' + Math.round(pct) + '% do setor</span><span class="pg-tempo-t"><span class="pg-tempo-b" style="width:' + pct.toFixed(1) + '%"></span></span>' + (x.t.maq ? '<span>ritmo ' + x.t.maq + '</span>' : '') + maq + '</div>';
+        c.innerHTML = '<div class="pg-tempo" title="Ritmo médio de ' + x.t.n + ' produções dos últimos 90 dias' + (x.t.maq ? ' na máquina ' + x.t.maq : ' (todas as máquinas)') + '"><b>' + PG_hhmm(x.t.h) + ' h</b><span>' + Math.round(pct) + '% do setor</span><span class="pg-tempo-t"><span class="pg-tempo-b" style="width:' + pct.toFixed(1) + '%"></span></span>' + (x.t.maq ? '<span>ritmo ' + x.t.maq + ' · <b>' + PG_fmt(Math.round(x.t.rit * 10) / 10) + ' ' + (x.t.ru === 'un' ? 'un' : PG_un(2, PG_rows[x.i].unidade)) + '/h</b></span>' : '') + maq + '</div>';
       }
     });
     const sem = tem.filter(x => x.t && x.t.semHist).length;
