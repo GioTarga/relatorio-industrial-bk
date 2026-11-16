@@ -28089,6 +28089,10 @@ document.addEventListener('DOMContentLoaded', ()=>{
 #pcpProgView .pg-qrow select{flex:0 0 58px;width:58px;padding-left:3px;padding-right:2px}
 #pcpProgView .pg-qtdc input{margin-top:3px}
 #pcpProgView .pg-qrow input{margin-top:0}
+#pcpProgView .pg-rod{display:grid;grid-template-columns:1fr 1fr;gap:4px 6px;margin-top:4px}
+#pcpProgView .pg-rod label{font-size:9.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.4px}
+#pcpProgView .pg-rod input{margin-top:0}
+#pcpProgView .pg-rod-t{grid-column:1/-1;font-size:11px;font-weight:800;color:var(--ink)}
 #pcpProgView .pg-ll{margin-top:6px;white-space:normal}
 #pcpProgView .pg-estl{margin-top:4px}
 #pcpProgView .pg-estl .pg-est{white-space:normal}
@@ -28198,7 +28202,7 @@ function PG_un(q, u){
   const v = m[u] || [String(u || '').toLowerCase(), String(u || '').toLowerCase()];
   return Number(q) === 1 ? v[0] : v[1];
 }
-function PG_qtdTxt(r){ return (r.quantidade == null || r.quantidade === '') ? '' : PG_fmt(r.quantidade) + ' ' + PG_un(r.quantidade, r.unidade); }
+function PG_qtdTxt(r){ return (r.quantidade == null || r.quantidade === '') ? '' : PG_fmt(r.quantidade) + ' ' + PG_un(r.quantidade, r.unidade) + (r.qtd_rodada1 > 0 && r.qtd_rodada2 > 0 ? ' (' + PG_fmt(r.qtd_rodada1) + ' + ' + PG_fmt(r.qtd_rodada2) + ')' : ''); }
 
 function PG_aba(qual){
   const pg = document.getElementById('page-pcp-estoque');
@@ -28679,7 +28683,7 @@ function PG_render(){
       const st = PG_flag === 2 ? 'pg-st-ruim' : PG_flag === 1 ? 'pg-st-ok' : '';
       return '<tr class="' + st + '">' +
         '<td class="pg-prodc"><span class="pg-cod' + (r.codigo ? '' : ' pend') + '">' + PG_esc(r.codigo || 'pendente') + '</span><div class="pg-pnome">' + PG_esc(r.produto) + '</div><input list="pgDatalist" value="" onchange="PG_prod(' + i + ',this.value)" placeholder="' + (r.produto ? 'Trocar produto…' : 'Produto (nome ou código)') + '"><div class="pg-estl">' + PG_estoqueTxt(r) + '</div></td>' +
-        '<td class="pg-qtdc"><div class="pg-qrow"><input type="number" min="0" step="any" value="' + (r.quantidade == null ? '' : r.quantidade) + '" oninput="PG_set(' + i + ',\'quantidade\',this.value===\'\'?null:Number(this.value))"><select onchange="PG_set(' + i + ',\'unidade\',this.value)">' + PG_UNIDADES.map(u => '<option' + (u === r.unidade ? ' selected' : '') + '>' + u + '</option>').join('') + '</select></div>' + (PG_lojasInfo(r).length ? '<div class="pg-est vazio pg-ll">Embalar p/ loja</div>' + lojas : '') + '</td>' +
+        '<td class="pg-qtdc">' + PG_qtdHtml(i, r) + (PG_lojasInfo(r).length ? '<div class="pg-est vazio pg-ll">Embalar p/ loja</div>' + lojas : '') + '</td>' +
         '<td id="pgProj' + i + '">' + ph + '</td>' +
         '<td id="pgTempo' + i + '"></td>' +
         '<td class="pg-maq">' + PG_maqCampo(i) + '<div id="pgMaq' + i + '">' + PG_maqInfoHtml(r) + '</div></td>' +
@@ -28699,6 +28703,31 @@ function PG_destinoAuto(r){
   return t ? t + ' · resto FÁBRICA' : '';
 }
 function PG_destinoFinal(r){ return [PG_destinoAuto(r), r.destino].filter(Boolean).join(' | '); }
+// Padaria Noturno roda até 2 vezes por noite: a quantidade total (usada na projeção, no tempo e na OP) é a soma das rodadas
+function PG_rodadasOn(r){ return r.setor === 'PADARIA NOTURNO'; }
+function PG_qtdHtml(i, r){
+  const un = '<select onchange="PG_set(' + i + ',\'unidade\',this.value)">' + PG_UNIDADES.map(u => '<option' + (u === r.unidade ? ' selected' : '') + '>' + u + '</option>').join('') + '</select>';
+  if(!PG_rodadasOn(r))
+    return '<div class="pg-qrow"><input type="number" min="0" step="any" value="' + (r.quantidade == null ? '' : r.quantidade) + '" oninput="PG_set(' + i + ',\'quantidade\',this.value===\'\'?null:Number(this.value))">' + un + '</div>';
+  // linha antiga sem rodadas: o total aparece na 1ª rodada
+  const semRod = r.qtd_rodada1 == null && r.qtd_rodada2 == null;
+  const r1 = semRod ? r.quantidade : r.qtd_rodada1, r2 = r.qtd_rodada2;
+  const v = x => x == null ? '' : x;
+  return '<div class="pg-qrow">' + un + '<span class="pg-rod-t" id="pgRodT' + i + '" style="align-self:center">' + (r.quantidade > 0 ? 'Total ' + PG_fmt(r.quantidade) : '') + '</span></div>' +
+    '<div class="pg-rod"><label>1ª rodada</label><label>2ª rodada</label>' +
+    '<input type="number" min="0" step="any" value="' + v(r1) + '" oninput="PG_setRod(' + i + ',1,this.value)">' +
+    '<input type="number" min="0" step="any" value="' + v(r2) + '" oninput="PG_setRod(' + i + ',2,this.value)"></div>';
+}
+function PG_setRod(i, k, val){
+  const r = PG_rows[i], q = val === '' ? null : Number(val);
+  if(r.qtd_rodada1 == null && r.qtd_rodada2 == null && k === 2) r.qtd_rodada1 = r.quantidade;   // preserva o total antigo como 1ª rodada
+  r['qtd_rodada' + k] = q;
+  const a = Number(r.qtd_rodada1) || 0, b = Number(r.qtd_rodada2) || 0;
+  r.quantidade = (r.qtd_rodada1 == null && r.qtd_rodada2 == null) ? null : a + b;
+  PG_marcarSujo();
+  const t = document.getElementById('pgRodT' + i); if(t) t.textContent = r.quantidade > 0 ? 'Total ' + PG_fmt(r.quantidade) : '';
+  PG_atualizaProj(i); PG_atualizaTempos();
+}
 // Destino/Observação ficam escondidos atrás de "+ obs" até serem usados; o texto automático do destino aparece sempre
 const PG_obsAberto = new WeakSet();
 function PG_dobsHtml(i){
@@ -28735,7 +28764,7 @@ function PG_set(i, campo, valor){
 }
 function PG_add(setor){
   const ordem = PG_rows.filter(r => r.setor === setor).length;
-  PG_rows.push({ data: document.getElementById('pgData').value, setor, ordem, codigo: null, produto: '', quantidade: null, unidade: 'Massa', maquina: '', destino: '', observacao: '', qtd_loja: null, un_loja: null, qtd_loja2: null, un_loja2: null });
+  PG_rows.push({ data: document.getElementById('pgData').value, setor, ordem, codigo: null, produto: '', quantidade: null, qtd_rodada1: null, qtd_rodada2: null, unidade: 'Massa', maquina: '', destino: '', observacao: '', qtd_loja: null, un_loja: null, qtd_loja2: null, un_loja2: null });
   PG_marcarSujo(); PG_render();
 }
 function PG_remover(i){ PG_rows.splice(i, 1); PG_marcarSujo(); PG_render(); }
@@ -28786,7 +28815,7 @@ async function PG_salvar(){
     const cont = {};
     const novas = validos.map(r => {
       cont[r.setor] = (cont[r.setor] || 0);
-      return { data, setor: r.setor, ordem: cont[r.setor]++, codigo: r.codigo || null, produto: String(r.produto).trim(), quantidade: r.quantidade, unidade: r.unidade, maquina: r.maquina || null, destino: r.destino || null, observacao: r.observacao || null, qtd_loja: r.qtd_loja > 0 ? r.qtd_loja : null, un_loja: r.qtd_loja > 0 ? (r.un_loja || (PG_lojaInfo(r) || {}).un || null) : null, qtd_loja2: r.qtd_loja2 > 0 ? r.qtd_loja2 : null, un_loja2: r.qtd_loja2 > 0 ? (r.un_loja2 || ((PG_lojasInfo(r)[1]) || {}).un || null) : null };
+      return { data, setor: r.setor, ordem: cont[r.setor]++, codigo: r.codigo || null, produto: String(r.produto).trim(), quantidade: r.quantidade, qtd_rodada1: PG_rodadasOn(r) && r.qtd_rodada1 != null ? r.qtd_rodada1 : null, qtd_rodada2: PG_rodadasOn(r) && r.qtd_rodada2 != null ? r.qtd_rodada2 : null, unidade: r.unidade, maquina: r.maquina || null, destino: r.destino || null, observacao: r.observacao || null, qtd_loja: r.qtd_loja > 0 ? r.qtd_loja : null, un_loja: r.qtd_loja > 0 ? (r.un_loja || (PG_lojaInfo(r) || {}).un || null) : null, qtd_loja2: r.qtd_loja2 > 0 ? r.qtd_loja2 : null, un_loja2: r.qtd_loja2 > 0 ? (r.un_loja2 || ((PG_lojasInfo(r)[1]) || {}).un || null) : null };
     });
     if(novas.length){
       const ins = await client.from('programacao_producao').insert(novas);
