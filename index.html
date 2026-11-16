@@ -28904,6 +28904,27 @@ function PG_folhaSetor(doc, setor, nomeTela, modo, pag){
   const rec = PG_RECHEIO.includes(setor);
   const W = PG_novaPagina(doc, 'l', 'BREAD KING  ·  FOLHA DE APONTAMENTO DE PRODUÇÃO', 'Programação de produção ' + PG_dataBR(data));
   PG_cabecalhoSetor(doc, W, nomeTela, data);
+  if(PG_rodadasOn({ setor }) && modo !== 'destino'){
+    // Padaria Noturno: duas rodadas por noite, cada uma com planejado, produzido, início e fim
+    const pl = (r, k) => {
+      const v = k === 1 ? ((r.qtd_rodada1 == null && r.qtd_rodada2 == null) ? r.quantidade : r.qtd_rodada1) : r.qtd_rodada2;
+      return v > 0 ? PG_fmt(v) + ' ' + PG_un(v, r.unidade) : '';
+    };
+    const h2 = ['Planejado','Produzido','Início','Fim'];
+    const head2 = [
+      [{ content:'Cód.', rowSpan:2 }, { content:'Produto', rowSpan:2 }, { content:'Máquina / turno', rowSpan:2 }, { content:'1ª RODADA', colSpan:4, styles:{ halign:'center' } }, { content:'2ª RODADA', colSpan:4, styles:{ halign:'center' } }, { content:'Pessoas', rowSpan:2 }],
+      h2.concat(h2)
+    ];
+    const body2 = linhas.map(r => [r.codigo || '', r.produto, (r.maquina || '-') + (r.observacao ? '\nOBS: ' + r.observacao : ''), pl(r, 1), '', ':', ':', pl(r, 2), '', ':', ':', '']);
+    const pl_ = { halign:'center', fontStyle:'bold', fontSize:8.5 }, hr = { halign:'center', textColor:[136,136,136] };
+    const cs2 = { 0:{cellWidth:16,fontStyle:'bold'}, 1:{cellWidth:'auto',fontStyle:'bold'}, 2:{cellWidth:24,textColor:[85,85,85],fontSize:7.2},
+      3:Object.assign({cellWidth:20}, pl_), 4:{cellWidth:20}, 5:Object.assign({cellWidth:13}, hr), 6:Object.assign({cellWidth:13}, hr),
+      7:Object.assign({cellWidth:20}, pl_), 8:{cellWidth:20}, 9:Object.assign({cellWidth:13}, hr), 10:Object.assign({cellWidth:13}, hr), 11:{cellWidth:18} };
+    doc.autoTable(PG_estiloTabela({ startY: 35, margin: { left: 12, right: 12 }, head: head2, body: body2, columnStyles: cs2, bodyStyles: { minCellHeight: Math.max(7, Math.min(9, (210 - 35 - 16 - 62) / linhas.length)) } }));
+    PG_paradasEObs(doc, W, doc.lastAutoTable.finalY + 4);
+    PG_rodape(doc, pag);
+    return pag + 1;
+  }
   const head = ['Cód.','Produto', modo === 'destino' ? 'Destino' : 'Máquina / turno', 'Planejado','Produzido','Pessoas','Início','Fim'];
   if(rec) head.push('Recheio (cx)');
   const body = linhas.map(r => {
