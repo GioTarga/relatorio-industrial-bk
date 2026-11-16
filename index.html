@@ -28082,7 +28082,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
 #pcpProgView .pg-tw{overflow-x:auto}
 #pcpProgView table{width:100%;border-collapse:collapse}
 #pcpProgView .pg-tw table{table-layout:fixed}
-#pcpProgView .c-prod{width:21%}#pcpProgView .c-qtd{width:13%}#pcpProgView .c-tempo{width:8%}#pcpProgView .c-maq{width:15%}#pcpProgView .c-dobs{width:13%}#pcpProgView .c-x{width:24px}
+#pcpProgView .c-prod{width:21%}#pcpProgView .c-qtd{width:13%}#pcpProgView .c-proj{width:21%}#pcpProgView .c-tempo{width:9%}#pcpProgView .c-maq{width:15%}#pcpProgView .c-dobs{width:16%}#pcpProgView .c-x{width:34px}#pcpProgView td.pg-xc{padding:10px 2px;text-align:center}
 #pcpProgView td{vertical-align:top;overflow-wrap:anywhere}
 #pcpProgView .pg-qrow{display:flex;gap:4px}
 #pcpProgView .pg-qrow input{flex:1 1 0;min-width:52px}
@@ -28674,10 +28674,10 @@ function PG_render(){
         '<td id="pgTempo' + i + '"></td>' +
         '<td class="pg-maq">' + PG_maqCampo(i) + '<div id="pgMaq' + i + '">' + PG_maqInfoHtml(r) + '</div></td>' +
         '<td class="pg-dobs" id="pgDobs' + i + '">' + PG_dobsHtml(i) + '</td>' +
-        '<td><button class="pg-x" title="Remover" onclick="PG_remover(' + i + ')">✕</button></td></tr>';
+        '<td class="pg-xc"><button class="pg-x" title="Remover" onclick="PG_remover(' + i + ')">✕</button></td></tr>';
     }).join('');
     return '<div class="pg-setor"><div class="pg-setor-h">' + PG_esc(setor) + '<span>' + idxs.length + ' itens<span class="pg-tt" id="pgTT' + si + '"></span></span></div>' +
-      (idxs.length ? '<div class="pg-tw"><table><thead><tr><th class="c-prod">Produto</th><th class="c-qtd">Quantidade</th><th>Projeção do estoque</th><th class="c-tempo">Tempo estimado</th><th class="c-maq">Máquina / turno</th><th class="c-dobs">Destino / Observação</th><th class="c-x"></th></tr></thead><tbody>' + linhas + '</tbody></table></div>' : '') +
+      (idxs.length ? '<div class="pg-tw"><table><thead><tr><th class="c-prod">Produto</th><th class="c-qtd">Quantidade</th><th class="c-proj">Projeção do estoque</th><th class="c-tempo">Tempo estimado</th><th class="c-maq">Máquina / turno</th><th class="c-dobs">Destino / Observação</th><th class="c-x"></th></tr></thead><tbody>' + linhas + '</tbody></table></div>' : '') +
       '<button class="pg-add" onclick="PG_add(\'' + setor + '\')">+ Adicionar produto' + (rec ? '' : '') + '</button></div>';
   }).join('');
   PG_atualizaTempos();
