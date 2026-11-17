@@ -20244,7 +20244,7 @@ async function FALTA_carregarMapa(){
       const q=nome=>{const e=et.find(x=>x&&x.nome===nome);return e&&Number(e.qtd)>0?Number(e.qtd):0;};
       const kg=q('Kg de massa'),pac=q('Pacotes');
       const cx=q('Caixas');
-      if(q('Carrinho')&&(cx||q('Unidades')))FALTA.cx[normCod(m.codigo)]={carrinho:q('Carrinho'),unid:q('Unidades'),caixas:cx};
+      if(q('Carrinho')&&(cx||q('Unidades')))FALTA.cx[normCod(m.codigo)]={carrinho:q('Carrinho'),unid:q('Unidades'),caixas:cx,porMassa:q('Massas')>0};
       if(kg&&pac)FALTA.mapa[normCod(m.codigo)]={kg,pac,bloco:q('Blocos'),tela:q('Telas'),carrinho:q('Carrinho'),unid:q('Unidades')};
     });
   }catch(e){FALTA.mapa={};}
@@ -20284,10 +20284,12 @@ function FALTA_opPorCaixa(i,q,un,su){
     return{q:o,conv:true,rec:null,pct:null,txt:FALTA_num(o)+' '+su.toLowerCase()};
   }
   let cx=0;
-  if(/^carrinho/.test(un))cx=q/c.carrinho*c.caixas;
+  // etapa "Massas" no Mapa = carrinho/caixas cadastrados são por 1 massa (pré-assados: 1 massa = 3 carrinhos = 24 caixas)
+  if(c.porMassa&&/^massa/.test(un)&&!/kg/.test(un))cx=q*c.caixas;
+  else if(/^carrinho/.test(un))cx=q/c.carrinho*c.caixas;
   else if(/^(un|und|unidade)/.test(un)&&c.unid)cx=q/c.unid*c.caixas;
   if(!cx)return null;
-  const pct=(d.match(/CX\s*C\/\s*(\d+)\s*PCT/i)||[])[1],und=(d.match(/CX\s*C\/\s*(\d+)\s*UN/i)||[])[1];
+  const pct=(d.match(/CX\s*C\/\s*(\d+)\s*PCT/i)||(c.porMassa?d.match(/CX\s*C\/\s*(\d+)\s*UNID/i):null)||[])[1],und=(d.match(/CX\s*C\/\s*(\d+)\s*UN/i)||[])[1];
   let out=0;
   if(su==='CX')out=cx;
   else if(su==='PCT'&&pct)out=cx*Number(pct);
