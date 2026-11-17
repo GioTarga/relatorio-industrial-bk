@@ -20725,7 +20725,10 @@ function renderKanban(items){
   el.innerHTML=cols.map(([tipo,cls,label])=>{
     if(tipo==='CHAPECO'){
       const qc=((document.getElementById('searchAlert')||{}).value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
-      const lc=(chapecoData?chapecoData.itens:[]).filter(i=>!qc||(i.descricao||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(qc)).sort(sortChapeco);
+      const _stOk=i=>{const o=chapecoStatus(i).ord,sd=chapecoSaldo(i);
+        return statusFilter==='ALL'||(statusFilter==='DEFICIT'&&sd<0)||(statusFilter==='CRITICO'&&o===1)||(statusFilter==='DISPONIVEL'&&o===2);};
+      const _setorOk=i=>!alertaSetores.size||_setorTodosMarcados()||alertaSetores.has(setorDoItem(i));
+      const lc=(chapecoData?chapecoData.itens:[]).filter(i=>_stOk(i)&&_setorOk(i)).filter(i=>!qc||(i.descricao||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(qc)).sort(sortChapeco);
       const dfc=lc.filter(i=>chapecoSaldo(i)<0).length,bx=lc.filter(i=>chapecoStatus(i).ord===1).length;
       return `<div class="kb-col ${cls}">
       <div class="kb-col-head">${label}${chapecoData&&chapecoData.posicao?`<span class="kb-chap-ts">${opEsc(chapecoData.posicao)}</span>`:''}${dfc?`<span class="kb-def">${dfc} déficit</span>`:''}${bx?`<span class="kb-baixo">${bx} &lt; seg.</span>`:''}<span class="kb-count">${lc.length}</span></div>
