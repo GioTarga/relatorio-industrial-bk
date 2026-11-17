@@ -1191,15 +1191,15 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .vt-hint{font-size:10.5px;color:var(--ink-soft);margin-left:auto}
 #page-pcp-estoque .kb-board{display:grid;gap:12px;align-items:start}
 #page-pcp-estoque .kb-col{background:var(--cream);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;min-width:0;overflow:hidden}
-#page-pcp-estoque .kb-col-head{display:flex;align-items:center;gap:8px;padding:9px 12px;color:#fff;font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+#page-pcp-estoque .kb-col-head{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;padding:9px 12px;color:#fff;font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
 #page-pcp-estoque .kb-col-head .kb-count{margin-left:auto;font-size:10.5px;font-weight:700;letter-spacing:.3px;background:rgba(255,255,255,.18);border-radius:10px;padding:1px 8px}
-#page-pcp-estoque .kb-col-head .kb-def{font-size:10.5px;font-weight:700;letter-spacing:.3px;background:#fff;color:#c0392b;border-radius:10px;padding:1px 8px}
+#page-pcp-estoque .kb-col-head .kb-def{white-space:nowrap;font-size:10.5px;font-weight:700;letter-spacing:.3px;background:#fff;color:#c0392b;border-radius:10px;padding:1px 8px}
 #page-pcp-estoque .kb-col.fab .kb-col-head{background:var(--gold)}
 #page-pcp-estoque .kb-col.loja .kb-col-head{background:#8B0000}
 #page-pcp-estoque .kb-col.cafe .kb-col-head{background:#5b3a1e}
 #page-pcp-estoque .kb-col.chap .kb-col-head{background:#2f4858}
 #page-pcp-estoque .kb-col-head .kb-chap-ts{white-space:nowrap;font-size:10px;font-weight:600;letter-spacing:.2px;text-transform:none;opacity:.85}
-#page-pcp-estoque .kb-col-head .kb-baixo{font-size:10.5px;font-weight:700;letter-spacing:.3px;background:#e67e22;color:#fff;border-radius:10px;padding:1px 8px}
+#page-pcp-estoque .kb-col-head .kb-baixo{white-space:nowrap;font-size:10.5px;font-weight:700;letter-spacing:.3px;background:#e67e22;color:#fff;border-radius:10px;padding:1px 8px}
 #page-pcp-estoque .kb-col-body{display:flex;flex-direction:column;gap:8px;padding:8px;overflow-y:auto;max-height:calc(100vh - 300px);min-height:200px}
 #page-pcp-estoque .kb-card{background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--line);border-radius:8px;padding:9px 10px 8px;display:flex;flex-direction:column;gap:7px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
 #page-pcp-estoque .kb-card.red{border-left-color:#c0392b;background:#fdf3f2}
@@ -1415,7 +1415,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .kb-dias.none b{font-size:13px}
 #page-pcp-estoque .kb-sub{display:flex;flex-wrap:wrap;gap:4px;font-size:9.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--ink-soft)}
 #page-pcp-estoque .kb-sub span{background:#f1e8d8;border-radius:4px;padding:1px 6px}
-#page-pcp-estoque .kb-metrics{display:grid;grid-template-columns:repeat(var(--kbn,5),minmax(0,1fr));gap:4px;border-top:1px dashed var(--line);padding-top:6px}
+#page-pcp-estoque .kb-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:8px 6px;border-top:1px dashed var(--line);padding-top:7px}
 #page-pcp-estoque .kb-m{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}
 #page-pcp-estoque .kb-m small{font-size:8.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-soft)}
 #page-pcp-estoque .kb-m span{font-size:12px;font-weight:600;color:#3a3a3a;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -4582,16 +4582,6 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
       </div>
     </div>
     <div style="max-width:760px;margin-bottom:14px">
-      <div class="bk-st-31">Ordem de Produção <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink-soft)">(FOR-PCP-029 · a OP nova substitui a anterior; os produtos dela ficam em azul no Kanban)</span></div>
-      <div class="upload-card" id="cardOP" ondragover="event.preventDefault()" ondrop="handleDrop(event,'OP')">
-        <div class="upload-icon">📋</div>
-        <div class="upload-title" id="opFileName">FOR-PCP-029 Ordem de Produção Embalagem.xlsx</div>
-        <div class="upload-sub" id="opStatus">Nenhuma OP importada</div>
-        <input type="file" id="inputOP" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this,'OP')">
-        <button class="upload-btn" onclick="document.getElementById('inputOP').click()">📂 Selecionar arquivo</button>
-      </div>
-    </div>
-    <div style="max-width:760px;margin-bottom:14px">
       <div class="bk-st-31">Estoque CD Chapecó <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink-soft)">(upload diário · o arquivo novo substitui o anterior; aparece na coluna Chapecó do Kanban)</span></div>
       <div class="upload-card" id="cardChapeco" ondragover="event.preventDefault()" ondrop="handleDrop(event,'CHAPECO')">
         <div class="upload-icon">🚚</div>
@@ -4611,46 +4601,14 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
         <button class="upload-btn" onclick="document.getElementById('inputVendaChapeco').click()">📂 Selecionar arquivo</button>
       </div>
     </div>
-    <div class="upload-grid">
-      <div>
-        <div class="bk-st-31">Estoque Fábrica</div>
-        <div class="upload-card" id="cardFab" ondragover="event.preventDefault()" ondrop="handleDrop(event,'FABRICA')">
-          <div class="upload-icon">🏭</div>
-          <div class="upload-title" id="fabFileName">Posicao_EstoquePC1.FABRICA.xlsx</div>
-          <div class="upload-sub" id="fabStatus">Exportado do CIGAM 11</div>
-          <input type="file" id="inputFab" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this,'FABRICA')">
-          <button class="upload-btn" onclick="document.getElementById('inputFab').click()">📂 Selecionar arquivo</button>
-        </div>
-      </div>
-      <div>
-        <div class="bk-st-31">Estoque Loja</div>
-        <div class="upload-card" id="cardLoja" ondragover="event.preventDefault()" ondrop="handleDrop(event,'LOJA')">
-          <div class="upload-icon">🏪</div>
-          <div class="upload-title" id="lojaFileName">Posicao_EstoquePC1.LOJA.xlsx</div>
-          <div class="upload-sub" id="lojaStatus">Exportado do CIGAM 11</div>
-          <input type="file" id="inputLoja" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this,'LOJA')">
-          <button class="upload-btn" onclick="document.getElementById('inputLoja').click()">📂 Selecionar arquivo</button>
-        </div>
-      </div>
-      <div>
-        <div class="bk-st-31">Vendas — Fábrica</div>
-        <div class="upload-card" id="cardVendaFab" ondragover="event.preventDefault()" ondrop="handleDrop(event,'VENDA_FAB')">
-          <div class="upload-icon">📊</div>
-          <div class="upload-title" id="vendaFabFileName">Vendas_ProdutoPC1.VENDAFABRICA.xlsx</div>
-          <div class="upload-sub" id="vendaFabStatus">Exportado do CIGAM 11</div>
-          <input type="file" id="inputVendaFab" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this,'VENDA_FAB')">
-          <button class="upload-btn" onclick="document.getElementById('inputVendaFab').click()">📂 Selecionar arquivo</button>
-        </div>
-      </div>
-      <div>
-        <div class="bk-st-31">Vendas — Loja</div>
-        <div class="upload-card" id="cardVendaLoja" ondragover="event.preventDefault()" ondrop="handleDrop(event,'VENDA_LOJA')">
-          <div class="upload-icon">🛒</div>
-          <div class="upload-title" id="vendaLojaFileName">Vendas_ProdutoPC1.VENDALOJA.xlsx</div>
-          <div class="upload-sub" id="vendaLojaStatus">Exportado do CIGAM 11</div>
-          <input type="file" id="inputVendaLoja" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this,'VENDA_LOJA')">
-          <button class="upload-btn" onclick="document.getElementById('inputVendaLoja').click()">📂 Selecionar arquivo</button>
-        </div>
+    <div style="max-width:760px;margin-bottom:14px">
+      <div class="bk-st-31">Vendas — Fábrica + Loja <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink-soft)">(1 arquivo; o sistema separa Fábrica e Loja)</span></div>
+      <div class="upload-card" id="cardVendaUnica" ondragover="event.preventDefault()" ondrop="handleDrop(event,'VENDA_UNICA')">
+        <div class="upload-icon">📊</div>
+        <div class="upload-title" id="vendaUnicaFileName">Vendas_ProdutoPC1_Geral.xlsx</div>
+        <div class="upload-sub" id="vendaUnicaStatus">Exportado do CIGAM 11</div>
+        <input type="file" id="inputVendaUnica" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this,'VENDA_UNICA')">
+        <button class="upload-btn" onclick="document.getElementById('inputVendaUnica').click()">📂 Selecionar arquivo</button>
       </div>
     </div>
     <div style="margin-top:14px;max-width:760px">
@@ -19063,82 +19021,10 @@ function opDoItem(item){
   const c=normCod(String(item.codigo||'').trim());
   return (c&&opMapCod[c])||opMapDesc[opNormDesc(item.descricao)]||null;
 }
-function opParseXlsx(buf){
-  const wb=XLSX.read(buf,{type:'array',cellDates:true});
-  const ws=wb.Sheets[wb.SheetNames[0]];
-  const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null});
-  let data=null,hi=-1;
-  for(let i=0;i<Math.min(30,rows.length);i++){
-    const r=rows[i]||[];
-    const a=opNormDesc(r[0]);
-    if(a==='data'&&!data){
-      for(let j=1;j<r.length;j++){
-        const v=r[j];
-        if(v instanceof Date){data=new Date(v.getTime()+12*3600*1000).toISOString().slice(0,10);break;}
-        if(typeof v==='string'){const m=v.match(/(\d{2})\/(\d{2})\/(\d{4})/);if(m){data=m[3]+'-'+m[2]+'-'+m[1];break;}}
-      }
-    }
-    if(a.startsWith('codigo')&&hi<0)hi=i;
-  }
-  if(hi<0)throw new Error('não achei o cabeçalho CÓDIGO — é a planilha FOR-PCP-029?');
-  // O cabeçalho ocupa 2 linhas (a 2ª tem QUANTIDADE / UNIDADE / MÁQUINA / DESTINO)
-  let ini=hi+1;
-  if(opNormDesc((rows[ini]||[])[3]).startsWith('quan'))ini=hi+2;
-  const itens=[];
-  for(let i=ini;i<rows.length;i++){
-    const r=rows[i]||[];
-    const desc=(r[2]==null?'':String(r[2])).trim();
-    if(!desc)continue;
-    let qtd=null;
-    if(r[3]!=null){const m=String(r[3]).replace(',','.').match(/[\d.]+/);if(m)qtd=parseFloat(m[0]);}
-    itens.push({
-      cod:(r[0]==null?'':String(r[0])).trim(),
-      setor:(r[1]==null?'':String(r[1])).trim(),
-      desc,qtd,
-      un:(r[4]==null?'':String(r[4])).trim(),
-      maq:(r[5]==null?'':String(r[5])).trim(),
-      destino:(r[6]==null?'':String(r[6])).trim()
-    });
-  }
-  return {data,itens};
-}
 function opSalvar(){
   try{localStorage.setItem(LS_KEYS.op,JSON.stringify(opData));}catch(e){}
   sbSaveCache('OP',opData);
 }
-function opAtualizarStatus(){
-  const nameEl=document.getElementById('opFileName'),st=document.getElementById('opStatus');
-  if(!st)return;
-  st.style.color='';
-  if(!opData){st.textContent='Nenhuma OP importada';if(nameEl)nameEl.textContent='FOR-PCP-029 Ordem de Produção Embalagem.xlsx';return;}
-  if(nameEl)nameEl.textContent=opData.arquivo||'Ordem de Produção';
-  const todos=allItems();
-  const sem=opData.itens.filter(it=>!todos.some(i=>opDoItem(i)===it));
-  let t='✅ OP'+(opData.data?' de '+formatDateBR(opData.data):'')+' · '+opData.itens.length+' produtos';
-  if(todos.length){
-    t+=' · '+(opData.itens.length-sem.length)+' encontrados no estoque';
-    if(sem.length)t+=' · sem correspondência: '+sem.slice(0,4).map(i=>i.desc.split(' - ')[0].slice(0,32)).join('; ')+(sem.length>4?' (+'+(sem.length-4)+')':'');
-  }
-  st.textContent=t;
-}
-function opImportar(file){
-  const nameEl=document.getElementById('opFileName'),st=document.getElementById('opStatus');
-  if(nameEl)nameEl.textContent=file.name;
-  if(st){st.style.color='';st.textContent='⏳ Lendo arquivo...';}
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    try{
-      const r=opParseXlsx(ev.target.result);
-      if(!r.itens.length)throw new Error('nenhum produto encontrado na planilha');
-      opData={data:r.data,arquivo:file.name,ts:new Date().toISOString(),itens:r.itens};
-      opIndexar();opSalvar();opAtualizarStatus();renderAlerts();
-    }catch(err){
-      if(st){st.style.color='var(--red)';st.textContent='❌ '+err.message;}
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
 // ── Supabase helpers — usa fetch REST (mesmo padrão do restante do app) ──
 const SB_CACHE_HEADERS={'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY,'Content-Type':'application/json','Prefer':'return=minimal'};
 // Guarda a foto semanal da venda (histórico para médias de várias semanas). Uma linha por semana e origem;
@@ -21182,31 +21068,18 @@ function limparDadosImportados(){
   // Limpar tudo (memória + localStorage)
   currentFab=null;currentLoja=null;
   vendaFabMap={};vendaLojaMap={};
-  opData=null;opIndexar();opAtualizarStatus();
+  opData=null;opIndexar();
   chapecoData=null;chapecoAtualizarStatus();vendaChapecoMap={};vendaChapecoInfo=null;chapecoVendaStatus();
   lsClear();
   uploadHistory=[];
   importMetadata={ts:null,periodo:null};
   // Resetar cards de upload
-  ['Fab','Loja'].forEach(t=>{
-    const nameEl=document.getElementById(`${t.toLowerCase()}FileName`);
-    const statusEl=document.getElementById(`${t.toLowerCase()}Status`);
-    const cardEl=document.getElementById(`card${t}`);
-    if(nameEl)nameEl.textContent=t==='Fab'?'Posicao_EstoquePC1.FABRICA.xlsx':'Posicao_EstoquePC1.LOJA.xlsx';
-    if(statusEl){statusEl.textContent='Exportado do CIGAM 11';statusEl.style.color='';}
-    if(cardEl){cardEl.style.borderColor='';cardEl.style.opacity='';}
-  });
-  ['VendaFab','VendaLoja'].forEach(t=>{
-    const key=t==='VendaFab'?'vendaFab':'vendaLoja';
-    const nameEl=document.getElementById(`${key}FileName`);
-    const statusEl=document.getElementById(`${key}Status`);
-    const cardEl=document.getElementById(`card${t}`);
-    if(nameEl)nameEl.textContent=t==='VendaFab'?'Vendas_ProdutoPC1.VENDAFABRICA.xlsx':'Vendas_ProdutoPC1.VENDALOJA.xlsx';
-    if(statusEl){statusEl.textContent='Exportado do CIGAM 11';statusEl.style.color='';}
-    if(cardEl)cardEl.style.borderColor='';
-  });
+  const vuN=document.getElementById('vendaUnicaFileName'),vuS=document.getElementById('vendaUnicaStatus'),vuC=document.getElementById('cardVendaUnica');
+  if(vuN)vuN.textContent='Vendas_ProdutoPC1_Geral.xlsx';
+  if(vuS){vuS.textContent='Exportado do CIGAM 11';vuS.style.color='';}
+  if(vuC)vuC.style.borderColor='';
   // Limpar file inputs
-  ['inputFab','inputLoja','inputVendaFab','inputVendaLoja','inputChapeco','inputVendaChapeco'].forEach(id=>{
+  ['inputUnico','inputVendaUnica','inputChapeco','inputVendaChapeco'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   // Limpar importPreview e history
@@ -21227,79 +21100,65 @@ function findCol(header,keywords){
   return header.findIndex(h=>keywords.some(k=>(h||'').toString().toLowerCase().includes(k.toLowerCase())));
 }
 
+// Vendas (arquivo único): separa Fábrica x Loja pelo grupo grande do relatório (LINHA… = Fábrica, LOJA… = Loja);
+// sem cabeçalho de grupo, classifica pelo produto estar no estoque da Fábrica ou da Loja.
+function vendaUnicaImportar(file){
+  const nameEl=document.getElementById('vendaUnicaFileName'),statusEl=document.getElementById('vendaUnicaStatus'),cardEl=document.getElementById('cardVendaUnica');
+  nameEl.textContent=file.name;statusEl.style.color='';statusEl.textContent='⏳ Lendo arquivo...';
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:'array',cellText:true});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:null,raw:false});
+      let hi=-1;
+      for(let i=0;i<Math.min(15,rows.length);i++){if(rows[i]&&(rows[i][0]||'').toString().toLowerCase().trim()==='material'){hi=i;break;}}
+      if(hi<0)hi=4;
+      const header=rows[hi].map(h=>h?h.toString().trim():'');
+      const iQtd=findCol(header,['qtde ite','qtde','quantidade','quant']);
+      if(iQtd<0)throw new Error('coluna Qtde não encontrada');
+      const TOP_RE=/^\d+\s*-\s*(LINHA|LOJA)\b/i;
+      const sFab=new Set(fabItems().map(i=>normCod(i.codigo)||i.codigo)),sLoja=new Set(lojaItems().map(i=>normCod(i.codigo)||i.codigo));
+      const mapF={},mapL={};let top='',nF=0,nL=0,sem=0;
+      for(let i=hi+1;i<rows.length;i++){
+        const r=rows[i];if(!r||r.every(c=>c==null||c===''))continue;
+        const cod=(r[0]||'').toString().trim();if(!cod||/^(total|qtde|material)/i.test(cod))continue;
+        const q=parseNumOrNull(r[iQtd]);
+        if(r[iQtd]==null||r[iQtd]===''||q===null||isNaN(q)){if(TOP_RE.test(cod))top=cod;continue;}
+        const c=normCod(cod)||cod;
+        let f,l;
+        if(top){l=/LOJA/i.test(top);f=!l;}
+        else{f=sFab.has(c);l=sLoja.has(c);}
+        if(f){mapF[c]=(mapF[c]||0)+q;nF++;}
+        if(l){mapL[c]=(mapL[c]||0)+q;nL++;}
+        if(!f&&!l)sem++;
+      }
+      if(!nF&&!nL)throw new Error('nenhuma venda classificada — importe o estoque antes');
+      vendaFabMap=mapF;vendaLojaMap=mapL;
+      lsSaveVendas();
+      const per=vendaSemanaDoArquivo(rows,hi);
+      if(nF)sbSaveVendaHist('FAB',mapF,file.name,per.semana);
+      if(nL)sbSaveVendaHist('LOJA',mapL,file.name,per.semana);
+      const now=new Date();
+      uploadHistory.unshift({tipo:'VENDA_UNICA',ts:now.toLocaleDateString('pt-BR')+' · '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),total:nF+nL,deficits:0,file:file.name,vendaOnly:false});
+      renderUploadHistory();
+      const dm=d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+      statusEl.style.color='var(--good)';
+      statusEl.textContent=`✅ 🏭 Fábrica: ${nF} · 🏪 Loja: ${nL}${sem?` · ⚠ ${sem} sem classificação`:''} · venda de ${dm(per.ini)} a ${dm(per.fim)} (${per.origem})`;
+      cardEl.style.borderColor='var(--good)';
+      renderAlerts();renderFab();renderLoja();SAL.hist=null;salRenderAtivo();
+    }catch(err){statusEl.style.color='var(--red)';statusEl.textContent='❌ '+err.message;}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
 function processFile(file,tipo){
-  if(tipo==='OP'){opImportar(file);return;}
   if(tipo==='CHAPECO'){chapecoImportar(file);return;}
   if(tipo==='VENDA_CHAPECO'){chapecoVendaImportar(file);return;}
-  // Tipo VENDA_FAB ou VENDA_LOJA: parse das vendas por produto
-  if(tipo==='VENDA_FAB'||tipo==='VENDA_LOJA'){
-    const isFab=tipo==='VENDA_FAB';
-    const nameEl=document.getElementById(isFab?'vendaFabFileName':'vendaLojaFileName');
-    const statusEl=document.getElementById(isFab?'vendaFabStatus':'vendaLojaStatus');
-    const cardEl=document.getElementById(isFab?'cardVendaFab':'cardVendaLoja');
-    nameEl.textContent=file.name;
-    statusEl.textContent='⏳ Lendo arquivo...';
-    const reader=new FileReader();
-    reader.onload=function(ev){
-      try{
-        const wb=XLSX.read(ev.target.result,{type:'array',cellText:true});
-        const ws=wb.Sheets[wb.SheetNames[0]];
-        const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:false});
-        // Detectar header: linha que tem 'material' na col 0
-        let headerIdx=-1;
-        for(let i=0;i<Math.min(15,rows.length);i++){
-          if(!rows[i])continue;
-          const c0=(rows[i][0]||'').toString().toLowerCase().trim();
-          if(c0==='material'){headerIdx=i;break;}
-        }
-        if(headerIdx<0)headerIdx=4; // fallback: linha 5 (índice 4)
-        const header=rows[headerIdx].map(h=>h?h.toString().trim():'');
-        const iCod=findCol(header,['material','código','codigo']);
-        const iQtd=findCol(header,['qtde ite','qtde','quantidade','quant']);
-        if(iCod<0||iQtd<0){
-          statusEl.style.color='var(--red)';
-          statusEl.textContent='❌ Colunas Material/Qtde não encontradas';
-          return;
-        }
-        const map={};let total=0;
-        for(let i=headerIdx+1;i<rows.length;i++){
-          const row=rows[i];
-          if(!row||row.every(c=>c==null||c===''))continue;
-          const rawCod=(row[iCod]||'').toString().trim();
-          if(!rawCod)continue;
-          const rawQtd=row[iQtd];
-          const qtd=parseNumOrNull(rawQtd);
-          if(rawQtd==null||rawQtd===''||isNaN(qtd))continue;
-          const cod=normCod(rawCod)||rawCod;
-          map[cod]=(map[cod]||0)+qtd;
-          total++;
-        }
-        if(isFab)vendaFabMap=map;
-        else vendaLojaMap=map;
-        lsSaveVendas(); // persiste no localStorage
-        const per=vendaSemanaDoArquivo(rows,headerIdx);sbSaveVendaHist(isFab?'FAB':'LOJA',map,file.name,per.semana);
-        const now=new Date();
-        const ts=now.toLocaleDateString('pt-BR')+' · '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-        uploadHistory.unshift({tipo,ts,total,deficits:0,file:file.name,vendaOnly:false});
-        renderUploadHistory();
-        statusEl.style.color='var(--good)';
-        statusEl.textContent=`✅ ${total} produtos · venda de ${per.ini.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})} a ${per.fim.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})} gravada no histórico (${per.origem})`;
-        cardEl.style.borderColor='var(--good)';
-        // Re-render tabelas com novos dados de vendas
-        renderAlerts();renderFab();renderLoja();SAL.hist=null;salRenderAtivo();
-      }catch(err){
-        statusEl.style.color='var(--red)';
-        statusEl.textContent='❌ Erro: '+err.message;
-        console.error('Venda parse error:',err);
-      }
-    };
-    reader.readAsArrayBuffer(file);
-    return;
-  }
+  if(tipo==='VENDA_UNICA'){vendaUnicaImportar(file);return;}
   const _pre=tipo==='FABRICA'?'fab':tipo==='UNICO'?'unico':'loja';
   const statusEl=document.getElementById(_pre+'Status');
   const nameEl=document.getElementById(_pre+'FileName');
-  const cardEl=document.getElementById(tipo==='FABRICA'?'cardFab':tipo==='UNICO'?'cardUnico':'cardLoja');
+  const cardEl=document.getElementById('cardUnico');
   statusEl.textContent='⏳ Lendo arquivo...';
   nameEl.textContent=file.name;
   const reader=new FileReader();
@@ -21515,8 +21374,8 @@ function renderUploadHistory(){
   const el=document.getElementById('uploadHistory');
   if(!uploadHistory.length){el.innerHTML='<div class="history-row" style="color:#a0a0a0;font-style:italic">Nenhum arquivo importado ainda.</div>';return;}
   el.innerHTML=uploadHistory.map(h=>{
-    const cor=h.tipo==='FABRICA'?'#6B1111':h.tipo==='LOJA'?'#2b6cb0':h.tipo==='VENDA_FAB'||h.tipo==='VENDA_LOJA'?'#4b6b2d':'#666';
-    const label=h.tipo==='VENDA_FAB'?'VENDA FAB':h.tipo==='VENDA_LOJA'?'VENDA LOJA':h.tipo==='UNICO'?'FÁBRICA + LOJA':h.tipo;
+    const cor=h.tipo==='FABRICA'?'#6B1111':h.tipo==='LOJA'?'#2b6cb0':h.tipo==='VENDA_FAB'||h.tipo==='VENDA_LOJA'||h.tipo==='VENDA_UNICA'?'#4b6b2d':'#666';
+    const label=h.tipo==='VENDA_FAB'?'VENDA FAB':h.tipo==='VENDA_LOJA'?'VENDA LOJA':h.tipo==='UNICO'?'FÁBRICA + LOJA':h.tipo==='VENDA_UNICA'?'VENDA FAB + LOJA':h.tipo;
     return `<div class="history-row">
       <span style="color:${cor};font-weight:700;font-size:10px">${label}</span>
       ${h.ts} · ${h.total} produtos
@@ -21728,7 +21587,7 @@ async function PCP_init(){
     sbRestoreCache().then(ok=>{ if(!ok) lsRestore(); }).catch(()=>{ lsRestore(); })
   ]);
   ov.remove();
-  opIndexar();opAtualizarStatus();
+  opIndexar();
   renderDataInfo();
   buildStats();
   buildChips('fabFamChips',fabItems(),'setFabFam');
@@ -29039,7 +28898,7 @@ function PG_sincronizarOP(data, itens){
   opData = { data, arquivo: 'Programação BK360', ts: new Date().toISOString(), itens: itens.filter(r => r.codigo || r.produto).map(r => ({
     cod: r.codigo || '', setor: r.setor, desc: r.produto, qtd: r.quantidade || 0, un: un[r.unidade] || String(r.unidade || '').toUpperCase(), maq: r.maquina || '', destino: PG_destinoFinal(r)
   })) };
-  opIndexar(); opSalvar(); opAtualizarStatus();
+  opIndexar(); opSalvar();
   if(typeof renderAlerts === 'function') try{ renderAlerts(); }catch(e){}
 }
 
