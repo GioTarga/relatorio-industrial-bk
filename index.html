@@ -20289,7 +20289,7 @@ function FALTA_opPorCaixa(i,q,un,su){
   else if(/^carrinho/.test(un))cx=q/c.carrinho*c.caixas;
   else if(/^(un|und|unidade)/.test(un)&&c.unid)cx=q/c.unid*c.caixas;
   if(!cx)return null;
-  const pct=(d.match(/CX\s*C\/\s*(\d+)\s*PCT/i)||(c.porMassa?d.match(/CX\s*C\/\s*(\d+)\s*UNID/i):null)||[])[1],und=(d.match(/CX\s*C\/\s*(\d+)\s*UN/i)||[])[1];
+  const pct=(d.match(/CX\s*C\/\s*(\d+)\s*PCT/i)||(c.porMassa?d.match(/CX\s*C\/\s*(\d+)/i):null)||[])[1],und=(d.match(/CX\s*C\/\s*(\d+)\s*UN/i)||[])[1];
   let out=0;
   if(su==='CX')out=cx;
   else if(su==='PCT'&&pct)out=cx*Number(pct);
