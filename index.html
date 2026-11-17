@@ -4601,6 +4601,16 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
         <button class="upload-btn" onclick="document.getElementById('inputChapeco').click()">📂 Selecionar arquivo</button>
       </div>
     </div>
+    <div style="max-width:760px;margin-bottom:14px">
+      <div class="bk-st-31">Vendas — CD Chapecó <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink-soft)">(venda semanal · alimenta Venda/sem e dias de cobertura na coluna Chapecó)</span></div>
+      <div class="upload-card" id="cardVendaChapeco" ondragover="event.preventDefault()" ondrop="handleDrop(event,'VENDA_CHAPECO')">
+        <div class="upload-icon">📈</div>
+        <div class="upload-title" id="vendaChapecoFileName">Vendas_ProdutoPC1_Venda.Chapec_.xlsx</div>
+        <div class="upload-sub" id="vendaChapecoStatus">Nenhuma venda do CD Chapecó importada</div>
+        <input type="file" id="inputVendaChapeco" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this,'VENDA_CHAPECO')">
+        <button class="upload-btn" onclick="document.getElementById('inputVendaChapeco').click()">📂 Selecionar arquivo</button>
+      </div>
+    </div>
     <div class="upload-grid">
       <div>
         <div class="bk-st-31">Estoque Fábrica</div>
@@ -19018,12 +19028,13 @@ let uploadHistory = [];
 let importMetadata = {ts:null, periodo:null}; // período e hora da última importação
 let vendaFabMap = {};   // normCod(codigo) → qtde vendida (VendasFabrica)
 let vendaLojaMap = {};  // normCod(codigo) → qtde vendida (VendasLoja)
+let vendaChapecoMap = {}, vendaChapecoInfo = null; // vendas semanais do CD Chapecó: {cod→qtde}; info {periodo,arquivo}
 let chapecoData = null; // CD Chapecó: {ts, arquivo, itens:[{codigo,descricao,familia,grupo,estoque,estoque_un,agrupado,agrupado_un,reserva,seguranca}]} — só volume, sem venda
 
 // ─── PERSISTÊNCIA LOCAL + SUPABASE ──────────────────────────────────────────
 // localStorage = cache rápido por navegador (fallback offline)
 // Supabase pcp_cache = fonte de verdade compartilhada entre todos os usuários
-const LS_KEYS={fab:'bk360_estoque_fab',loja:'bk360_estoque_loja',vendaFab:'bk360_venda_fab',vendaLoja:'bk360_venda_loja',meta:'bk360_import_meta',op:'bk360_op',chapeco:'bk360_chapeco'};
+const LS_KEYS={fab:'bk360_estoque_fab',loja:'bk360_estoque_loja',vendaFab:'bk360_venda_fab',vendaLoja:'bk360_venda_loja',meta:'bk360_import_meta',op:'bk360_op',chapeco:'bk360_chapeco',vendaChapeco:'bk360_venda_chapeco'};
 
 // ─── ORDEM DE PRODUÇÃO (FOR-PCP-029) → destaque no Kanban ───────────────────
 // Guardada em pcp_cache com tipo 'OP' (chave primária): cada importação substitui a anterior, sem acumular.
@@ -19165,7 +19176,7 @@ async function sbSaveCache(tipo,dados){
 }
 async function sbClearCache(){
   try{
-    await fetch(SUPABASE_URL+'/rest/v1/pcp_cache?tipo=in.(FABRICA,LOJA,VENDA_FAB,VENDA_LOJA,META,OP,CHAPECO)',{
+    await fetch(SUPABASE_URL+'/rest/v1/pcp_cache?tipo=in.(FABRICA,LOJA,VENDA_FAB,VENDA_LOJA,META,OP,CHAPECO,VENDA_CHAPECO)',{
       method:'DELETE',
       headers:SB_CACHE_HEADERS
     });
@@ -19186,6 +19197,7 @@ async function sbRestoreCache(){
       else if(row.tipo==='VENDA_LOJA')vendaLojaMap=row.dados||{};
       else if(row.tipo==='META'){const m=row.dados||{};importMetadata={...m,ts:m.ts?new Date(m.ts):null};}
       else if(row.tipo==='OP'){opData=row.dados&&row.dados.itens?row.dados:null;opIndexar();}
+      else if(row.tipo==='VENDA_CHAPECO'){const d=row.dados||{};vendaChapecoMap=d.map||{};vendaChapecoInfo=d.map?{periodo:d.periodo,arquivo:d.arquivo}:null;chapecoVendaStatus();}
       else if(row.tipo==='CHAPECO'){chapecoData=row.dados&&row.dados.itens?row.dados:null;chapecoAtualizarStatus();}
     });
     // Atualiza localStorage com dado fresco do servidor (mantém fallback em dia)
@@ -19240,6 +19252,8 @@ function lsRestore(){
     if(meta){const m=JSON.parse(meta);importMetadata={...m,ts:m.ts?new Date(m.ts):null};}
     const ch=localStorage.getItem(LS_KEYS.chapeco);
     if(ch&&!chapecoData){const o=JSON.parse(ch);if(o&&o.itens){chapecoData=o;chapecoAtualizarStatus();}}
+    const vc=localStorage.getItem(LS_KEYS.vendaChapeco);
+    if(vc){const d=JSON.parse(vc);if(d&&d.map&&!Object.keys(vendaChapecoMap).length){vendaChapecoMap=d.map;vendaChapecoInfo={periodo:d.periodo,arquivo:d.arquivo};chapecoVendaStatus();}}
     const op=localStorage.getItem(LS_KEYS.op);
     if(op&&!opData){const o=JSON.parse(op);if(o&&o.itens){opData=o;opIndexar();}}
   }catch(e){}
@@ -20681,18 +20695,71 @@ function chapecoImportar(file){
   };
   reader.readAsArrayBuffer(file);
 }
+function chapecoVendaStatus(){
+  const st=document.getElementById('vendaChapecoStatus'),nm=document.getElementById('vendaChapecoFileName');
+  if(!st)return;
+  const k=Object.keys(vendaChapecoMap).length;
+  if(!k){st.style.color='';st.textContent='Nenhuma venda do CD Chapecó importada';if(nm)nm.textContent='Vendas_ProdutoPC1_Venda.Chapec_.xlsx';return;}
+  if(nm&&vendaChapecoInfo&&vendaChapecoInfo.arquivo)nm.textContent=vendaChapecoInfo.arquivo;
+  st.style.color='var(--good)';
+  st.textContent='✅ '+k+' produtos'+(vendaChapecoInfo&&vendaChapecoInfo.periodo?' · venda de '+vendaChapecoInfo.periodo:'');
+}
+function chapecoVendaImportar(file){
+  const st=document.getElementById('vendaChapecoStatus'),nm=document.getElementById('vendaChapecoFileName');
+  st.style.color='';st.textContent='⏳ Lendo arquivo...';nm.textContent=file.name;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array',cellText:true});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:null,raw:false});
+      let hi=-1;
+      for(let i=0;i<Math.min(20,rows.length);i++){if(rows[i]&&(rows[i][0]||'').toString().toLowerCase().trim()==='material'){hi=i;break;}}
+      if(hi<0)throw new Error('cabeçalho "Material" não encontrado');
+      const H=rows[hi].map(h=>(h||'').toString().trim().toLowerCase());
+      const iQ=H.findIndex(h=>h.startsWith('qtde')||h.startsWith('quant'));
+      if(iQ<0)throw new Error('coluna Qtde não encontrada');
+      let periodo='';
+      for(let i=0;i<hi&&!periodo;i++)for(const c of (rows[i]||[])){const m=(c||'').toString().match(/(\d{2}\/\d{2}\/\d{4})'?\s*at[ée]\s*'?(\d{2}\/\d{2}\/\d{4})/i);if(m){periodo=m[1].slice(0,5)+' a '+m[2].slice(0,5);break;}}
+      const map={};
+      for(let i=hi+1;i<rows.length;i++){
+        const r=rows[i];if(!r)continue;
+        const cod=(r[0]||'').toString().trim();if(!cod||/^(total|qtde|material)/i.test(cod))continue;
+        const q=parseNumOrNull(r[iQ]);if(q===null||isNaN(q))continue;
+        const c=normCod(cod)||cod;map[c]=(map[c]||0)+q;
+      }
+      if(!Object.keys(map).length)throw new Error('nenhuma venda encontrada');
+      vendaChapecoMap=map;vendaChapecoInfo={periodo,arquivo:file.name};
+      const d={map,periodo,arquivo:file.name};
+      try{localStorage.setItem(LS_KEYS.vendaChapeco,JSON.stringify(d));}catch(_){}
+      sbSaveCache('VENDA_CHAPECO',d);
+      chapecoVendaStatus();renderAlerts();
+    }catch(err){st.style.color='var(--red)';st.textContent='❌ '+err.message;}
+  };
+  reader.readAsArrayBuffer(file);
+}
 function chapecoSaldo(i){return(i.estoque||0)-(i.reserva||0);}
-// Status por volume: déficit (saldo<0) · abaixo do estoque de segurança · ok
+function chapecoVenda(i){const v=vendaChapecoMap[normCod(i.codigo)||i.codigo];return v>0?v:null;}
+// Cobertura em dias = saldo ÷ (venda semanal ÷ 7); null sem venda
+function chapecoCob(i){const v=chapecoVenda(i);return v?chapecoSaldo(i)/(v/7):null;}
+// Status: com venda → mesma regra das outras colunas (cobertura em dias); sem venda → saldo x estoque de segurança do CIGAM
 function chapecoStatus(i){
-  const s=chapecoSaldo(i);
+  const s=chapecoSaldo(i),cob=chapecoCob(i);
+  if(cob!==null){
+    if(s<0||cob<1)return{cls:'red',ord:0};
+    if(cob<3)return{cls:'orange',ord:1};
+    if(cob<7)return{cls:'yellow',ord:2};
+    return{cls:'green',ord:3};
+  }
   if(s<0)return{cls:'red',ord:0};
-  if(i.seguranca>0&&s<i.seguranca)return{cls:'orange',ord:1};
-  if(s===0)return{cls:'orange',ord:1};
-  return{cls:'green',ord:2};
+  if(s===0||(i.seguranca>0&&s<i.seguranca))return{cls:'orange',ord:1};
+  return{cls:'green',ord:3};
 }
 function sortChapeco(a,b){
   const sa=chapecoStatus(a),sb=chapecoStatus(b);
   if(sa.ord!==sb.ord)return sa.ord-sb.ord;
+  const ca=chapecoCob(a),cb=chapecoCob(b);
+  if(ca!==null&&cb!==null&&ca!==cb)return ca-cb;
+  if((ca===null)!==(cb===null))return ca===null?1:-1;
   const ra=a.seguranca>0?chapecoSaldo(a)/a.seguranca:Infinity,rb=b.seguranca>0?chapecoSaldo(b)/b.seguranca:Infinity;
   if(ra!==rb)return ra-rb;
   return chapecoSaldo(a)-chapecoSaldo(b);
@@ -20707,7 +20774,8 @@ function renderChapecoCard(i){
     `<div class="kb-m"><small>Estoque</small><span>${n(i.estoque??0)}${un}</span></div>`,
     `<div class="kb-m res"><small>Reserva</small><span>${n(i.reserva??0)}${un}</span></div>`,
     `<div class="kb-m agr"><small>Agrupado</small><span>${agr}</span></div>`,
-    `<div class="kb-m saldo ${saldoCls}"><small>Saldo</small><span>${n(saldo)}${un}</span></div>`
+    `<div class="kb-m saldo ${saldoCls}"><small>Saldo</small><span>${n(saldo)}${un}</span></div>`,
+    `<div class="kb-m ven"><small>Venda/sem</small><span>${chapecoVenda(i)!=null?n(chapecoVenda(i))+un:'—'}</span></div>`
   ];
   return `<div class="kb-card ${st.cls}">
     <div class="kb-top"><div class="kb-title" title="${(i.descricao||'').replace(/"/g,'&quot;')}">${shortDesc(i.descricao||'')}</div>${seg}</div>
@@ -20725,13 +20793,13 @@ function renderKanban(items){
   el.innerHTML=cols.map(([tipo,cls,label])=>{
     if(tipo==='CHAPECO'){
       const qc=((document.getElementById('searchAlert')||{}).value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
-      const _stOk=i=>{const o=chapecoStatus(i).ord,sd=chapecoSaldo(i);
-        return statusFilter==='ALL'||(statusFilter==='DEFICIT'&&sd<0)||(statusFilter==='CRITICO'&&o===1)||(statusFilter==='DISPONIVEL'&&o===2);};
+      const _stOk=i=>{const c=chapecoStatus(i).cls;
+        return statusFilter==='ALL'||(statusFilter==='DEFICIT'&&c==='red')||(statusFilter==='CRITICO'&&c==='orange')||(statusFilter==='ATENCAO'&&c==='yellow')||(statusFilter==='DISPONIVEL'&&c==='green');};
       const _setorOk=i=>!alertaSetores.size||_setorTodosMarcados()||alertaSetores.has(setorDoItem(i));
       const lc=(chapecoData?chapecoData.itens:[]).filter(i=>_stOk(i)&&_setorOk(i)).filter(i=>!qc||(i.descricao||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(qc)).sort(sortChapeco);
-      const dfc=lc.filter(i=>chapecoSaldo(i)<0).length,bx=lc.filter(i=>chapecoStatus(i).ord===1).length;
+      const dfc=lc.filter(i=>chapecoSaldo(i)<0).length,bx=lc.filter(i=>chapecoStatus(i).cls==='orange').length;
       return `<div class="kb-col ${cls}">
-      <div class="kb-col-head">${label}${chapecoData&&chapecoData.posicao?`<span class="kb-chap-ts">${opEsc(chapecoData.posicao)}</span>`:''}${dfc?`<span class="kb-def">${dfc} déficit</span>`:''}${bx?`<span class="kb-baixo">${bx} &lt; seg.</span>`:''}<span class="kb-count">${lc.length}</span></div>
+      <div class="kb-col-head">${label}${chapecoData&&chapecoData.posicao?`<span class="kb-chap-ts">${opEsc(chapecoData.posicao)}</span>`:''}${dfc?`<span class="kb-def">${dfc} déficit</span>`:''}${bx?`<span class="kb-baixo">${bx} crítico</span>`:''}<span class="kb-count">${lc.length}</span></div>
       <div class="kb-col-body">${lc.length?lc.map(renderChapecoCard).join(''):'<div class="kb-empty">'+(chapecoData?'Nenhum produto':'Importe o estoque do CD Chapecó em Importar')+'</div>'}</div>
     </div>`;
     }
@@ -21115,7 +21183,7 @@ function limparDadosImportados(){
   currentFab=null;currentLoja=null;
   vendaFabMap={};vendaLojaMap={};
   opData=null;opIndexar();opAtualizarStatus();
-  chapecoData=null;chapecoAtualizarStatus();
+  chapecoData=null;chapecoAtualizarStatus();vendaChapecoMap={};vendaChapecoInfo=null;chapecoVendaStatus();
   lsClear();
   uploadHistory=[];
   importMetadata={ts:null,periodo:null};
@@ -21138,7 +21206,7 @@ function limparDadosImportados(){
     if(cardEl)cardEl.style.borderColor='';
   });
   // Limpar file inputs
-  ['inputFab','inputLoja','inputVendaFab','inputVendaLoja','inputChapeco'].forEach(id=>{
+  ['inputFab','inputLoja','inputVendaFab','inputVendaLoja','inputChapeco','inputVendaChapeco'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   // Limpar importPreview e history
@@ -21162,6 +21230,7 @@ function findCol(header,keywords){
 function processFile(file,tipo){
   if(tipo==='OP'){opImportar(file);return;}
   if(tipo==='CHAPECO'){chapecoImportar(file);return;}
+  if(tipo==='VENDA_CHAPECO'){chapecoVendaImportar(file);return;}
   // Tipo VENDA_FAB ou VENDA_LOJA: parse das vendas por produto
   if(tipo==='VENDA_FAB'||tipo==='VENDA_LOJA'){
     const isFab=tipo==='VENDA_FAB';
