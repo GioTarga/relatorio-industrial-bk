@@ -1212,6 +1212,44 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .kb-op-tag small{font-size:10px;font-weight:600;letter-spacing:.2px;text-transform:none;opacity:.92}
 #page-pcp-estoque .kb-col-head .kb-opc{font-size:10.5px;font-weight:700;letter-spacing:.3px;background:#1f5fa8;color:#fff;border-radius:10px;padding:1px 8px}
 #page-pcp-estoque .kb-op-legend{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;color:#1f5fa8}
+/* Curva ABC: selo no card e visão própria */
+#page-pcp-estoque .abc-pill{display:inline-block;min-width:16px;text-align:center;font-size:10px;font-weight:800;line-height:1;padding:2px 5px;border-radius:4px;color:#fff;background:#b8b2a7}
+#page-pcp-estoque .abc-pill.a{background:#a10101}
+#page-pcp-estoque .abc-pill.b{background:#d9822b}
+#page-pcp-estoque .abc-filtro{padding:4px 8px;border:1px solid var(--line);border-radius:6px;font-size:11.5px;font-family:inherit;background:var(--paper);color:var(--ink)}
+#page-pcp-estoque .abc-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:10px}
+#page-pcp-estoque .abc-bar label{display:flex;flex-direction:column;gap:3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft)}
+#page-pcp-estoque .abc-bar select{padding:5px 9px;border:1px solid var(--line);border-radius:6px;font-size:12px;font-family:inherit;background:var(--cream);color:var(--ink)}
+#page-pcp-estoque .abc-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+#page-pcp-estoque .abc-kpi{background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--line);border-radius:8px;padding:7px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-soft);font-weight:700}
+#page-pcp-estoque .abc-kpi b{display:block;font-size:17px;letter-spacing:0;text-transform:none;color:var(--ink)}
+#page-pcp-estoque .abc-kpi.a{border-left-color:#a10101}
+#page-pcp-estoque .abc-kpi.b{border-left-color:#d9822b}
+#page-pcp-estoque .abc-kpi.c{border-left-color:#b8b2a7}
+#page-pcp-estoque .abc-chart{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:10px}
+#page-pcp-estoque .abc-svg{width:100%;height:auto;display:block}
+#page-pcp-estoque .abc-svg .ab-a{fill:#a10101}
+#page-pcp-estoque .abc-svg .ab-b{fill:#d9822b}
+#page-pcp-estoque .abc-svg .ab-c{fill:#b8b2a7}
+#page-pcp-estoque .abc-svg .ab-cum{fill:none;stroke:#333;stroke-width:1.8}
+#page-pcp-estoque .abc-svg .ab-grid{stroke:#e6dfd3;stroke-width:1}
+#page-pcp-estoque .abc-svg .ab-lim{stroke:#999;stroke-width:1;stroke-dasharray:4 4}
+#page-pcp-estoque .abc-svg text{font-size:10px;fill:#555;font-family:inherit}
+#page-pcp-estoque .abc-grid{display:grid;grid-template-columns:34px 1fr 54px 90px 64px 64px 90px 96px;background:var(--paper);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+#page-pcp-estoque .abc-h{background:var(--cream);padding:6px 8px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft);border-bottom:1px solid var(--line)}
+#page-pcp-estoque .abc-h.r,#page-pcp-estoque .abc-c.r{text-align:right}
+#page-pcp-estoque .abc-row{display:contents}
+#page-pcp-estoque .abc-row>div{padding:6px 8px;border-bottom:1px solid var(--line);font-size:11.5px;font-variant-numeric:tabular-nums;align-self:center}
+#page-pcp-estoque .abc-row.click{cursor:pointer}
+#page-pcp-estoque .abc-row:hover>div{background:#fff6e8}
+#page-pcp-estoque .abc-nome{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#page-pcp-estoque .abc-cob{font-weight:700}
+#page-pcp-estoque .abc-cob.red{color:#c0392b}
+#page-pcp-estoque .abc-cob.orange{color:#e67e22}
+#page-pcp-estoque .abc-cob.yellow{color:#a07a00}
+#page-pcp-estoque .abc-cob.green{color:#2e7d32}
+#page-pcp-estoque .abc-note{font-size:10.5px;color:var(--ink-soft);margin-top:8px;line-height:1.45}
+@media (max-width:700px){#page-pcp-estoque .abc-kpis{grid-template-columns:repeat(2,1fr)}}
 /* Ponto de reposição (PR): selo no card + modal com gráfico serrote */
 #page-pcp-estoque .kb-repos{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:10.5px;cursor:pointer;background:var(--paper);color:var(--ink)}
 #page-pcp-estoque .kb-repos b{font-weight:800}
@@ -4661,12 +4699,17 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
         <div class="chip active" data-view="falta" onclick="setEstView('falta')">Hoje por setor</div>
         <div class="chip" data-view="kanban" onclick="setEstView('kanban')">Kanban</div>
         <div class="chip" data-view="tabela" onclick="setEstView('tabela')">Tabela</div>
+        <div class="chip" data-view="abc" onclick="setEstView('abc')">Curva ABC</div>
         <div class="chip" data-view="historico" onclick="setEstView('historico')">Histórico</div>
       </div>
+      <select id="abcFiltro" class="abc-filtro" style="display:none" onchange="ABC_setFiltro(this.value)" title="Filtrar cards pela classe da Curva ABC (Fábrica)">
+        <option value="ALL">Todas as classes</option><option value="A">Classe A</option><option value="B">Classe B</option><option value="C">Classe C</option>
+      </select>
       <span class="vt-hint" id="vtHint">Cards ordenados por menos dias de estoque</span>
       <span class="kb-op-legend" id="opLegend" style="display:none"></span>
     </div>
     <div id="viewFalta" class="hist-wrap"></div>
+    <div id="viewAbc" class="hist-wrap"></div>
     <div id="viewHistorico" class="hist-wrap">
       <div class="hist-modos">
         <button type="button" class="hist-modo on" id="hmModoProd" onclick="hmModo('prod')">Por produto</button>
@@ -20536,7 +20579,7 @@ function renderKanbanCard(item){
     `<div class="kb-m saldo ${saldoCls}"><small>Saldo</small><span>${n(saldo)}${un}</span></div>`
   ];
   metrics.push(`<div class="kb-m ven"><small>Venda/sem</small><span>${venda!=null?n(venda)+un:'—'}</span></div>`);
-  const sub=[item.codigo?'Cód. '+opEsc(item.codigo):'',item.familia,setor&&setor!=='—'&&setor!=='SEM SETOR'?setor:''].filter(Boolean).map(t=>`<span>${t}</span>`).join('');
+  const sub=[item.codigo?'Cód. '+opEsc(item.codigo):'',item.familia,setor&&setor!=='—'&&setor!=='SEM SETOR'?setor:''].filter(Boolean).map(t=>`<span>${t}</span>`).join('')+ABC_pill(item);
   const op=opDoItem(item);
   const opTag=op?`<div class="kb-op-tag" title="${opEsc([op.maq,op.destino].filter(Boolean).join(' · '))}">Em produção<small>${op.qtd!=null?n(op.qtd)+' ':''}${opEsc(op.un)}${op.destino?' · '+opEsc(op.destino):''}</small></div>`:'';
   return `<div class="kb-card ${st.cls}${op?' emprod':''}">
@@ -20656,6 +20699,76 @@ function REPOS_abrir(cod){
 }
 function REPOS_fechar(){const o=document.getElementById('reposOv');if(o)o.remove();}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')REPOS_fechar();});
+
+// ─── CURVA ABC (Fábrica) ──────────────────────────────────────────────────────
+// Classe pela venda semanal acumulada dentro do setor: A até 80%, B até 95%, C o restante.
+// Uma curva por setor e por unidade de estoque (KG, UN e CX não se somam). Grupos com menos de 3 itens não recebem classe.
+let ABC_MAP={},ABC_GRUPOS={},ABC_setor='',ABC_un='',ABC_filtro='ALL';
+function ABC_calc(){
+  ABC_MAP={};ABC_GRUPOS={};
+  fabItems().forEach(i=>{
+    if(i.tipo!=='FABRICA')return;
+    const cod=normCod(i.codigo)||i.codigo,v=vendaFabMap[cod];
+    if(!(v>0))return;
+    const k=setorDoItem(i)+'|'+(i.estoque_un||'UN');
+    (ABC_GRUPOS[k]=ABC_GRUPOS[k]||[]).push({item:i,venda:v});
+  });
+  Object.values(ABC_GRUPOS).forEach(L=>{
+    L.sort((a,b)=>b.venda-a.venda);
+    const tot=L.reduce((s,x)=>s+x.venda,0);let ac=0;
+    L.forEach((x,idx)=>{
+      const ini=ac/tot*100;ac+=x.venda;
+      x.pct=x.venda/tot*100;x.cum=ac/tot*100;x.rk=idx+1;
+      x.cl=ini<80?'A':ini<95?'B':'C';
+      if(L.length>=3)ABC_MAP[safeId(x.item)]=x.cl;
+    });
+  });
+}
+function ABC_classe(item){return item.tipo==='FABRICA'?(ABC_MAP[safeId(item)]||null):null;}
+function ABC_pill(item){const c=ABC_classe(item);return c?`<span class="abc-pill ${c.toLowerCase()}" title="Curva ABC no setor (venda semanal)">${c}</span>`:'';}
+function ABC_setFiltro(v){ABC_filtro=v;renderAlerts();}
+function ABC_sel(tipo,v){if(tipo==='setor'){ABC_setor=v;ABC_un='';}else ABC_un=v;ABC_render();}
+function ABC_svg(L){
+  const W=900,H=240,ml=44,mr=40,mt=10,mb=22,n=L.length;
+  const bw=(W-ml-mr)/n,maxp=Math.max(...L.map(x=>x.pct))*1.1;
+  const Y=p=>mt+(1-p/maxp)*(H-mt-mb),Yc=c=>mt+(1-c/100)*(H-mt-mb);
+  let g='';
+  [0,.5,1].forEach(f=>{const v=maxp*f;g+=`<line class="ab-grid" x1="${ml}" x2="${W-mr}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${ml-5}" y="${Y(v)+3}" text-anchor="end">${v.toFixed(0)}%</text>`;});
+  [0,50,80,95,100].forEach(c=>{g+=`<text x="${W-mr+5}" y="${Yc(c)+3}">${c}%</text>`;});
+  [80,95].forEach(c=>{g+=`<line class="ab-lim" x1="${ml}" x2="${W-mr}" y1="${Yc(c)}" y2="${Yc(c)}"/>`;});
+  L.forEach((x,i)=>{
+    const h=Math.max(1,H-mb-Y(x.pct));
+    g+=`<rect class="ab-${x.cl.toLowerCase()}" x="${ml+i*bw+bw*.12}" y="${Y(x.pct)}" width="${bw*.76}" height="${h}"><title>${opEsc(shortDesc(x.item.descricao||''))}: ${x.pct.toFixed(1)}% da venda</title></rect>`;
+    if(n<=30)g+=`<text x="${ml+i*bw+bw/2}" y="${H-7}" text-anchor="middle">${x.rk}</text>`;
+  });
+  g+=`<polyline class="ab-cum" points="${L.map((x,i)=>(ml+i*bw+bw/2).toFixed(1)+','+Yc(x.cum).toFixed(1)).join(' ')}"/>`;
+  return `<svg class="abc-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Curva ABC: venda por produto e percentual acumulado">${g}</svg>`;
+}
+function ABC_render(){
+  const el=document.getElementById('viewAbc');if(!el)return;
+  ABC_calc();
+  const chaves=Object.keys(ABC_GRUPOS);
+  if(!chaves.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📂</div>Importe o estoque de Fábrica e a venda semanal para ver a Curva ABC.</div>';return;}
+  const setores=[...new Set(chaves.map(k=>k.split('|')[0]))].sort((a,b)=>{const ia=SETOR_ORDER.indexOf(a),ib=SETOR_ORDER.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b);});
+  if(!setores.includes(ABC_setor))ABC_setor=setores.includes('GIRO DIA')?'GIRO DIA':setores[0];
+  const uns=chaves.filter(k=>k.startsWith(ABC_setor+'|')).map(k=>k.split('|')[1]);
+  if(!uns.includes(ABC_un))ABC_un=uns.includes('KG')?'KG':uns[0];
+  const L=ABC_GRUPOS[ABC_setor+'|'+ABC_un]||[];
+  const cnt=c=>L.filter(x=>x.cl===c).length,sh=c=>L.filter(x=>x.cl===c).reduce((s,x)=>s+x.pct,0);
+  const opt=(arr,sel)=>arr.map(v=>`<option value="${opEsc(v)}"${v===sel?' selected':''}>${opEsc(v)}</option>`).join('');
+  const kpi=(c,t)=>`<div class="abc-kpi ${c.toLowerCase()}">Classe ${c}<b>${cnt(c)} produtos · ${sh(c).toFixed(0)}% da venda</b></div>`;
+  const rows=L.map(x=>{
+    const cob=calculateCoverage(x.item),st=getStockStatus(x.item),saldo=calculateAvailableStock(x.item),un=x.item.estoque_un?' '+x.item.estoque_un:'';
+    const clk=REPOS_calc(x.item)?` click" onclick="REPOS_abrir('${opEsc(x.item.codigo)}')" title="Abrir ponto de reposição`:'';
+    return `<div class="abc-row${clk}"><div class="abc-c r">${x.rk}</div><div class="abc-nome" title="${opEsc(x.item.descricao||'')}">${opEsc(shortDesc(x.item.descricao||''))}</div><div><span class="abc-pill ${x.cl.toLowerCase()}">${x.cl}</span></div><div class="abc-c r">${n(x.venda)}${un}</div><div class="abc-c r">${x.pct.toFixed(1).replace('.',',')}%</div><div class="abc-c r">${x.cum.toFixed(1).replace('.',',')}%</div><div class="abc-c r">${n(saldo)}</div><div class="abc-c r abc-cob ${st.cls}">${cob===null?'—':cob.toFixed(1).replace('.',',')+' d'}</div></div>`;
+  }).join('');
+  const aviso=L.length<3?'<div class="abc-note">Com menos de 3 produtos o setor não recebe classe nos cards.</div>':'';
+  el.innerHTML=`<div class="abc-bar"><label>Setor<select onchange="ABC_sel('setor',this.value)">${opt(setores,ABC_setor)}</select></label><label>Unidade<select onchange="ABC_sel('un',this.value)">${opt(uns,ABC_un)}</select></label></div>
+    <div class="abc-kpis">${kpi('A')}${kpi('B')}${kpi('C')}<div class="abc-kpi">Total<b>${L.length} produtos</b></div></div>
+    <div class="abc-chart">${ABC_svg(L)}</div>
+    <div class="abc-grid"><div class="abc-h r">#</div><div class="abc-h">Produto</div><div class="abc-h">Classe</div><div class="abc-h r">Venda/sem</div><div class="abc-h r">% venda</div><div class="abc-h r">Acum.</div><div class="abc-h r">Saldo</div><div class="abc-h r">Cobertura</div>${rows}</div>${aviso}
+    <div class="abc-note">Classe pela venda semanal acumulada no setor: A até 80%, B até 95%, C o restante. Cobertura = saldo (estoque − reserva) ÷ venda diária. Clique em um produto com ponto de reposição para ver o gráfico dele.</div>`;
+}
 
 // ─── CD CHAPECÓ — estoque por volume (sem venda/hora) ─────────────────────────
 function chapecoAtualizarStatus(){
@@ -20812,6 +20925,8 @@ function renderChapecoCard(i){
 }
 function renderKanban(items){
   const el=document.getElementById('alertKanban');if(!el)return;
+  ABC_calc();
+  if(ABC_filtro!=='ALL')items=items.filter(i=>ABC_classe(i)===ABC_filtro);
   const cols=[['FABRICA','fab','Fábrica'],['LOJA','loja','Loja'],['CAFE','cafe','BK Café'],['CHAPECO','chap','Chapecó']]
     .filter(c=>locFilter==='ALL'||locFilter===c[0]);
   el.style.gridTemplateColumns=`repeat(${cols.length},minmax(0,1fr))`;
@@ -20843,10 +20958,12 @@ function renderKanban(items){
 }
 function _applyEstView(){
   const kb=estView==='kanban';
-  const k=document.getElementById('alertKanban'),t=document.getElementById('alertTableWrap'),h=document.getElementById('viewHistorico'),f=document.getElementById('viewFalta');
+  const k=document.getElementById('alertKanban'),t=document.getElementById('alertTableWrap'),h=document.getElementById('viewHistorico'),f=document.getElementById('viewFalta'),ab=document.getElementById('viewAbc'),abf=document.getElementById('abcFiltro');
   if(f)f.style.display=estView==='falta'?'block':'none';
+  if(ab)ab.style.display=estView==='abc'?'block':'none';
+  if(abf){abf.style.display=kb?'':'none';abf.value=ABC_filtro;}
   const hint=document.getElementById('vtHint');
-  if(hint)hint.textContent=estView==='falta'?'Produtos com demanda maior que o estoque, por setor':'Cards ordenados por menos dias de estoque';
+  if(hint)hint.textContent=estView==='falta'?'Produtos com demanda maior que o estoque, por setor':estView==='abc'?'Classe A, B e C pela venda semanal, por setor e unidade':'Cards ordenados por menos dias de estoque';
   if(k)k.style.display=kb?'grid':'none';
   if(t)t.style.display=estView==='tabela'?'':'none';
   if(h)h.style.display=estView==='historico'?'block':'none';
@@ -20860,6 +20977,7 @@ function renderAlerts(){
     if(!tableEl)return;
     _applyEstView();
     if(estView==='falta'){FALTA_render();return;}
+    if(estView==='abc'){ABC_render();return;}
     if(!currentFab&&!currentLoja&&!chapecoData){
       tableEl.innerHTML='<div class="empty-state"><div class="empty-icon">📂</div>Importe os dados do CIGAM para visualizar o estoque.</div>';
       const _k0=document.getElementById('alertKanban');if(_k0)_k0.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📂</div>Importe os dados do CIGAM para visualizar o estoque.</div>';
