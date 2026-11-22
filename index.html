@@ -1220,14 +1220,15 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .kb-repos.yellow{background:#fff8dc;border-color:#e8d48b;color:#7a5f00}
 #page-pcp-estoque .kb-repos.green{background:#eef7ee;border-color:#b5d8b6;color:#2e7d32}
 .repos-ov{position:fixed;inset:0;background:rgba(40,0,0,.55);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px}
-.repos-box{background:var(--paper);border-radius:10px;max-width:820px;width:100%;max-height:92vh;overflow:auto;padding:16px 18px 14px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.repos-box{background:var(--paper);border-radius:10px;max-width:1100px;width:100%;max-height:92vh;overflow:auto;padding:16px 18px 14px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
 .repos-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px}
 .repos-title{font-size:14px;font-weight:800;color:var(--red-dark)}
 .repos-close{border:0;background:transparent;font-size:20px;line-height:1;cursor:pointer;color:var(--ink-soft)}
-.repos-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:10px}
+.repos-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+@media (max-width:600px){.repos-kpis{grid-template-columns:repeat(2,1fr)}}
 .repos-kpi{background:var(--cream);border-radius:6px;padding:6px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-soft);font-weight:700}
 .repos-kpi b{display:block;font-size:15px;letter-spacing:0;text-transform:none;color:var(--ink);font-variant-numeric:tabular-nums}
-.repos-svg{width:100%;height:auto;display:block}
+.repos-svg{width:100%;height:auto;max-height:56vh;display:block}
 .repos-svg .rp-grid{stroke:#e6dfd3;stroke-width:1}
 .repos-svg .rp-axis{stroke:#8a7f70;stroke-width:1}
 .repos-svg .rp-serie{fill:none;stroke:#a10101;stroke-width:2.2}
@@ -20619,7 +20620,7 @@ function REPOS_serie(r){
 }
 function REPOS_svg(r){
   const {pts,ops}=REPOS_serie(r);
-  const W=760,H=300,ml=58,mr=14,mt=14,mb=30;
+  const W=760,H=340,ml=58,mr=14,mt=14,mb=72; // mb guarda as linhas de rótulo das OPs abaixo do gráfico
   const xmax=Math.max(...pts.map(p=>p[0])),ys=pts.map(p=>p[1]).concat([r.pr,r.es]);
   const ymax=Math.max(...ys)*1.1,ymin=Math.min(0,Math.min(...ys)*1.1);
   const X=t=>ml+t/xmax*(W-ml-mr),Y=v=>mt+(1-(v-ymin)/(ymax-ymin))*(H-mt-mb);
@@ -20633,7 +20634,8 @@ function REPOS_svg(r){
   g+=`<polyline class="rp-serie" points="${pts.map(p=>X(p[0]).toFixed(1)+','+Y(p[1]).toFixed(1)).join(' ')}"/>`;
   ops.forEach((o,i)=>{
     const x=X(o.t),anc=x<ml+60?'start':x>W-mr-80?'end':'middle';
-    g+=`<line class="rp-guide" x1="${x}" x2="${x}" y1="${Y(o.s)}" y2="${H-mb-22}"/><circle class="rp-dot" cx="${x}" cy="${Y(o.s)}" r="4"/><text class="rp-lbl-op" x="${x}" y="${H-mb-10}" text-anchor="${anc}">OP ${i+1} · ${REPOS_fmt(o.when)}</text>`;
+    const ly=H-mb+16+i*13; // uma linha por OP: rótulos nunca se sobrepõem, mesmo com OPs em dias seguidos
+    g+=`<line class="rp-guide" x1="${x}" x2="${x}" y1="${Y(o.s)}" y2="${ly-10}"/><circle class="rp-dot" cx="${x}" cy="${Y(o.s)}" r="4"/><text class="rp-lbl-op" x="${x}" y="${ly}" text-anchor="${anc}">OP ${i+1} · ${REPOS_fmt(o.when)}</text>`;
   });
   return `<svg class="repos-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Projeção de estoque com ponto de reposição">${g}</svg>`;
 }
