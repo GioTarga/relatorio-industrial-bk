@@ -1212,6 +1212,34 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .kb-op-tag small{font-size:10px;font-weight:600;letter-spacing:.2px;text-transform:none;opacity:.92}
 #page-pcp-estoque .kb-col-head .kb-opc{font-size:10.5px;font-weight:700;letter-spacing:.3px;background:#1f5fa8;color:#fff;border-radius:10px;padding:1px 8px}
 #page-pcp-estoque .kb-op-legend{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;color:#1f5fa8}
+/* Ponto de reposição (PR): selo no card + modal com gráfico serrote */
+#page-pcp-estoque .kb-repos{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:10.5px;cursor:pointer;background:var(--paper);color:var(--ink)}
+#page-pcp-estoque .kb-repos b{font-weight:800}
+#page-pcp-estoque .kb-repos.red{background:#fdecea;border-color:#e6a8a1;color:#9b2c20}
+#page-pcp-estoque .kb-repos.orange{background:#fff1e0;border-color:#f0c28f;color:#a85d0b}
+#page-pcp-estoque .kb-repos.yellow{background:#fff8dc;border-color:#e8d48b;color:#7a5f00}
+#page-pcp-estoque .kb-repos.green{background:#eef7ee;border-color:#b5d8b6;color:#2e7d32}
+.repos-ov{position:fixed;inset:0;background:rgba(40,0,0,.55);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px}
+.repos-box{background:var(--paper);border-radius:10px;max-width:820px;width:100%;max-height:92vh;overflow:auto;padding:16px 18px 14px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.repos-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px}
+.repos-title{font-size:14px;font-weight:800;color:var(--red-dark)}
+.repos-close{border:0;background:transparent;font-size:20px;line-height:1;cursor:pointer;color:var(--ink-soft)}
+.repos-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:10px}
+.repos-kpi{background:var(--cream);border-radius:6px;padding:6px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-soft);font-weight:700}
+.repos-kpi b{display:block;font-size:15px;letter-spacing:0;text-transform:none;color:var(--ink);font-variant-numeric:tabular-nums}
+.repos-svg{width:100%;height:auto;display:block}
+.repos-svg .rp-grid{stroke:#e6dfd3;stroke-width:1}
+.repos-svg .rp-axis{stroke:#8a7f70;stroke-width:1}
+.repos-svg .rp-serie{fill:none;stroke:#a10101;stroke-width:2.2}
+.repos-svg .rp-pr{stroke:#d9822b;stroke-width:1.2;stroke-dasharray:5 4}
+.repos-svg .rp-es{stroke:#2b6fd9;stroke-width:1.2;stroke-dasharray:5 4}
+.repos-svg .rp-dot{fill:#d9822b}
+.repos-svg .rp-guide{stroke:#bbb;stroke-width:1;stroke-dasharray:2 3}
+.repos-svg text{font-size:10px;fill:#555;font-family:inherit}
+.repos-svg .rp-lbl-pr{fill:#b35f10}
+.repos-svg .rp-lbl-es{fill:#1f55ad}
+.repos-svg .rp-lbl-op{fill:#222;font-weight:700}
+.repos-note{font-size:10.5px;color:var(--ink-soft);margin-top:8px;line-height:1.45}
 /* Histórico de saldo */
 #page-pcp-estoque .hist-wrap{display:none;padding:4px 0 16px}
 #page-pcp-estoque .hist-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:10px}
@@ -20514,8 +20542,118 @@ function renderKanbanCard(item){
     <div class="kb-top"><div class="kb-title" title="${(item.descricao||'').replace(/"/g,'&quot;')}">${shortDesc(item.descricao||'')}</div>${dias}</div>
     ${sub?`<div class="kb-sub">${sub}</div>`:''}
     <div class="kb-metrics" style="--kbn:${metrics.length}">${metrics.join('')}</div>
+    ${op?'':REPOS_tag(item)}
   </div>`;
 }
+// ─── PONTO DE REPOSIÇÃO (PR) ──────────────────────────────────────────────────
+// PR = DM × LT + E.SEG, com DM = venda semanal ÷ 7. Parâmetros (lead time, lote, E.SEG%, hora da OP) em pcp_parametros_reposicao.
+// A OP só é emitida na hora fixa do dia (padrão 15h): "emitir até" = última janela antes do estoque cruzar o PR.
+let REPOS={}; // código normalizado → {lt, loteMassas, esPct, hora, kgMassa}
+async function REPOS_carregar(){
+  REPOS={};
+  try{
+    const cli=getSupabaseClient();
+    const [pr,mp]=await Promise.all([
+      cli.from('pcp_parametros_reposicao').select('codigo,lead_time_h,lote_massas,es_pct,hora_emissao').eq('ativo',true),
+      cli.from('mapa_rendimentos').select('codigo,etapas')
+    ]);
+    if(pr.error||!pr.data)return;
+    const kg={};
+    (mp.data||[]).forEach(m=>{
+      const e=(Array.isArray(m.etapas)?m.etapas:[]).find(x=>x&&x.nome==='Kg de massa');
+      if(e&&Number(e.qtd)>0)kg[normCod(m.codigo)||m.codigo]=Number(e.qtd);
+    });
+    pr.data.forEach(p=>{
+      const c=normCod(p.codigo)||p.codigo;
+      REPOS[c]={lt:Number(p.lead_time_h),loteMassas:p.lote_massas!=null?Number(p.lote_massas):null,esPct:Number(p.es_pct),hora:Number(p.hora_emissao),kgMassa:kg[c]||null};
+    });
+  }catch(e){REPOS={};}
+}
+function REPOS_calc(item){
+  if(item.tipo!=='FABRICA')return null;
+  const cod=normCod(item.codigo)||item.codigo;
+  const p=REPOS[cod],venda=vendaFabMap[cod];
+  if(!p||!venda||venda<=0)return null;
+  const dm=venda/7,ltD=p.lt/24,es=venda*(1+p.esPct/100),pr=dm*ltD+es;
+  const saldo=calculateAvailableStock(item);
+  const base=(importMetadata&&importMetadata.ts instanceof Date&&!isNaN(importMetadata.ts))?importMetadata.ts:new Date();
+  const now=new Date();
+  const janela=d=>{const x=new Date(d);x.setHours(p.hora,0,0,0);return x;};
+  const tPr=new Date(base.getTime()+(saldo-pr)/dm*864e5);
+  const ult=janela(tPr);if(ult>tPr)ult.setDate(ult.getDate()-1); // última janela antes do cruzamento
+  const prox=janela(now);if(prox<=now)prox.setDate(prox.getDate()+1); // próxima janela de emissão a partir de agora
+  const atrasada=ult<prox;
+  const emitir=atrasada?prox:ult;
+  const dias=(emitir-prox)/864e5;
+  const cls=atrasada?'red':dias<1?'orange':dias<=3?'yellow':'green';
+  const loteKg=p.loteMassas&&p.kgMassa?p.loteMassas*p.kgMassa:null;
+  return{pr,es,dm,ltD,lt:p.lt,hora:p.hora,saldo,base,tPr,emitir,atrasada,cls,loteMassas:p.loteMassas,kgMassa:p.kgMassa,loteKg,pronta:new Date(emitir.getTime()+p.lt*36e5),un:item.estoque_un||'KG'};
+}
+const REPOS_DIAS=['dom','seg','ter','qua','qui','sex','sáb'];
+function REPOS_fmt(d){return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+' ('+REPOS_DIAS[d.getDay()]+') '+String(d.getHours()).padStart(2,'0')+'h';}
+function REPOS_tag(item){
+  const r=REPOS_calc(item);if(!r)return'';
+  const txt=r.atrasada?'Abaixo do PR · emitir na próxima janela':'Emitir OP até';
+  return `<div class="kb-repos ${r.cls}" onclick="REPOS_abrir('${opEsc(item.codigo)}')" title="Ponto de reposição: clique para ver o gráfico">PR ${n(Math.round(r.pr))}<span>${txt}</span><b>${REPOS_fmt(r.emitir)}</b></div>`;
+}
+// Projeta 3 ciclos (emissão → chegada do lote) com consumo médio constante
+function REPOS_serie(r){
+  const ms=864e5,pts=[[0,r.saldo]],ops=[];
+  let curT=0,curS=r.saldo;
+  for(let i=0;i<3;i++){
+    let tEm;
+    if(i===0)tEm=(r.emitir-r.base)/ms;
+    else{
+      const tPr=curT+(curS-r.pr)/r.dm;
+      const c=new Date(r.base.getTime()+tPr*ms);
+      const u=new Date(c);u.setHours(r.hora,0,0,0);if(u>c)u.setDate(u.getDate()-1);
+      tEm=Math.max((u-r.base)/ms,curT);
+    }
+    const sEm=curS-r.dm*(tEm-curT),tArr=tEm+r.ltD,sArr=sEm-r.dm*r.ltD;
+    pts.push([tEm,sEm],[tArr,sArr],[tArr,sArr+r.loteKg]);
+    ops.push({t:tEm,s:sEm,when:new Date(r.base.getTime()+tEm*ms)});
+    curT=tArr;curS=sArr+r.loteKg;
+  }
+  pts.push([curT+4,curS-r.dm*4]);
+  return{pts,ops};
+}
+function REPOS_svg(r){
+  const {pts,ops}=REPOS_serie(r);
+  const W=760,H=300,ml=58,mr=14,mt=14,mb=30;
+  const xmax=Math.max(...pts.map(p=>p[0])),ys=pts.map(p=>p[1]).concat([r.pr,r.es]);
+  const ymax=Math.max(...ys)*1.1,ymin=Math.min(0,Math.min(...ys)*1.1);
+  const X=t=>ml+t/xmax*(W-ml-mr),Y=v=>mt+(1-(v-ymin)/(ymax-ymin))*(H-mt-mb);
+  let g='';
+  for(let i=0;i<=4;i++){const v=ymin+(ymax-ymin)*i/4;g+=`<line class="rp-grid" x1="${ml}" x2="${W-mr}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${ml-6}" y="${Y(v)+3}" text-anchor="end">${n(Math.round(v))}</text>`;}
+  const d0=new Date(r.base);d0.setHours(0,0,0,0);
+  for(let d=0;d<=xmax+1;d+=3){const t=(d0.getTime()+d*864e5-r.base.getTime())/864e5;if(t<0||t>xmax)continue;const dd=new Date(d0.getTime()+d*864e5);g+=`<text x="${X(t)}" y="${H-10}" text-anchor="middle">${String(dd.getDate()).padStart(2,'0')}/${String(dd.getMonth()+1).padStart(2,'0')}</text>`;}
+  g+=`<line class="rp-axis" x1="${ml}" x2="${W-mr}" y1="${Y(Math.max(ymin,0))}" y2="${Y(Math.max(ymin,0))}"/>`;
+  g+=`<line class="rp-pr" x1="${ml}" x2="${W-mr}" y1="${Y(r.pr)}" y2="${Y(r.pr)}"/><text class="rp-lbl-pr" x="${W-mr}" y="${Y(r.pr)-4}" text-anchor="end">PR ${n(Math.round(r.pr))}</text>`;
+  g+=`<line class="rp-es" x1="${ml}" x2="${W-mr}" y1="${Y(r.es)}" y2="${Y(r.es)}"/><text class="rp-lbl-es" x="${W-mr}" y="${Y(r.es)+12}" text-anchor="end">E.SEG ${n(Math.round(r.es))}</text>`;
+  g+=`<polyline class="rp-serie" points="${pts.map(p=>X(p[0]).toFixed(1)+','+Y(p[1]).toFixed(1)).join(' ')}"/>`;
+  ops.forEach((o,i)=>{
+    const x=X(o.t),anc=x<ml+60?'start':x>W-mr-80?'end':'middle';
+    g+=`<line class="rp-guide" x1="${x}" x2="${x}" y1="${Y(o.s)}" y2="${H-mb-22}"/><circle class="rp-dot" cx="${x}" cy="${Y(o.s)}" r="4"/><text class="rp-lbl-op" x="${x}" y="${H-mb-10}" text-anchor="${anc}">OP ${i+1} · ${REPOS_fmt(o.when)}</text>`;
+  });
+  return `<svg class="repos-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Projeção de estoque com ponto de reposição">${g}</svg>`;
+}
+function REPOS_abrir(cod){
+  const item=fabItems().find(i=>i.codigo===cod);if(!item)return;
+  const r=REPOS_calc(item);if(!r)return;
+  const un=' '+r.un,f=v=>n(Math.round(v))+un;
+  const kpis=[['Saldo',f(r.saldo)],['PR',f(r.pr)],['E.SEG',f(r.es)],['Consumo/dia',f(r.dm)],['Lead time',r.lt+' h'],['Lote',r.loteKg?r.loteMassas+' massas · '+f(r.loteKg):'não cadastrado'],['Emitir OP até',REPOS_fmt(r.emitir)],['Pronta',REPOS_fmt(r.pronta)]]
+    .map(k=>`<div class="repos-kpi">${k[0]}<b>${k[1]}</b></div>`).join('');
+  const chart=r.loteKg?REPOS_svg(r):'<div class="repos-note">Cadastre o lote (e o peso da massa no Mapa de Rendimentos) para ver a projeção.</div>';
+  const ov=document.createElement('div');ov.className='repos-ov';ov.id='reposOv';
+  ov.onclick=e=>{if(e.target===ov)REPOS_fechar();};
+  ov.innerHTML=`<div class="repos-box"><div class="repos-head"><div class="repos-title">Ponto de reposição · ${opEsc(shortDesc(item.descricao||''))}</div><button class="repos-close" onclick="REPOS_fechar()" aria-label="Fechar">×</button></div>
+    <div class="repos-kpis">${kpis}</div>${chart}
+    <div class="repos-note">PR = consumo/dia × lead time + estoque de segurança (venda semanal + ${REPOS[normCod(item.codigo)||item.codigo].esPct}%). Consumo = venda semanal ÷ 7, todos os dias. OP emitida sempre às ${r.hora}h. Saldo = estoque − reserva, projetado a partir da hora da importação.</div></div>`;
+  document.body.appendChild(ov);
+}
+function REPOS_fechar(){const o=document.getElementById('reposOv');if(o)o.remove();}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')REPOS_fechar();});
+
 // ─── CD CHAPECÓ — estoque por volume (sem venda/hora) ─────────────────────────
 function chapecoAtualizarStatus(){
   const st=document.getElementById('chapecoStatus'),nm=document.getElementById('chapecoFileName');
@@ -20693,8 +20831,9 @@ function renderKanban(items){
     const defs=list.filter(i=>calculateAvailableStock(i)<0).length;
     const defsSemOp=opData?list.filter(i=>calculateAvailableStock(i)<0&&!opDoItem(i)).length:0;
     const nOp=opData?list.filter(i=>opDoItem(i)).length:0;
+    const nPr=tipo==='FABRICA'?list.filter(i=>{const r=REPOS_calc(i);return r&&r.atrasada&&!opDoItem(i);}).length:0;
     return `<div class="kb-col ${cls}">
-      <div class="kb-col-head">${label}${defs?`<span class="kb-def">${defs} em déficit${opData?' · '+defsSemOp+' sem OP':''}</span>`:''}${nOp?`<span class="kb-opc">${nOp} na OP</span>`:''}<span class="kb-count">${list.length}</span></div>
+      <div class="kb-col-head">${label}${nPr?`<span class="kb-baixo" title="Abaixo do ponto de reposição, sem OP">${nPr} abaixo do PR</span>`:''}${defs?`<span class="kb-def">${defs} em déficit${opData?' · '+defsSemOp+' sem OP':''}</span>`:''}${nOp?`<span class="kb-opc">${nOp} na OP</span>`:''}<span class="kb-count">${list.length}</span></div>
       <div class="kb-col-body">${list.length?list.map(renderKanbanCard).join(''):'<div class="kb-empty">Nenhum produto</div>'}</div>
     </div>`;
   }).join('');
@@ -21582,6 +21721,7 @@ async function PCP_init(){
   await Promise.all([
     buildSD().catch(e=>console.error('buildSD:',e)),
     loadProdutividade().catch(e=>console.error('loadProdutividade:',e)),
+    REPOS_carregar().catch(e=>console.error('REPOS_carregar:',e)),
     // Restaura estoque do Supabase (compartilhado entre todos os usuários)
     // Fallback para localStorage se Supabase falhar ou não tiver dados
     sbRestoreCache().then(ok=>{ if(!ok) lsRestore(); }).catch(()=>{ lsRestore(); })
