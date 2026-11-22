@@ -1666,6 +1666,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .sc-padaria{background:#2c5282}
 
 #page-pcp-estoque .sc-girodia{background:#276749}
+#page-pcp-estoque .sc-maquinas{background:#4a5568}
 
 #page-pcp-estoque .sc-salgado{background:#6b46c1}
 
@@ -18817,7 +18818,7 @@ const SUPA_KEY=SUPABASE_ANON_KEY;
 
 function normCod(c){return c?c.replace(/^0+(?=\d)/,''):'';}
 
-const SETOR_ORDER=['GIRO DIA','PADARIA NOTURNO','SALGADO','CONFEITARIA','PADARIA','PÃO BATATA','FRITADOR','CROISSANT','PÃO C/ LINGUIÇA','REVENDA'];
+const SETOR_ORDER=['GIRO DIA','MÁQUINAS','PADARIA NOTURNO','SALGADO','CONFEITARIA','PADARIA','PÃO BATATA','FRITADOR','CROISSANT','PÃO C/ LINGUIÇA','REVENDA'];
 
 // ─── PRODUTIVIDADE MAP ────────────────────────────────────────────────────────
 async function loadProdutividade(){
@@ -18966,7 +18967,7 @@ const d0=new Date(2026,7,21);
 document.getElementById('ordemDate').value=d0.toISOString().slice(0,10);
 document.getElementById('printDate').textContent=RAW.data;
 
-const SETOR_COLORS={'PADARIA NOTURNO':{cls:'sc-gironoite',emoji:'🌙'},'PADARIA':{cls:'sc-padaria',emoji:'🍞'},'GIRO DIA':{cls:'sc-girodia',emoji:'☀️'},'SALGADO':{cls:'sc-salgado',emoji:'🥐'},'FRITADOR':{cls:'sc-fritador',emoji:'🍳'}};
+const SETOR_COLORS={'PADARIA NOTURNO':{cls:'sc-gironoite',emoji:'🌙'},'PADARIA':{cls:'sc-padaria',emoji:'🍞'},'GIRO DIA':{cls:'sc-girodia',emoji:'☀️'},'MÁQUINAS':{cls:'sc-maquinas',emoji:'⚙️'},'SALGADO':{cls:'sc-salgado',emoji:'🥐'},'FRITADOR':{cls:'sc-fritador',emoji:'🍳'}};
 
 let ordemState={};
 let rowCounter=0;
@@ -21663,7 +21664,7 @@ body{font-family:Arial,sans-serif;font-size:10px;color:#000;background:#fff;padd
 .setor-block{border:1px solid #ccc;margin-bottom:8px;break-inside:avoid}
 .setor-header{display:flex;align-items:center;gap:8px;padding:5px 10px;background:#f0f0f0;border-bottom:1px solid #ccc}
 .setor-color{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.sc-gironoite{background:#9b2c2c}.sc-padaria{background:#2c5282}.sc-girodia{background:#276749}
+.sc-gironoite{background:#9b2c2c}.sc-padaria{background:#2c5282}.sc-girodia{background:#276749}.sc-maquinas{background:#4a5568}
 .sc-salgado{background:#6b46c1}.sc-fritador{background:#744210}.sc-confeitaria{background:#b7791f}
 .sc-massasalgado{background:#553c9a}.sc-paodelocebolos{background:#d53f8c}.sc-cozinha{background:#2c7a7b}.sc-paoclinguica{background:#c05621}
 .setor-name{font-weight:700;font-size:11px}
@@ -28372,7 +28373,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
    Planejamento diário por setor → salva em programacao_producao,
    alimenta a OP do sistema (opData) e exporta os PDFs.
    ───────────────────────────────────────────── */
-const PG_SETORES = ['PADARIA NOTURNO','GIRO DIA','PADARIA','CROISSANT','PÃO BATATA','SALGADO','FRITADOR','CONFEITARIA'];
+const PG_SETORES = ['PADARIA NOTURNO','GIRO DIA','MÁQUINAS','PADARIA','CROISSANT','PÃO BATATA','SALGADO','FRITADOR','CONFEITARIA'];
 const PG_UNIDADES = ['Massa','Carrinhos','Unid','Caixas','Kg','Blocos'];
 const PG_RECHEIO = ['SALGADO','FRITADOR'];
 const PG_VERMELHO = [161,1,1];
