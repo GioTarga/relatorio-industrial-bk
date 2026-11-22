@@ -1257,6 +1257,22 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #page-pcp-estoque .kb-repos.orange{background:#fff1e0;border-color:#f0c28f;color:#a85d0b}
 #page-pcp-estoque .kb-repos.yellow{background:#fff8dc;border-color:#e8d48b;color:#7a5f00}
 #page-pcp-estoque .kb-repos.green{background:#eef7ee;border-color:#b5d8b6;color:#2e7d32}
+#page-pcp-estoque .kb-card.kb-click{cursor:pointer}
+#page-pcp-estoque .kb-card.kb-click:hover{box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.envop-box{max-width:640px}
+.envop-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;margin:8px 0}
+.envop-grid label{display:flex;flex-direction:column;gap:3px;font-size:11px;font-weight:700;color:var(--ink-soft)}
+.envop-grid input,.envop-grid select{font:inherit;font-size:13px;font-weight:400;color:var(--ink);padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);width:100%;box-sizing:border-box}
+.envop-w2{grid-column:1/-1}
+.envop-aviso{background:#fff4e0;border:1px solid #e6b45a;border-radius:6px;padding:6px 9px;font-size:12px;margin:4px 0}
+.envop-info{font-size:11px;color:var(--ink-soft);margin-bottom:10px}
+.envop-act{display:flex;align-items:center;justify-content:flex-end;gap:8px}
+.envop-st{margin-right:auto;font-size:12px;font-weight:700;color:var(--red-dark)}
+.envop-b{border:0;border-radius:6px;padding:8px 14px;font-weight:800;font-size:13px;cursor:pointer;background:var(--red-dark);color:#fff}
+.envop-b.sec{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.envop-b:disabled{opacity:.6;cursor:default}
+.envop-msg{padding:20px;text-align:center}
+@media(max-width:560px){.envop-grid{grid-template-columns:1fr}}
 .repos-ov{position:fixed;inset:0;background:rgba(40,0,0,.55);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px}
 .repos-box{background:var(--paper);border-radius:10px;max-width:1100px;width:100%;max-height:92vh;overflow:auto;padding:16px 18px 14px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
 .repos-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px}
@@ -20582,7 +20598,7 @@ function renderKanbanCard(item){
   const sub=[item.codigo?'Cód. '+opEsc(item.codigo):'',item.familia,setor&&setor!=='—'&&setor!=='SEM SETOR'?setor:''].filter(Boolean).map(t=>`<span>${t}</span>`).join('')+ABC_pill(item);
   const op=opDoItem(item);
   const opTag=op?`<div class="kb-op-tag" title="${opEsc([op.maq,op.destino].filter(Boolean).join(' · '))}">Em produção<small>${op.qtd!=null?n(op.qtd)+' ':''}${opEsc(op.un)}${op.destino?' · '+opEsc(op.destino):''}</small></div>`:'';
-  return `<div class="kb-card ${st.cls}${op?' emprod':''}">
+  return `<div class="kb-card ${st.cls}${op?' emprod':''} kb-click" onclick="ENVOP_abrir('${opEsc(item.codigo)}')" title="Clique para enviar este produto para a OP">
     ${opTag}
     <div class="kb-top"><div class="kb-title" title="${(item.descricao||'').replace(/"/g,'&quot;')}">${shortDesc(item.descricao||'')}</div>${dias}</div>
     ${sub?`<div class="kb-sub">${sub}</div>`:''}
@@ -20639,7 +20655,7 @@ function REPOS_fmt(d){return String(d.getDate()).padStart(2,'0')+'/'+String(d.ge
 function REPOS_tag(item){
   const r=REPOS_calc(item);if(!r)return'';
   const txt=r.atrasada?'Abaixo do PR · emitir na próxima janela':'Emitir OP até';
-  return `<div class="kb-repos ${r.cls}" onclick="REPOS_abrir('${opEsc(item.codigo)}')" title="Ponto de reposição: clique para ver o gráfico">PR ${n(Math.round(r.pr))}<span>${txt}</span><b>${REPOS_fmt(r.emitir)}</b></div>`;
+  return `<div class="kb-repos ${r.cls}" onclick="event.stopPropagation();REPOS_abrir('${opEsc(item.codigo)}')" title="Ponto de reposição: clique para ver o gráfico">PR ${n(Math.round(r.pr))}<span>${txt}</span><b>${REPOS_fmt(r.emitir)}</b></div>`;
 }
 // Projeta 3 ciclos (emissão → chegada do lote) com consumo médio constante
 function REPOS_serie(r){
@@ -20770,6 +20786,82 @@ function ABC_render(){
     <div class="abc-note">Classe pela venda semanal acumulada no setor: A até 80%, B até 95%, C o restante. Cobertura = saldo (estoque − reserva) ÷ venda diária. Clique em um produto com ponto de reposição para ver o gráfico dele.</div>`;
 }
 
+// ─── ENVIAR PARA A OP (a partir do card do Kanban) ────────────────────────────
+// Pop-up com os mesmos campos da Programação; grava uma linha em programacao_producao na data escolhida (sem apagar as outras) e atualiza a OP.
+function ENVOP_unidade(cod){
+  const c=normCod(String(cod));
+  const hit=PG_catalog.find(p=>normCod(String(p.codigo))===c);
+  if(!hit)return 'Unid';
+  const fab=PG_LOJA2FAB[c]&&PG_catalog.find(p=>normCod(String(p.codigo))===PG_LOJA2FAB[c]);
+  const uk=PG_unKey((fab||hit).unidade);
+  if(PG_cxFab(PG_LOJA2FAB[c]||hit.codigo)>0)return 'Caixas';
+  return uk==='un'?'Unid':uk==='cx'?'Caixas':(PG_UNIDADES.find(x=>PG_semAcento(x).toLowerCase()===PG_semAcento(hit.unidade||'').toLowerCase())||'Unid');
+}
+async function ENVOP_abrir(cod){
+  if(document.getElementById('envopOv'))return;
+  const item=fabItems().find(i=>i.codigo===cod);if(!item)return;
+  const ov=document.createElement('div');ov.className='repos-ov';ov.id='envopOv';
+  ov.onclick=e=>{if(e.target===ov)ENVOP_fechar();};
+  ov.innerHTML='<div class="repos-box envop-box"><div class="envop-msg">Carregando…</div></div>';
+  document.body.appendChild(ov);
+  try{if(!PG_ready)await PG_init();}catch(e){}
+  const rp=REPOS[normCod(item.codigo)||item.codigo];
+  const setorItem=String(setorDoItem(item)||'').toUpperCase();
+  const setor=PG_SETORES.includes(setorItem)?setorItem:'';
+  let un=ENVOP_unidade(item.codigo),qtd='';
+  if(rp&&rp.loteMassas>0){un='Massa';qtd=rp.loteMassas;}
+  const op=opDoItem(item);
+  const aviso=op?`<div class="envop-aviso">Este produto já está na OP: ${op.qtd!=null?n(op.qtd)+' ':''}${opEsc(op.un)}${op.destino?' · '+opEsc(op.destino):''}. Confira antes de enviar de novo.</div>`:'';
+  const sel=(id,opts,v)=>`<select id="${id}">${opts.map(o=>`<option${o===v?' selected':''}>${PG_esc(o)}</option>`).join('')}</select>`;
+  ov.firstChild.innerHTML=`<div class="repos-head"><div class="repos-title">Enviar para a OP · ${opEsc(shortDesc(item.descricao||''))}</div><button class="repos-close" onclick="ENVOP_fechar()" aria-label="Fechar">×</button></div>
+    ${aviso}
+    <div class="envop-grid">
+      <label>Data da produção<input type="date" id="envopData" value="${PG_hojeMais(1)}"></label>
+      <label>Setor<select id="envopSetor" onchange="ENVOP_maq()"><option value="">— Selecione —</option>${PG_SETORES.map(s=>`<option${s===setor?' selected':''}>${PG_esc(s)}</option>`).join('')}</select></label>
+      <label>Quantidade<input type="number" min="0" step="any" id="envopQtd" value="${qtd}"></label>
+      <label>Unidade${sel('envopUn',PG_UNIDADES,un)}</label>
+      <label>Máquina / turno<span id="envopMaqBox"></span></label>
+      <label>Destino (Embalagem)<input id="envopDest" placeholder="Destino"></label>
+      <label class="envop-w2">Observação<input id="envopObs" placeholder="Observação"></label>
+    </div>
+    <div class="envop-info">${rp&&rp.loteMassas>0?'Quantidade sugerida: lote cadastrado ('+rp.loteMassas+' massas). ':''}Salva na Programação da data escolhida, junto com os itens que já estão lá.</div>
+    <div class="envop-act"><span id="envopSt" class="envop-st"></span><button class="envop-b sec" onclick="ENVOP_fechar()">Cancelar</button><button class="envop-b" id="envopOk" onclick="ENVOP_salvar('${opEsc(item.codigo)}')">Enviar para a OP</button></div>`;
+  ENVOP_maq();
+}
+function ENVOP_maq(){
+  const box=document.getElementById('envopMaqBox');if(!box)return;
+  const setor=document.getElementById('envopSetor').value,lista=setor?PG_maqLista(setor):[];
+  box.innerHTML=lista.length?'<select id="envopMaq"><option value="">— Selecione —</option>'+lista.map(m=>`<option value="${PG_esc(m.identificacao)}">${PG_esc(m.identificacao)}</option>`).join('')+'</select>':'<input id="envopMaq" placeholder="Máquina / turno">';
+}
+function ENVOP_fechar(){const o=document.getElementById('envopOv');if(o)o.remove();}
+async function ENVOP_salvar(cod){
+  const v=id=>(document.getElementById(id)||{}).value||'';
+  const st=document.getElementById('envopSt'),ok=document.getElementById('envopOk');
+  const data=v('envopData'),setor=v('envopSetor'),qtd=v('envopQtd')===''?null:Number(v('envopQtd'));
+  if(!data){st.textContent='Escolha a data.';return;}
+  if(!setor){st.textContent='Escolha o setor.';return;}
+  if(!(qtd>0)){st.textContent='Informe a quantidade.';return;}
+  const item=fabItems().find(i=>i.codigo===cod);if(!item)return;
+  const cat=PG_catalog.find(p=>normCod(String(p.codigo))===normCod(String(cod)));
+  ok.disabled=true;st.textContent='Salvando…';
+  try{
+    const cli=getSupabaseClient();
+    const ex=await cli.from('programacao_producao').select('*').eq('data',data).order('setor').order('ordem');
+    if(ex.error)throw ex.error;
+    const rows=ex.data||[];
+    const dup=rows.find(r=>normCod(String(r.codigo||''))===normCod(String(cod)));
+    if(dup&&!confirm('Este produto já está na Programação de '+PG_dataBR(data)+' ('+PG_qtdTxt(dup)+'). Adicionar mesmo assim?')){ok.disabled=false;st.textContent='';return;}
+    const novo={data,setor,ordem:rows.filter(r=>r.setor===setor).length,codigo:item.codigo,produto:(cat&&cat.descricao)||item.descricao||'',quantidade:qtd,qtd_rodada1:null,qtd_rodada2:null,unidade:v('envopUn'),maquina:v('envopMaq')||null,destino:v('envopDest').trim()||null,observacao:v('envopObs').trim()||null,qtd_loja:null,un_loja:null,qtd_loja2:null,un_loja2:null};
+    const ins=await cli.from('programacao_producao').insert([novo]);
+    if(ins&&ins.error)throw ins.error;
+    const todas=rows.concat([novo]);
+    PG_sincronizarOP(data,todas);
+    const pgd=document.getElementById('pgData');
+    if(PG_ready&&pgd&&pgd.value===data&&!PG_dirty){PG_rows=todas;try{PG_render();}catch(e){}}
+    st.textContent='Enviado ✓';
+    setTimeout(ENVOP_fechar,700);
+  }catch(e){ok.disabled=false;st.textContent='Erro: '+(e.message||e);}
+}
 // ─── CD CHAPECÓ — estoque por volume (sem venda/hora) ─────────────────────────
 function chapecoAtualizarStatus(){
   const st=document.getElementById('chapecoStatus'),nm=document.getElementById('chapecoFileName');
