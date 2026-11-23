@@ -21953,6 +21953,7 @@ async function PCP_init(){
   buildChips('lojaFamChips',lojaItems(),'setLojaFam');
   buildAlertaSetorDropdown();
   renderAlerts();renderFab();renderLoja();
+  OP_alinharComProgramacao();
 
 }
 
@@ -29250,9 +29251,28 @@ async function PG_salvar(){
   }
 }
 
+// Realinha a OP com a programação do dia mais próximo (hoje ou o próximo dia programado), caso a OP guardada seja de outra data
+async function OP_alinharComProgramacao(){
+  try{
+    const hoje = PG_hojeMais(0), cli = getSupabaseClient();
+    const prox = await cli.from('programacao_producao').select('data').gte('data', hoje).order('data').limit(1);
+    if(prox.error || !prox.data || !prox.data.length) return;
+    const alvo = prox.data[0].data;
+    if(opData && opData.data === alvo) return;
+    if(opData && opData.data && opData.data >= hoje && opData.data < alvo) return;   // OP importada de data mais próxima
+    const r = await cli.from('programacao_producao').select('*').eq('data', alvo).order('setor').order('ordem');
+    if(r.error || !r.data || !r.data.length) return;
+    if(!PG_ready) await PG_init();
+    PG_sincronizarOP(alvo, r.data);
+  }catch(e){ console.error('OP_alinharComProgramacao:', e); }
+}
+
 // A programação salva (de hoje em diante) vira a OP do sistema — sem importar planilha
 function PG_sincronizarOP(data, itens){
-  if(data < PG_hojeMais(0)) return;
+  const hoje = PG_hojeMais(0);
+  if(data < hoje) return;
+  // A OP do sistema é a do dia mais próximo: salvar uma data futura não pode apagar a OP de hoje
+  if(opData && opData.data && opData.data >= hoje && opData.data < data) return;
   const un = { 'Massa':'MASSA','Carrinhos':'CARRINHO','Unid':'UNIDADE','Caixas':'CAIXA','Kg':'KG','Blocos':'BLOCOS' };
   opData = { data, arquivo: 'Programação BK360', ts: new Date().toISOString(), itens: itens.filter(r => r.codigo || r.produto).map(r => ({
     cod: r.codigo || '', setor: r.setor, desc: r.produto, qtd: r.quantidade || 0, un: un[r.unidade] || String(r.unidade || '').toUpperCase(), maq: r.maquina || '', destino: PG_destinoFinal(r)
