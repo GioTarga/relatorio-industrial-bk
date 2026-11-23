@@ -4721,6 +4721,9 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
       <select id="abcFiltro" class="abc-filtro" style="display:none" onchange="ABC_setFiltro(this.value)" title="Filtrar cards pela classe da Curva ABC (Fábrica)">
         <option value="ALL">Todas as classes</option><option value="A">Classe A</option><option value="B">Classe B</option><option value="C">Classe C</option>
       </select>
+      <select id="prFiltro" class="abc-filtro" style="display:none" onchange="REPOS_setFiltro(this.value)" title="Filtrar cards pelo ponto de reposição (Fábrica)">
+        <option value="ALL">Todos os produtos</option><option value="PR">Já atingiram o PR</option><option value="PRSEM">Atingiram o PR, sem OP</option>
+      </select>
       <span class="vt-hint" id="vtHint">Cards ordenados por menos dias de estoque</span>
       <span class="kb-op-legend" id="opLegend" style="display:none"></span>
     </div>
@@ -20719,7 +20722,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')REPOS_fechar();});
 // ─── CURVA ABC (Fábrica) ──────────────────────────────────────────────────────
 // Classe pela venda semanal acumulada dentro do setor: A até 80%, B até 95%, C o restante.
 // Uma curva por setor e por unidade de estoque (KG, UN e CX não se somam). Grupos com menos de 3 itens não recebem classe.
-let ABC_MAP={},ABC_GRUPOS={},ABC_setor='',ABC_un='',ABC_filtro='ALL';
+let ABC_MAP={},ABC_GRUPOS={},ABC_setor='',ABC_un='',ABC_filtro='ALL',PR_filtro='ALL';
 function ABC_calc(){
   ABC_MAP={};ABC_GRUPOS={};
   fabItems().forEach(i=>{
@@ -20742,6 +20745,7 @@ function ABC_calc(){
 }
 function ABC_classe(item){return item.tipo==='FABRICA'?(ABC_MAP[safeId(item)]||null):null;}
 function ABC_pill(item){const c=ABC_classe(item);return c?`<span class="abc-pill ${c.toLowerCase()}" title="Curva ABC no setor (venda semanal)">${c}</span>`:'';}
+function REPOS_setFiltro(v){PR_filtro=v;renderAlerts();}
 function ABC_setFiltro(v){ABC_filtro=v;renderAlerts();}
 function ABC_sel(tipo,v){if(tipo==='setor'){ABC_setor=v;ABC_un='';}else ABC_un=v;ABC_render();}
 function ABC_svg(L){
@@ -21019,6 +21023,7 @@ function renderKanban(items){
   const el=document.getElementById('alertKanban');if(!el)return;
   ABC_calc();
   if(ABC_filtro!=='ALL')items=items.filter(i=>ABC_classe(i)===ABC_filtro);
+  if(PR_filtro!=='ALL')items=items.filter(i=>{const r=REPOS_calc(i);return r&&r.atrasada&&(PR_filtro==='PR'||!opDoItem(i));});
   const cols=[['FABRICA','fab','Fábrica'],['LOJA','loja','Loja'],['CAFE','cafe','BK Café'],['CHAPECO','chap','Chapecó']]
     .filter(c=>locFilter==='ALL'||locFilter===c[0]);
   el.style.gridTemplateColumns=`repeat(${cols.length},minmax(0,1fr))`;
@@ -21050,10 +21055,11 @@ function renderKanban(items){
 }
 function _applyEstView(){
   const kb=estView==='kanban';
-  const k=document.getElementById('alertKanban'),t=document.getElementById('alertTableWrap'),h=document.getElementById('viewHistorico'),f=document.getElementById('viewFalta'),ab=document.getElementById('viewAbc'),abf=document.getElementById('abcFiltro');
+  const k=document.getElementById('alertKanban'),t=document.getElementById('alertTableWrap'),h=document.getElementById('viewHistorico'),f=document.getElementById('viewFalta'),ab=document.getElementById('viewAbc'),abf=document.getElementById('abcFiltro'),prf=document.getElementById('prFiltro');
   if(f)f.style.display=estView==='falta'?'block':'none';
   if(ab)ab.style.display=estView==='abc'?'block':'none';
   if(abf){abf.style.display=kb?'':'none';abf.value=ABC_filtro;}
+  if(prf){prf.style.display=kb?'':'none';prf.value=PR_filtro;}
   const hint=document.getElementById('vtHint');
   if(hint)hint.textContent=estView==='falta'?'Produtos com demanda maior que o estoque, por setor':estView==='abc'?'Classe A, B e C pela venda semanal, por setor e unidade':'Cards ordenados por menos dias de estoque';
   if(k)k.style.display=kb?'grid':'none';
