@@ -28604,8 +28604,19 @@ function PL_renderDash(){
 }
 
 // ── PDF do pedido ──────────────────────────
+// Gera o PDF em uma única folha: se passar de uma página, refaz com fonte e espaçamento menores
 function PL_pdf(ped, itens){
   if(!window.jspdf || !window.jspdf.jsPDF){ alert('Não foi possível carregar a biblioteca de PDF (sem conexão com a internet?). Tente novamente.'); return; }
+  let doc;
+  for(const esc of [1, 0.88, 0.76, 0.65, 0.55, 0.47, 0.4, 0.33, 0.27]){
+    doc = PL_pdfDoc(ped, itens, esc);
+    if(doc.getNumberOfPages() === 1) break;
+  }
+  const num = String(ped.numero).padStart(4, '0');
+  const slug = String(ped.setor).normalize('NFD').replace(/[^A-Za-z0-9 ]+/g, '').replace(/[^A-Za-z0-9]+/g, '_');
+  doc.save('PEDIDO_PLANTAO_' + num + '_' + slug + '_' + ped.data + '.pdf');
+}
+function PL_pdfDoc(ped, itens, esc){
   const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
   const PW = 210, PH = 297, mx = 10, W = PW - mx * 2;
   const RED = [161, 1, 1], DARK = [110, 0, 0], GY = [119, 119, 119], LG = [241, 230, 230], INK = [34, 28, 28];
@@ -28661,7 +28672,7 @@ function PL_pdf(ped, itens){
   // Tabela: altura das linhas se ajusta para caber tudo em uma página
   const startY = cy + (ch + gap) * 2 + 4, SH = 30;
   const disponivel = PH - 16 - SH - 14 - startY - 9 - 10;
-  const altLinha = Math.min(16, Math.max(8.5, disponivel / Math.max(itens.length, 1)));
+  const altLinha = Math.min(16, Math.max(3, disponivel / Math.max(itens.length, 1)));
   doc.autoTable({
     startY, margin: { left: mx, right: mx, bottom: 16 },
     head: [['#', 'Colaborador', 'Horário', 'Interv.', 'Horas pagas', 'Valor/hora', 'Total', 'Assinatura – presença', 'Assinatura – recebimento']],
@@ -28669,7 +28680,7 @@ function PL_pdf(ped, itens){
     foot: [['', 'TOTAL', '', '', PL_HRS(th), '', PL_BRL(tv), '', '']],
     showFoot: 'lastPage',
     theme: 'plain',
-    styles: { font: 'helvetica', fontSize: 8.5, cellPadding: { top: 2, bottom: 2, left: 2, right: 2 }, minCellHeight: altLinha, valign: 'middle', textColor: INK, lineColor: [225, 210, 210], lineWidth: { bottom: 0.25 }, overflow: 'linebreak' },
+    styles: { font: 'helvetica', fontSize: 8.5 * esc, cellPadding: { top: 2 * esc, bottom: 2 * esc, left: 2, right: 2 }, minCellHeight: altLinha, valign: 'middle', textColor: INK, lineColor: [225, 210, 210], lineWidth: { bottom: 0.25 }, overflow: 'linebreak' },
     headStyles: { fillColor: DARK, textColor: 255, fontSize: 7.5, fontStyle: 'bold', minCellHeight: 9, lineWidth: 0, overflow: 'linebreak' },
     alternateRowStyles: { fillColor: [251, 247, 247] },
     footStyles: { fillColor: LG, textColor: INK, fontStyle: 'bold', fontSize: 9, minCellHeight: 10, lineWidth: 0 },
@@ -28703,8 +28714,7 @@ function PL_pdf(ped, itens){
     doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...GY);
     doc.text('Nome / assinatura  ·  Data', x + sw / 2, sy + 9, { align: 'center' });
   });
-  const slug = String(ped.setor).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '_');
-  doc.save('PEDIDO_PLANTAO_' + num + '_' + slug + '_' + ped.data + '.pdf');
+  return doc;
 }
 
 document.addEventListener('click', e => {
