@@ -157,6 +157,8 @@
   #page-absenteismo .abs-table th.pl-num{ text-align:right; }
   #page-absenteismo .abs-table th.abs-c{ text-align:center; }
   #page-absenteismo .pl-total td{ font-weight:700; border-top:2px solid var(--line); }
+  #page-absenteismo .pl-ed{ color:var(--ink-soft); font-size:15px; margin-right:6px; }
+  #page-absenteismo .abs-table tr.pl-editando td{ background:#fff1de; }
   #page-absenteismo .pl-x{ background:none; border:0; color:var(--red); font-size:18px; cursor:pointer; line-height:1; }
   #page-absenteismo .pl-period{ display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; margin-bottom:20px; }
   .nav-item{
@@ -28320,6 +28322,7 @@ let PL_PEDIDOS = [];
 let PL_ITENS = [];
 let PL_RASCUNHO = [];
 let PL_ULTIMO = null;
+let PL_LINHA_EDIT = null; // índice da linha de colaborador em edição (null = adicionando nova)
 let PL_EDIT_ID = null; // id do pedido em edição (null = pedido novo)
 let PL_chartSetor = null, PL_chartMotivo = null;
 const PL_BRL = v => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -28376,7 +28379,7 @@ function PL_renderRascunho(){
   const linhas = PL_RASCUNHO.map((l, i) => {
     const h = PL_horas(l.ini, l.fim, l.intervalo), t = h * l.valor;
     th += h; tv += t;
-    return `<tr><td>${ADM_esc(l.colaborador)}</td><td class="pl-num">${l.ini}</td><td class="pl-num">${l.fim}</td><td class="pl-num">${l.intervalo ? l.intervalo + ' min' : '–'}</td><td class="pl-num">${PL_HRS(h)}</td><td class="pl-num">${PL_BRL(l.valor)}</td><td class="pl-num">${PL_BRL(t)}</td><td class="abs-c"><button type="button" class="pl-x" data-plrm="${i}" title="Remover">×</button></td></tr>`;
+    return `<tr class="${i === PL_LINHA_EDIT ? 'pl-editando' : ''}"><td>${ADM_esc(l.colaborador)}</td><td class="pl-num">${l.ini}</td><td class="pl-num">${l.fim}</td><td class="pl-num">${l.intervalo ? l.intervalo + ' min' : '–'}</td><td class="pl-num">${PL_HRS(h)}</td><td class="pl-num">${PL_BRL(l.valor)}</td><td class="pl-num">${PL_BRL(t)}</td><td class="abs-c" style="white-space:nowrap;"><button type="button" class="pl-x pl-ed" data-pledl="${i}" title="Editar linha">✎</button><button type="button" class="pl-x" data-plrm="${i}" title="Remover">×</button></td></tr>`;
   });
   linhas.push(`<tr class="pl-total"><td>Total (${PL_RASCUNHO.length})</td><td></td><td></td><td></td><td class="pl-num">${PL_HRS(th)}</td><td></td><td class="pl-num">${PL_BRL(tv)}</td><td></td></tr>`);
   tb.innerHTML = linhas.join('');
@@ -28392,7 +28395,8 @@ function PL_addColab(){
   if(!(valor >= 0)){ PL_fb('Informe o valor/hora a ser pago.', 'err'); return; }
   const intervalo = Math.round(Number(document.getElementById('plInterv').value) || 0);
   if(intervalo < 0 || intervalo >= PL_horas(ini, fim) * 60){ PL_fb('O intervalo precisa ser menor que a duração do plantão.', 'err'); return; }
-  PL_RASCUNHO.push({ colaborador: nome, ini, fim, valor, intervalo });
+  if(PL_LINHA_EDIT != null){ PL_RASCUNHO[PL_LINHA_EDIT] = { colaborador: nome, ini, fim, valor, intervalo }; PL_LINHA_EDIT = null; document.getElementById('plAdd').textContent = '+ Adicionar colaborador'; }
+  else PL_RASCUNHO.push({ colaborador: nome, ini, fim, valor, intervalo });
   PL_fb('');
   document.getElementById('plColab').value = '';
   document.getElementById('plColab').focus();
@@ -28416,6 +28420,8 @@ function PL_limpar(){
   document.getElementById('plPdfUltimo').style.display = 'none';
   PL_ULTIMO = null;
   PL_EDIT_ID = null;
+  PL_LINHA_EDIT = null;
+  document.getElementById('plAdd').textContent = '+ Adicionar colaborador';
   document.getElementById('plTitulo').textContent = 'Novo pedido de plantão';
   document.getElementById('plSalvar').textContent = 'Salvar plantão';
   document.getElementById('plLimpar').textContent = 'Limpar';
@@ -28726,7 +28732,28 @@ document.addEventListener('click', e => {
   if(t.id === 'plSalvar'){ PL_salvar(); return; }
   if(t.id === 'plLimpar'){ PL_limpar(); return; }
   if(t.id === 'plPdfUltimo'){ if(PL_ULTIMO) PL_pdf(PL_ULTIMO.pedido, PL_ULTIMO.itens); return; }
-  if(t.dataset && t.dataset.plrm != null){ PL_RASCUNHO.splice(Number(t.dataset.plrm), 1); PL_renderRascunho(); return; }
+  if(t.dataset && t.dataset.plrm != null){
+    const i = Number(t.dataset.plrm);
+    PL_RASCUNHO.splice(i, 1);
+    if(PL_LINHA_EDIT === i){ PL_LINHA_EDIT = null; document.getElementById('plAdd').textContent = '+ Adicionar colaborador'; }
+    else if(PL_LINHA_EDIT != null && i < PL_LINHA_EDIT) PL_LINHA_EDIT--;
+    PL_renderRascunho(); return;
+  }
+  if(t.dataset && t.dataset.pledl != null){
+    const i = Number(t.dataset.pledl), l = PL_RASCUNHO[i];
+    if(!l) return;
+    PL_LINHA_EDIT = i;
+    document.getElementById('plColab').value = l.colaborador;
+    document.getElementById('plIni').value = l.ini;
+    document.getElementById('plFim').value = l.fim;
+    document.getElementById('plInterv').value = l.intervalo || '';
+    document.getElementById('plValor').value = l.valor;
+    document.getElementById('plAdd').textContent = '✓ Atualizar colaborador';
+    PL_fb('Editando a linha de ' + l.colaborador + '. Altere e clique em Atualizar colaborador.');
+    PL_renderRascunho();
+    document.getElementById('plColab').focus();
+    return;
+  }
   if(t.dataset && t.dataset.plpdf){
     const p = PL_juntar().find(x => x.id === t.dataset.plpdf);
     if(p) PL_pdf(p, p.itens);
