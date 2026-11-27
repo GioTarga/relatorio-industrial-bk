@@ -10,6 +10,7 @@
 <style>
   :root{
     --red:#A10101;
+    --ok:#2e7d32;
     --red-dark:#6e0000;
     --gold:#B5640B;
     --cream:#FFF8E7;
@@ -119,7 +120,7 @@
   .adm-mod-grid select{ padding:6px 8px; border:1px solid #d8cfc4; border-radius:var(--radius-sm); font-size:12.5px; background:#fffdf9; }
   .adm-mod-resumo{ font-size:12px; color:#5a5a5a; margin-bottom:4px; }
   @media (max-width:900px){ .adm-form{ grid-template-columns:1fr; } }
-  /* ============ CONTROLE DE ABSENTEÍSMO ============ */
+  /* ============ PLANTÕES E ABSENTEÍSMO ============ */
   #page-absenteismo .abs-sub{ font-size:12px; color:var(--ink-soft); margin-top:6px; font-weight:600; }
   #page-absenteismo .abs-chart-box{ position:relative; height:300px; }
   #page-absenteismo .abs-chart-box.alto{ height:420px; }
@@ -135,6 +136,29 @@
   #page-absenteismo .abs-rk-pos{ font-weight:700; color:var(--ink-soft); text-align:center; }
   #page-absenteismo .abs-rk-wrap{ max-height:480px; overflow-y:auto; }
   #page-absenteismo .abs-vazio{ color:var(--ink-soft); text-align:center; padding:24px 0; }
+  #page-absenteismo .pl-tabs{ display:flex; gap:6px; padding:14px 32px 0; flex-wrap:wrap; }
+  #page-absenteismo .pl-tab{ background:#fff; color:var(--ink-soft); border:1px solid var(--line); border-radius:8px 8px 0 0; padding:9px 18px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; }
+  #page-absenteismo .pl-tab.on{ background:var(--red); color:#fff; border-color:var(--red); }
+  #page-absenteismo .pl-row{ display:flex; gap:12px; flex-wrap:wrap; margin-bottom:14px; align-items:flex-end; }
+  #page-absenteismo .pl-field{ display:flex; flex-direction:column; gap:4px; }
+  #page-absenteismo .pl-grow{ flex:1 1 240px; }
+  #page-absenteismo .pl-field label{ font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); font-weight:700; }
+  #page-absenteismo .pl-field input, #page-absenteismo .pl-field select{ padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:13.5px; background:#fff; font-family:inherit; min-width:130px; }
+  #page-absenteismo .pl-sub{ font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); font-weight:700; margin:18px 0 10px; }
+  #page-absenteismo .pl-btn{ background:var(--red); color:#fff; border:0; border-radius:8px; padding:9px 18px; font-weight:700; cursor:pointer; font-family:inherit; font-size:13px; }
+  #page-absenteismo .pl-btn:disabled{ opacity:.5; cursor:default; }
+  #page-absenteismo .pl-btn-sec{ background:#fff; color:var(--red); border:1px solid var(--red); border-radius:8px; padding:8px 14px; font-weight:700; cursor:pointer; font-size:12.5px; font-family:inherit; }
+  #page-absenteismo .pl-btn-mini{ background:#fff; color:var(--red); border:1px solid var(--line); border-radius:6px; padding:4px 10px; font-size:12px; font-weight:700; cursor:pointer; margin-right:4px; font-family:inherit; }
+  #page-absenteismo .pl-actions{ display:flex; align-items:center; gap:10px; margin-top:16px; flex-wrap:wrap; }
+  #page-absenteismo .pl-fb{ font-size:12.5px; font-weight:600; }
+  #page-absenteismo .pl-fb.ok{ color:var(--ok); }
+  #page-absenteismo .pl-fb.err{ color:var(--red); }
+  #page-absenteismo .pl-num{ text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  #page-absenteismo .abs-table th.pl-num{ text-align:right; }
+  #page-absenteismo .abs-table th.abs-c{ text-align:center; }
+  #page-absenteismo .pl-total td{ font-weight:700; border-top:2px solid var(--line); }
+  #page-absenteismo .pl-x{ background:none; border:0; color:var(--red); font-size:18px; cursor:pointer; line-height:1; }
+  #page-absenteismo .pl-period{ display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; margin-bottom:20px; }
   .nav-item{
     display:flex; align-items:center; gap:10px; text-align:left;
     background:none; border:none; color:#ffe6c9; font-family:inherit;
@@ -3528,7 +3552,7 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
       </button>
       <button class="nav-item" data-page="absenteismo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
-        Controle de Absenteísmo
+        Plantões e Absenteísmo
       </button>
       <button class="nav-item" data-page="usuarios-admin" id="navUsuariosAdmin" style="display:none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -6053,11 +6077,17 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
       <div class="brand">
         <div class="text-block">
           <div class="eyebrow">Bread King · Pessoas</div>
-          <h1>Controle de Absenteísmo</h1>
-          <div class="subtitle">Faltas e atestados apurados no ponto</div>
+          <h1>Plantões e Absenteísmo</h1>
+          <div class="subtitle">Pedidos de plantão e faltas apuradas no ponto</div>
         </div>
       </div>
     </div>
+    <div class="pl-tabs">
+      <button type="button" class="pl-tab on" data-pltab="abs">Absenteísmo</button>
+      <button type="button" class="pl-tab" data-pltab="pedido">Pedido de Plantão</button>
+      <button type="button" class="pl-tab" data-pltab="dash">Dashboard de Plantões</button>
+    </div>
+    <div id="plPaneAbs">
     <div class="period-bar">
       <label>Período</label>
       <div class="dr-wrap" id="drWrap_abs">
@@ -6114,6 +6144,85 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
             <thead><tr><th>Nome</th><th>Setor</th><th>Turno</th><th>Dia</th><th>Falta ou atestado</th></tr></thead>
             <tbody id="absTbody"><tr><td colspan="5" class="abs-vazio">Carregando…</td></tr></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <div id="plPanePedido" style="display:none;">
+      <div class="container">
+        <div class="panel">
+          <h2 class="panel-title">Novo pedido de plantão</h2>
+          <div class="pl-row">
+            <div class="pl-field"><label for="plData">Data do plantão</label><input type="date" id="plData"></div>
+            <div class="pl-field"><label for="plSetor">Setor solicitante</label><select id="plSetor"></select></div>
+            <div class="pl-field"><label for="plMotivo">Motivo</label><select id="plMotivo"></select></div>
+            <div class="pl-field pl-grow" id="plMotivoOutroWrap" style="display:none;"><label for="plMotivoOutro">Descreva o motivo</label><input type="text" id="plMotivoOutro" maxlength="80"></div>
+          </div>
+          <div class="pl-sub">Colaboradores do plantão</div>
+          <div class="pl-row">
+            <div class="pl-field pl-grow"><label for="plColab">Colaborador</label><input type="text" id="plColab" maxlength="80" autocomplete="off"></div>
+            <div class="pl-field"><label for="plIni">Início</label><input type="time" id="plIni"></div>
+            <div class="pl-field"><label for="plFim">Fim</label><input type="time" id="plFim"></div>
+            <div class="pl-field"><label for="plInterv" title="Intervalo não pago, descontado das horas">Intervalo (min)</label><input type="number" id="plInterv" min="0" max="600" step="5" inputmode="numeric" placeholder="0" style="min-width:90px;width:90px;"></div>
+            <div class="pl-field"><label for="plValor">Valor/hora (R$)</label><input type="number" id="plValor" min="0" step="0.01" inputmode="decimal"></div>
+            <button type="button" class="pl-btn-sec" id="plAdd">+ Adicionar colaborador</button>
+          </div>
+          <div class="abs-table-wrap">
+            <table class="abs-table">
+              <thead><tr><th>Colaborador</th><th class="pl-num">Início</th><th class="pl-num">Fim</th><th class="pl-num">Intervalo</th><th class="pl-num">Horas pagas</th><th class="pl-num">Valor/hora</th><th class="pl-num">Total</th><th class="abs-c"></th></tr></thead>
+              <tbody id="plRascunho"></tbody>
+            </table>
+          </div>
+          <div class="pl-actions">
+            <button type="button" class="pl-btn" id="plSalvar">Salvar plantão</button>
+            <button type="button" class="pl-btn-sec" id="plPdfUltimo" style="display:none;">Exportar PDF do pedido</button>
+            <button type="button" class="pl-btn-sec" id="plLimpar">Limpar</button>
+            <span class="pl-fb" id="plFb"></span>
+          </div>
+        </div>
+        <div class="panel">
+          <h2 class="panel-title">Pedidos emitidos</h2>
+          <div class="abs-table-wrap">
+            <table class="abs-table">
+              <thead><tr><th class="abs-c">Nº</th><th>Data</th><th>Setor</th><th>Motivo</th><th class="abs-c">Colab.</th><th class="pl-num">Horas</th><th class="pl-num">Custo</th><th></th></tr></thead>
+              <tbody id="plHistorico"><tr><td colspan="8" class="abs-vazio">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="plPaneDash" style="display:none;">
+      <div class="container">
+        <div class="pl-period">
+          <div class="pl-field"><label for="plDashIni">De</label><input type="date" id="plDashIni"></div>
+          <div class="pl-field"><label for="plDashFim">Até</label><input type="date" id="plDashFim"></div>
+          <button type="button" class="btn-refresh" id="plDashRefresh">⟳ Atualizar</button>
+          <span class="period-info" id="plDashInfo"></span>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi-card"><div class="label">Pedidos emitidos</div><div class="value" id="plK1">–</div><div class="abs-sub" id="plK1s"></div></div>
+          <div class="kpi-card"><div class="label">Colaboradores escalados</div><div class="value" id="plK2">–</div><div class="abs-sub" id="plK2s"></div></div>
+          <div class="kpi-card"><div class="label">Horas de plantão</div><div class="value" id="plK3">–</div><div class="abs-sub" id="plK3s"></div></div>
+          <div class="kpi-card warn"><div class="label">Custo total</div><div class="value" id="plK4">–</div><div class="abs-sub" id="plK4s"></div></div>
+        </div>
+        <div class="panel">
+          <h2 class="panel-title">Custo por setor</h2>
+          <div class="abs-chart-box"><canvas id="plChartSetor"></canvas></div>
+        </div>
+        <div class="panel">
+          <h2 class="panel-title">Custo por motivo</h2>
+          <div class="abs-chart-box"><canvas id="plChartMotivo"></canvas></div>
+        </div>
+        <div class="panel">
+          <h2 class="panel-title">Ranking por colaborador</h2>
+          <div class="abs-table-wrap abs-rk-wrap">
+            <table class="abs-table">
+              <thead><tr><th class="abs-c">#</th><th>Colaborador</th><th class="abs-c">Plantões</th><th class="pl-num">Horas</th><th class="pl-num">Custo</th></tr></thead>
+              <tbody id="plRank"><tr><td colspan="5" class="abs-vazio">Carregando…</td></tr></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -6602,7 +6711,7 @@ const BK_PERFIS = {
   alpha:      { rotulo:'Alpha',                 modulos:'*',                 editar:true,                      excluir:true,  admin:true,
                 resumo:'Acesso total: edita, exclui e gerencia usuários.' },
   gestao:     { rotulo:'Gerência / Diretoria',  modulos:'*', exceto:['absenteismo'], editar:false,                     excluir:false, admin:false,
-                resumo:'Visualiza todos os módulos, sem editar nada. Não vê o Usuário Admin nem o Controle de Absenteísmo (este só com liberação individual).' },
+                resumo:'Visualiza todos os módulos, sem editar nada. Não vê o Usuário Admin nem o módulo Plantões e Absenteísmo (este só com liberação individual).' },
   lider:      { rotulo:'Líder',                 modulos:['manutencao'],      editar:['chamados_manutencao'],    excluir:false, admin:false,
                 resumo:'Só a aba Ordem de Serviço em Manutenções: abre OS e acompanha a fila. Não atende nem finaliza.' },
   mecanico:   { rotulo:'Mecânico',              modulos:['manutencao'],      editar:['chamados_manutencao'],    excluir:false, admin:false,
@@ -6625,7 +6734,7 @@ const BK_MODULOS = [
   { id:'expedicao',               rotulo:'Expedição',                 tabelas:['ocupacao','familias','produtos'] },
   { id:'rastreamento',            rotulo:'Rastreamento',              tabelas:['rastreamento_carrinhos'] },
   { id:'mapa-rendimentos',        rotulo:'Mapa de Rendimentos',       tabelas:['mapa_rendimentos','produtos_producao','receitas'] },
-  { id:'absenteismo',             rotulo:'Controle de Absenteísmo',   tabelas:['ausencias'] }
+  { id:'absenteismo',             rotulo:'Plantões e Absenteísmo',    tabelas:['ausencias','plantoes_pedidos','plantoes_itens'] }
 ];
 function BK_perfil(){ return BK_PERFIS[BK_AUTH.nivel] || null; }
 // Telas já adaptadas ao celular ativam o viewport responsivo; as demais seguem com o layout de computador (zoom-out)
@@ -6786,7 +6895,7 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     document.getElementById('page-mapa-rendimentos').style.display = target === 'mapa-rendimentos' ? 'block' : 'none';
     if(target === 'mapa-rendimentos' && typeof MR_load === 'function') MR_load();
     document.getElementById('page-absenteismo').style.display = target === 'absenteismo' ? 'block' : 'none';
-    if(target === 'absenteismo' && typeof ABS_load === 'function') ABS_load();
+    if(target === 'absenteismo' && typeof ABS_load === 'function'){ ABS_load(); if(typeof PL_load === 'function') PL_load(); }
     document.getElementById('page-usuarios-admin').style.display = target === 'usuarios-admin' ? 'block' : 'none';
     if(target === 'usuarios-admin' && typeof ADM_load === 'function') ADM_load();
     if(target === 'lancamento' && typeof LANC_populateDropdowns === 'function'){
@@ -27987,7 +28096,7 @@ async function ABL_salvar(){
     const client = LANC_getClient();
     const r = await client.from('ausencias').upsert(dados, { onConflict: 'matricula,data' });
     if(r.error) throw r.error;
-    ABL_fb('✓ ' + dados.length + ' registro(s) lançados no Controle de Absenteísmo.', 'ok');
+    ABL_fb('✓ ' + dados.length + ' registro(s) lançados em Plantões e Absenteísmo.', 'ok');
     ABL_ARQS = []; ABL_LINHAS = [];
     document.getElementById('ablArquivos').innerHTML = '';
     document.getElementById('ablPrev').style.display = 'none';
@@ -28018,7 +28127,7 @@ document.addEventListener('click', e => {
 });
 
 // ─────────────────────────────────────────────
-// MÓDULO CONTROLE DE ABSENTEÍSMO
+// MÓDULO PLANTÕES E ABSENTEÍSMO — ABSENTEÍSMO
 // ─────────────────────────────────────────────
 // Fonte: tabela ausencias (uma linha por colaborador/dia, tipo Falta, Atestado ou Suspensão).
 // Os cards e o gráfico contam só tipo 'Falta'; atestados têm card próprio.
@@ -28200,6 +28309,328 @@ async function ABS_load(){
     document.getElementById('absTbody').innerHTML = '<tr><td colspan="5" class="abs-vazio">Não foi possível carregar os registros.</td></tr>';
   }
 }
+
+// ─────────────────────────────────────────────
+// MÓDULO PLANTÕES E ABSENTEÍSMO — PEDIDOS DE PLANTÃO
+// ─────────────────────────────────────────────
+// Fonte: plantoes_pedidos (cabeçalho: data, setor, motivo) + plantoes_itens (uma linha por colaborador).
+// Setores: os mesmos do ponto (ABS_SETORES), para cruzar com o absenteísmo.
+const PL_MOTIVOS = ['Cobertura de falta/atestado', 'Aumento de demanda', 'Pico de produção', 'Limpeza / manutenção', 'Inventário', 'Outro'];
+let PL_PEDIDOS = [];
+let PL_ITENS = [];
+let PL_RASCUNHO = [];
+let PL_ULTIMO = null;
+let PL_chartSetor = null, PL_chartMotivo = null;
+const PL_BRL = v => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const PL_HRS = v => (Math.round((Number(v) || 0) * 100) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' h';
+// Horas entre início e fim; fim menor que início = plantão que passa da meia-noite
+// intervaloMin = intervalo não pago, descontado das horas
+function PL_horas(ini, fim, intervaloMin){
+  const [h1, m1] = String(ini).slice(0, 5).split(':').map(Number), [h2, m2] = String(fim).slice(0, 5).split(':').map(Number);
+  const min = ((h2 * 60 + m2) - (h1 * 60 + m1) + 1440) % 1440 - (Number(intervaloMin) || 0);
+  return Math.max(min, 0) / 60;
+}
+function PL_fb(msg, tipo){
+  const el = document.getElementById('plFb');
+  el.textContent = msg || '';
+  el.className = 'pl-fb' + (tipo ? ' ' + tipo : '');
+}
+function PL_podeGravar(){ return BK_podeGravar('insert', 'plantoes_pedidos'); }
+function PL_podeExcluir(){ return BK_podeGravar('delete', 'plantoes_pedidos'); }
+function PL_motivoBase(m){ return String(m || '').split(':')[0]; }
+
+function PL_initForm(){
+  const sSet = document.getElementById('plSetor');
+  if(sSet.options.length) return;
+  sSet.innerHTML = '<option value="">Selecione o setor…</option>' + Object.values(ABS_SETORES).map(v => `<option value="${ADM_esc(v)}">${ADM_esc(v)}</option>`).join('');
+  document.getElementById('plMotivo').innerHTML = '<option value="">Selecione o motivo…</option>' + PL_MOTIVOS.map(v => `<option value="${ADM_esc(v)}">${ADM_esc(v)}</option>`).join('');
+  document.getElementById('plData').value = ABS_iso(new Date());
+  const fim = document.getElementById('plDashFim'), ini = document.getElementById('plDashIni');
+  const h = new Date();
+  fim.value = ABS_iso(h);
+  ini.value = ABS_iso(new Date(h.getFullYear(), h.getMonth(), 1));
+  document.getElementById('plDashRefresh').addEventListener('click', PL_load);
+  ini.addEventListener('change', PL_renderDash);
+  fim.addEventListener('change', PL_renderDash);
+  document.getElementById('plSalvar').disabled = !PL_podeGravar();
+}
+
+function PL_tab(nome){
+  document.querySelectorAll('#page-absenteismo .pl-tab').forEach(b => b.classList.toggle('on', b.dataset.pltab === nome));
+  document.getElementById('plPaneAbs').style.display = nome === 'abs' ? 'block' : 'none';
+  document.getElementById('plPanePedido').style.display = nome === 'pedido' ? 'block' : 'none';
+  document.getElementById('plPaneDash').style.display = nome === 'dash' ? 'block' : 'none';
+  // Gráficos só medem o tamanho certo com o painel visível
+  if(nome === 'abs' && typeof ABS_render === 'function' && document.getElementById('absDataIni').value) ABS_render();
+  if(nome === 'dash') PL_renderDash();
+}
+
+function PL_renderRascunho(){
+  const tb = document.getElementById('plRascunho');
+  if(!PL_RASCUNHO.length){
+    tb.innerHTML = '<tr><td colspan="8" class="abs-vazio">Nenhum colaborador adicionado.</td></tr>';
+    return;
+  }
+  let th = 0, tv = 0;
+  const linhas = PL_RASCUNHO.map((l, i) => {
+    const h = PL_horas(l.ini, l.fim, l.intervalo), t = h * l.valor;
+    th += h; tv += t;
+    return `<tr><td>${ADM_esc(l.colaborador)}</td><td class="pl-num">${l.ini}</td><td class="pl-num">${l.fim}</td><td class="pl-num">${l.intervalo ? l.intervalo + ' min' : '–'}</td><td class="pl-num">${PL_HRS(h)}</td><td class="pl-num">${PL_BRL(l.valor)}</td><td class="pl-num">${PL_BRL(t)}</td><td class="abs-c"><button type="button" class="pl-x" data-plrm="${i}" title="Remover">×</button></td></tr>`;
+  });
+  linhas.push(`<tr class="pl-total"><td>Total (${PL_RASCUNHO.length})</td><td></td><td></td><td></td><td class="pl-num">${PL_HRS(th)}</td><td></td><td class="pl-num">${PL_BRL(tv)}</td><td></td></tr>`);
+  tb.innerHTML = linhas.join('');
+}
+
+function PL_addColab(){
+  const nome = document.getElementById('plColab').value.trim();
+  const ini = document.getElementById('plIni').value, fim = document.getElementById('plFim').value;
+  const valor = parseFloat(String(document.getElementById('plValor').value).replace(',', '.'));
+  if(!nome){ PL_fb('Informe o nome do colaborador.', 'err'); return; }
+  if(!ini || !fim){ PL_fb('Informe a hora de início e a hora de fim.', 'err'); return; }
+  if(ini === fim){ PL_fb('Início e fim não podem ser iguais.', 'err'); return; }
+  if(!(valor >= 0)){ PL_fb('Informe o valor/hora a ser pago.', 'err'); return; }
+  const intervalo = Math.round(Number(document.getElementById('plInterv').value) || 0);
+  if(intervalo < 0 || intervalo >= PL_horas(ini, fim) * 60){ PL_fb('O intervalo precisa ser menor que a duração do plantão.', 'err'); return; }
+  PL_RASCUNHO.push({ colaborador: nome, ini, fim, valor, intervalo });
+  PL_fb('');
+  document.getElementById('plColab').value = '';
+  document.getElementById('plColab').focus();
+  PL_renderRascunho();
+}
+
+function PL_motivoFinal(){
+  const m = document.getElementById('plMotivo').value;
+  if(m !== 'Outro') return m;
+  const t = document.getElementById('plMotivoOutro').value.trim();
+  return t ? 'Outro: ' + t : '';
+}
+
+function PL_limpar(){
+  PL_RASCUNHO = [];
+  ['plColab', 'plIni', 'plFim', 'plValor', 'plInterv', 'plMotivoOutro'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('plSetor').value = '';
+  document.getElementById('plMotivo').value = '';
+  document.getElementById('plMotivoOutroWrap').style.display = 'none';
+  document.getElementById('plData').value = ABS_iso(new Date());
+  document.getElementById('plPdfUltimo').style.display = 'none';
+  PL_ULTIMO = null;
+  PL_fb('');
+  PL_renderRascunho();
+}
+
+async function PL_salvar(){
+  const data = document.getElementById('plData').value, setor = document.getElementById('plSetor').value, motivo = PL_motivoFinal();
+  if(!data){ PL_fb('Informe a data do plantão.', 'err'); return; }
+  if(!setor){ PL_fb('Selecione o setor solicitante.', 'err'); return; }
+  if(!motivo){ PL_fb(document.getElementById('plMotivo').value === 'Outro' ? 'Descreva o motivo do plantão.' : 'Selecione o motivo do plantão.', 'err'); return; }
+  if(!PL_RASCUNHO.length){ PL_fb('Adicione ao menos um colaborador.', 'err'); return; }
+  const btn = document.getElementById('plSalvar');
+  btn.disabled = true;
+  PL_fb('Salvando…');
+  const client = getSupabaseClient();
+  try{
+    const email = BK_AUTH.user ? BK_AUTH.user.email : null;
+    const r1 = await client.from('plantoes_pedidos').insert({ data, setor, motivo, criado_por: email }).select().single();
+    if(r1.error) throw r1.error;
+    const ped = r1.data;
+    const itens = PL_RASCUNHO.map(l => ({ pedido_id: ped.id, colaborador: l.colaborador, hora_inicio: l.ini, hora_fim: l.fim, intervalo_min: l.intervalo || 0, valor_hora: l.valor }));
+    const r2 = await client.from('plantoes_itens').insert(itens).select();
+    if(r2.error){ await client.from('plantoes_pedidos').delete().eq('id', ped.id); throw r2.error; }
+    PL_ULTIMO = { pedido: ped, itens: r2.data };
+    PL_RASCUNHO = [];
+    PL_renderRascunho();
+    PL_fb('✓ Plantão nº ' + ped.numero + ' salvo.', 'ok');
+    document.getElementById('plPdfUltimo').style.display = '';
+    await PL_load();
+  }catch(e){
+    PL_fb('⚠ Erro ao salvar: ' + (e.message || e), 'err');
+  }
+  btn.disabled = !PL_podeGravar();
+}
+
+async function PL_load(){
+  PL_initForm();
+  PL_renderRascunho();
+  try{
+    [PL_PEDIDOS, PL_ITENS] = await Promise.all([sbFetchAll('plantoes_pedidos', 'data'), sbFetchAll('plantoes_itens', 'created_at')]);
+    PL_renderHistorico();
+    if(document.getElementById('plPaneDash').style.display !== 'none') PL_renderDash();
+  }catch(e){
+    document.getElementById('plHistorico').innerHTML = '<tr><td colspan="8" class="abs-vazio">Não foi possível carregar os pedidos.</td></tr>';
+  }
+}
+
+// Pedidos com seus itens e totais já calculados
+function PL_juntar(){
+  const porPed = {};
+  PL_ITENS.forEach(i => { (porPed[i.pedido_id] = porPed[i.pedido_id] || []).push(i); });
+  return PL_PEDIDOS.map(p => {
+    const itens = porPed[p.id] || [];
+    const horas = itens.reduce((a, i) => a + PL_horas(i.hora_inicio, i.hora_fim, i.intervalo_min), 0);
+    const custo = itens.reduce((a, i) => a + PL_horas(i.hora_inicio, i.hora_fim, i.intervalo_min) * Number(i.valor_hora), 0);
+    return { ...p, itens, horas, custo };
+  });
+}
+
+function PL_renderHistorico(){
+  const tb = document.getElementById('plHistorico');
+  const lista = PL_juntar().sort((a, b) => b.data.localeCompare(a.data) || Number(b.numero) - Number(a.numero));
+  if(!lista.length){ tb.innerHTML = '<tr><td colspan="8" class="abs-vazio">Nenhum pedido emitido ainda.</td></tr>'; return; }
+  const podeExc = PL_podeExcluir();
+  tb.innerHTML = lista.map(p => `<tr><td class="abs-c">${p.numero}</td><td>${ABS_br(p.data)}</td><td>${ADM_esc(p.setor)}</td><td>${ADM_esc(p.motivo)}</td><td class="abs-c">${p.itens.length}</td><td class="pl-num">${PL_HRS(p.horas)}</td><td class="pl-num">${PL_BRL(p.custo)}</td>
+    <td class="pl-num"><button type="button" class="pl-btn-mini" data-plpdf="${p.id}">PDF</button>${podeExc ? `<button type="button" class="pl-btn-mini" data-plexc="${p.id}">Excluir</button>` : ''}</td></tr>`).join('');
+}
+
+async function PL_excluir(id){
+  const p = PL_PEDIDOS.find(x => x.id === id);
+  if(!p) return;
+  if(!confirm('Excluir o pedido de plantão nº ' + p.numero + ' (' + ABS_br(p.data) + ' · ' + p.setor + ')? Essa ação não pode ser desfeita.')) return;
+  const r = await getSupabaseClient().from('plantoes_pedidos').delete().eq('id', id);
+  if(r.error){ PL_fb('⚠ Erro ao excluir: ' + r.error.message, 'err'); return; }
+  PL_fb('Pedido nº ' + p.numero + ' excluído.', 'ok');
+  PL_load();
+}
+
+// ── Dashboard ──────────────────────────────
+function PL_barras(canvas, antigo, rotulos, custos, horas){
+  if(antigo) antigo.destroy();
+  if(typeof Chart === 'undefined' || !canvas) return null;
+  return new Chart(canvas, {
+    type: 'bar',
+    plugins: window.ChartDataLabels ? [window.ChartDataLabels] : [],
+    data: { labels: rotulos, datasets: [{ label: 'Custo', data: custos, backgroundColor: '#A10101', borderRadius: 4 }] },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      layout: { padding: { right: 90 } },
+      scales: {
+        x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { callback: v => PL_BRL(v) } },
+        y: { grid: { display: false }, ticks: { font: { size: 12, weight: '700' }, color: '#1f2937' } }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => PL_BRL(c.parsed.x), afterLabel: c => PL_HRS(horas[c.dataIndex]) } },
+        datalabels: { anchor: 'end', align: 'right', color: '#1f2937', font: { weight: 'bold', size: 12 }, formatter: v => PL_BRL(v) }
+      }
+    }
+  });
+}
+
+function PL_renderDash(){
+  const ini = document.getElementById('plDashIni').value, fim = document.getElementById('plDashFim').value;
+  if(!ini || !fim) return;
+  const peds = PL_juntar().filter(p => p.data >= ini && p.data <= fim);
+  const linhas = peds.flatMap(p => p.itens.map(i => ({ ...i, pedido: p, horas: PL_horas(i.hora_inicio, i.hora_fim, i.intervalo_min) })));
+  const horas = linhas.reduce((a, l) => a + l.horas, 0);
+  const custo = linhas.reduce((a, l) => a + l.horas * Number(l.valor_hora), 0);
+  const nomes = new Set(linhas.map(l => l.colaborador.trim().toLowerCase()));
+  document.getElementById('plK1').textContent = peds.length;
+  document.getElementById('plK2').textContent = linhas.length;
+  document.getElementById('plK3').textContent = PL_HRS(horas);
+  document.getElementById('plK4').textContent = PL_BRL(custo);
+  document.getElementById('plK1s').textContent = ABS_br(ini) + ' a ' + ABS_br(fim);
+  document.getElementById('plK2s').textContent = nomes.size + (nomes.size === 1 ? ' pessoa' : ' pessoas');
+  document.getElementById('plK3s').textContent = linhas.length ? 'Média ' + PL_HRS(horas / linhas.length) + ' por colaborador' : '';
+  document.getElementById('plK4s').textContent = horas ? 'Média ' + PL_BRL(custo / horas) + ' por hora' : '';
+  document.getElementById('plDashInfo').textContent = peds.length + ' pedido(s) no período';
+
+  const agrupa = chave => {
+    const m = {};
+    linhas.forEach(l => { const k = chave(l); if(!m[k]) m[k] = { h: 0, c: 0 }; m[k].h += l.horas; m[k].c += l.horas * Number(l.valor_hora); });
+    return Object.keys(m).sort((a, b) => m[b].c - m[a].c || a.localeCompare(b)).map(k => ({ k, ...m[k] }));
+  };
+  const porSetor = agrupa(l => l.pedido.setor), porMotivo = agrupa(l => PL_motivoBase(l.pedido.motivo));
+  const alt = n => Math.max(120, n * 44 + 40) + 'px';
+  const bs = document.getElementById('plChartSetor'), bm = document.getElementById('plChartMotivo');
+  bs.parentElement.style.height = alt(porSetor.length); bm.parentElement.style.height = alt(porMotivo.length);
+  PL_chartSetor = PL_barras(bs, PL_chartSetor, porSetor.map(x => x.k), porSetor.map(x => Math.round(x.c * 100) / 100), porSetor.map(x => x.h));
+  PL_chartMotivo = PL_barras(bm, PL_chartMotivo, porMotivo.map(x => x.k), porMotivo.map(x => Math.round(x.c * 100) / 100), porMotivo.map(x => x.h));
+
+  const rk = {};
+  linhas.forEach(l => {
+    const k = l.colaborador.trim().toLowerCase();
+    if(!rk[k]) rk[k] = { nome: l.colaborador.trim(), n: 0, h: 0, c: 0 };
+    rk[k].n++; rk[k].h += l.horas; rk[k].c += l.horas * Number(l.valor_hora);
+  });
+  const lista = Object.values(rk).sort((a, b) => b.h - a.h || b.c - a.c || a.nome.localeCompare(b.nome));
+  document.getElementById('plRank').innerHTML = lista.length
+    ? lista.map((p, i) => `<tr><td class="abs-rk-pos">${i + 1}</td><td>${ADM_esc(p.nome)}</td><td class="abs-c">${p.n}</td><td class="pl-num">${PL_HRS(p.h)}</td><td class="pl-num">${PL_BRL(p.c)}</td></tr>`).join('')
+    : '<tr><td colspan="5" class="abs-vazio">Nenhum plantão no período.</td></tr>';
+}
+
+// ── PDF do pedido ──────────────────────────
+function PL_pdf(ped, itens){
+  if(!window.jspdf || !window.jspdf.jsPDF){ alert('Não foi possível carregar a biblioteca de PDF (sem conexão com a internet?). Tente novamente.'); return; }
+  const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
+  const mx = 12, W = 297 - mx * 2;
+  const num = String(ped.numero).padStart(4, '0');
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(119, 119, 119);
+  doc.text('BREAD KING  ·  GESTÃO INDUSTRIAL', mx, 12);
+  doc.setFontSize(17); doc.setTextColor(161, 1, 1);
+  doc.text('PEDIDO DE PLANTÃO Nº ' + num, mx, 21);
+  doc.setDrawColor(161, 1, 1); doc.setLineWidth(0.6); doc.line(mx, 24, mx + W, 24);
+  const info = [['Data do plantão', ABS_br(ped.data)], ['Setor solicitante', ped.setor], ['Motivo', ped.motivo]];
+  let y = 31;
+  doc.setFontSize(10);
+  info.forEach(([k, v]) => {
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(119, 119, 119); doc.text(k.toUpperCase(), mx, y);
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(30, 30, 30); doc.text(String(v), mx + 46, y);
+    y += 6;
+  });
+  let th = 0, tv = 0;
+  const corpo = itens.map((i, n) => {
+    const h = PL_horas(i.hora_inicio, i.hora_fim, i.intervalo_min), t = h * Number(i.valor_hora);
+    th += h; tv += t;
+    return [n + 1, i.colaborador, String(i.hora_inicio).slice(0, 5), String(i.hora_fim).slice(0, 5), i.intervalo_min ? i.intervalo_min + ' min' : '-', PL_HRS(h), PL_BRL(i.valor_hora), PL_BRL(t), '', ''];
+  });
+  doc.autoTable({
+    startY: y + 2, margin: { left: mx, right: mx },
+    head: [['#', 'Colaborador', 'Início', 'Fim', 'Intervalo', 'Horas pagas', 'Valor/hora', 'Total', 'Assinatura – presença', 'Assinatura – recebimento']],
+    body: corpo,
+    foot: [['', 'TOTAL', '', '', '', PL_HRS(th), '', PL_BRL(tv), '', '']],
+    showFoot: 'lastPage',
+    theme: 'grid',
+    styles: { font: 'helvetica', fontSize: 9.5, cellPadding: 2.5, minCellHeight: 14, valign: 'middle', lineColor: [200, 190, 190], lineWidth: 0.2, textColor: [30, 30, 30] },
+    headStyles: { fillColor: [161, 1, 1], textColor: 255, fontSize: 9, minCellHeight: 9, halign: 'left' },
+    footStyles: { fillColor: [241, 230, 230], textColor: [30, 30, 30], fontStyle: 'bold', minCellHeight: 9 },
+    columnStyles: {
+      0: { cellWidth: 8, halign: 'center' }, 1: { cellWidth: 41 }, 2: { cellWidth: 17, halign: 'center' }, 3: { cellWidth: 17, halign: 'center' }, 4: { cellWidth: 22, halign: 'center' },
+      5: { cellWidth: 19, halign: 'right' }, 6: { cellWidth: 22, halign: 'right' }, 7: { cellWidth: 24, halign: 'right' }, 8: { cellWidth: 51 }, 9: { cellWidth: 51 }
+    },
+    didDrawPage: () => {
+      const pg = doc.internal.getCurrentPageInfo().pageNumber;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(119, 119, 119);
+      const quem = ped.criado_por ? ' por ' + ped.criado_por : '';
+      doc.text('Pedido nº ' + num + ' · emitido em ' + new Date(ped.created_at || Date.now()).toLocaleString('pt-BR') + quem, mx, 204);
+      doc.text('Pág. ' + pg, 297 - mx, 204, { align: 'right' });
+    }
+  });
+  const slug = String(ped.setor).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '_');
+  doc.save('PEDIDO_PLANTAO_' + num + '_' + slug + '_' + ped.data + '.pdf');
+}
+
+document.addEventListener('click', e => {
+  const t = e.target;
+  if(!t || !t.closest) return;
+  const tab = t.closest('[data-pltab]');
+  if(tab){ PL_tab(tab.dataset.pltab); return; }
+  if(t.id === 'plAdd'){ PL_addColab(); return; }
+  if(t.id === 'plSalvar'){ PL_salvar(); return; }
+  if(t.id === 'plLimpar'){ PL_limpar(); return; }
+  if(t.id === 'plPdfUltimo'){ if(PL_ULTIMO) PL_pdf(PL_ULTIMO.pedido, PL_ULTIMO.itens); return; }
+  if(t.dataset && t.dataset.plrm != null){ PL_RASCUNHO.splice(Number(t.dataset.plrm), 1); PL_renderRascunho(); return; }
+  if(t.dataset && t.dataset.plpdf){
+    const p = PL_juntar().find(x => x.id === t.dataset.plpdf);
+    if(p) PL_pdf(p, p.itens);
+    return;
+  }
+  if(t.dataset && t.dataset.plexc){ PL_excluir(t.dataset.plexc); }
+});
+document.addEventListener('change', e => {
+  if(e.target.id === 'plMotivo') document.getElementById('plMotivoOutroWrap').style.display = e.target.value === 'Outro' ? '' : 'none';
+});
+document.addEventListener('keydown', e => {
+  if(e.key === 'Enter' && ['plColab', 'plIni', 'plFim', 'plInterv', 'plValor'].includes(e.target.id)){ e.preventDefault(); PL_addColab(); }
+});
 
 // ─────────────────────────────────────────────
 // LOGIN — Supabase Auth (e-mail + senha)
