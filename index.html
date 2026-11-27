@@ -6152,7 +6152,7 @@ body .bk-st-35{width:100%;border:1px solid #e8d3a3;border-radius:7px;padding:8px
     <div id="plPanePedido" style="display:none;">
       <div class="container">
         <div class="panel">
-          <h2 class="panel-title">Novo pedido de plantão</h2>
+          <h2 class="panel-title" id="plTitulo">Novo pedido de plantão</h2>
           <div class="pl-row">
             <div class="pl-field"><label for="plData">Data do plantão</label><input type="date" id="plData"></div>
             <div class="pl-field"><label for="plSetor">Setor solicitante</label><select id="plSetor"></select></div>
@@ -28320,6 +28320,7 @@ let PL_PEDIDOS = [];
 let PL_ITENS = [];
 let PL_RASCUNHO = [];
 let PL_ULTIMO = null;
+let PL_EDIT_ID = null; // id do pedido em edição (null = pedido novo)
 let PL_chartSetor = null, PL_chartMotivo = null;
 const PL_BRL = v => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const PL_HRS = v => (Math.round((Number(v) || 0) * 100) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' h';
@@ -28414,8 +28415,35 @@ function PL_limpar(){
   document.getElementById('plData').value = ABS_iso(new Date());
   document.getElementById('plPdfUltimo').style.display = 'none';
   PL_ULTIMO = null;
+  PL_EDIT_ID = null;
+  document.getElementById('plTitulo').textContent = 'Novo pedido de plantão';
+  document.getElementById('plSalvar').textContent = 'Salvar plantão';
+  document.getElementById('plLimpar').textContent = 'Limpar';
   PL_fb('');
   PL_renderRascunho();
+}
+
+// Carrega um pedido já emitido no formulário para edição
+function PL_editar(id){
+  const p = PL_juntar().find(x => x.id === id);
+  if(!p) return;
+  PL_limpar();
+  PL_EDIT_ID = id;
+  document.getElementById('plData').value = p.data;
+  const sSet = document.getElementById('plSetor');
+  if(![...sSet.options].some(o => o.value === p.setor)) sSet.insertAdjacentHTML('beforeend', `<option value="${ADM_esc(p.setor)}">${ADM_esc(p.setor)}</option>`);
+  sSet.value = p.setor;
+  const mot = document.getElementById('plMotivo'), m = String(p.motivo || '');
+  if(PL_MOTIVOS.includes(m) && m !== 'Outro') mot.value = m;
+  else { mot.value = 'Outro'; document.getElementById('plMotivoOutro').value = m.replace(/^Outro:\s*/, ''); }
+  document.getElementById('plMotivoOutroWrap').style.display = mot.value === 'Outro' ? '' : 'none';
+  PL_RASCUNHO = p.itens.map(i => ({ colaborador: i.colaborador, ini: String(i.hora_inicio).slice(0, 5), fim: String(i.hora_fim).slice(0, 5), valor: Number(i.valor_hora), intervalo: Number(i.intervalo_min) || 0 }));
+  document.getElementById('plTitulo').textContent = 'Editando pedido nº ' + p.numero;
+  document.getElementById('plSalvar').textContent = 'Salvar alterações';
+  document.getElementById('plLimpar').textContent = 'Cancelar edição';
+  PL_renderRascunho();
+  PL_fb('Altere o que for preciso e clique em Salvar alterações.');
+  document.getElementById('plTitulo').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function PL_salvar(){
@@ -28430,16 +28458,34 @@ async function PL_salvar(){
   const client = getSupabaseClient();
   try{
     const email = BK_AUTH.user ? BK_AUTH.user.email : null;
-    const r1 = await client.from('plantoes_pedidos').insert({ data, setor, motivo, criado_por: email }).select().single();
-    if(r1.error) throw r1.error;
-    const ped = r1.data;
-    const itens = PL_RASCUNHO.map(l => ({ pedido_id: ped.id, colaborador: l.colaborador, hora_inicio: l.ini, hora_fim: l.fim, intervalo_min: l.intervalo || 0, valor_hora: l.valor }));
-    const r2 = await client.from('plantoes_itens').insert(itens).select();
-    if(r2.error){ await client.from('plantoes_pedidos').delete().eq('id', ped.id); throw r2.error; }
-    PL_ULTIMO = { pedido: ped, itens: r2.data };
-    PL_RASCUNHO = [];
-    PL_renderRascunho();
-    PL_fb('✓ Plantão nº ' + ped.numero + ' salvo.', 'ok');
+    const montaItens = pedidoId => PL_RASCUNHO.map(l => ({ pedido_id: pedidoId, colaborador: l.colaborador, hora_inicio: l.ini, hora_fim: l.fim, intervalo_min: l.intervalo || 0, valor_hora: l.valor }));
+    let ped, novos, msg;
+    if(PL_EDIT_ID){
+      // Edição: grava os itens novos antes de apagar os antigos, para não perder dados se algo falhar
+      const antigos = PL_ITENS.filter(i => i.pedido_id === PL_EDIT_ID).map(i => i.id);
+      const rI = await client.from('plantoes_itens').insert(montaItens(PL_EDIT_ID)).select();
+      if(rI.error) throw rI.error;
+      novos = rI.data;
+      if(antigos.length){
+        const rD = await client.from('plantoes_itens').delete().in('id', antigos);
+        if(rD.error){ await client.from('plantoes_itens').delete().in('id', novos.map(i => i.id)); throw rD.error; }
+      }
+      const rP = await client.from('plantoes_pedidos').update({ data, setor, motivo }).eq('id', PL_EDIT_ID).select().single();
+      if(rP.error) throw rP.error;
+      ped = rP.data;
+      msg = '✓ Plantão nº ' + ped.numero + ' atualizado.';
+    }else{
+      const r1 = await client.from('plantoes_pedidos').insert({ data, setor, motivo, criado_por: email }).select().single();
+      if(r1.error) throw r1.error;
+      ped = r1.data;
+      const r2 = await client.from('plantoes_itens').insert(montaItens(ped.id)).select();
+      if(r2.error){ await client.from('plantoes_pedidos').delete().eq('id', ped.id); throw r2.error; }
+      novos = r2.data;
+      msg = '✓ Plantão nº ' + ped.numero + ' salvo.';
+    }
+    PL_limpar();
+    PL_ULTIMO = { pedido: ped, itens: novos };
+    PL_fb(msg, 'ok');
     document.getElementById('plPdfUltimo').style.display = '';
     await PL_load();
   }catch(e){
@@ -28478,7 +28524,7 @@ function PL_renderHistorico(){
   if(!lista.length){ tb.innerHTML = '<tr><td colspan="8" class="abs-vazio">Nenhum pedido emitido ainda.</td></tr>'; return; }
   const podeExc = PL_podeExcluir();
   tb.innerHTML = lista.map(p => `<tr><td class="abs-c">${p.numero}</td><td>${ABS_br(p.data)}</td><td>${ADM_esc(p.setor)}</td><td>${ADM_esc(p.motivo)}</td><td class="abs-c">${p.itens.length}</td><td class="pl-num">${PL_HRS(p.horas)}</td><td class="pl-num">${PL_BRL(p.custo)}</td>
-    <td class="pl-num"><button type="button" class="pl-btn-mini" data-plpdf="${p.id}">PDF</button>${podeExc ? `<button type="button" class="pl-btn-mini" data-plexc="${p.id}">Excluir</button>` : ''}</td></tr>`).join('');
+    <td class="pl-num"><button type="button" class="pl-btn-mini" data-plpdf="${p.id}">PDF</button>${PL_podeGravar() ? `<button type="button" class="pl-btn-mini" data-pled="${p.id}">Editar</button>` : ''}${podeExc ? `<button type="button" class="pl-btn-mini" data-plexc="${p.id}">Excluir</button>` : ''}</td></tr>`).join('');
 }
 
 async function PL_excluir(id){
@@ -28676,6 +28722,7 @@ document.addEventListener('click', e => {
     if(p) PL_pdf(p, p.itens);
     return;
   }
+  if(t.dataset && t.dataset.pled){ PL_editar(t.dataset.pled); return; }
   if(t.dataset && t.dataset.plexc){ PL_excluir(t.dataset.plexc); }
 });
 document.addEventListener('change', e => {
