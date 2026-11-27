@@ -28561,48 +28561,101 @@ function PL_renderDash(){
 function PL_pdf(ped, itens){
   if(!window.jspdf || !window.jspdf.jsPDF){ alert('Não foi possível carregar a biblioteca de PDF (sem conexão com a internet?). Tente novamente.'); return; }
   const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
-  const mx = 12, W = 297 - mx * 2;
+  const PW = 297, PH = 210, mx = 14, W = PW - mx * 2;
+  const RED = [161, 1, 1], DARK = [110, 0, 0], GY = [119, 119, 119], LG = [241, 230, 230], INK = [34, 28, 28];
   const num = String(ped.numero).padStart(4, '0');
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(119, 119, 119);
-  doc.text('BREAD KING  ·  GESTÃO INDUSTRIAL', mx, 12);
-  doc.setFontSize(17); doc.setTextColor(161, 1, 1);
-  doc.text('PEDIDO DE PLANTÃO Nº ' + num, mx, 21);
-  doc.setDrawColor(161, 1, 1); doc.setLineWidth(0.6); doc.line(mx, 24, mx + W, 24);
-  const info = [['Data do plantão', ABS_br(ped.data)], ['Setor solicitante', ped.setor], ['Motivo', ped.motivo]];
-  let y = 31;
-  doc.setFontSize(10);
-  info.forEach(([k, v]) => {
-    doc.setFont('helvetica', 'bold'); doc.setTextColor(119, 119, 119); doc.text(k.toUpperCase(), mx, y);
-    doc.setFont('helvetica', 'normal'); doc.setTextColor(30, 30, 30); doc.text(String(v), mx + 46, y);
-    y += 6;
-  });
+  const dt = new Date(ped.data + 'T12:00:00');
+  const dia = dt.toLocaleDateString('pt-BR', { weekday: 'long' });
+
+  // Totais
   let th = 0, tv = 0;
   const corpo = itens.map((i, n) => {
     const h = PL_horas(i.hora_inicio, i.hora_fim, i.intervalo_min), t = h * Number(i.valor_hora);
     th += h; tv += t;
     return [n + 1, i.colaborador, String(i.hora_inicio).slice(0, 5), String(i.hora_fim).slice(0, 5), i.intervalo_min ? i.intervalo_min + ' min' : '-', PL_HRS(h), PL_BRL(i.valor_hora), PL_BRL(t), '', ''];
   });
+
+  // Faixa de cabeçalho
+  doc.setFillColor(...RED); doc.rect(0, 0, PW, 32, 'F');
+  doc.setFillColor(181, 100, 11); doc.rect(0, 32, PW, 1.4, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(22); doc.text('BREAD KING', mx, 16);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setCharSpace(1.2);
+  doc.text('GESTÃO INDUSTRIAL  ·  PCP', mx, 23); doc.setCharSpace(0);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+  doc.text('PEDIDO DE PLANTÃO', PW - mx, 12, { align: 'right' });
+  doc.setFontSize(26); doc.text('Nº ' + num, PW - mx, 24, { align: 'right' });
+
+  // Cartões de informação
+  const cy = 42, ch = 22, gap = 5, cw = (W - gap * 3) / 4;
+  const cards = [
+    ['DATA DO PLANTÃO', ABS_br(ped.data), dia.charAt(0).toUpperCase() + dia.slice(1)],
+    ['SETOR SOLICITANTE', ped.setor, ''],
+    ['MOTIVO', ped.motivo, ''],
+    ['RESUMO', itens.length + (itens.length === 1 ? ' colaborador' : ' colaboradores'), PL_HRS(th) + ' pagas  ·  ' + PL_BRL(tv)]
+  ];
+  cards.forEach((c, k) => {
+    const x = mx + k * (cw + gap);
+    doc.setFillColor(...LG); doc.roundedRect(x, cy, cw, ch, 2, 2, 'F');
+    doc.setFillColor(...RED); doc.rect(x, cy + 3, 1.2, ch - 6, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...GY); doc.setCharSpace(0.8);
+    doc.text(c[0], x + 5, cy + 7); doc.setCharSpace(0);
+    doc.setFontSize(12); doc.setTextColor(...INK);
+    const v = doc.splitTextToSize(String(c[1]), cw - 9)[0];
+    doc.text(v, x + 5, cy + 14);
+    if(c[2]){ doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...GY); doc.text(c[2], x + 5, cy + 19); }
+  });
+
+  const rodape = () => {
+    const pg = doc.internal.getCurrentPageInfo().pageNumber;
+    doc.setDrawColor(...LG); doc.setLineWidth(0.4); doc.line(mx, PH - 13, PW - mx, PH - 13);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GY);
+    const quem = ped.criado_por ? '  ·  por ' + ped.criado_por : '';
+    doc.text('Pedido nº ' + num + '  ·  emitido em ' + new Date(ped.created_at || Date.now()).toLocaleString('pt-BR') + quem, mx, PH - 8);
+    doc.text('Bread King · Gestão Industrial  ·  Pág. ' + pg, PW - mx, PH - 8, { align: 'right' });
+  };
+
+  // Tabela
   doc.autoTable({
-    startY: y + 2, margin: { left: mx, right: mx },
+    startY: cy + ch + 9, margin: { left: mx, right: mx, bottom: 18 },
     head: [['#', 'Colaborador', 'Início', 'Fim', 'Intervalo', 'Horas pagas', 'Valor/hora', 'Total', 'Assinatura – presença', 'Assinatura – recebimento']],
     body: corpo,
     foot: [['', 'TOTAL', '', '', '', PL_HRS(th), '', PL_BRL(tv), '', '']],
     showFoot: 'lastPage',
-    theme: 'grid',
-    styles: { font: 'helvetica', fontSize: 9.5, cellPadding: 2.5, minCellHeight: 14, valign: 'middle', lineColor: [200, 190, 190], lineWidth: 0.2, textColor: [30, 30, 30] },
-    headStyles: { fillColor: [161, 1, 1], textColor: 255, fontSize: 9, minCellHeight: 9, halign: 'left' },
-    footStyles: { fillColor: [241, 230, 230], textColor: [30, 30, 30], fontStyle: 'bold', minCellHeight: 9 },
+    theme: 'plain',
+    styles: { font: 'helvetica', fontSize: 10, cellPadding: { top: 4, bottom: 4, left: 3.5, right: 3.5 }, minCellHeight: 18, valign: 'middle', textColor: INK, lineColor: [225, 210, 210], lineWidth: { bottom: 0.25 } },
+    headStyles: { fillColor: DARK, textColor: 255, fontSize: 8.5, fontStyle: 'bold', minCellHeight: 11, lineWidth: 0 },
+    alternateRowStyles: { fillColor: [251, 247, 247] },
+    footStyles: { fillColor: LG, textColor: INK, fontStyle: 'bold', fontSize: 10.5, minCellHeight: 12, lineWidth: 0 },
     columnStyles: {
-      0: { cellWidth: 8, halign: 'center' }, 1: { cellWidth: 41 }, 2: { cellWidth: 17, halign: 'center' }, 3: { cellWidth: 17, halign: 'center' }, 4: { cellWidth: 22, halign: 'center' },
-      5: { cellWidth: 19, halign: 'right' }, 6: { cellWidth: 22, halign: 'right' }, 7: { cellWidth: 24, halign: 'right' }, 8: { cellWidth: 51 }, 9: { cellWidth: 51 }
+      0: { cellWidth: 9, halign: 'center', textColor: GY }, 1: { cellWidth: 44, fontStyle: 'bold' }, 2: { cellWidth: 16, halign: 'center' }, 3: { cellWidth: 16, halign: 'center' }, 4: { cellWidth: 20, halign: 'center' },
+      5: { cellWidth: 22, halign: 'right' }, 6: { cellWidth: 22, halign: 'right' }, 7: { cellWidth: 25, halign: 'right', fontStyle: 'bold' }, 8: { cellWidth: 47.5, lineWidth: { left: 0.25, bottom: 0.25 } }, 9: { cellWidth: 47.5, lineWidth: { left: 0.25, bottom: 0.25 } }
     },
-    didDrawPage: () => {
-      const pg = doc.internal.getCurrentPageInfo().pageNumber;
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(119, 119, 119);
-      const quem = ped.criado_por ? ' por ' + ped.criado_por : '';
-      doc.text('Pedido nº ' + num + ' · emitido em ' + new Date(ped.created_at || Date.now()).toLocaleString('pt-BR') + quem, mx, 204);
-      doc.text('Pág. ' + pg, 297 - mx, 204, { align: 'right' });
-    }
+    didParseCell: d => {
+      if(d.section !== 'body' && [5, 6, 7].includes(d.column.index)) d.cell.styles.halign = 'right';
+      if(d.section === 'head' && [0, 2, 3, 4].includes(d.column.index)) d.cell.styles.halign = 'center';
+    },
+    // Linha de assinatura dentro das duas últimas colunas
+    didDrawCell: d => {
+      if(d.section === 'body' && d.column.index >= 8){
+        doc.setDrawColor(150, 150, 150); doc.setLineWidth(0.3);
+        doc.line(d.cell.x + 4, d.cell.y + d.cell.height - 5, d.cell.x + d.cell.width - 4, d.cell.y + d.cell.height - 5);
+      }
+    },
+    didDrawPage: () => rodape()
+  });
+  // Assinaturas de aprovação (três campos no pé da última página)
+  const SH = 30;
+  let baseY = doc.lastAutoTable.finalY;
+  if(baseY + 10 + SH > PH - 16){ doc.addPage(); rodape(); baseY = 20; }
+  const sy = Math.max(baseY + 12, PH - 16 - SH) + 18, sg = 14, sw = (W - sg * 2) / 3;
+  ['Líder responsável', 'Conferência RH', 'Aprovação Diretoria'].forEach((rot, k) => {
+    const x = mx + k * (sw + sg);
+    doc.setDrawColor(90, 90, 90); doc.setLineWidth(0.35); doc.line(x, sy, x + sw, sy);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...INK);
+    doc.text(rot, x + sw / 2, sy + 5.5, { align: 'center' });
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GY);
+    doc.text('Nome / assinatura  ·  Data', x + sw / 2, sy + 10, { align: 'center' });
   });
   const slug = String(ped.setor).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '_');
   doc.save('PEDIDO_PLANTAO_' + num + '_' + slug + '_' + ped.data + '.pdf');
